@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable react/no-unescaped-entities */
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
@@ -15,6 +16,14 @@ export function StudentNotificationPopover() {
   const { data: unreadData } = useUnreadCount();
   const { data, isLoading, isError } = useNotifications();
   const { mutate: markAsRead } = useReadNotification();
+
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setNow(Date.now());
+    const interval = setInterval(() => setNow(Date.now()), 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Close popover when clicking outside
   useEffect(() => {
@@ -58,7 +67,8 @@ export function StudentNotificationPopover() {
   };
 
   const formatRelativeTime = (isoString: string) => {
-    const diffMs = Date.now() - new Date(isoString).getTime();
+    if (!now) return '';
+    const diffMs = now - new Date(isoString).getTime();
     const diffMins = Math.floor(diffMs / 60000);
     if (diffMins < 60) return `${diffMins}m ago`;
     const diffHrs = Math.floor(diffMins / 60);
