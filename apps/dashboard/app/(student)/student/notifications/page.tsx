@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable react-hooks/set-state-in-effect, react/no-unescaped-entities */
 
 import React, { useEffect, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
@@ -20,6 +21,14 @@ export default function StudentNotificationsPage() {
   
   const { mutate: markAsRead } = useReadNotification();
 
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setNow(Date.now());
+    const interval = setInterval(() => setNow(Date.now()), 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleNotificationClick = (notif: Notification, targetHref: string | null) => {
     if (!notif.readAt) {
       markAsRead(notif.id);
@@ -30,8 +39,9 @@ export default function StudentNotificationsPage() {
   };
 
   const formatRelativeTime = (isoString: string) => {
+    if (!now) return '';
     const date = new Date(isoString);
-    const diffMs = Date.now() - date.getTime();
+    const diffMs = now - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     if (diffMins < 60) return `${diffMins}m ago`;
     const diffHrs = Math.floor(diffMins / 60);
