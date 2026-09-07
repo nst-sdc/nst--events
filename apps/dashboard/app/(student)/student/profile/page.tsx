@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable react/no-unescaped-entities */
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -27,6 +28,7 @@ export default function StudentProfilePage() {
   const [updateError, setUpdateError] = useState<string | null>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 

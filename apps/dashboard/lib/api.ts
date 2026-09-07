@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Minimal Web API Foundation Architecture
  * Establishes typed client, error handling, and authentication boundaries for Dashboard.

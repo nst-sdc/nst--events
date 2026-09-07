@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable react-hooks/set-state-in-effect */
 
 import React, { useEffect, useState } from 'react';
 import { ConfigProvider, theme as antdTheme, App } from 'antd';

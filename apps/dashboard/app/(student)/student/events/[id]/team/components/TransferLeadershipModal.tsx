@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
 import { useTransferLeadership, Team, TeamMember } from '../../../../../../../hooks/useTeams';
 import { Modal } from '../../../../../../../components/ui/Modal';

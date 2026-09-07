@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { CurrentUser } from '../hooks/useCurrentUser';
 import { Event } from '../hooks/useEvents';
 

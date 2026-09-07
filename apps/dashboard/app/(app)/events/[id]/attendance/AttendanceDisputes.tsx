@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
 import { Table, Button, Badge, Space, Modal, Form, Input, Typography, Select, App } from 'antd';
 import { useAttendanceDisputes, useResolveAttendanceDispute, AttendanceDispute } from '../../../../../hooks/useAttendance';

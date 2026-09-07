@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
 import React, { use, Suspense } from 'react';

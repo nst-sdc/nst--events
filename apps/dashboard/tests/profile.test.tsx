@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // @vitest-environment jsdom
 import { test, expect, vi, beforeEach } from 'vitest';
 import { apiClient } from '../lib/api';

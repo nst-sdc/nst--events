@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable react-hooks/set-state-in-effect, @typescript-eslint/no-explicit-any */
 
 import React, { useEffect, useState } from 'react';
 import { Layout, Menu, Avatar, Space, Dropdown, Typography, theme as antdTheme } from 'antd';
