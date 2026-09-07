@@ -3,6 +3,7 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
+  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button } from '../../src/ui/Button';
@@ -17,6 +18,10 @@ export default function SettingsScreen() {
 
   const handleSelectMode = async (newMode: ThemeMode) => {
     await setMode(newMode);
+  };
+
+  const handleOpenPrivacyPolicy = async () => {
+    await Linking.openURL('https://[your-domain]/privacy-policy');
   };
 
   const styles = useMemo(() => StyleSheet.create({
@@ -108,6 +113,21 @@ export default function SettingsScreen() {
             <Mono>Follow device</Mono>
           </View>
           {mode === 'system' && <MonoLabel style={styles.activeIndicator}>[SELECTED]</MonoLabel>}
+        </TouchableOpacity>
+      </View>
+
+      <View style={[styles.sectionHeader, { marginTop: theme.spacing.xl }]}>
+        <MonoLabel style={styles.sectionTitle}>LEGAL</MonoLabel>
+        <Body style={styles.sectionDesc}>Important policies and terms.</Body>
+      </View>
+
+      <View style={styles.optionsList}>
+        <TouchableOpacity
+          style={styles.optionRow}
+          onPress={handleOpenPrivacyPolicy}
+          activeOpacity={0.8}
+        >
+          <Title>Privacy Policy</Title>
         </TouchableOpacity>
       </View>
 
