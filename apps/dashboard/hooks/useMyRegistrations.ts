@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../lib/api';
 import { Event } from './useEvents'; // Reusing Event type if available

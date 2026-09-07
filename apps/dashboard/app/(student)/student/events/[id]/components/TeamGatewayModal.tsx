@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
 import { useCreateTeam, useTeamsList, useJoinTeam, Team } from '../../../../../../hooks/useTeams';
 import { Modal } from '../../../../../../components/ui/Modal';

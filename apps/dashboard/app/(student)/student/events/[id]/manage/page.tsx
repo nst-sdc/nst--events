@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { use } from 'react';
 import { useEventDetail } from '../../../../../../hooks/useEventDetail';

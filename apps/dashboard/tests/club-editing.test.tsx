@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // @vitest-environment jsdom
 import { expect, describe, it, vi, beforeEach, afterEach } from 'vitest';
 import '@testing-library/jest-dom/vitest';

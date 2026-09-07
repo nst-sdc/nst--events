@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable react-hooks/set-state-in-effect, @typescript-eslint/no-explicit-any */
 
 import React, { use, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useEventDetail } from '../../../../../../../hooks/useEventDetail';

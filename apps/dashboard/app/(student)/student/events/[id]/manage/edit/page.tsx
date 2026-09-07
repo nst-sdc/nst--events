@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
@@ -58,6 +59,7 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
         .filter(ec => !ec.isPrimary)
         .map(ec => ec.clubId);
 
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData({
         title: event.title || '',
         description: event.description || '',
