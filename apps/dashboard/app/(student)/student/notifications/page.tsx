@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable react-hooks/set-state-in-effect, react/no-unescaped-entities */
 
-import React, { useEffect, Fragment } from 'react';
+import React, { useState, useEffect, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
 import { useNotifications, useReadNotification, Notification } from '../../../../hooks/useNotifications';
 import { resolveStudentNotificationTarget } from '../../../../lib/student-notification-utils';
