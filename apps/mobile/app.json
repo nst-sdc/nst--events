@@ -43,7 +43,12 @@
           "locationAlwaysAndWhenInUsePermission": "Required to verify attendance geofence."
         }
       ],
-      "@react-native-google-signin/google-signin",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.590987407822-ho2vv2d0994vhqag2i7r08jchnfb201l"
+        }
+      ],
       "expo-secure-store",
       "expo-dev-client",
       "expo-router"

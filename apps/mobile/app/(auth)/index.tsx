@@ -10,8 +10,7 @@ import { GoogleSignin, isErrorWithCode, statusCodes } from '@react-native-google
 
 GoogleSignin.configure({
   webClientId: '590987407822-nqlm9puo59u6kjotfp3eqsliq3imkr2s.apps.googleusercontent.com', // from API .env
-  iosClientId: 'YOUR_IOS_CLIENT_ID', // Replace with iOS Client ID
-  hostedDomain: 'adypu.edu.in',
+  iosClientId: '590987407822-ho2vv2d0994vhqag2i7r08jchnfb201l.apps.googleusercontent.com',
 });
 
 export default function LoginGatewayScreen() {
