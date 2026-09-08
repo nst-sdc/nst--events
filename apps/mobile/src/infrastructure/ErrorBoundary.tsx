@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text } from 'react-native';
-import { Button } from '../ui/primitives';
+import { View, Text, StyleSheet } from 'react-native';
+import { Button } from '../ui/Button';
+import { theme } from '../ui/theme';
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -28,14 +29,16 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   render() {
     if (this.state.hasError) {
       return (
-        <View className="flex-1 justify-center items-center p-6 bg-surface">
-          <Text className="text-xl font-bold text-danger mb-4">Something went wrong</Text>
-          <Text className="text-gray-600 text-center mb-6">
+        <View style={styles.container}>
+          <Text style={styles.title}>APPLICATION ERROR</Text>
+          <Text style={styles.message}>
             {this.state.error?.message || 'An unexpected error occurred.'}
           </Text>
           <Button 
-            title="Try Again" 
+            title="TRY AGAIN" 
             onPress={() => this.setState({ hasError: false, error: null })} 
+            variant="primary"
+            style={styles.retryBtn}
           />
         </View>
       );
@@ -44,3 +47,31 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     return this.props.children;
   }
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: theme.spacing.base,
+    backgroundColor: theme.colors.surface,
+  },
+  title: {
+    fontFamily: theme.typography.monoBold,
+    fontSize: 16,
+    color: theme.colors.error,
+    marginBottom: theme.spacing.sm,
+    letterSpacing: 0.8,
+  },
+  message: {
+    fontFamily: theme.typography.interRegular,
+    fontSize: 13,
+    color: theme.colors.onSurfaceVariant,
+    textAlign: 'center',
+    marginBottom: theme.spacing.xl,
+    lineHeight: 18,
+  },
+  retryBtn: {
+    minWidth: 160,
+  },
+});

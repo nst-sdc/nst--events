@@ -84,28 +84,6 @@ export default function SubmitDisputeScreen() {
       paddingBottom: 24,
       justifyContent: 'space-between',
     },
-    header: {
-      height: 56,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.borderHairline,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginHorizontal: -theme.spacing.base,
-      paddingHorizontal: theme.spacing.base,
-      backgroundColor: theme.colors.surface,
-    },
-    backBtn: {
-      paddingVertical: 6,
-      paddingRight: 12,
-    },
-    backBtnText: {
-      color: theme.colors.error,
-    },
-    headerTitle: {
-      color: theme.colors.onSurface,
-      letterSpacing: 1,
-    },
     contextCard: {
       backgroundColor: theme.colors.surfaceContainerLow,
       borderColor: theme.colors.borderHairline,
@@ -183,22 +161,13 @@ export default function SubmitDisputeScreen() {
   }), [theme]);
 
   return (
-    <MobileShell title="SUBMIT DISPUTE" scrollable={false}>
+    <MobileShell title="SUBMIT DISPUTE" showBackButton scrollable={false}>
       <KeyboardAvoidingView
         style={styles.keyboardAvoid}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.mainContainer}>
-            {/* Header */}
-            <View style={styles.header}>
-              <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-                <MonoLabel style={styles.backBtnText}>CANCEL</MonoLabel>
-              </TouchableOpacity>
-              <MonoLabel style={styles.headerTitle}>SUBMIT DISPUTE</MonoLabel>
-              <View style={{ width: 60 }} />
-            </View>
-
             {/* Context Card */}
             <View style={styles.contextCard}>
               <View style={styles.contextCardHeader}>

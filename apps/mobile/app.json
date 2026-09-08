@@ -6,10 +6,21 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#09090b"
+    },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.sohamdhande.nstevents"
+      "bundleIdentifier": "com.sohamdhande.nstevents",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Required to verify attendance geofence.",
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -40,7 +51,8 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Required to verify attendance geofence."
+          "locationAlwaysAndWhenInUsePermission": "Required to verify attendance geofence.",
+          "locationWhenInUsePermission": "Required to verify attendance geofence."
         }
       ],
       [
@@ -49,6 +61,7 @@
           "iosUrlScheme": "com.googleusercontent.apps.590987407822-ho2vv2d0994vhqag2i7r08jchnfb201l"
         }
       ],
+      "expo-notifications",
       "expo-secure-store",
       "expo-dev-client",
       "expo-router"

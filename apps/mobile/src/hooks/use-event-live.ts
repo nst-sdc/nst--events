@@ -4,6 +4,7 @@ import { SSEManager } from '../sse/manager';
 import { useAuthStore } from '../store/auth';
 import { useToast } from './use-toast';
 import { useNetworkStatus } from '../infrastructure/network';
+import { API_BASE_URL } from '../infrastructure/config';
 
 // Singleton registry to prevent multiple EventSource connections per event
 const sseManagers = new Map<string, SSEManager>();
@@ -23,7 +24,6 @@ export const useEventLive = (eventId: string) => {
       return;
     }
 
-    const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.6.254:3001';
     const sseUrl = `${API_BASE_URL}/v1/events/${eventId}/live?token=${token}`;
 
     let manager = sseManagers.get(eventId);

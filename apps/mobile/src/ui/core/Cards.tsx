@@ -94,6 +94,14 @@ export function ActiveAttendanceCard({
       marginBottom: theme.spacing.xl,
       gap: theme.spacing.md,
     },
+    headerRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    liveBadge: {
+      color: theme.colors.error,
+    },
     actionBtn: {
       backgroundColor: status === 'ATTENDANCE_MARKED' ? theme.colors.surfaceContainerLowest : theme.colors.primary,
       paddingVertical: theme.spacing.md,
@@ -113,7 +121,10 @@ export function ActiveAttendanceCard({
 
   return (
     <TouchableOpacity style={styles.container} onPress={onPressCard} activeOpacity={0.7}>
-      <Title>{title}</Title>
+      <View style={styles.headerRow}>
+        <Title>{title}</Title>
+        <MonoLabel style={styles.liveBadge}>[ LIVE NOW ]</MonoLabel>
+      </View>
       <View style={styles.detailsRow}>
         <Body>{location}</Body>
         <Mono>{date} · {time}</Mono>

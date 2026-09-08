@@ -8,6 +8,7 @@ import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '../infrastructure/api';
 import { useAuthStore } from '../store/auth';
 import { useRouter } from 'expo-router';
+import { getPersistentDeviceId } from '../lib/device-id';
 
 const TOKEN_CACHE_KEY = 'last_synced_push_token';
 const USER_CACHE_KEY = 'last_synced_push_user_id';
@@ -21,11 +22,12 @@ export function useNotifications() {
   const { mutate: syncToken } = useMutation({
     mutationFn: async (expoToken: string) => {
       if (!userId) return;
+      const deviceId = await getPersistentDeviceId();
       return apiClient('/users/me/push-token', {
         method: 'POST',
         body: JSON.stringify({
           expoToken,
-          deviceId: Device.osBuildId || Device.modelName || 'unknown-device',
+          deviceId,
           platform: Platform.OS.toUpperCase(),
         }),
       });
