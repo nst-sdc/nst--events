@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
-
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.6.254:3001';
+import { API_BASE_URL } from '../infrastructure/config';
 
 interface AuthState {
   userId: string | null;

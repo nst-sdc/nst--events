@@ -14,6 +14,11 @@ import { Button } from '../../../../src/ui/Button';
 import { MobileShell } from '../../../../src/ui/core/MobileShell';
 import { Title, Body, MonoLabel, Mono } from '../../../../src/ui/core/Typography';
 import { StatusBadge } from '../../../../src/ui/core/StatusBadge';
+import { 
+  findActiveAttendanceSession, 
+  isSessionAttendancePresent, 
+  isEventCurrentlyLive 
+} from '../../../../src/lib/home-events';
 
 export default function EventScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -51,17 +56,21 @@ export default function EventScreen() {
   ));
 
   const now = new Date();
-  const activeSession = sessions.find((s: any) => {
-    const openAt = new Date(s.openAt);
-    const closeAt = s.closeAt ? new Date(s.closeAt) : null;
-    return openAt <= now && (!closeAt || closeAt >= now);
-  });
+  const activeSession = findActiveAttendanceSession(
+    sessions,
+    (event as any)?.attendanceSessions,
+    now
+  );
 
-  const hasAttendanceForActiveSession = !!(activeSession && attendanceHistory?.pages.some((page: any) => 
-    page.data.some((record: any) => record.sessionId === activeSession.id)
-  ));
+  const hasAttendanceForActiveSession = isSessionAttendancePresent(
+    activeSession?.id,
+    attendanceHistory?.pages,
+    id as string
+  );
 
-  const isEventEnded = event?.endTime ? new Date(event.endTime) < now : false;
+  const isSessionActive = !!activeSession;
+  const isLive = isSessionActive || isEventCurrentlyLive(event, now);
+  const isEventEnded = event?.endTime ? (new Date(event.endTime) < now && !isSessionActive) : false;
 
   const styles = useMemo(() => StyleSheet.create({
     heroSection: {
@@ -174,7 +183,7 @@ export default function EventScreen() {
     }
     
     // Check locked state BEFORE session/registration logic to satisfy audit rule
-    if (event?.isLocked || isEventEnded || event?.state !== 'PUBLISHED') {
+    if (event?.isLocked || (isEventEnded && !activeSession) || event?.state !== 'PUBLISHED') {
       return (
         <View style={styles.restrictedTray}>
           <MonoLabel style={styles.restrictedText}>
@@ -184,7 +193,7 @@ export default function EventScreen() {
       );
     }
 
-    const status = registration?.status || 'NOT_REGISTERED';
+    const status = registration?.status || (registration as any)?.registrationStatus || 'NOT_REGISTERED';
 
     if (status === 'REGISTERED') {
       if (activeSession) {
@@ -197,7 +206,7 @@ export default function EventScreen() {
         }
         return (
           <Button
-            title="[ SCAN QR ]"
+            title="[ SCAN QR / MARK ATTENDANCE ]"
             onPress={() => router.push(`/events/${id}/scan`)}
             variant="primary"
             style={styles.actionBtn}
@@ -222,8 +231,8 @@ export default function EventScreen() {
   };
 
   const getStatusDisplay = () => {
+    if (isSessionActive || isLive) return 'LIVE NOW';
     if (isEventEnded) return 'ENDED';
-    if (activeSession) return 'LIVE NOW';
     return event?.state || 'UNKNOWN';
   };
 
@@ -240,7 +249,7 @@ export default function EventScreen() {
             <View style={styles.statusRow}>
               <StatusBadge 
                 status={getStatusDisplay()} 
-                type={activeSession ? 'error' : isEventEnded ? 'default' : 'info'} 
+                type={isSessionActive || isLive ? 'error' : isEventEnded ? 'default' : 'info'} 
               />
             </View>
             <Title style={styles.title}>{event?.title?.toUpperCase() || 'UNTITLED EVENT'}</Title>

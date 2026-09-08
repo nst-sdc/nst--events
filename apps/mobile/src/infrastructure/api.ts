@@ -1,6 +1,7 @@
 import { useAuthStore } from '../store/auth';
+import { API_BASE_URL } from './config';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.6.254:3001';
+export { API_BASE_URL };
 
 let isRefreshing = false;
 let refreshPromise: Promise<string | null> | null = null;

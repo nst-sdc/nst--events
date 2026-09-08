@@ -21,7 +21,7 @@ export default function SettingsScreen() {
   };
 
   const handleOpenPrivacyPolicy = async () => {
-    await Linking.openURL('https://[your-domain]/privacy-policy');
+    await Linking.openURL('https://adypu.edu.in/privacy-policy');
   };
 
   const styles = useMemo(() => StyleSheet.create({

@@ -9,6 +9,12 @@ import { MobileShell } from '../../src/ui/core/MobileShell';
 import { EventCard, ActiveAttendanceCard } from '../../src/ui/core/Cards';
 import { MonoLabel, Display, Body } from '../../src/ui/core/Typography';
 import { useAttendanceHistory } from '../../src/hooks/use-attendance-history';
+import { 
+  classifyAndSortHomeEvents, 
+  findActiveAttendanceSession, 
+  isSessionAttendancePresent, 
+  isEventCurrentlyLive 
+} from '../../src/lib/home-events';
 
 function EventRow({ 
   event, 
@@ -20,7 +26,7 @@ function EventRow({
   event: EventResponse; 
   userRegistrations: MyRegistrationItem[];
   userClubMemberships: Array<{ club_id: string; role: string }>;
-  mode?: 'all' | 'live_only' | 'upcoming_only';
+  mode?: 'all' | 'ongoing' | 'upcoming';
   onLiveStatus?: (eventId: string, isLive: boolean) => void;
 }) {
   const router = useRouter();
@@ -37,25 +43,27 @@ function EventRow({
   const regStatus = userReg?.registrationStatus || 'NOT_REGISTERED';
 
   const now = new Date();
-  const activeSession = sessions?.find((s) => {
-    const openTime = new Date(s.openAt);
-    const closeTime = new Date(s.closeAt);
-    return now >= openTime && now <= closeTime;
-  });
+  const activeSession = findActiveAttendanceSession(
+    sessions,
+    (event as any)?.attendanceSessions,
+    now
+  );
 
-  const hasAttendanceForActiveSession = !!(activeSession && attendanceHistory?.pages.some(page => 
-    page.data.some(record => record.sessionId === activeSession.id)
-  ));
+  const hasAttendanceForActiveSession = isSessionAttendancePresent(
+    activeSession?.id,
+    attendanceHistory?.pages,
+    event.id
+  );
 
   const isSessionActive = !!activeSession;
   const isRegistered = regStatus === 'REGISTERED';
   const isWaitlisted = regStatus === 'WAITLISTED';
-  const canScan = isSessionActive && isRegistered && !isPrimaryClubAdmin;
+  const canScan = isSessionActive && isRegistered && !isPrimaryClubAdmin && !hasAttendanceForActiveSession;
 
   const dateStr = new Date(event.startTime).toLocaleDateString([], { month: 'short', day: 'numeric' });
   const timeStr = new Date(event.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-  const isLive = canScan || (isSessionActive && isRegistered && hasAttendanceForActiveSession);
+  const isLive = isSessionActive || isEventCurrentlyLive(event, now);
 
   React.useEffect(() => {
     if (onLiveStatus && !sessionsLoading && !historyLoading) {
@@ -63,21 +71,47 @@ function EventRow({
     }
   }, [event.id, isLive, onLiveStatus, sessionsLoading, historyLoading]);
 
-  if (mode === 'live_only' && !isLive) return null;
-  if (mode === 'upcoming_only' && isLive) return null;
+  // Render ONGOING (ActiveAttendanceCard if scan available or already marked, otherwise EventCard with LIVE badge)
+  if (mode === 'ongoing') {
+    if (canScan || (isSessionActive && isRegistered && hasAttendanceForActiveSession)) {
+      return (
+        <ActiveAttendanceCard
+          key={event.id}
+          title={event.title}
+          location={event.locationName || 'CAMPUS VENUE'}
+          date={dateStr}
+          time={timeStr}
+          status={hasAttendanceForActiveSession ? 'ATTENDANCE_MARKED' : 'SCAN_QR'}
+          onPressAction={() => router.push(`/events/${event.id}/scan`)}
+          onPressCard={() => router.push(`/events/${event.id}`)}
+        />
+      );
+    }
 
-  // Render ONGOING (ActiveAttendanceCard)
-  if (isLive) {
+    let statusText = 'LIVE';
+    let statusColor = theme.colors.error;
+
+    if (isPrimaryClubAdmin) {
+      statusText = 'LIVE · ORGANIZER';
+      statusColor = theme.colors.secondary;
+    } else if (isRegistered) {
+      statusText = 'LIVE · REGISTERED';
+      statusColor = theme.colors.primaryFixed;
+    } else if (isWaitlisted) {
+      statusText = 'LIVE · WAITLISTED';
+      statusColor = '#d4a200';
+    }
+
     return (
-      <ActiveAttendanceCard
+      <EventCard
         key={event.id}
         title={event.title}
         location={event.locationName || 'CAMPUS VENUE'}
         date={dateStr}
         time={timeStr}
-        status={hasAttendanceForActiveSession ? 'ATTENDANCE_MARKED' : 'SCAN_QR'}
-        onPressAction={() => router.push(`/events/${event.id}/scan`)}
-        onPressCard={() => router.push(`/events/${event.id}`)}
+        statusText={statusText}
+        statusColor={statusColor}
+        onPress={() => router.push(`/events/${event.id}`)}
       />
     );
   }
@@ -144,11 +178,13 @@ export default function HomeAttendanceScreen() {
 
   const now = new Date();
   const allEvents = eventsData?.pages.flatMap((page) => page.data) || [];
-  const publishedEvents = allEvents.filter((e) => {
-    if (e.state !== 'PUBLISHED') return false;
-    const endTime = new Date(e.endTime);
-    return endTime >= now;
-  });
+  const publishedEvents = allEvents.filter((e) => e.state === 'PUBLISHED');
+
+  const { ongoingEvents, upcomingEvents } = useMemo(() => {
+    return classifyAndSortHomeEvents(publishedEvents, now, liveEventIds);
+  }, [publishedEvents, now, liveEventIds]);
+
+
   const userClubMemberships = profile?.club_memberships || [];
 
   const styles = useMemo(() => StyleSheet.create({
@@ -219,40 +255,40 @@ export default function HomeAttendanceScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
-      ) : publishedEvents.length === 0 ? (
+      ) : (ongoingEvents.length === 0 && upcomingEvents.length === 0) ? (
         <View style={styles.emptyContainer}>
           <Display style={styles.emptyTitle}>NO SESSIONS</Display>
           <Body style={styles.emptySub}>Check back later when an event session begins.</Body>
         </View>
       ) : (
         <View style={styles.eventsList}>
-          {liveEventIds.size > 0 && (
+          {ongoingEvents.length > 0 && (
             <View style={styles.sectionHeader}>
               <MonoLabel style={styles.sectionTitle}>LIVE NOW / ONGOING ATTENDANCE</MonoLabel>
             </View>
           )}
-          {publishedEvents.map((event) => (
+          {ongoingEvents.map((event) => (
             <EventRow
-              key={`live-${event.id}`}
+              key={`ongoing-${event.id}`}
               event={event}
               userRegistrations={registrations}
               userClubMemberships={userClubMemberships}
-              mode="live_only"
+              mode="ongoing"
               onLiveStatus={handleLiveStatus}
             />
           ))}
 
           <View style={styles.sectionHeader}>
             <MonoLabel style={styles.sectionTitle}>UPCOMING EVENTS</MonoLabel>
-            <MonoLabel style={styles.sectionSub}>{publishedEvents.length - liveEventIds.size} AVAILABLE</MonoLabel>
+            <MonoLabel style={styles.sectionSub}>{upcomingEvents.length} AVAILABLE</MonoLabel>
           </View>
-          {publishedEvents.map((event) => (
+          {upcomingEvents.map((event) => (
             <EventRow
               key={`upcoming-${event.id}`}
               event={event}
               userRegistrations={registrations}
               userClubMemberships={userClubMemberships}
-              mode="upcoming_only"
+              mode="upcoming"
             />
           ))}
 
