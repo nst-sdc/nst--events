@@ -130,7 +130,9 @@ export function useNotifications() {
       try {
         const projectId = Constants.expoConfig?.extra?.eas?.projectId;
         if (!projectId) {
-          console.warn('EAS projectId not configured — push token registration skipped');
+          if (typeof __DEV__ !== 'undefined' && __DEV__) {
+            console.warn('EAS projectId not configured — push token registration skipped');
+          }
           return;
         }
 
@@ -152,7 +154,9 @@ export function useNotifications() {
         }
       } catch (e) {
         // If offline or Expo API is unavailable, silently wait until next mount. Never block app startup.
-        console.warn('Silent fail: Unable to get Expo Push Token');
+        if (typeof __DEV__ !== 'undefined' && __DEV__) {
+          console.warn('Silent fail: Unable to get Expo Push Token');
+        }
       }
     }
 

@@ -19,7 +19,8 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
 
   const fullUrl = `${API_BASE_URL}${endpoint}`;
   if (typeof __DEV__ !== 'undefined' && __DEV__) {
-    console.log('[API FETCH] Full constructed URL:', fullUrl, '| Method:', options.method || 'GET');
+    const sanitizedUrl = fullUrl.split('?')[0];
+    console.log('[API FETCH] URL:', sanitizedUrl, '| Method:', options.method || 'GET');
   }
 
   const response = await fetch(fullUrl, {
@@ -27,7 +28,8 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
     headers,
   });
   if (typeof __DEV__ !== 'undefined' && __DEV__) {
-    console.log('[API RESP] Status:', response.status, 'for', fullUrl);
+    const sanitizedUrl = fullUrl.split('?')[0];
+    console.log('[API RESP] Status:', response.status, 'for', sanitizedUrl);
   }
 
   // Automatic token refresh on 401

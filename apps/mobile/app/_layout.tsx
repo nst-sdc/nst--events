@@ -19,7 +19,9 @@ import {
   JetBrainsMono_700Bold,
 } from '@expo-google-fonts/jetbrains-mono';
 
-console.log('[APP BOOT] Literal EXPO_PUBLIC_API_URL:', process.env.EXPO_PUBLIC_API_URL);
+if (typeof __DEV__ !== 'undefined' && __DEV__) {
+  console.log('[APP BOOT] Literal EXPO_PUBLIC_API_URL:', process.env.EXPO_PUBLIC_API_URL);
+}
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -40,7 +42,9 @@ function RootLayoutInner() {
   const initTheme = useThemeStore((state) => state.initTheme);
 
   useEffect(() => {
-    console.log('[APP BOOT MOUNT] Literal EXPO_PUBLIC_API_URL:', process.env.EXPO_PUBLIC_API_URL);
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+      console.log('[APP BOOT MOUNT] Literal EXPO_PUBLIC_API_URL:', process.env.EXPO_PUBLIC_API_URL);
+    }
     initTheme();
   }, [initTheme]);
 

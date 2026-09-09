@@ -66,8 +66,10 @@ export default function LoginGatewayScreen() {
         return;
       }
 
-      console.log('[Auth] Attempting token exchange with id_token...');
-      console.log('[Auth] ID Token Exchange Target Endpoint:', '/auth/mobile/login-id-token');
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.log('[Auth] Attempting token exchange with id_token...');
+        console.log('[Auth] ID Token Exchange Target Endpoint:', '/auth/mobile/login-id-token');
+      }
       // Send id_token directly to backend
       const exchangeRes: any = await apiClient('/auth/mobile/login-id-token', {
         method: 'POST',
@@ -89,7 +91,9 @@ export default function LoginGatewayScreen() {
       });
 
       if (userProfile?.id) {
-        console.log('[Auth] Authentication handshake complete for user ID:', userProfile.id);
+        if (typeof __DEV__ !== 'undefined' && __DEV__) {
+          console.log('[Auth] Authentication handshake complete for user ID:', userProfile.id);
+        }
         await setSession(userProfile.id, exchangeRes.access_token, exchangeRes.refresh_token);
 
         router.replace('/(app)');
@@ -103,9 +107,13 @@ export default function LoginGatewayScreen() {
         return;
       }
     } catch (err: any) {
-      console.error('[Auth] OAuth initiation error:', err);
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.error('[Auth] OAuth initiation error:', err);
+      }
       if (isErrorWithCode(err) && err.code === statusCodes.SIGN_IN_CANCELLED) {
-        console.log('[Auth] User cancelled OAuth flow');
+        if (typeof __DEV__ !== 'undefined' && __DEV__) {
+          console.log('[Auth] User cancelled OAuth flow');
+        }
         return;
       }
 
@@ -142,7 +150,9 @@ export default function LoginGatewayScreen() {
     try {
       await GoogleSignin.signOut();
     } catch (e) {
-      console.warn('[Auth] Google sign-out error during account switch:', e);
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.warn('[Auth] Google sign-out error during account switch:', e);
+      }
     }
     setAuthError(null);
     await handleGoogleLogin();
@@ -158,7 +168,9 @@ export default function LoginGatewayScreen() {
     try {
       await Linking.openURL(mailtoUrl);
     } catch (e) {
-      console.error('[Auth] Failed to open mail client:', e);
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.error('[Auth] Failed to open mail client:', e);
+      }
     }
   };
 
