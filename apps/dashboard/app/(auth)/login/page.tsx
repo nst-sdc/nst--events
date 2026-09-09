@@ -154,7 +154,8 @@ function LoginContent() {
     if (returnTo && typeof window !== 'undefined') {
       window.sessionStorage.setItem('return_to', returnTo);
     }
-    window.location.href = `${API_BASE_URL}/auth/google`;
+    const authBase = API_BASE_URL || '';
+    window.location.href = `${authBase}/auth/google`;
   };
 
   const handleDismissError = () => {
