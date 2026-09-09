@@ -14,6 +14,12 @@ jobs:
     env:
       DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/nst_events"
       TZ: "Asia/Kolkata"
+      JWT_SECRET: "ci_test_jwt_secret_minimum_32_characters_long_xxxx"
+      COOKIE_SECRET: "ci_test_cookie_secret_min_32_characters_long_xx"
+      GOOGLE_CLIENT_ID: "ci-dummy-google-client-id"
+      GOOGLE_CLIENT_SECRET: "ci-dummy-google-client-secret"
+      GOOGLE_CALLBACK_URL: "http://localhost:3001/auth/google/callback"
+      EXPO_ACCESS_TOKEN: "mock_token_for_tests"
 
     services:
       postgres:
@@ -24,6 +30,7 @@ jobs:
           POSTGRES_DB: nst_events
         ports:
           - 5432:5432
+          - 5440:5432
         options: >-
           --health-cmd "pg_isready -U postgres -d nst_events"
           --health-interval 5s
