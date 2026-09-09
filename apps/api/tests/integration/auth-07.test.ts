@@ -13,6 +13,106 @@ import { authService } from '../../src/modules/auth/auth.service';
 const prisma = new PrismaClient(); // Connects as nst_app via DATABASE_URL
 const app = createApp();
 
+const TEST_EMAILS = [
+  'admin_auth07@newtonschool.co',
+  'st1@adypu.edu.in',
+  'st2@adypu.edu.in',
+  'e25concurrent1@adypu.edu.in',
+  'f25concurrent2@adypu.edu.in',
+];
+
+const AUTH07_PROGRAM_CODES = ['TEST', 'e', 'f'];
+
+const AUTH07_AUTHORIZED_STUDENTS = [
+  'st1@adypu.edu.in',
+  'st2@adypu.edu.in',
+  'e25concurrent1@adypu.edu.in',
+  'f25concurrent2@adypu.edu.in',
+];
+
+async function cleanupAuth07Fixtures() {
+  // 1. Reset app.user_id on application prisma connection to avoid session-level leak
+  await prisma.$executeRaw`SELECT set_config('app.user_id', '', false)`.catch(() => {});
+
+  // 2. Scoped cleanup of academic programs/batches created by AUTH-07
+  const programs = await adminPrisma.academicProgram.findMany({
+    where: { code: { in: AUTH07_PROGRAM_CODES } },
+    select: { id: true },
+  });
+  const programIds = programs.map((p) => p.id);
+
+  if (programIds.length > 0) {
+    const batches = await adminPrisma.academicBatch.findMany({
+      where: { programId: { in: programIds } },
+      select: { id: true },
+    });
+    const batchIds = batches.map((b) => b.id);
+
+    if (batchIds.length > 0) {
+      await adminPrisma.userAcademicProfile.deleteMany({
+        where: { batchId: { in: batchIds } },
+      });
+      await adminPrisma.eventAudienceBatch.deleteMany({
+        where: { batchId: { in: batchIds } },
+      });
+      await adminPrisma.academicBatch.deleteMany({
+        where: { id: { in: batchIds } },
+      });
+    }
+    await adminPrisma.academicProgram.deleteMany({
+      where: { id: { in: programIds } },
+    });
+  }
+
+  // 3. Scoped cleanup of users and their dependent records created by AUTH-07
+  const users = await adminPrisma.user.findMany({
+    where: { email: { in: TEST_EMAILS } },
+    select: { id: true },
+  });
+  const userIds = users.map((u) => u.id);
+
+  if (userIds.length > 0) {
+    // Delete academic profiles where user is assigned or assigner
+    await adminPrisma.userAcademicProfile.deleteMany({
+      where: {
+        OR: [
+          { userId: { in: userIds } },
+          { assignedBy: { in: userIds } },
+        ],
+      },
+    });
+
+    // Delete dependent tables with RESTRICT foreign keys
+    await adminPrisma.notification.deleteMany({
+      where: { userId: { in: userIds } },
+    });
+    await adminPrisma.notificationPreference.deleteMany({
+      where: { userId: { in: userIds } },
+    });
+    await adminPrisma.auditLog.deleteMany({
+      where: { actorId: { in: userIds } },
+    });
+
+    // Delete token tables
+    await adminPrisma.pushToken.deleteMany({
+      where: { userId: { in: userIds } },
+    });
+    await adminPrisma.refreshToken.deleteMany({
+      where: { userId: { in: userIds } },
+    });
+
+    // Finally delete the users
+    await adminPrisma.user.deleteMany({
+      where: { id: { in: userIds } },
+    });
+  }
+
+  // 4. Scoped cleanup of authorized students created by AUTH-07
+  await adminPrisma.authorizedStudent.deleteMany({
+    where: { normalizedEmail: { in: AUTH07_AUTHORIZED_STUDENTS } },
+  });
+}
+
 test('Phase AUTH-07 - Academic Profile RLS & Concurrency', async (t) => {
   let platformAdminToken: string;
   let student1Token: string;
@@ -21,73 +121,57 @@ test('Phase AUTH-07 - Academic Profile RLS & Concurrency', async (t) => {
   let batchId: string;
 
   t.before(async () => {
-    // Teardown first
-    await adminPrisma.userAcademicProfile.deleteMany({});
-    await adminPrisma.academicBatch.deleteMany({});
-    await adminPrisma.academicProgram.deleteMany({});
-    await adminPrisma.user.deleteMany({
-      where: { email: { in: ['admin@newtonschool.co', 'st1@adypu.edu.in', 'st2@adypu.edu.in', 'e25concurrent1@adypu.edu.in', 'f25concurrent2@adypu.edu.in'] } }
-    });
-    await adminPrisma.authorizedStudent.deleteMany({
-      where: { normalizedEmail: { in: ['st1@adypu.edu.in', 'st2@adypu.edu.in', 'e25concurrent1@adypu.edu.in', 'f25concurrent2@adypu.edu.in'] } }
-    });
+    // Isolated teardown first
+    await cleanupAuth07Fixtures();
 
     const pa = await adminPrisma.user.create({
       data: {
-        email: 'admin@newtonschool.co', fullName: 'PA', globalRole: 'PLATFORM_ADMIN', googleSub: 'pa',
-      }
+        email: 'admin_auth07@newtonschool.co',
+        fullName: 'PA',
+        globalRole: 'PLATFORM_ADMIN',
+        googleSub: 'google-sub-auth07-pa',
+      },
     });
     platformAdminToken = signJwt(pa.id);
 
     const st1 = await adminPrisma.user.create({
       data: {
-        email: 'st1@adypu.edu.in', fullName: 'St1', globalRole: 'STUDENT', googleSub: 'st1',
-      }
+        email: 'st1@adypu.edu.in',
+        fullName: 'St1',
+        globalRole: 'STUDENT',
+        googleSub: 'st1',
+      },
     });
     student1Id = st1.id;
     student1Token = signJwt(st1.id);
 
     const st2 = await adminPrisma.user.create({
       data: {
-        email: 'st2@adypu.edu.in', fullName: 'St2', globalRole: 'STUDENT', googleSub: 'st2',
-      }
+        email: 'st2@adypu.edu.in',
+        fullName: 'St2',
+        globalRole: 'STUDENT',
+        googleSub: 'st2',
+      },
     });
     student2Id = st2.id;
 
     const prog = await adminPrisma.academicProgram.create({
-      data: { name: 'Test Prog', code: 'TEST' }
+      data: { name: 'Test Prog', code: 'TEST' },
     });
     const batch = await adminPrisma.academicBatch.create({
-      data: { programId: prog.id, admissionYear: 2021, graduationYear: 2025 }
+      data: { programId: prog.id, admissionYear: 2021, graduationYear: 2025 },
     });
     batchId = batch.id;
   });
 
-  t.afterEach(() => {
+  t.afterEach(async () => {
     sinon.restore();
+    await prisma.$executeRaw`SELECT set_config('app.user_id', '', false)`.catch(() => {});
   });
 
   t.after(async () => {
+    await cleanupAuth07Fixtures();
     await prisma.$disconnect();
-    // Teardown
-    await adminPrisma.userAcademicProfile.deleteMany({});
-    await adminPrisma.eventAudienceBatch.deleteMany({});
-    await adminPrisma.academicBatch.deleteMany({});
-    await adminPrisma.academicProgram.deleteMany({});
-    await adminPrisma.user.deleteMany({
-      where: {
-        email: {
-          in: ['admin@newtonschool.co', 'st1@adypu.edu.in', 'st2@adypu.edu.in', 'e25concurrent1@adypu.edu.in', 'f25concurrent2@adypu.edu.in']
-        }
-      }
-    });
-    await adminPrisma.authorizedStudent.deleteMany({
-      where: {
-        normalizedEmail: {
-          in: ['st1@adypu.edu.in', 'st2@adypu.edu.in', 'e25concurrent1@adypu.edu.in', 'f25concurrent2@adypu.edu.in']
-        }
-      }
-    });
   });
 
   await t.test('1. nst_app cannot create profile for arbitrary user', async () => {
