@@ -40,7 +40,7 @@ spec:
                       - nst-n7
       containers:
         - name: postgres
-          image: localhost:30500/nst-postgres:v1
+          image: postgis/postgis:16-3.4
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5432
