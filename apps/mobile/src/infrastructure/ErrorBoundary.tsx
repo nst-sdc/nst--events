@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Button } from '../ui/Button';
 import { theme } from '../ui/theme';
+import { UpdateRequiredPrompt } from '../ui/UpdateRequiredPrompt';
+import { useAppVersionStore } from '../store/app-version-store';
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -28,6 +30,22 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   render() {
     if (this.state.hasError) {
+      const err = this.state.error as any;
+      const isVersionUnsupported =
+        err?.status === 426 ||
+        err?.code === 'APP_VERSION_UNSUPPORTED' ||
+        err?.message?.includes('APP_VERSION_UNSUPPORTED') ||
+        err?.message?.includes('update required');
+
+      if (isVersionUnsupported) {
+        return (
+          <UpdateRequiredPrompt
+            minVersion={err?.minVersion || useAppVersionStore.getState().minVersion}
+            onRetry={() => this.setState({ hasError: false, error: null })}
+          />
+        );
+      }
+
       return (
         <View style={styles.container}>
           <Text style={styles.title}>APPLICATION ERROR</Text>

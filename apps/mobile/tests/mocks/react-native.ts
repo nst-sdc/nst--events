@@ -24,6 +24,11 @@ export const SafeAreaView = ({ children, ...props }: any) => React.createElement
 export const StatusBar = () => null;
 export const TouchableOpacity = ({ children, onPress, ...props }: any) => React.createElement('button', { onClick: onPress, ...props }, children);
 export const ActivityIndicator = () => null;
+export const Modal = ({ children, visible, ...props }: any) => (visible ? React.createElement('div', props, children) : null);
+export const Linking = {
+  openURL: async () => {},
+  canOpenURL: async () => true,
+};
 
 export default {
   Platform,
@@ -36,4 +41,6 @@ export default {
   StatusBar,
   TouchableOpacity,
   ActivityIndicator,
+  Modal,
+  Linking,
 };

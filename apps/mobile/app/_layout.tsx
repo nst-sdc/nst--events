@@ -1,8 +1,11 @@
 import React, { useEffect } from 'react';
+import { Modal } from 'react-native';
 import { Stack, SplashScreen } from 'expo-router';
 import { AppQueryProvider } from '../src/providers/QueryProvider';
 import { useNotifications } from '../src/hooks/use-notifications';
 import { useThemeStore } from '../src/store/theme-store';
+import { useAppVersionStore } from '../src/store/app-version-store';
+import { UpdateRequiredPrompt } from '../src/ui/UpdateRequiredPrompt';
 import { useFonts } from 'expo-font';
 import {
   Syne_700Bold,
@@ -70,10 +73,24 @@ function RootLayoutInner() {
   );
 }
 
+function GlobalUpdateRequiredModal() {
+  const isUpdateRequired = useAppVersionStore((state) => state.isUpdateRequired);
+  const minVersion = useAppVersionStore((state) => state.minVersion);
+
+  if (!isUpdateRequired) return null;
+
+  return (
+    <Modal visible={isUpdateRequired} animationType="slide" transparent={false}>
+      <UpdateRequiredPrompt minVersion={minVersion} />
+    </Modal>
+  );
+}
+
 export default function RootLayout() {
   return (
     <AppQueryProvider>
       <RootLayoutInner />
+      <GlobalUpdateRequiredModal />
     </AppQueryProvider>
   );
 }

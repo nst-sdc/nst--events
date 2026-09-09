@@ -35,6 +35,7 @@ describe('Auth: Multi-Replica Mobile Code Exchange', () => {
     // 2. Client sends code to Replica B for exchange
     const resB = await request(replicaB)
       .post('/auth/mobile/exchange')
+      .set('X-App-Version', '1.0.0')
       .send({ code })
       .expect('Content-Type', /json/);
 
@@ -51,6 +52,7 @@ describe('Auth: Multi-Replica Mobile Code Exchange', () => {
     // This specifically exercises the "already consumed" path
     const replayResB = await request(replicaB)
       .post('/auth/mobile/exchange')
+      .set('X-App-Version', '1.0.0')
       .send({ code });
 
     assert.strictEqual(replayResB.status, 401, 'Re-redemption of consumed code must return 401');
@@ -62,6 +64,7 @@ describe('Auth: Multi-Replica Mobile Code Exchange', () => {
     // 5. Re-redeem on Replica A also fails with 401
     const replayResA = await request(replicaA)
       .post('/auth/mobile/exchange')
+      .set('X-App-Version', '1.0.0')
       .send({ code });
 
     assert.strictEqual(replayResA.status, 401, 'Re-redemption of consumed code on Replica A must also return 401');
@@ -87,6 +90,7 @@ describe('Auth: Multi-Replica Mobile Code Exchange', () => {
     // Exchange attempt on Replica B fails with 401
     const res = await request(replicaB)
       .post('/auth/mobile/exchange')
+      .set('X-App-Version', '1.0.0')
       .send({ code: expiredCode });
 
     assert.strictEqual(res.status, 401);
@@ -109,6 +113,7 @@ describe('Auth: Multi-Replica Mobile Code Exchange', () => {
 
     const res = await request(replicaB)
       .post('/auth/mobile/exchange')
+      .set('X-App-Version', '1.0.0')
       .send({ code: nonExistentCode });
 
     assert.strictEqual(res.status, 401);

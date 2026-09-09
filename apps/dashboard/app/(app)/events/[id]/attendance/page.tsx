@@ -429,7 +429,8 @@ export default function AttendancePage({ params }: { params: Promise<{ id: strin
     const token = getWebAuthStore().accessToken;
     fetch(`/v1/events/${eventId}/attendance/export`, {
       headers: {
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'X-Client-Platform': 'web'
       }
     })
     .then(res => res.blob())
