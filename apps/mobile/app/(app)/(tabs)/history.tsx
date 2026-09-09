@@ -4,15 +4,15 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import { ActivityIndicator } from '../../../src/ui/core/ActivityIndicator';
 import { useRouter } from 'expo-router';
-import { useAppTheme } from '../../src/store/theme-store';
-import { AttendanceHistoryRow } from '../../src/ui/AttendanceHistoryRow';
-import { useAttendanceHistory, AttendanceRecordItem } from '../../src/hooks/use-attendance-history';
-import { MobileShell } from '../../src/ui/core/MobileShell';
-import { Display, Body, MonoLabel, Mono } from '../../src/ui/core/Typography';
+import { useAppTheme } from '../../../src/store/theme-store';
+import { AttendanceHistoryRow } from '../../../src/ui/AttendanceHistoryRow';
+import { useAttendanceHistory, AttendanceRecordItem } from '../../../src/hooks/use-attendance-history';
+import { MobileShell } from '../../../src/ui/core/MobileShell';
+import { Display, Body, MonoLabel, Mono } from '../../../src/ui/core/Typography';
 
 export default function AttendanceHistoryScreen() {
   const router = useRouter();
@@ -35,7 +35,7 @@ export default function AttendanceHistoryScreen() {
   const handleRecordPress = (record: AttendanceRecordItem) => {
     if (!record.session?.eventId) return;
     router.push({
-      pathname: '/history/[id]',
+      pathname: '/(app)/history/[id]',
       params: {
         id: record.session.eventId,
       },
@@ -152,7 +152,7 @@ export default function AttendanceHistoryScreen() {
     <View style={styles.listHeader}>
       <TouchableOpacity
         style={styles.disputesNavCard}
-        onPress={() => router.push('/disputes')}
+        onPress={() => router.push('/(app)/disputes')}
         activeOpacity={0.8}
       >
         <MonoLabel style={styles.disputesNavTitle}>ATTENDANCE DISPUTES</MonoLabel>
@@ -198,6 +198,8 @@ export default function AttendanceHistoryScreen() {
                 refreshing={isRefetching}
                 onRefresh={refetch}
                 tintColor={theme.colors.primary}
+                colors={[theme.colors.primary]}
+                progressBackgroundColor={theme.colors.surface}
               />
             }
             onEndReached={() => {

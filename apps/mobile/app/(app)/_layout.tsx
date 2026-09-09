@@ -1,24 +1,17 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { Tabs, useRouter } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, SafeAreaView, StatusBar } from 'react-native';
+import { Stack } from 'expo-router';
 import { useAppTheme } from '../../src/store/theme-store';
 import { Button } from '../../src/ui/Button';
+import { ActivityIndicator } from '../../src/ui/core/ActivityIndicator';
 import { useUserProfile } from '../../src/hooks/use-user-profile';
 import { useAuthStore } from '../../src/store/auth';
-
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { logout } from '../../src/services/session';
 
 export default function AppLayout() {
-  const router = useRouter();
   const theme = useAppTheme();
-  const clearSession = useAuthStore((state) => state.clearSession);
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const { data: profile, isLoading, isError } = useUserProfile();
-  const insets = useSafeAreaInsets();
-
-  const dynamicBottomPadding = Math.max(insets.bottom, 6);
-  const dynamicTabBarHeight = 54 + dynamicBottomPadding;
 
   const styles = useMemo(() => StyleSheet.create({
     safeArea: {
@@ -165,44 +158,13 @@ export default function AppLayout() {
     actionButton: {
       height: 52,
     },
-    customTabBar: {
-      flexDirection: 'row',
-      backgroundColor: theme.colors.surfaceContainerLowest,
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.outlineVariant,
-      paddingTop: 8,
-      paddingHorizontal: 8,
-    },
-    customTabItem: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 8,
-      marginHorizontal: 4,
-      borderRadius: 0, // Sharp edge enforcement
-    },
-    customTabItemActive: {
-      backgroundColor: theme.colors.surfaceContainerHigh,
-    },
-    customTabLabel: {
-      fontFamily: theme.typography.monoBold,
-      fontSize: 9,
-      letterSpacing: 0.5,
-      marginTop: 4,
-      color: theme.colors.onSurfaceVariant,
-    },
-    customTabLabelActive: {
-      color: theme.colors.primaryFixed,
-    },
   }), [theme]);
 
   React.useEffect(() => {
     if (!isLoggedIn || isError) {
-      clearSession().then(() => {
-        router.replace('/(auth)');
-      });
+      logout();
     }
-  }, [isLoggedIn, isError, clearSession, router]);
+  }, [isLoggedIn, isError]);
 
   // 1. Loading State: Render Credential Validator
   if (isLoading) {
@@ -221,8 +183,7 @@ export default function AppLayout() {
   // 2. Non-Student Role Access Denied State (FACULTY_ADMIN / PLATFORM_ADMIN / FACULTY_MENTOR)
   if (profile && profile.global_role !== 'STUDENT') {
     const handleSwitchAccount = async () => {
-      await clearSession();
-      router.replace('/(auth)');
+      await logout();
     };
 
     return (
@@ -283,77 +244,17 @@ export default function AppLayout() {
 
   // 3. Allowed Student Mobile Shell (global_role === 'STUDENT')
   return (
-    <Tabs
-      tabBar={({ state, descriptors, navigation }: any) => {
-        const allowedRoutes = ['index', 'history', 'profile'];
-        const visibleRoutes = state.routes.filter((r: any) => allowedRoutes.includes(r.name));
-
-        return (
-          <View style={[styles.customTabBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-            {visibleRoutes.map((route: any) => {
-              const { options } = descriptors[route.key];
-              const isFocused = state.index === state.routes.findIndex((r: any) => r.key === route.key);
-
-              const onPress = () => {
-                const event = navigation.emit({
-                  type: 'tabPress',
-                  target: route.key,
-                  canPreventDefault: true,
-                });
-
-                if (!isFocused && !event.defaultPrevented) {
-                  navigation.navigate(route.name as any);
-                }
-              };
-
-              let iconName: any = 'help';
-              let label = route.name;
-              if (route.name === 'index') {
-                iconName = 'qr-code-scanner';
-                label = 'ATTENDANCE';
-              } else if (route.name === 'history') {
-                iconName = 'history';
-                label = 'HISTORY';
-              } else if (route.name === 'profile') {
-                iconName = 'person';
-                label = 'PROFILE';
-              }
-
-              return (
-                <TouchableOpacity
-                  key={route.key}
-                  onPress={onPress}
-                  activeOpacity={0.8}
-                  style={[
-                    styles.customTabItem,
-                    isFocused && styles.customTabItemActive,
-                  ]}
-                >
-                  <MaterialIcons
-                    name={iconName}
-                    size={20}
-                    color={isFocused ? theme.colors.primaryFixed : theme.colors.onSurfaceVariant}
-                  />
-                  <Text
-                    style={[
-                      styles.customTabLabel,
-                      isFocused && styles.customTabLabelActive,
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        );
-      }}
-      screenOptions={{ headerShown: false }}
-    >
-      <Tabs.Screen name="index" />
-      <Tabs.Screen name="history" />
-      <Tabs.Screen name="profile" />
-    </Tabs>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="events/[id]/index" />
+      <Stack.Screen name="events/[id]/scan" options={{ presentation: 'fullScreenModal' }} />
+      <Stack.Screen name="history/[id]" />
+      <Stack.Screen name="disputes/index" />
+      <Stack.Screen name="disputes/new" />
+      <Stack.Screen name="disputes/submitted" />
+      <Stack.Screen name="disputes/[id]" />
+      <Stack.Screen name="notifications" />
+      <Stack.Screen name="settings" />
+    </Stack>
   );
 }

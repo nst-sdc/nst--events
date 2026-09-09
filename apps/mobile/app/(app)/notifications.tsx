@@ -4,14 +4,15 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import { ActivityIndicator } from '../../src/ui/core/ActivityIndicator';
 import { useRouter } from 'expo-router';
 import { useAppTheme } from '../../src/store/theme-store';
 import { StatusBadge } from '../../src/ui/core/StatusBadge';
 import { Button } from '../../src/ui/Button';
 import { useNotificationInbox, NotificationPayload } from '../../src/hooks/use-notification-inbox';
+import { resolveNotificationRoute } from '../../src/lib/notification-routing';
 import { MobileShell } from '../../src/ui/core/MobileShell';
 import { Title, Body, MonoLabel, Display, Mono } from '../../src/ui/core/Typography';
 
@@ -40,6 +41,19 @@ export default function NotificationsScreen() {
   const handleNotificationPress = (notification: NotificationPayload) => {
     if (!notification.readAt) {
       markAsRead(notification.id);
+    }
+
+    const route = resolveNotificationRoute(notification);
+    if (route) {
+      router.push(route as any);
+    }
+  };
+
+  const handleBackToProfile = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(app)/profile');
     }
   };
 
@@ -208,7 +222,7 @@ export default function NotificationsScreen() {
   );
 
   return (
-    <MobileShell title="NOTIFICATIONS" showBackButton scrollable={false}>
+    <MobileShell title="NOTIFICATIONS" showBackButton onBackPress={handleBackToProfile} scrollable={false}>
       {/* Control Action Bar */}
       <View style={styles.actionBar}>
         <View style={styles.actionBarLeft}>
@@ -251,6 +265,8 @@ export default function NotificationsScreen() {
               refreshing={isRefetching}
               onRefresh={refetch}
               tintColor={theme.colors.primary}
+              colors={[theme.colors.primary]}
+              progressBackgroundColor={theme.colors.surface}
             />
           }
           onEndReached={() => {

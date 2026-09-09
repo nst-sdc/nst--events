@@ -52,7 +52,7 @@ async function main() {
   const userVishwa = await upsertUser('vishwa.pillai@adypu.edu.in', 'google-sub-vishwa-007', 'Vishwanath Pillai', GlobalRole.STUDENT);
   const userNisha = await upsertUser('nisha.raj@adypu.edu.in', 'google-sub-nisha-008', 'Nisha Raj', GlobalRole.STUDENT);
   
-  const userSoham = await upsertUser('e25b070564@adypu.edu.in', 'google-sub-soham-001', 'Soham Dhande', GlobalRole.PLATFORM_ADMIN);
+  const userSoham = await upsertUser('e25b070564@adypu.edu.in', 'google-sub-soham-001', 'Soham Dhande', GlobalRole.STUDENT);
   const userStudent1 = await upsertUser('student01@adypu.edu.in', 'gsub-s1', 'Student 01', GlobalRole.STUDENT);
   const userStudent2 = await upsertUser('student02@adypu.edu.in', 'gsub-s2', 'Student 02', GlobalRole.STUDENT);
   const userStudent3 = await upsertUser('student03@adypu.edu.in', 'gsub-s3', 'Student 03', GlobalRole.STUDENT);
@@ -62,7 +62,31 @@ async function main() {
   const userCoreMember = await upsertUser('coremember@adypu.edu.in', 'gsub-cm', 'Core Member User', GlobalRole.STUDENT);
   const userFacultyMentor = await upsertUser('facultymentor@adypu.edu.in', 'gsub-fm', 'Faculty Mentor User', GlobalRole.FACULTY_MENTOR);
 
-  console.log('  ✓ Created/verified users\n');
+  const studentEmails = [
+    'arjun.mehta@adypu.edu.in',
+    'priya.sharma@adypu.edu.in',
+    'rohan.verma@adypu.edu.in',
+    'ananya.gupta@adypu.edu.in',
+    'vishwa.pillai@adypu.edu.in',
+    'nisha.raj@adypu.edu.in',
+    'e25b070564@adypu.edu.in',
+    'student01@adypu.edu.in',
+    'student02@adypu.edu.in',
+    'student03@adypu.edu.in',
+    'student04@adypu.edu.in',
+    'student05@adypu.edu.in',
+    'clubadmin@adypu.edu.in',
+    'coremember@adypu.edu.in',
+  ];
+  for (const sEmail of studentEmails) {
+    await prisma.authorizedStudent.upsert({
+      where: { normalizedEmail: sEmail },
+      update: { status: 'ACTIVE' },
+      create: { normalizedEmail: sEmail, status: 'ACTIVE' },
+    });
+  }
+
+  console.log('  ✓ Created/verified users and authorized student directory\n');
 
   // ----------------------------------------------------------
   // 2. CLUBS
@@ -334,12 +358,12 @@ async function main() {
   // ----------------------------------------------------------
   console.log('Creating notifications...');
   
-  const existingNotifs = await prisma.notification.count({ where: { userId: userSoham.id } });
+  const existingNotifs = await prisma.notification.count({ where: { userId: userPlatformAdmin.id } });
   if (existingNotifs === 0) {
     await prisma.notification.createMany({
       data: [
         {
-          userId: userSoham.id,
+          userId: userPlatformAdmin.id,
           title: 'Welcome Platform Admin!',
           body: 'Your account has been elevated to Platform Admin. You now have full access.',
           type: 'SYSTEM_ALERT',
@@ -347,7 +371,7 @@ async function main() {
           deliveredAt: new Date(),
         },
         {
-          userId: userSoham.id,
+          userId: userPlatformAdmin.id,
           title: 'Event Approval Pending',
           body: 'Design Workshop requires your approval to be published.',
           type: 'APPROVAL_REQUEST',
@@ -373,12 +397,12 @@ async function main() {
   // 10. AUDIT LOGS
   // ----------------------------------------------------------
   console.log('Creating audit logs...');
-  const existingAuditLogs = await prisma.auditLog.count({ where: { actorId: userSoham.id } });
+  const existingAuditLogs = await prisma.auditLog.count({ where: { actorId: userPlatformAdmin.id } });
   if (existingAuditLogs === 0) {
     await prisma.auditLog.createMany({
       data: [
         {
-          actorId: userSoham.id,
+          actorId: userPlatformAdmin.id,
           action: 'ROLE_UPDATED',
           entityType: 'users',
           entityId: userStudent1.id,

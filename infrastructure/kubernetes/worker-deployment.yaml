@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nst-worker
-  namespace: default
+  namespace: nst-events
   labels:
     app: nst-worker
 spec:
@@ -18,25 +18,36 @@ spec:
         app: nst-worker
     spec:
       automountServiceAccountToken: false
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: NotIn
+                    values:
+                      - nst-n1
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 80
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - nst-n6
+            - weight: 20
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: NotIn
+                    values:
+                      - nst-n7
       containers:
         - name: worker
-          image: nst-worker:latest
+          image: localhost:30500/nst-worker:v1
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3002
-          securityContext:
-            allowPrivilegeEscalation: false
-            privileged: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop:
-                - ALL
-          volumeMounts:
-            - name: tmp-volume
-              mountPath: /tmp
           envFrom:
             - secretRef:
                 name: nst-worker-secrets
@@ -54,11 +65,8 @@ spec:
             periodSeconds: 20
           resources:
             requests:
-              cpu: "100m"
-              memory: "256Mi"
+              cpu: 50m
+              memory: 128Mi
             limits:
-              cpu: "500m"
-              memory: "512Mi"
-      volumes:
-        - name: tmp-volume
-          emptyDir: {}
+              cpu: 250m
+              memory: 256Mi

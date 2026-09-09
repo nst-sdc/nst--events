@@ -51,13 +51,16 @@ export function useMyDisputes(eventId?: string) {
 }
 
 export function useDisputeDetail(id: string) {
-  const { data, isLoading } = useMyDisputes();
+  const { data, isLoading, isError, error, refetch } = useMyDisputes();
   const allDisputes = data?.pages.flatMap((page) => page.data) || [];
   const dispute = allDisputes.find((d) => d.id === id);
 
   return {
     dispute,
     isLoading,
+    isError,
+    error,
+    refetch,
   };
 }
 

@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nst-api
-  namespace: default
+  namespace: nst-events
   labels:
     app: nst-api
 spec:
@@ -16,31 +16,42 @@ spec:
         app: nst-api
     spec:
       automountServiceAccountToken: false
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: NotIn
+                    values:
+                      - nst-n1
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 80
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - nst-n6
+            - weight: 20
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: NotIn
+                    values:
+                      - nst-n7
       containers:
         - name: api
-          image: nst-api:latest
+          image: localhost:30500/nst-api:v1
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3001
-          securityContext:
-            allowPrivilegeEscalation: false
-            privileged: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop:
-                - ALL
-          volumeMounts:
-            - name: tmp-volume
-              mountPath: /tmp
           envFrom:
             - secretRef:
                 name: nst-api-secrets
           readinessProbe:
             httpGet:
-              path: /health
+              path: /ready
               port: 3001
             initialDelaySeconds: 5
             periodSeconds: 10
@@ -52,20 +63,17 @@ spec:
             periodSeconds: 20
           resources:
             requests:
-              cpu: "100m"
-              memory: "256Mi"
+              cpu: 100m
+              memory: 128Mi
             limits:
-              cpu: "500m"
-              memory: "512Mi"
-      volumes:
-        - name: tmp-volume
-          emptyDir: {}
+              cpu: 500m
+              memory: 512Mi
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: nst-api-service
-  namespace: default
+  namespace: nst-events
 spec:
   type: ClusterIP
   selector:

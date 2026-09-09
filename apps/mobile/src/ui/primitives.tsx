@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, Modal as RNModal } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, Modal as RNModal } from 'react-native';
+import { ActivityIndicator } from './core/ActivityIndicator';
 
 export const Button = ({ title, onPress, disabled, loading, variant = 'primary', accessibilityLabel, accessibilityRole = 'button' }: any) => (
   <TouchableOpacity 

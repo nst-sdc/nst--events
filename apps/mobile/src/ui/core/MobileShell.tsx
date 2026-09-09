@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAppTheme } from '../../store/theme-store';
 import { MonoLabel } from './Typography';
+import { useNotificationInbox } from '../../hooks/use-notification-inbox';
 
 interface MobileShellProps {
   children: React.ReactNode;
@@ -12,6 +13,8 @@ interface MobileShellProps {
   onBackPress?: () => void;
   scrollable?: boolean;
   refreshControl?: React.ReactElement<any>;
+  showNotificationBell?: boolean;
+  rightAction?: React.ReactNode;
 }
 
 export function MobileShell({ 
@@ -20,19 +23,24 @@ export function MobileShell({
   showBackButton = false, 
   onBackPress,
   scrollable = true,
-  refreshControl
+  refreshControl,
+  showNotificationBell = true,
+  rightAction,
 }: MobileShellProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const theme = useAppTheme();
+  const { unreadCount } = useNotificationInbox();
 
   const handleBack = () => {
     if (onBackPress) {
       onBackPress();
-    } else {
+    } else if (router.canGoBack()) {
       router.back();
     }
   };
+
+  const isNotificationsScreen = title.toUpperCase() === 'NOTIFICATIONS';
 
   const styles = useMemo(() => StyleSheet.create({
     safeArea: {
@@ -62,6 +70,25 @@ export function MobileShell({
     },
     brandTitle: {
       color: theme.colors.onSurfaceVariant,
+    },
+    notifBtn: {
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.borderHairline,
+      backgroundColor: theme.colors.surfaceContainerLow,
+    },
+    notifBtnActive: {
+      borderColor: theme.colors.primary,
+      backgroundColor: theme.colors.surface,
+    },
+    notifBadge: {
+      color: theme.colors.onSurfaceVariant,
+      fontSize: 10,
+    },
+    notifBadgeActive: {
+      color: theme.colors.primary,
+      fontSize: 10,
     },
     container: {
       flex: 1,
@@ -97,6 +124,20 @@ export function MobileShell({
             {showBackButton ? `/   ${title.toUpperCase()}` : `NST EVENTS / ${title.toUpperCase()}`}
           </MonoLabel>
         </View>
+
+        {rightAction ? (
+          rightAction
+        ) : showNotificationBell && !isNotificationsScreen ? (
+          <TouchableOpacity
+            onPress={() => router.push('/(app)/notifications')}
+            style={[styles.notifBtn, unreadCount > 0 && styles.notifBtnActive]}
+            activeOpacity={0.8}
+          >
+            <MonoLabel style={unreadCount > 0 ? styles.notifBadgeActive : styles.notifBadge}>
+              {unreadCount > 0 ? `[INBOX: ${unreadCount}]` : '[INBOX]'}
+            </MonoLabel>
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       {scrollable ? (

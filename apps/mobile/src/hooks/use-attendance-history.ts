@@ -47,12 +47,15 @@ export function useAttendanceHistory(eventId?: string) {
 }
 
 export function useAttendanceRecord(id: string) {
-  const { data } = useAttendanceHistory();
+  const { data, isLoading, isError, error, refetch } = useAttendanceHistory();
   const allRecords = data?.pages.flatMap((page) => page.data) || [];
   const record = allRecords.find((r) => r.id === id);
 
   return {
     record,
-    isLoading: !data,
+    isLoading,
+    isError,
+    error,
+    refetch,
   };
 }

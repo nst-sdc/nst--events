@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, SafeAreaView, StatusBar, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, SafeAreaView, StatusBar } from 'react-native';
 import { useAppTheme } from '../store/theme-store';
 import { Title, Body, MonoLabel } from './core/Typography';
+import { ActivityIndicator } from './core/ActivityIndicator';
 
 interface AttendanceVerificationViewProps {
   statusText: string;

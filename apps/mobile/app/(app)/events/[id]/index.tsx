@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { ActivityIndicator } from '../../../../src/ui/core/ActivityIndicator';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../../../src/infrastructure/api';
-import { useRegistration } from '../../../../src/hooks/use-registration';
 import { useEventLive } from '../../../../src/hooks/use-event-live';
 import { useEventSessions } from '../../../../src/hooks/use-events';
 import { useAttendanceHistory } from '../../../../src/hooks/use-attendance-history';
@@ -12,7 +12,7 @@ import { useNetworkStatus } from '../../../../src/infrastructure/network';
 import { useAppTheme } from '../../../../src/store/theme-store';
 import { Button } from '../../../../src/ui/Button';
 import { MobileShell } from '../../../../src/ui/core/MobileShell';
-import { Title, Body, MonoLabel, Mono } from '../../../../src/ui/core/Typography';
+import { Title, Display, Body, MonoLabel, Mono } from '../../../../src/ui/core/Typography';
 import { StatusBadge } from '../../../../src/ui/core/StatusBadge';
 import { 
   findActiveAttendanceSession, 
@@ -30,7 +30,13 @@ export default function EventScreen() {
 
   const { data: profile } = useUserProfile();
 
-  const { data: event, isLoading: isEventLoading } = useQuery({
+  const { 
+    data: event, 
+    isLoading: isEventLoading, 
+    isError: isEventError, 
+    error: eventError, 
+    refetch: refetchEvent 
+  } = useQuery({
     queryKey: ['events', id],
     queryFn: () => apiClient(`/v1/events/${id}`),
   });
@@ -43,16 +49,13 @@ export default function EventScreen() {
   const { data: sessions = [] } = useEventSessions(id as string);
   const { data: attendanceHistory } = useAttendanceHistory(id as string);
 
-  const { register, cancel, isRegistering, isCancelling } = useRegistration(id as string);
-
   const isLoading = isEventLoading || isRegLoading;
-  const isActionLoading = isRegistering || isCancelling;
   
   const isFull = event?.maxCapacity ? (event.registrationCount || 0) >= event.maxCapacity : false;
   
   const primaryClub = event?.eventClubs?.find((ec: any) => ec.isPrimary);
   const isPrimaryClubAdmin = !!(profile?.club_memberships?.some(
-    (m: any) => m.club_id === primaryClub?.clubId && m.role === 'CLUB_ADMIN'
+    (m: any) => m.club_id === primaryClub?.clubId && (m.role === 'CLUB_ADMIN' || m.role === 'CORE_MEMBER')
   ));
 
   const now = new Date();
@@ -163,6 +166,23 @@ export default function EventScreen() {
       alignItems: 'center',
       gap: 16,
     },
+    errorContainer: {
+      backgroundColor: theme.colors.surfaceContainerLow,
+      padding: theme.spacing.xl,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: theme.colors.outlineVariant,
+      gap: 16,
+      marginTop: 40,
+    },
+    errorTitle: {
+      color: theme.colors.onSurface,
+      fontSize: 20,
+    },
+    errorSub: {
+      textAlign: 'center',
+      color: theme.colors.onSurfaceVariant,
+    },
   }), [theme]);
   
   const renderActionTray = () => {
@@ -207,7 +227,7 @@ export default function EventScreen() {
         return (
           <Button
             title="[ SCAN QR / MARK ATTENDANCE ]"
-            onPress={() => router.push(`/events/${id}/scan`)}
+            onPress={() => router.push(`/(app)/events/${id}/scan`)}
             variant="primary"
             style={styles.actionBtn}
           />
@@ -236,13 +256,53 @@ export default function EventScreen() {
     return event?.state || 'UNKNOWN';
   };
 
+  const is404 = (eventError as any)?.status === 404;
+
   return (
-    <MobileShell title="EVENT" showBackButton>
+    <MobileShell 
+      title="EVENT" 
+      showBackButton
+      onBackPress={() => {
+        if (router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace('/(app)');
+        }
+      }}
+    >
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <MonoLabel>LOADING EVENT DETAILS...</MonoLabel>
         </View>
+      ) : (isEventError || !event) ? (
+        is404 || (!isEventLoading && !event && !isEventError) ? (
+          <View style={styles.errorContainer}>
+            <StatusBadge status="[NOT FOUND]" type="error" />
+            <Display style={styles.errorTitle}>EVENT NOT FOUND</Display>
+            <Body style={styles.errorSub}>
+              This event does not exist, has been removed, or is not available for your program.
+            </Body>
+            <Button
+              title="[ RETURN ]"
+              variant="secondary"
+              onPress={() => router.canGoBack() ? router.back() : router.replace('/(app)')}
+            />
+          </View>
+        ) : (
+          <View style={styles.errorContainer}>
+            <StatusBadge status="[FETCH ERROR]" type="error" />
+            <Display style={styles.errorTitle}>FAILED TO LOAD</Display>
+            <Body style={styles.errorSub}>
+              {(eventError as any)?.message || 'Unable to connect to event service.'}
+            </Body>
+            <Button
+              title="[ RETRY FETCH ]"
+              variant="secondary"
+              onPress={() => refetchEvent()}
+            />
+          </View>
+        )
       ) : (
         <>
           <View style={styles.heroSection}>

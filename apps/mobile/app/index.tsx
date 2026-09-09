@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo } from 'react';
-import { View, ActivityIndicator, StyleSheet, SafeAreaView, StatusBar } from 'react-native';
+import { View, StyleSheet, SafeAreaView, StatusBar } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../src/store/auth';
 import { useAppTheme } from '../src/store/theme-store';
+import { ActivityIndicator } from '../src/ui/core/ActivityIndicator';
 
 export default function RootIndexScreen() {
   const router = useRouter();

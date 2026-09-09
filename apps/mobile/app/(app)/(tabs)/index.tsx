@@ -1,20 +1,23 @@
 import React, { useState, useMemo } from 'react';
-import { View, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, StyleSheet, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useAppTheme } from '../../src/store/theme-store';
-import { useUserProfile } from '../../src/hooks/use-user-profile';
-import { useEvents, useEventSessions, EventResponse } from '../../src/hooks/use-events';
-import { useMyRegistrations, MyRegistrationItem } from '../../src/hooks/use-registration';
-import { MobileShell } from '../../src/ui/core/MobileShell';
-import { EventCard, ActiveAttendanceCard } from '../../src/ui/core/Cards';
-import { MonoLabel, Display, Body } from '../../src/ui/core/Typography';
-import { useAttendanceHistory } from '../../src/hooks/use-attendance-history';
+import { useAppTheme } from '../../../src/store/theme-store';
+import { ActivityIndicator } from '../../../src/ui/core/ActivityIndicator';
+import { useUserProfile } from '../../../src/hooks/use-user-profile';
+import { useEvents, useEventSessions, EventResponse } from '../../../src/hooks/use-events';
+import { useMyRegistrations, MyRegistrationItem } from '../../../src/hooks/use-registration';
+import { MobileShell } from '../../../src/ui/core/MobileShell';
+import { EventCard, ActiveAttendanceCard } from '../../../src/ui/core/Cards';
+import { MonoLabel, Display, Body } from '../../../src/ui/core/Typography';
+import { Button } from '../../../src/ui/Button';
+import { StatusBadge } from '../../../src/ui/core/StatusBadge';
+import { useAttendanceHistory } from '../../../src/hooks/use-attendance-history';
 import { 
   classifyAndSortHomeEvents, 
   findActiveAttendanceSession, 
   isSessionAttendancePresent, 
   isEventCurrentlyLive 
-} from '../../src/lib/home-events';
+} from '../../../src/lib/home-events';
 
 function EventRow({ 
   event, 
@@ -36,7 +39,7 @@ function EventRow({
 
   const primaryClubId = event.eventClubs?.find((ec) => ec.isPrimary)?.clubId;
   const isPrimaryClubAdmin = userClubMemberships.some(
-    (cm) => cm.role === 'CLUB_ADMIN' && cm.club_id === primaryClubId
+    (cm) => (cm.role === 'CLUB_ADMIN' || cm.role === 'CORE_MEMBER') && cm.club_id === primaryClubId
   );
 
   const userReg = userRegistrations.find((r) => r.eventId === event.id);
@@ -58,7 +61,7 @@ function EventRow({
   const isSessionActive = !!activeSession;
   const isRegistered = regStatus === 'REGISTERED';
   const isWaitlisted = regStatus === 'WAITLISTED';
-  const canScan = isSessionActive && isRegistered && !isPrimaryClubAdmin && !hasAttendanceForActiveSession;
+  const canScan = isSessionActive && isRegistered && !isPrimaryClubAdmin && !hasAttendanceForActiveSession && !event.isLocked;
 
   const dateStr = new Date(event.startTime).toLocaleDateString([], { month: 'short', day: 'numeric' });
   const timeStr = new Date(event.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -167,7 +170,13 @@ export default function HomeAttendanceScreen() {
   }, []);
 
   const { data: profile, refetch: refetchProfile } = useUserProfile();
-  const { data: eventsData, isLoading: eventsLoading, refetch: refetchEvents } = useEvents();
+  const { 
+    data: eventsData, 
+    isLoading: eventsLoading, 
+    isError: isEventsError, 
+    error: eventsError, 
+    refetch: refetchEvents 
+  } = useEvents();
   const { data: registrations = [], refetch: refetchRegs } = useMyRegistrations();
 
   const handleRefresh = async () => {
@@ -206,6 +215,22 @@ export default function HomeAttendanceScreen() {
     loadingContainer: {
       padding: theme.spacing.xl,
       alignItems: 'center',
+    },
+    errorContainer: {
+      backgroundColor: theme.colors.surfaceContainerLow,
+      padding: theme.spacing.xl,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: theme.colors.error,
+      gap: 12,
+    },
+    errorTitle: {
+      color: theme.colors.onSurface,
+      fontSize: 20,
+    },
+    errorSub: {
+      textAlign: 'center',
+      color: theme.colors.onSurfaceVariant,
     },
     emptyContainer: {
       backgroundColor: theme.colors.surfaceContainerLow,
@@ -248,12 +273,31 @@ export default function HomeAttendanceScreen() {
       title="ATTENDANCE" 
       scrollable={true}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.colors.primary} />
+        <RefreshControl 
+          refreshing={refreshing} 
+          onRefresh={handleRefresh} 
+          tintColor={theme.colors.primary} 
+          colors={[theme.colors.primary]}
+          progressBackgroundColor={theme.colors.surface}
+        />
       }
     >
       {eventsLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      ) : isEventsError ? (
+        <View style={styles.errorContainer}>
+          <StatusBadge status="[FETCH ERROR]" type="error" />
+          <Display style={styles.errorTitle}>FAILED TO LOAD</Display>
+          <Body style={styles.errorSub}>
+            {(eventsError as any)?.message || 'Unable to load events. Check your network connection.'}
+          </Body>
+          <Button
+            title="[ RETRY FETCH ]"
+            variant="secondary"
+            onPress={() => refetchEvents()}
+          />
         </View>
       ) : (ongoingEvents.length === 0 && upcomingEvents.length === 0) ? (
         <View style={styles.emptyContainer}>
@@ -289,6 +333,7 @@ export default function HomeAttendanceScreen() {
               userRegistrations={registrations}
               userClubMemberships={userClubMemberships}
               mode="upcoming"
+              onLiveStatus={handleLiveStatus}
             />
           ))}
 

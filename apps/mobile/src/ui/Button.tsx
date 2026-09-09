@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
-import { TouchableOpacity, ActivityIndicator, StyleSheet, ViewStyle, StyleProp } from 'react-native';
+import { TouchableOpacity, StyleSheet, ViewStyle, StyleProp } from 'react-native';
 import { useAppTheme } from '../store/theme-store';
 import { MonoLabel } from './core/Typography';
+import { ActivityIndicator } from './core/ActivityIndicator';
 
 export interface ButtonProps {
   title: string;

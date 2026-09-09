@@ -85,7 +85,7 @@ authRouter.get(
 
       if (platform === 'mobile') {
         // Mobile: create a single-use code and redirect to the app deep link
-        const mobileCode = createMobileAuthCode(result);
+        const mobileCode = await createMobileAuthCode(result);
         res.redirect(303, `nst-events://(auth)/callback?code=${mobileCode}`);
       } else {
         // Web: existing cookie-based flow
@@ -144,7 +144,7 @@ authRouter.post(
         throw new UnauthorizedError('Missing or invalid authorization code');
       }
 
-      const result = redeemMobileAuthCode(code);
+      const result = await redeemMobileAuthCode(code);
       if (!result) {
         throw new UnauthorizedError('Invalid, expired, or already-used authorization code');
       }

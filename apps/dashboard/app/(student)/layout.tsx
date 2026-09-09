@@ -9,7 +9,7 @@ import { StudentAppShell } from '../../components/layout/StudentAppShell';
 import { ClubAdminProvider } from '../../components/layout/ClubAdminProvider';
 
 
-export default function StudentLayout({ children }: { children: React.ReactNode }) {
+function StudentLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -67,5 +67,20 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         {children}
       </StudentAppShell>
     </ClubAdminProvider>
+  );
+}
+
+export default function StudentLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <React.Suspense fallback={
+      <div className="min-h-screen bg-m3-surface flex items-center justify-center">
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-m3-surface-variant/50"></div>
+          <div className="w-24 h-4 rounded-md bg-m3-surface-variant/50"></div>
+        </div>
+      </div>
+    }>
+      <StudentLayoutContent>{children}</StudentLayoutContent>
+    </React.Suspense>
   );
 }

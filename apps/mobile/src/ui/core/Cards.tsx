@@ -39,6 +39,10 @@ export function EventCard({
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'flex-start',
+      gap: theme.spacing.sm,
+    },
+    title: {
+      flex: 1,
     },
     statusLabel: {
       color: statusColor || theme.colors.primary,
@@ -47,17 +51,24 @@ export function EventCard({
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
+      gap: theme.spacing.sm,
+    },
+    location: {
+      flex: 1,
+    },
+    dateTime: {
+      flexShrink: 0,
     },
   }), [theme, statusColor]);
 
   return (
     <TouchableOpacity style={[styles.card, style]} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.header}>
-        <Title>{title}</Title>
+        <Title style={styles.title}>{title}</Title>
       </View>
       <View style={styles.detailsRow}>
-        <Body>{location}</Body>
-        <Mono>{date} · {time}</Mono>
+        <Body style={styles.location} numberOfLines={1} ellipsizeMode="tail">{location}</Body>
+        <Mono style={styles.dateTime}>{date} · {time}</Mono>
       </View>
       {statusText && <MonoLabel style={styles.statusLabel}>[{statusText}]</MonoLabel>}
     </TouchableOpacity>
@@ -97,10 +108,16 @@ export function ActiveAttendanceCard({
     headerRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      alignItems: 'center',
+      alignItems: 'flex-start',
+      gap: theme.spacing.sm,
+    },
+    title: {
+      flex: 1,
     },
     liveBadge: {
       color: theme.colors.error,
+      flexShrink: 0,
+      marginTop: 2,
     },
     actionBtn: {
       backgroundColor: status === 'ATTENDANCE_MARKED' ? theme.colors.surfaceContainerLowest : theme.colors.primary,
@@ -116,18 +133,25 @@ export function ActiveAttendanceCard({
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
+      gap: theme.spacing.sm,
+    },
+    location: {
+      flex: 1,
+    },
+    dateTime: {
+      flexShrink: 0,
     },
   }), [theme, status]);
 
   return (
     <TouchableOpacity style={styles.container} onPress={onPressCard} activeOpacity={0.7}>
       <View style={styles.headerRow}>
-        <Title>{title}</Title>
+        <Title style={styles.title}>{title}</Title>
         <MonoLabel style={styles.liveBadge}>[ LIVE NOW ]</MonoLabel>
       </View>
       <View style={styles.detailsRow}>
-        <Body>{location}</Body>
-        <Mono>{date} · {time}</Mono>
+        <Body style={styles.location} numberOfLines={1} ellipsizeMode="tail">{location}</Body>
+        <Mono style={styles.dateTime}>{date} · {time}</Mono>
       </View>
       <TouchableOpacity 
         style={styles.actionBtn} 

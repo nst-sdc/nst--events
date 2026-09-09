@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, RefreshControl } from 'react-native';
+import { ActivityIndicator } from '../../src/ui/core/ActivityIndicator';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { usePendingInvitations } from '../../src/hooks/use-invitations';
 import { useTeams } from '../../src/hooks/use-teams';
@@ -152,6 +153,8 @@ export default function InvitationsScreen() {
             await refetch();
           }}
           tintColor={theme.colors.primary}
+          colors={[theme.colors.primary]}
+          progressBackgroundColor={theme.colors.surface}
         />
       }
     >

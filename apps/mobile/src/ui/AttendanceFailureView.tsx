@@ -11,6 +11,98 @@ export interface AttendanceFailureProps {
   onReturnHome: () => void;
 }
 
+export function getAttendanceErrorDetails(errorCode: string = 'ATTENDANCE_FAILED', errorMessage?: string) {
+  switch (errorCode) {
+    case 'NETWORK_OFFLINE':
+      return {
+        title: 'Network Required',
+        reason: 'An active network connection is required to verify attendance.',
+        action: 'Please connect to campus Wi-Fi or mobile data and try again.',
+      };
+    case 'QR_EXPIRED':
+      return {
+        title: 'QR Code Expired',
+        reason: 'This attendance QR code is no longer valid.',
+        action: 'Please scan the live QR code displayed on the screen.',
+      };
+    case 'SESSION_CLOSED':
+      return {
+        title: 'Session Closed',
+        reason: 'The attendance window for this session has ended.',
+        action: 'Attendance is no longer being accepted.',
+      };
+    case 'EVENT_LOCKED':
+      return {
+        title: 'Event Locked',
+        reason: 'This event is no longer accepting attendance changes.',
+        action: 'Please contact the organizer if you believe this is an error.',
+      };
+    case 'OUTSIDE_GEOFENCE':
+      return {
+        title: 'Outside Venue',
+        reason: 'We couldn\'t verify your location inside the authorized area.',
+        action: 'Please move closer to the venue and try again.',
+      };
+    case 'MOCK_LOCATION_REJECTED':
+      return {
+        title: 'Location Check Failed',
+        reason: 'We were unable to verify a highly accurate GPS location.',
+        action: 'Ensure GPS accuracy is enabled and you have a clear signal.',
+      };
+    case 'ALREADY_RECORDED':
+      return {
+        title: 'Already Marked',
+        reason: 'Your attendance for this session has already been recorded.',
+        action: 'No further action is required.',
+      };
+    case 'NOT_REGISTERED':
+      return {
+        title: 'Not Registered',
+        reason: 'You are not registered for this event.',
+        action: 'Only registered students can mark attendance.',
+      };
+    case 'WAITLISTED':
+      return {
+        title: 'Waitlisted',
+        reason: 'You are currently on the waitlist for this event.',
+        action: 'Waitlisted attendees cannot mark attendance.',
+      };
+    case 'LOCATION_UNRELIABLE':
+      return {
+        title: 'GPS Accuracy Low',
+        reason: 'Location accuracy is insufficient. Please move to an area with clear skies.',
+        action: 'Please move to an area with clear skies and try again.',
+      };
+    case 'LOCATION_TIMEOUT':
+      return {
+        title: 'Location Timeout',
+        reason: 'Unable to acquire a GPS fix within 8 seconds.',
+        action: 'Ensure GPS is enabled and you are under clear sky.',
+      };
+    case 'INVALID_QR_FORMAT':
+    case 'MALFORMED_QR':
+      return {
+        title: 'Invalid QR Code',
+        reason: 'Unrecognized QR code format. Please scan the official NST-Events session QR code.',
+        action: 'Please scan the live QR code displayed on the screen.',
+      };
+    case 'REGISTRATION_NOT_ELIGIBLE':
+    case 'ACADEMICALLY_INELIGIBLE':
+    case 'ACADEMIC_PROFILE_MISSING':
+      return {
+        title: 'Ineligible Batch',
+        reason: 'Your academic program is not eligible for this session.',
+        action: 'Please verify the event requirements.',
+      };
+    default:
+      return {
+        title: 'Verification Failed',
+        reason: errorMessage || 'An unexpected error occurred while verifying attendance.',
+        action: 'Please try again or return home.',
+      };
+  }
+}
+
 export const AttendanceFailureView: React.FC<AttendanceFailureProps> = ({
   errorCode = 'ATTENDANCE_FAILED',
   errorMessage,
@@ -18,74 +110,7 @@ export const AttendanceFailureView: React.FC<AttendanceFailureProps> = ({
   onReturnHome,
 }) => {
   const theme = useAppTheme();
-
-  const getErrorDetails = () => {
-    switch (errorCode) {
-      case 'QR_EXPIRED':
-        return {
-          title: 'QR Code Expired',
-          reason: 'This attendance QR code is no longer valid.',
-          action: 'Please scan the live QR code displayed on the screen.',
-        };
-      case 'SESSION_CLOSED':
-        return {
-          title: 'Session Closed',
-          reason: 'The attendance window for this session has ended.',
-          action: 'Attendance is no longer being accepted.',
-        };
-      case 'EVENT_LOCKED':
-        return {
-          title: 'Event Locked',
-          reason: 'This event is no longer accepting attendance changes.',
-          action: 'Please contact the organizer if you believe this is an error.',
-        };
-      case 'OUTSIDE_GEOFENCE':
-        return {
-          title: 'Outside Venue',
-          reason: 'We couldn\'t verify your location inside the authorized area.',
-          action: 'Please move closer to the venue and try again.',
-        };
-      case 'MOCK_LOCATION_REJECTED':
-        return {
-          title: 'Location Check Failed',
-          reason: 'We were unable to verify a highly accurate GPS location.',
-          action: 'Ensure GPS accuracy is enabled and you have a clear signal.',
-        };
-      case 'ALREADY_RECORDED':
-        return {
-          title: 'Already Marked',
-          reason: 'Your attendance for this session has already been recorded.',
-          action: 'No further action is required.',
-        };
-      case 'NOT_REGISTERED':
-        return {
-          title: 'Not Registered',
-          reason: 'You are not registered for this event.',
-          action: 'Only registered students can mark attendance.',
-        };
-      case 'WAITLISTED':
-        return {
-          title: 'Waitlisted',
-          reason: 'You are currently on the waitlist for this event.',
-          action: 'Waitlisted attendees cannot mark attendance.',
-        };
-      case 'REGISTRATION_NOT_ELIGIBLE':
-      case 'ACADEMICALLY_INELIGIBLE':
-        return {
-          title: 'Ineligible Batch',
-          reason: 'Your academic program is not eligible for this session.',
-          action: 'Please verify the event requirements.',
-        };
-      default:
-        return {
-          title: 'Verification Failed',
-          reason: errorMessage || 'An unexpected error occurred while verifying attendance.',
-          action: 'Please try again or return home.',
-        };
-    }
-  };
-
-  const details = getErrorDetails();
+  const details = getAttendanceErrorDetails(errorCode, errorMessage);
 
   const styles = useMemo(() => StyleSheet.create({
     safeArea: {
@@ -155,7 +180,9 @@ export const AttendanceFailureView: React.FC<AttendanceFailureProps> = ({
         </View>
 
         <View style={styles.contentCard}>
-          <MonoLabel style={styles.codeSubtitle}>ERROR: {errorCode}</MonoLabel>
+          {errorCode !== 'INVALID_QR_FORMAT' && errorCode !== 'MALFORMED_QR' && (
+            <MonoLabel style={styles.codeSubtitle}>ERROR: {errorCode}</MonoLabel>
+          )}
           <Title style={styles.title}>{details.title}</Title>
           
           <View style={styles.messageBox}>

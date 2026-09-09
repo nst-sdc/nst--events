@@ -1,19 +1,29 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../store/theme-store';
-import { MonoLabel, Title } from './core/Typography';
+import { MonoLabel, Mono } from './core/Typography';
 
 interface ScannerOverlayProps {
   onClose: () => void;
   onToggleTorch?: () => void;
   torchActive?: boolean;
+  eventTitle?: string;
+  gpsState?: 'ACQUIRING' | 'READY' | 'WEAK' | 'ERROR';
+  gpsAccuracy?: number | null;
+  showTelemetry?: boolean;
 }
 
 export const ScannerOverlay: React.FC<ScannerOverlayProps> = ({
   onClose,
   onToggleTorch,
   torchActive = false,
+  eventTitle,
+  gpsState = 'ACQUIRING',
+  gpsAccuracy = null,
+  showTelemetry = true,
 }) => {
+  const insets = useSafeAreaInsets();
   const theme = useAppTheme();
 
   const styles = useMemo(() => StyleSheet.create({
@@ -25,40 +35,58 @@ export const ScannerOverlay: React.FC<ScannerOverlayProps> = ({
       bottom: 0,
       justifyContent: 'space-between',
     },
-    topHeader: {
+    headerWrapper: {
+      backgroundColor: theme.colors.surface,
+      paddingTop: Math.max(insets.top, 8),
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.borderHairline,
+      zIndex: 10,
+    },
+    header: {
+      paddingVertical: 12,
+      paddingHorizontal: theme.spacing.base,
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: theme.spacing.base,
-      paddingTop: theme.spacing.md,
-      paddingBottom: theme.spacing.sm,
-      backgroundColor: 'rgba(9, 9, 11, 0.75)',
     },
-    headerLeft: {
-      gap: 2,
+    backBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginRight: theme.spacing.md,
     },
-    modeTag: {
+    backText: {
+      color: theme.colors.primary,
+    },
+    titleContainer: {
+      flex: 1,
+    },
+    brandTitle: {
       color: theme.colors.onSurfaceVariant,
-    },
-    headerTitle: {
-      fontSize: 16,
-      color: '#FFFFFF',
-      textTransform: 'uppercase',
     },
     headerRight: {
       flexDirection: 'row',
+      alignItems: 'center',
       gap: 8,
     },
-    iconBtn: {
-      width: 36,
-      height: 36,
-      backgroundColor: 'rgba(255, 255, 255, 0.15)',
-      borderRadius: 4,
+    headerBtn: {
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.borderHairline,
+      backgroundColor: theme.colors.surfaceContainerLow,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    iconText: {
-      color: '#FFFFFF',
+    headerBtnActive: {
+      borderColor: theme.colors.primary,
+      backgroundColor: theme.colors.surface,
+    },
+    headerBtnText: {
+      color: theme.colors.onSurfaceVariant,
+      fontSize: 10,
+    },
+    headerBtnTextActive: {
+      color: theme.colors.primary,
+      fontSize: 10,
     },
     reticleContainer: {
       alignItems: 'center',
@@ -66,45 +94,111 @@ export const ScannerOverlay: React.FC<ScannerOverlayProps> = ({
       marginVertical: 'auto',
     },
     reticleBox: {
-      width: 250,
-      height: 250,
+      width: 260,
+      height: 260,
       position: 'relative',
+      borderWidth: 1,
+      borderColor: 'rgba(183, 196, 255, 0.18)',
     },
     corner: {
       position: 'absolute',
       width: 24,
       height: 24,
-      borderColor: '#FFFFFF',
+      borderColor: theme.colors.primary,
     },
-    topLeft: { top: 0, left: 0, borderTopWidth: 3, borderLeftWidth: 3 },
-    topRight: { top: 0, right: 0, borderTopWidth: 3, borderRightWidth: 3 },
-    bottomLeft: { bottom: 0, left: 0, borderBottomWidth: 3, borderLeftWidth: 3 },
-    bottomRight: { bottom: 0, right: 0, borderBottomWidth: 3, borderRightWidth: 3 },
+    topLeft: { top: -2, left: -2, borderTopWidth: 3, borderLeftWidth: 3 },
+    topRight: { top: -2, right: -2, borderTopWidth: 3, borderRightWidth: 3 },
+    bottomLeft: { bottom: -2, left: -2, borderBottomWidth: 3, borderLeftWidth: 3 },
+    bottomRight: { bottom: -2, right: -2, borderBottomWidth: 3, borderRightWidth: 3 },
     reticleInstruction: {
-      color: '#FFFFFF',
       marginTop: 20,
-      backgroundColor: 'rgba(9, 9, 11, 0.75)',
+      borderWidth: 1,
+      borderColor: theme.colors.borderHairline,
+      backgroundColor: 'rgba(19, 19, 19, 0.85)',
       paddingHorizontal: 12,
       paddingVertical: 6,
     },
-  }), [theme]);
+    instructionText: {
+      color: theme.colors.onSurface,
+      fontSize: 11,
+      letterSpacing: 1.5,
+    },
+    footerWrapper: {
+      backgroundColor: 'rgba(19, 19, 19, 0.88)',
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.borderHairline,
+      paddingHorizontal: theme.spacing.base,
+      paddingTop: 12,
+      paddingBottom: Math.max(insets.bottom, 12),
+    },
+    footerGrid: {
+      flexDirection: 'row',
+    },
+    footerCol: {
+      flex: 1,
+    },
+    footerColRight: {
+      borderLeftWidth: 1,
+      borderLeftColor: theme.colors.borderHairline,
+      paddingLeft: theme.spacing.base,
+    },
+    footerLabel: {
+      color: theme.colors.outline,
+      fontSize: 10,
+      marginBottom: 2,
+    },
+    footerValue: {
+      fontSize: 12,
+      color: theme.colors.onSurface,
+    },
+    footerValueActive: {
+      fontSize: 12,
+      color: theme.colors.secondary,
+    },
+    footerValuePending: {
+      fontSize: 12,
+      color: theme.colors.outline,
+    },
+    footerValueWarning: {
+      fontSize: 12,
+      color: '#ffb77b',
+    },
+    footerValueError: {
+      fontSize: 12,
+      color: theme.colors.error,
+    },
+  }), [theme, insets]);
 
   return (
-    <SafeAreaView style={styles.container} pointerEvents="box-none">
-      <View style={styles.topHeader}>
-        <View style={styles.headerLeft}>
-          <MonoLabel style={styles.modeTag}>NST EVENTS</MonoLabel>
-          <Title style={styles.headerTitle}>Scan Attendance QR</Title>
-        </View>
-        <View style={styles.headerRight}>
-          {onToggleTorch && (
-            <TouchableOpacity style={styles.iconBtn} onPress={onToggleTorch}>
-              <MonoLabel style={styles.iconText}>{torchActive ? '⚡ ON' : '⚡ OFF'}</MonoLabel>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity style={styles.iconBtn} onPress={onClose}>
-            <MonoLabel style={styles.iconText}>✕</MonoLabel>
+    <View style={styles.container} pointerEvents="box-none">
+      <View style={styles.headerWrapper}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={onClose} style={styles.backBtn} activeOpacity={0.8}>
+            <MonoLabel style={styles.backText}>← BACK</MonoLabel>
           </TouchableOpacity>
+          
+          <View style={styles.titleContainer}>
+            <MonoLabel numberOfLines={1} style={styles.brandTitle}>
+              {'/   SCAN QR'}
+            </MonoLabel>
+          </View>
+
+          <View style={styles.headerRight}>
+            {onToggleTorch && (
+              <TouchableOpacity
+                style={[styles.headerBtn, torchActive && styles.headerBtnActive]}
+                onPress={onToggleTorch}
+                activeOpacity={0.8}
+              >
+                <MonoLabel style={torchActive ? styles.headerBtnTextActive : styles.headerBtnText}>
+                  {torchActive ? '[ ⚡ ON ]' : '[ ⚡ OFF ]'}
+                </MonoLabel>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={styles.headerBtn} onPress={onClose} activeOpacity={0.8}>
+              <MonoLabel style={styles.headerBtnText}>[ ✕ ]</MonoLabel>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
@@ -115,8 +209,46 @@ export const ScannerOverlay: React.FC<ScannerOverlayProps> = ({
           <View style={[styles.corner, styles.bottomLeft]} />
           <View style={[styles.corner, styles.bottomRight]} />
         </View>
-        <MonoLabel style={styles.reticleInstruction}>ALIGN QR CODE WITHIN RETICLE</MonoLabel>
+        <View style={styles.reticleInstruction}>
+          <MonoLabel style={styles.instructionText}>[ ALIGN QR CODE WITHIN RETICLE ]</MonoLabel>
+        </View>
       </View>
-    </SafeAreaView>
+
+      {showTelemetry && (
+        <View style={styles.footerWrapper} pointerEvents="none">
+          <View style={styles.footerGrid}>
+            <View style={styles.footerCol}>
+              <MonoLabel style={styles.footerLabel}>SCAN TARGET</MonoLabel>
+              <Mono numberOfLines={1} style={styles.footerValue}>
+                {eventTitle ? eventTitle.toUpperCase() : 'SESSION QR'}
+              </Mono>
+            </View>
+            <View style={[styles.footerCol, styles.footerColRight]}>
+              <MonoLabel style={styles.footerLabel}>GPS GEOFENCE</MonoLabel>
+              <Mono
+                numberOfLines={1}
+                style={
+                  gpsState === 'READY'
+                    ? styles.footerValueActive
+                    : gpsState === 'WEAK'
+                    ? styles.footerValueWarning
+                    : gpsState === 'ERROR'
+                    ? styles.footerValueError
+                    : styles.footerValuePending
+                }
+              >
+                {gpsState === 'READY'
+                  ? `READY (±${gpsAccuracy ?? 0}m)`
+                  : gpsState === 'WEAK'
+                  ? `WEAK FIX (±${gpsAccuracy ?? 0}m)`
+                  : gpsState === 'ERROR'
+                  ? 'NO GPS FIX'
+                  : 'ACQUIRING FIX...'}
+              </Mono>
+            </View>
+          </View>
+        </View>
+      )}
+    </View>
   );
 };

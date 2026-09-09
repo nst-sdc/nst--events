@@ -20,8 +20,8 @@ export default function DisputeSubmittedScreen() {
     sessionId?: string;
   }>();
 
-  const disputeId = params.disputeId || 'DISP-0000';
-  const eventTitle = params.eventTitle || 'CLASSROOM SESSION';
+  const disputeId = params.disputeId || '';
+  const eventTitle = params.eventTitle || 'ATTENDANCE SESSION';
   const sessionId = params.sessionId || '';
 
   const styles = useMemo(() => StyleSheet.create({
@@ -127,7 +127,9 @@ export default function DisputeSubmittedScreen() {
           <View style={styles.ledgerCard}>
             <View style={styles.ledgerHeader}>
               <MonoLabel style={styles.ledgerHeaderTitle}>REGISTRY ENTRY</MonoLabel>
-              <MonoLabel style={styles.ledgerHeaderId}>CLAIM #{disputeId.slice(0, 8).toUpperCase()}</MonoLabel>
+              <MonoLabel style={styles.ledgerHeaderId}>
+                {disputeId ? `CLAIM #${disputeId.slice(0, 8).toUpperCase()}` : 'CLAIM #PENDING'}
+              </MonoLabel>
             </View>
 
             <Title style={styles.eventTitle}>{eventTitle}</Title>
@@ -162,12 +164,12 @@ export default function DisputeSubmittedScreen() {
           <Button
             title="VIEW MY DISPUTES"
             variant="primary"
-            onPress={() => router.replace('/disputes')}
+            onPress={() => router.replace('/(app)/disputes')}
           />
           <Button
             title="RETURN TO HOME"
             variant="secondary"
-            onPress={() => router.replace('/')}
+            onPress={() => router.replace('/(app)')}
           />
         </View>
       </View>

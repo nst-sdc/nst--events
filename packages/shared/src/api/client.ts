@@ -1,4 +1,14 @@
-export const API_BASE_URL = 'https://api.nstsdc.org/v1';
+const getBaseUrl = (): string => {
+  if (typeof globalThis !== 'undefined') {
+    const env = (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } })?.process?.env;
+    if (env?.API_BASE_URL) return env.API_BASE_URL;
+    if (env?.EXPO_PUBLIC_API_URL) return env.EXPO_PUBLIC_API_URL;
+    if (env?.NEXT_PUBLIC_API_URL) return env.NEXT_PUBLIC_API_URL;
+  }
+  return 'https://api.nst-events.nstsdc.org';
+};
+
+export const API_BASE_URL = getBaseUrl();
 
 export class ApiError extends Error {
   status: number;

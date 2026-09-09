@@ -4,12 +4,14 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
+import { ActivityIndicator } from '../../../src/ui/core/ActivityIndicator';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAppTheme } from '../../../src/store/theme-store';
 import { StatusBadge } from '../../../src/ui/core/StatusBadge';
 import { Button } from '../../../src/ui/Button';
 import { DisputeStatusBadge } from '../../../src/ui/DisputeStatusBadge';
-import { DisputeStatus } from '../../../src/hooks/use-disputes';
+import { DisputeStatus, useDisputeDetail } from '../../../src/hooks/use-disputes';
+import { useEvent } from '../../../src/hooks/use-events';
 import { MobileShell } from '../../../src/ui/core/MobileShell';
 import { Title, Body, MonoLabel, Mono, Display } from '../../../src/ui/core/Typography';
 
@@ -29,15 +31,22 @@ export default function DisputeDetailScreen() {
     eventTitle?: string;
   }>();
 
-  const disputeId = params.id || 'DISP-0000';
-  const status = (params.status || 'PENDING') as DisputeStatus;
-  const eventTitle = params.eventTitle || 'CLASSROOM SESSION';
-  const sessionId = params.sessionId || '';
-  const reason = params.reason || 'No reason provided';
-  const reviewNotes = params.reviewNotes || '';
+  const targetId = params.id || '';
+  const { dispute, isLoading, isError, error, refetch } = useDisputeDetail(targetId);
+  const { data: eventData } = useEvent(dispute?.eventId || params.eventId || '');
 
-  const submittedFormatted = params.submittedAt
-    ? new Date(params.submittedAt).toLocaleString('en-US', {
+  const disputeId = dispute?.id || params.id || '';
+  const status = (dispute?.status || params.status || 'PENDING') as DisputeStatus;
+  const eventTitle = dispute?.session?.event?.title || dispute?.session?.title || eventData?.title || params.eventTitle || 'ATTENDANCE SESSION';
+  const sessionId = dispute?.sessionId || params.sessionId || '';
+  const reason = dispute?.reason || params.reason || '';
+  const reviewNotes = dispute?.reviewNotes || params.reviewNotes || '';
+
+  const submittedAtRaw = dispute?.submittedAt || dispute?.createdAt || params.submittedAt;
+  const reviewedAtRaw = dispute?.reviewedAt || params.reviewedAt;
+
+  const submittedFormatted = submittedAtRaw
+    ? new Date(submittedAtRaw).toLocaleString('en-US', {
         month: 'short',
         day: 'numeric',
         year: 'numeric',
@@ -46,8 +55,8 @@ export default function DisputeDetailScreen() {
       })
     : 'N/A';
 
-  const reviewedFormatted = params.reviewedAt
-    ? new Date(params.reviewedAt).toLocaleString('en-US', {
+  const reviewedFormatted = reviewedAtRaw
+    ? new Date(reviewedAtRaw).toLocaleString('en-US', {
         month: 'short',
         day: 'numeric',
         year: 'numeric',
@@ -162,32 +171,93 @@ export default function DisputeDetailScreen() {
       paddingTop: 16,
       gap: 8,
     },
+    loadingContainer: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 24,
+      gap: 12,
+    },
+    errorContainer: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 24,
+      gap: 12,
+    },
+    errorTitle: {
+      fontSize: 18,
+      textAlign: 'center',
+      color: theme.colors.onSurface,
+    },
+    errorSub: {
+      textAlign: 'center',
+      lineHeight: 18,
+      color: theme.colors.onSurfaceVariant,
+    },
   }), [theme]);
 
   return (
-    <MobileShell title="CLAIM DETAIL" showBackButton>
-      {/* Main Single Viewport Container */}
-      <View style={styles.mainContainer}>
-        <View style={styles.scrollContent}>
-          {/* Status Card */}
-          <View style={styles.statusCard}>
-            <View style={styles.statusCardHeader}>
-              <MonoLabel style={styles.claimIdText}>CLAIM #{disputeId.slice(0, 8).toUpperCase()}</MonoLabel>
-              <DisputeStatusBadge status={status} />
+    <MobileShell 
+      title="CLAIM DETAIL" 
+      showBackButton
+      onBackPress={() => {
+        if (router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace('/(app)/disputes');
+        }
+      }}
+    >
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <MonoLabel>FETCHING CLAIM DETAILS...</MonoLabel>
+        </View>
+      ) : isError ? (
+        <View style={styles.errorContainer}>
+          <StatusBadge status="[FETCH ERROR]" type="error" />
+          <Display style={styles.errorTitle}>FAILED TO LOAD CLAIM</Display>
+          <Body style={styles.errorSub}>{error?.message || 'Unable to load dispute details.'}</Body>
+          <Button title="RETRY FETCH" variant="secondary" onPress={() => refetch()} style={{ marginTop: 8 }} />
+        </View>
+      ) : !dispute && targetId ? (
+        <View style={styles.errorContainer}>
+          <StatusBadge status="[NOT FOUND]" type="error" />
+          <Display style={styles.errorTitle}>DISPUTE NOT FOUND</Display>
+          <Body style={styles.errorSub}>The requested dispute claim could not be found or you do not have permission to view it.</Body>
+          <Button
+            title="RETURN TO MY DISPUTES"
+            variant="secondary"
+            onPress={() => router.push('/(app)/disputes')}
+            style={{ marginTop: 8 }}
+          />
+        </View>
+      ) : (
+        /* Main Single Viewport Container */
+        <View style={styles.mainContainer}>
+          <View style={styles.scrollContent}>
+            {/* Status Card */}
+            <View style={styles.statusCard}>
+              <View style={styles.statusCardHeader}>
+                <MonoLabel style={styles.claimIdText}>
+                  CLAIM #{disputeId ? disputeId.slice(0, 8).toUpperCase() : 'PENDING'}
+                </MonoLabel>
+                <DisputeStatusBadge status={status} />
+              </View>
+              <Title style={styles.eventTitle}>{eventTitle}</Title>
+              <Mono style={styles.sessionIdText}>SESSION: {sessionId || 'UNSPECIFIED'}</Mono>
             </View>
-            <Title style={styles.eventTitle}>{eventTitle}</Title>
-            <Mono style={styles.sessionIdText}>SESSION: {sessionId || 'UNSPECIFIED'}</Mono>
-          </View>
 
-          {/* Reason Section */}
-          <View style={styles.sectionCard}>
-            <MonoLabel style={styles.sectionLabel}>SUBMITTED REASON</MonoLabel>
-            <Body style={styles.reasonText}>"{reason}"</Body>
-            <View style={styles.timeRow}>
-              <MonoLabel style={styles.timeLabel}>FILED ON:</MonoLabel>
-              <Mono style={styles.timeValue}>{submittedFormatted}</Mono>
+            {/* Reason Section */}
+            <View style={styles.sectionCard}>
+              <MonoLabel style={styles.sectionLabel}>SUBMITTED REASON</MonoLabel>
+              <Body style={styles.reasonText}>{reason ? `"${reason}"` : 'No reason details recorded.'}</Body>
+              <View style={styles.timeRow}>
+                <MonoLabel style={styles.timeLabel}>FILED ON:</MonoLabel>
+                <Mono style={styles.timeValue}>{submittedFormatted}</Mono>
+              </View>
             </View>
-          </View>
 
           {/* Resolution Section */}
           <View style={styles.sectionCard}>
@@ -231,10 +301,11 @@ export default function DisputeDetailScreen() {
           <Button
             title="RETURN TO MY DISPUTES"
             variant="secondary"
-            onPress={() => router.back()}
+            onPress={() => router.push('/(app)/disputes')}
           />
         </View>
       </View>
+      )}
     </MobileShell>
   );
 }
