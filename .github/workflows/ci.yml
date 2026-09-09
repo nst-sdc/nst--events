@@ -52,6 +52,7 @@ jobs:
           pnpm --filter @nst/database db:generate
           pnpm --filter @nst/database db:migrate:deploy
           pnpm --filter @nst/database db:seed
+          pnpm --filter @nst/database build
 
       - name: Run CI Validation
         run: pnpm validate:ci
