@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import React from 'react';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import LoginPage from '../app/(auth)/login/page';
 import { formatErrorMessage, ERROR_MESSAGES } from '../lib/error-utils';
 
@@ -125,5 +125,25 @@ describe('Web Login Page Error Presentation Parity', () => {
     expect(
       screen.getByRole('button', { name: /Contact Academic Coordinator/i })
     ).toBeInTheDocument();
+  });
+
+  it('dismisses error card immediately and updates history when DISMISS button is clicked', () => {
+    mockSearchParams = new URLSearchParams('error=authentication_failed');
+    const replaceStateSpy = vi.spyOn(window.history, 'replaceState').mockImplementation(() => {});
+
+    render(<LoginPage />);
+
+    expect(screen.getByText('AUTH FAILED // SEC-02')).toBeInTheDocument();
+    expect(screen.getByText('AUTHENTICATION FAILED')).toBeInTheDocument();
+
+    const dismissBtn = screen.getByRole('button', { name: /Dismiss error/i });
+    fireEvent.click(dismissBtn);
+
+    expect(screen.queryByText('AUTH FAILED // SEC-02')).not.toBeInTheDocument();
+    expect(screen.queryByText('AUTHENTICATION FAILED')).not.toBeInTheDocument();
+    expect(replaceStateSpy).toHaveBeenCalledWith(null, '', '/login');
+    expect(mockRouter.replace).toHaveBeenCalledWith('/login');
+
+    replaceStateSpy.mockRestore();
   });
 });

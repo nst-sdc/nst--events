@@ -115,8 +115,20 @@ function LoginContent() {
   const store = getWebAuthStore();
   const [isLoading, setIsLoading] = useState(false);
 
+  const [isDismissed, setIsDismissed] = useState(false);
+  const [prevErrorParam, setPrevErrorParam] = useState<string | null>(null);
+
   const errorParam = searchParams.get('error');
-  const authError = useMemo(() => resolveAuthError(errorParam), [errorParam]);
+
+  if (errorParam !== prevErrorParam) {
+    setPrevErrorParam(errorParam);
+    setIsDismissed(false);
+  }
+
+  const authError = useMemo(() => {
+    if (!errorParam || isDismissed) return null;
+    return resolveAuthError(errorParam);
+  }, [errorParam, isDismissed]);
 
   useEffect(() => {
     if (store.accessToken) {
@@ -146,10 +158,16 @@ function LoginContent() {
   };
 
   const handleDismissError = () => {
+    setIsDismissed(true);
     const params = new URLSearchParams(searchParams.toString());
     params.delete('error');
     const newQuery = params.toString();
-    router.replace(newQuery ? `/login?${newQuery}` : '/login');
+    const targetUrl = newQuery ? `/login?${newQuery}` : '/login';
+
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(null, '', targetUrl);
+    }
+    router.replace(targetUrl);
   };
 
   const handleContactCoordinator = () => {
