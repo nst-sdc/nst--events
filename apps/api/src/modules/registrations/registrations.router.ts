@@ -4,7 +4,7 @@ import { canManageEvent } from '../../middleware/authorize';
 import { validate } from '../../middleware/validate';
 import * as registrationsService from './registrations.service';
 import * as teamsService from '../teams/teams.service';
-import { ParamEventIdSchema, CreateTeamSchema, ListRegistrationsQuerySchema, ListTeamsQuerySchema, InviteeSearchQuerySchema } from './registrations.schema';
+import { ParamEventIdSchema, CreateTeamSchema, ListRegistrationsQuerySchema, ListTeamsQuerySchema } from './registrations.schema';
 
 const router = Router();
 
@@ -62,20 +62,7 @@ router.get('/events/:id/teams',
   }
 );
 
-router.get('/events/:id/invitee-search',
-  authenticate,
-  validate(ParamEventIdSchema),
-  validate(InviteeSearchQuerySchema),
-  async (req, res, next) => {
-    try {
-      const query = req.query as any;
-      const result = await registrationsService.searchEligibleInvitees(req.user!.id, req.params.id, query.q);
-      res.json(result);
-    } catch (err) {
-      next(err);
-    }
-  }
-);
+
 
 router.get('/events/:id/registrations',
   authenticate,

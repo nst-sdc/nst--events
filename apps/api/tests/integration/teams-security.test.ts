@@ -81,41 +81,4 @@ describe('SECURITY DEFINER Helpers BOLA & Validation Tests', () => {
     assert.strictEqual(result.length, 0);
   });
 
-  it('Leader A evaluates availability for Target Member', async () => {
-    const result = await prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT set_config('app.user_id', ${leaderAId}, true)`;
-      return tx.$queryRaw<{ is_user_available_for_team: boolean }[]>`SELECT is_user_available_for_team(${eventId}::uuid, ${teamAId}::uuid, ${memberId}::uuid)`;
-    });
-    assert.strictEqual(result[0].is_user_available_for_team, true);
-  });
-
-  it('BOLA: Leader B cannot evaluate availability for Team A', async () => {
-    const result = await prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT set_config('app.user_id', ${leaderBId}, true)`;
-      return tx.$queryRaw<{ is_user_available_for_team: boolean }[]>`SELECT is_user_available_for_team(${eventId}::uuid, ${teamAId}::uuid, ${memberId}::uuid)`;
-    });
-    assert.strictEqual(result[0].is_user_available_for_team, false);
-  });
-
-  it('Target Member becomes unavailable after joining Team B', async () => {
-    // Add member to Team B
-    await prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT set_config('app.user_id', ${memberId}, true)`;
-      await tx.eventRegistration.create({
-        data: {
-          eventId,
-          userId: memberId,
-          teamId: teamBId,
-          registrationStatus: 'REGISTERED',
-          participationRole: 'ATTENDEE'
-        }
-      });
-    });
-
-    const result = await prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT set_config('app.user_id', ${leaderAId}, true)`;
-      return tx.$queryRaw<{ is_user_available_for_team: boolean }[]>`SELECT is_user_available_for_team(${eventId}::uuid, ${teamAId}::uuid, ${memberId}::uuid)`;
-    });
-    assert.strictEqual(result[0].is_user_available_for_team, false);
-  });
 });
