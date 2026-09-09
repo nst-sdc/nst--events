@@ -20,10 +20,14 @@ export const useThemeStore = create<ThemeState>((set) => ({
     try {
       const stored = await SecureStore.getItemAsync('app_appearance_mode') as ThemeMode | null;
       if (stored === 'light' || stored === 'dark') {
-        Appearance.setColorScheme(stored);
+        try {
+          Appearance.setColorScheme(stored);
+        } catch {}
         set({ mode: stored, isInitialized: true });
       } else {
-        Appearance.setColorScheme(null as any);
+        try {
+          Appearance.setColorScheme('unspecified');
+        } catch {}
         set({ mode: 'system', isInitialized: true });
       }
     } catch {
@@ -32,12 +36,16 @@ export const useThemeStore = create<ThemeState>((set) => ({
   },
 
   setMode: async (mode: ThemeMode) => {
-    if (mode === 'system') {
-      Appearance.setColorScheme(null as any);
-      await SecureStore.deleteItemAsync('app_appearance_mode');
-    } else {
-      Appearance.setColorScheme(mode as ColorSchemeName);
-      await SecureStore.setItemAsync('app_appearance_mode', mode);
+    try {
+      if (mode === 'system') {
+        Appearance.setColorScheme('unspecified');
+        await SecureStore.deleteItemAsync('app_appearance_mode');
+      } else {
+        Appearance.setColorScheme(mode as ColorSchemeName);
+        await SecureStore.setItemAsync('app_appearance_mode', mode);
+      }
+    } catch {
+      // Safe fallback if native appearance module fails
     }
     set({ mode });
   },

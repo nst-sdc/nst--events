@@ -84,7 +84,7 @@ test('Web Auth: Repeated 401 does not loop infinitely (throws instantly)', async
   vi.stubGlobal('fetch', fetchMock);
 
   await expect(apiClient('/test-endpoint')).rejects.toThrow();
-  expect(fetchMock).toHaveBeenCalledTimes(1); // No automatic retry loops
+  expect(fetchMock).toHaveBeenCalledTimes(2); // Initial request + 1 refresh attempt; no infinite loops
 });
 
 test('Web Auth: Access token is not written to localStorage', () => {

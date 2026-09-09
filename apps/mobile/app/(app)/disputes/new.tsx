@@ -49,7 +49,7 @@ export default function SubmitDisputeScreen() {
       {
         onSuccess: (data) => {
           router.replace({
-            pathname: '/disputes/submitted',
+            pathname: '/(app)/disputes/submitted',
             params: {
               disputeId: data.id,
               eventTitle,
@@ -60,12 +60,16 @@ export default function SubmitDisputeScreen() {
         onError: (err: any) => {
           let userMsg = err.message || 'Failed to submit dispute claim.';
 
-          if (userMsg.includes('ATTENDANCE_ALREADY_RECORDED')) {
+          if (userMsg.includes('ATTENDANCE_ALREADY_RECORDED') || userMsg.includes('U0054')) {
             userMsg = 'A dispute or attendance record for this session has already been submitted.';
-          } else if (userMsg.includes('DISPUTE_WINDOW_EXPIRED')) {
+          } else if (userMsg.includes('DISPUTE_WINDOW_EXPIRED') || userMsg.includes('U0048')) {
             userMsg = 'The 24-hour dispute window for this session has expired.';
-          } else if (userMsg.includes('SESSION_CLOSED')) {
-            userMsg = 'The attendance session is closed or no longer accepts claims.';
+          } else if (userMsg.includes('SESSION_CLOSED') || userMsg.includes('U0049')) {
+            userMsg = 'This attendance session is closed or no longer accepts claims.';
+          } else if (userMsg.includes('NOT_REGISTERED') || userMsg.includes('U0003')) {
+            userMsg = 'You are not registered for this event.';
+          } else if (userMsg.includes('P2002') || userMsg.includes('23505')) {
+            userMsg = 'A dispute for this session has already been submitted.';
           }
 
           setErrorMessage(userMsg);
@@ -161,7 +165,18 @@ export default function SubmitDisputeScreen() {
   }), [theme]);
 
   return (
-    <MobileShell title="SUBMIT DISPUTE" showBackButton scrollable={false}>
+    <MobileShell 
+      title="SUBMIT DISPUTE" 
+      showBackButton 
+      onBackPress={() => {
+        if (router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace('/(app)/history');
+        }
+      }}
+      scrollable={false}
+    >
       <KeyboardAvoidingView
         style={styles.keyboardAvoid}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -181,7 +196,7 @@ export default function SubmitDisputeScreen() {
             <View style={styles.formContainer}>
               <View style={styles.formLabelRow}>
                 <MonoLabel style={styles.inputLabel}>REASON FOR DISPUTE</MonoLabel>
-                <Mono style={styles.charCount}>{reason.length}/500 CHARS</Mono>
+                <Mono style={styles.charCount}>{reason.length}/1000 CHARACTERS</Mono>
               </View>
 
               <TextInput
@@ -192,7 +207,7 @@ export default function SubmitDisputeScreen() {
                 placeholderTextColor={theme.colors.onSurfaceVariant}
                 value={reason}
                 onChangeText={(val) => {
-                  if (val.length <= 500) setReason(val);
+                  if (val.length <= 1000) setReason(val);
                 }}
                 textAlignVertical="top"
               />

@@ -4,39 +4,40 @@ import {
   StyleSheet,
   TouchableOpacity,
   Modal,
-  ActivityIndicator,
 } from 'react-native';
+import { ActivityIndicator } from '../../../src/ui/core/ActivityIndicator';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useAppTheme } from '../../src/store/theme-store';
-import { StatusBadge } from '../../src/ui/core/StatusBadge';
-import { Button } from '../../src/ui/Button';
-import { useUserProfile } from '../../src/hooks/use-user-profile';
-import { useAuthStore } from '../../src/store/auth';
-import { MobileShell } from '../../src/ui/core/MobileShell';
-import { Title, Body, MonoLabel, Mono, Display } from '../../src/ui/core/Typography';
+import { useAppTheme } from '../../../src/store/theme-store';
+import { StatusBadge } from '../../../src/ui/core/StatusBadge';
+import { Button } from '../../../src/ui/Button';
+import { useUserProfile } from '../../../src/hooks/use-user-profile';
+import { logout } from '../../../src/services/session';
+import { MobileShell } from '../../../src/ui/core/MobileShell';
+import { Title, Body, MonoLabel, Mono, Display } from '../../../src/ui/core/Typography';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const theme = useAppTheme();
-  const { data: profile, isLoading } = useUserProfile();
-  const clearSession = useAuthStore((state) => state.clearSession);
+  const { data: profile, isLoading, isError, error, refetch } = useUserProfile();
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const fullName = profile?.full_name || profile?.email || 'Student Account';
+  const fullName = profile?.full_name || profile?.email || '';
   const email = profile?.email || '';
-  const globalRole = profile?.global_role || 'STUDENT';
-  const programCode = profile?.academic_profile?.batch?.program?.code || 'CS';
-  const gradYear = profile?.academic_profile?.batch?.graduation_year || 2027;
+  const globalRole = profile?.global_role || '';
+  const programCode = profile?.academic_profile?.batch?.program?.code;
+  const gradYear = profile?.academic_profile?.batch?.graduation_year;
+  const academicRoleLabel = programCode && gradYear
+    ? `${globalRole} / ${programCode} / ${gradYear}`
+    : globalRole;
 
   const handleConfirmLogout = async () => {
     setIsLoggingOut(true);
     try {
-      await clearSession();
       setShowLogoutModal(false);
-      router.replace('/(auth)');
+      await logout();
     } catch {
       setIsLoggingOut(false);
     }
@@ -51,7 +52,26 @@ export default function ProfileScreen() {
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
+      paddingVertical: 48,
       gap: 12,
+    },
+    errorContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 24,
+      gap: 12,
+      backgroundColor: theme.colors.surfaceContainerLow,
+      borderWidth: 1,
+      borderColor: theme.colors.borderHairline,
+    },
+    errorTitle: {
+      fontSize: 16,
+    },
+    errorSub: {
+      textAlign: 'center',
+      color: theme.colors.onSurfaceVariant,
+      fontSize: 12,
+      lineHeight: 16,
     },
     identitySection: {
       backgroundColor: theme.colors.surfaceContainerLow,
@@ -107,6 +127,10 @@ export default function ProfileScreen() {
     clubBadgeText: {
       fontSize: 10,
       color: theme.colors.onSurface,
+    },
+    emptyClubsText: {
+      fontSize: 11,
+      color: theme.colors.onSurfaceVariant,
     },
     menuContainer: {
       gap: theme.spacing.sm,
@@ -178,6 +202,13 @@ export default function ProfileScreen() {
             <ActivityIndicator size="large" color={theme.colors.primary} />
             <MonoLabel>LOADING PROFILE DATA...</MonoLabel>
           </View>
+        ) : isError || !profile ? (
+          <View style={styles.errorContainer}>
+            <StatusBadge status="[FETCH ERROR]" type="error" />
+            <Display style={styles.errorTitle}>FAILED TO LOAD PROFILE</Display>
+            <Body style={styles.errorSub}>{(error as any)?.message || 'Unable to connect to profile service.'}</Body>
+            <Button title="RETRY FETCH" variant="secondary" onPress={() => refetch()} />
+          </View>
         ) : (
           <>
             <View style={styles.identitySection}>
@@ -189,15 +220,15 @@ export default function ProfileScreen() {
                   <Title style={styles.studentName} numberOfLines={1}>{fullName.toUpperCase()}</Title>
                   <Body style={styles.emailText} numberOfLines={1}>{email}</Body>
                   <MonoLabel style={styles.roleText} numberOfLines={1}>
-                    {globalRole} / {programCode} / {gradYear}
+                    {academicRoleLabel}
                   </MonoLabel>
                 </View>
               </View>
             </View>
 
-            {profile?.club_memberships && profile.club_memberships.length > 0 && (
-              <View style={styles.clubsSection}>
-                <MonoLabel style={styles.sectionTitle}>AFFILIATIONS</MonoLabel>
+            <View style={styles.clubsSection}>
+              <MonoLabel style={styles.sectionTitle}>AFFILIATIONS</MonoLabel>
+              {profile.club_memberships && profile.club_memberships.length > 0 ? (
                 <View style={styles.clubBadgesRow}>
                   {profile.club_memberships.map((m) => (
                     <View key={m.club_id} style={styles.clubBadge}>
@@ -205,8 +236,10 @@ export default function ProfileScreen() {
                     </View>
                   ))}
                 </View>
-              </View>
-            )}
+              ) : (
+                <Mono style={styles.emptyClubsText}>NO ACTIVE CLUB AFFILIATIONS</Mono>
+              )}
+            </View>
 
             <View style={styles.menuContainer}>
               <MonoLabel style={styles.sectionTitle}>ACCOUNT SETTINGS</MonoLabel>
@@ -214,7 +247,7 @@ export default function ProfileScreen() {
               <View style={styles.menuList}>
                 <TouchableOpacity
                   style={styles.menuRow}
-                  onPress={() => router.push('/settings')}
+                  onPress={() => router.push('/(app)/settings')}
                   activeOpacity={0.7}
                 >
                   <View style={styles.menuRowLeft}>
@@ -226,7 +259,7 @@ export default function ProfileScreen() {
 
                 <TouchableOpacity
                   style={styles.menuRow}
-                  onPress={() => router.push('/notifications')}
+                  onPress={() => router.push('/(app)/notifications')}
                   activeOpacity={0.7}
                 >
                   <View style={styles.menuRowLeft}>
@@ -238,7 +271,7 @@ export default function ProfileScreen() {
 
                 <TouchableOpacity
                   style={styles.menuRow}
-                  onPress={() => router.push('/history')}
+                  onPress={() => router.navigate('/(app)/history')}
                   activeOpacity={0.7}
                 >
                   <View style={styles.menuRowLeft}>
@@ -250,7 +283,7 @@ export default function ProfileScreen() {
 
                 <TouchableOpacity
                   style={styles.menuRow}
-                  onPress={() => router.push('/disputes')}
+                  onPress={() => router.push('/(app)/disputes')}
                   activeOpacity={0.7}
                 >
                   <View style={styles.menuRowLeft}>
@@ -286,7 +319,7 @@ export default function ProfileScreen() {
             <Title style={styles.modalTitle}>END ACTIVE SESSION?</Title>
             
             <Body style={styles.modalBody}>
-              Are you sure you want to end your active student session on this device? You will need your institutional @nst.edu.in credentials to log back in.
+              Are you sure you want to end your active student session on this device? You will need your institutional Google account to log back in.
             </Body>
 
             <View style={styles.modalActions}>

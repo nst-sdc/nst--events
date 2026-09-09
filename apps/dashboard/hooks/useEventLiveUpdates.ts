@@ -1,10 +1,8 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getWebAuthStore } from '../lib/auth-store';
+import { API_BASE_URL } from '../lib/api';
 import { EventDetail } from './useEventDetail';
-
-// Ensure this matches your actual backend URL scheme
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export function useEventLiveUpdates(eventId: string) {
   const queryClient = useQueryClient();

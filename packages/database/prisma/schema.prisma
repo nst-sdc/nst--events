@@ -571,6 +571,17 @@ model AuthorizedStudent {
   @@map("authorized_students")
 }
 
+/// Ephemeral single-use OAuth authorization codes for mobile exchange.
+model MobileAuthCode {
+  code      String   @id @db.VarChar(64)
+  payload   Json
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([expiresAt])
+  @@map("mobile_auth_codes")
+}
+
 /// Access status of a user in the student directory.
 enum DirectoryStatus {
   ACTIVE

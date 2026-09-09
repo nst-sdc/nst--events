@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 
@@ -7,9 +8,12 @@ async function run() {
   const user = await prisma.user.findUnique({ where: { email: 'e25b070564@adypu.edu.in' } });
   if (!user) throw new Error("No user");
   
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) throw new Error("JWT_SECRET environment variable is required");
+
   const token = jwt.sign(
     { sub: user.id, email: user.email, globalRole: user.globalRole },
-    '7f2080d9be5697ed7c61d5685b6525d134a8e5dfa1b3d737c5f09da006865f6f',
+    jwtSecret,
     { expiresIn: '1h' }
   );
   

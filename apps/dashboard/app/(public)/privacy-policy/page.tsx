@@ -7,13 +7,13 @@ export default function PrivacyPolicyPage() {
       <div className="max-w-3xl mx-auto space-y-8">
         <header className="border-b pb-8 mb-8">
           <h1 className="text-4xl font-bold mb-4">Privacy Policy — NST Events</h1>
-          <p className="text-gray-600"><strong>Effective date:</strong> [DATE]</p>
-          <p className="text-gray-600"><strong>Last updated:</strong> [DATE]</p>
+          <p className="text-gray-600"><strong>Effective date:</strong> September 9, 2026</p>
+          <p className="text-gray-600"><strong>Last updated:</strong> September 9, 2026</p>
         </header>
 
         <section className="space-y-4">
           <p>
-            [CLUB NAME] ("we," "us," "our") operates the NST Events mobile and web applications (the "Service"), used by students and faculty of [COLLEGE NAME] to manage event registration and attendance.
+            NST Student Developer Club (nst-sdc) ("we," "us," "our") operates the NST Events mobile and web applications (the "Service"), used by students and faculty of Newton School of Technology (NST), Pune to manage event registration and attendance.
           </p>
           <p>
             This policy explains what information we collect, why we collect it, and how it is stored and used. By using the Service, you agree to the practices described here.
@@ -81,14 +81,14 @@ export default function PrivacyPolicyPage() {
           <ul className="list-disc pl-6 space-y-2">
             <li><strong>Google</strong>: used solely for authentication (Google Sign-In). Google's own privacy policy governs the data it processes as part of that sign-in.</li>
             <li><strong>Expo (push notification infrastructure)</strong>: device push tokens and notification content pass through Expo's servers to reach Apple Push Notification service (APNs) and Firebase Cloud Messaging (FCM).</li>
-            <li><strong>[COLLEGE NAME] staff/faculty administrators</strong>: authorized administrators and club officers can view attendance and registration data for events they organize, as necessary to run those events.</li>
+            <li><strong>Newton School of Technology (NST), Pune staff/faculty administrators</strong>: authorized administrators and club officers can view attendance and registration data for events they organize, as necessary to run those events.</li>
           </ul>
           <p>We do not share your data with any other third party, and we do not use third-party analytics or advertising SDKs.</p>
         </section>
 
         <section className="space-y-4">
           <h2 className="text-2xl font-semibold mt-8">5. Data Retention</h2>
-          <p>Attendance records, event participation history, and related audit logs are retained <strong>permanently as part of your institutional academic record</strong>, in the same way attendance registers, transcripts, or grade records are retained by [COLLEGE NAME]. This data is not deleted when you graduate, leave the institution, or stop using the app, as it may be needed for academic integrity, dispute resolution, or institutional record-keeping purposes.</p>
+          <p>Attendance records, event participation history, and related audit logs are retained <strong>permanently as part of your institutional academic record</strong>, in the same way attendance registers, transcripts, or grade records are retained by Newton School of Technology (NST), Pune. This data is not deleted when you graduate, leave the institution, or stop using the app, as it may be needed for academic integrity, dispute resolution, or institutional record-keeping purposes.</p>
           <p>We do not offer deletion of attendance or academic-activity records. You may request that your <strong>account access be deactivated</strong> (see Section 6), which prevents future sign-in and use of the Service, but does not erase your historical attendance or participation records.</p>
         </section>
 
@@ -112,9 +112,9 @@ export default function PrivacyPolicyPage() {
           <h2 className="text-2xl font-semibold mt-8">8. Contact Us</h2>
           <p>If you have questions about this policy or wish to exercise your data rights, contact:</p>
           <address className="not-italic bg-gray-50 p-4 rounded-md border">
-            <strong>[CLUB NAME]</strong><br />
-            Email: [CONTACT EMAIL, e.g. clubname@newtonschool.co]<br />
-            [COLLEGE NAME]
+            <strong>NST Student Developer Club (nst-sdc)</strong><br />
+            Email: <a href="mailto:events-support@adypu.edu.in" className="text-blue-600 underline">events-support@adypu.edu.in</a><br />
+            Newton School of Technology (NST), Pune
           </address>
         </section>
 

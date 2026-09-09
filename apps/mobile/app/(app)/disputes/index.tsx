@@ -3,9 +3,9 @@ import {
   View,
   StyleSheet,
   FlatList,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import { ActivityIndicator } from '../../../src/ui/core/ActivityIndicator';
 import { useRouter } from 'expo-router';
 import { useAppTheme } from '../../../src/store/theme-store';
 import { StatusBadge } from '../../../src/ui/core/StatusBadge';
@@ -35,7 +35,7 @@ export default function MyDisputesScreen() {
 
   const handleDisputePress = (item: AttendanceDisputeItem) => {
     router.push({
-      pathname: '/disputes/[id]',
+      pathname: '/(app)/disputes/[id]',
       params: {
         id: item.id,
         sessionId: item.sessionId,
@@ -156,7 +156,7 @@ export default function MyDisputesScreen() {
       <Button
         title="GO TO ATTENDANCE HISTORY"
         variant="secondary"
-        onPress={() => router.push('/history')}
+        onPress={() => router.navigate('/(app)/history')}
         style={styles.emptyCta}
       />
     </View>
@@ -195,7 +195,18 @@ export default function MyDisputesScreen() {
   );
 
   return (
-    <MobileShell title="MY DISPUTES" showBackButton scrollable={false}>
+    <MobileShell 
+      title="MY DISPUTES" 
+      showBackButton 
+      onBackPress={() => {
+        if (router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace('/(app)/history');
+        }
+      }}
+      scrollable={false}
+    >
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -224,6 +235,8 @@ export default function MyDisputesScreen() {
               refreshing={isRefetching}
               onRefresh={refetch}
               tintColor={theme.colors.primary}
+              colors={[theme.colors.primary]}
+              progressBackgroundColor={theme.colors.surface}
             />
           }
           onEndReached={() => {

@@ -22,7 +22,7 @@ export class SSEManager {
     const headers: Record<string, string> = {
       Authorization: `Bearer ${this.token}`,
     };
-    
+
     if (this.lastEventId) {
       headers['Last-Event-ID'] = this.lastEventId;
     }
@@ -32,17 +32,49 @@ export class SSEManager {
     this.eventSource.addEventListener('open', () => {
       this.reconnectAttempt = 0;
       this.resetHeartbeatTimeout();
+      this.listeners.get('open')?.forEach((cb) => cb({}));
     });
 
     this.eventSource.addEventListener('heartbeat' as any, () => {
       this.resetHeartbeatTimeout();
+      this.listeners.get('heartbeat')?.forEach((cb) => cb({}));
     });
 
     this.eventSource.addEventListener('message', (e: any) => {
       if (e.lastEventId) {
         this.lastEventId = e.lastEventId;
       }
+      this.resetHeartbeatTimeout();
+
+      try {
+        const parsed = typeof e.data === 'string' ? JSON.parse(e.data || '{}') : (e.data || {});
+        // 1. Dispatch to general 'message' listeners
+        this.listeners.get('message')?.forEach((cb) => cb(parsed));
+
+        // 2. Dispatch to type-specific listeners (e.g. NOTIFICATION_CREATED, NOTIFICATION_READ, registration_count)
+        if (parsed.type && this.listeners.has(parsed.type)) {
+          this.listeners.get(parsed.type)?.forEach((cb) => cb(parsed));
+        }
+      } catch (err) {
+        console.warn('SSE message parse error:', err);
+      }
     });
+
+    // Attach named event listeners for any pre-registered events
+    for (const [eventName] of this.listeners.entries()) {
+      if (eventName !== 'message' && eventName !== 'open' && eventName !== 'error' && eventName !== 'heartbeat') {
+        this.eventSource.addEventListener(eventName as any, (e: any) => {
+          if (e.lastEventId) this.lastEventId = e.lastEventId;
+          this.resetHeartbeatTimeout();
+          try {
+            const parsed = typeof e.data === 'string' ? JSON.parse(e.data || '{}') : (e.data || {});
+            this.listeners.get(eventName)?.forEach((cb) => cb(parsed));
+          } catch (err) {
+            console.warn(`SSE ${eventName} parse error:`, err);
+          }
+        });
+      }
+    }
 
     this.eventSource.addEventListener('error', (e: any) => {
       this.disconnect();
@@ -86,14 +118,33 @@ export class SSEManager {
   on(event: string, callback: SSECallback) {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);
-      if (this.eventSource) {
+      if (this.eventSource && event !== 'message' && event !== 'open' && event !== 'error' && event !== 'heartbeat') {
         this.eventSource.addEventListener(event as any, (e: any) => {
           if (e.lastEventId) this.lastEventId = e.lastEventId;
-          const parsed = JSON.parse(e.data || '{}');
-          this.listeners.get(event)?.forEach(cb => cb(parsed));
+          this.resetHeartbeatTimeout();
+          try {
+            const parsed = typeof e.data === 'string' ? JSON.parse(e.data || '{}') : (e.data || {});
+            this.listeners.get(event)?.forEach((cb) => cb(parsed));
+          } catch (err) {
+            console.warn(`SSE ${event} parse error:`, err);
+          }
         });
       }
     }
     this.listeners.get(event)?.push(callback);
+  }
+
+  off(event: string, callback?: SSECallback) {
+    if (!this.listeners.has(event)) return;
+    if (callback) {
+      const filtered = this.listeners.get(event)!.filter((cb) => cb !== callback);
+      if (filtered.length > 0) {
+        this.listeners.set(event, filtered);
+      } else {
+        this.listeners.delete(event);
+      }
+    } else {
+      this.listeners.delete(event);
+    }
   }
 }

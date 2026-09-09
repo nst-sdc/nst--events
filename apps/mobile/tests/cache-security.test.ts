@@ -19,6 +19,12 @@ vi.mock('expo-router', () => ({
   }
 }));
 
+vi.mock('@react-native-google-signin/google-signin', () => ({
+  GoogleSignin: {
+    signOut: vi.fn().mockResolvedValue(null),
+  },
+}));
+
 test('Mobile Cache Security: React Query cache is flushed on logout', async () => {
   store = {};
 

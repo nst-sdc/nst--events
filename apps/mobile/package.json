@@ -47,7 +47,8 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "build": "echo 'Expo build stub'",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run tests/navigation.test.ts tests/notifications.test.ts tests/device-id.test.ts tests/home-event-ordering.test.ts tests/auth.test.ts tests/cache-security.test.ts tests/attendance.test.ts tests/home-event-phase4.test.ts tests/phase5-attendance-disputes.test.ts tests/phase6-profile-settings-notifications.test.ts tests/phase7-android-regression.test.ts tests/phase8-ios-parity.test.ts tests/phase9-full-v1-qa.test.ts"
   },
   "private": true
 }

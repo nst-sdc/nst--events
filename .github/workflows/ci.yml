@@ -54,3 +54,67 @@ jobs:
 
       - name: Run CI Validation
         run: pnpm validate:ci
+
+      - name: Build and Smoke-Test Production Docker Images
+        run: |
+          echo "=== Building Docker Images ==="
+          docker build -f docker/Dockerfile.api -t nst-api:ci .
+          docker build -f docker/Dockerfile.worker -t nst-worker:ci .
+
+          echo "=== Smoke Testing API Container Startup ==="
+          # Note: --network host binds directly to runner host interfaces (Linux-only, supported on ubuntu-latest).
+          # Secrets below are ephemeral mock values meeting minimum length constraints for CI smoke tests only.
+          docker run -d --name ci-api-smoke \
+            --network host \
+            -e DATABASE_URL="${{ env.DATABASE_URL }}?schema=public" \
+            -e JWT_SECRET="ci_test_jwt_secret_minimum_32_characters_long_xxxx" \
+            -e COOKIE_SECRET="ci_test_cookie_secret_min_32_characters_long_xx" \
+            -e GOOGLE_CLIENT_ID="ci-dummy" \
+            -e GOOGLE_CLIENT_SECRET="ci-dummy" \
+            -e GOOGLE_CALLBACK_URL="http://localhost:3001/auth/google/callback" \
+            -e PORT=3001 \
+            nst-api:ci
+
+          API_HEALTHY=0
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3001/health > /dev/null; then
+              echo "✅ API container started successfully and passed health check"
+              API_HEALTHY=1
+              break
+            fi
+            sleep 1
+          done
+
+          if [ "$API_HEALTHY" -ne 1 ]; then
+            echo "❌ API container failed to pass health check. Logs:"
+            docker logs ci-api-smoke
+            docker rm -f ci-api-smoke
+            exit 1
+          fi
+          docker rm -f ci-api-smoke
+
+          echo "=== Smoke Testing Worker Container Startup ==="
+          docker run -d --name ci-worker-smoke \
+            --network host \
+            -e WORKER_DATABASE_URL="${{ env.DATABASE_URL }}?schema=public" \
+            -e EXPO_ACCESS_TOKEN="dummy" \
+            nst-worker:ci
+
+          WORKER_HEALTHY=0
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3002/health > /dev/null; then
+              echo "✅ Worker container started successfully and passed health check"
+              WORKER_HEALTHY=1
+              break
+            fi
+            sleep 1
+          done
+
+          if [ "$WORKER_HEALTHY" -ne 1 ]; then
+            echo "❌ Worker container failed to pass health check. Logs:"
+            docker logs ci-worker-smoke
+            docker rm -f ci-worker-smoke
+            exit 1
+          fi
+          docker rm -f ci-worker-smoke
+

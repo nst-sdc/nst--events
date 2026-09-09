@@ -1,126 +1,166 @@
 # NST-Events — Student Frontend Design System Reference
 
-**Purpose:** This is the standing UI reference for all student-facing frontend work (web dashboard and mobile app). Any AI coding tool generating or editing student-facing UI in this codebase should follow this doc by default, without needing to be re-told these rules in every prompt. Screen-specific content/flows live elsewhere (see `nst-events-student-ux-spec.md`); this doc governs *how things look and behave visually*, consistently, everywhere.
-
-If a specific task's instructions conflict with this doc, the task instructions win for that task only — but flag the conflict rather than silently deviating, since it may mean this doc needs updating.
+**Purpose:** This is the authoritative standing UI reference for all student-facing frontend surfaces (mobile companion app and student web views). Any AI coding tool generating or editing student-facing UI in this codebase MUST adhere to this design system. It codifies the active, in-code design language: **Neo-Brutalist Kinetic Noir / Stark Light**.
 
 ---
 
-## 1. Foundation
+## 1. Design Philosophy & Aesthetic Foundation
 
-- **Design system: Material Design 3 (M3).** Use real M3 components (buttons, chips, cards, nav bars, dialogs, switches) from the platform's M3 component library (e.g. Material Web / MDC for web, Material Components for React Native / a compliant RN library for mobile) — do not hand-build custom look-alike components when an M3 equivalent exists.
-- **Style variant: restrained/institutional, not "M3 Expressive."** This is a trust-focused daily-use tool for students and admins, not a consumer social app. Avoid the newer Expressive variant's bouncy shapes, exaggerated motion, and playful asymmetry. Keep shapes regular, motion subtle, layout disciplined.
-- **Platforms:** Next.js web dashboard (desktop-first, responsive to tablet) and Expo React Native mobile app (Android-first, must remain acceptable on iOS). Apply the same underlying rules on both; adapt only where platform convention requires it (e.g. bottom nav on mobile vs. sidebar/top nav on web).
-- **Theme tokens are external.** Do not invent a permanent brand palette. Use M3's dynamic color system generated from a single seed color as a placeholder (a muted blue or teal reads as institutional) until real brand tokens are supplied — but build everything to consume tokens/variables, not hardcoded hex values, so swapping the real theme later is a one-line change, not a re-design.
-
----
-
-## 2. Color & Status System
-
-- Use M3's **tonal color roles** (primary, secondary, tertiary, error, surface, surface-variant, and their "container"/"on-container" pairs) — do not introduce ad hoc colors outside this system.
-- Generate the full tonal palette from **one seed color**, not multiple hand-picked hues. Semantic meaning comes from *which tonal role* is used, not from inventing new colors per state.
-- **Status color mapping** (apply consistently everywhere a status appears — cards, pills, badges, banners):
-  | Status | Tonal role |
-  |---|---|
-  | Registered / Success / Attendance marked | `primary` or a success-mapped tertiary, per whichever the seed palette resolves as the "positive" role — pick one and use it everywhere |
-  | Waitlisted / Pending / Below-minimum warning | `secondary` or `tertiary` container (a "caution," not alarming, tone) |
-  | Cancelled / Rejected / Error / Attendance failed | `error` / `error-container` |
-  | Neutral / informational (e.g. "already checked in") | `surface-variant`, not `error` — idempotent/neutral outcomes must not look like failures |
-- Never use color as the only signal for status — pair every status color with an icon and/or text label, for accessibility and because several statuses (waitlisted vs. below-minimum, for instance) can look similar in a quick glance otherwise.
-- Dark mode: since M3 tonal palettes are built to support both light and dark automatically, ensure every screen is designed/tested in both — don't hardcode a light-only assumption anywhere (e.g. pure white backgrounds, pure black text).
+- **Design Style: Neo-Brutalist Technical Companion.**
+  - High-contrast, sharp-edged, data-dense, and highly legible.
+  - Geometry is strictly regular with **sharp corners** (`borderRadius: 0` or minimal `2px`/`4px` strictly bounded).
+  - No soft drop shadows or blurred Gaussian elevation. Surfaces and elevation are communicated exclusively through contrasting container tonal layers and crisp 1px borders.
+  - Technical, audit-grade visual hierarchy: status pills formatted with bracketed notation (e.g. `[PRESENT]`, `[LIVE NOW]`), monospace metadata fields, and tabular grid rows.
+- **Platforms:**
+  - **Expo React Native Mobile App (`apps/mobile`):** Android-first reference standard with identical 1:1 parity on iOS.
+  - **Next.js Web Dashboard (`apps/dashboard`):** Desktop-first student surfaces reflecting identical visual tokens and layout discipline.
+- **Strict Anti-Optimistic Stance:** Never fake success or render checkmarks before the backend confirms. Consequential state mutations always show an honest pending/loading state.
 
 ---
 
-## 3. Typography
+## 2. Color & Tonal Surface System
 
-- Use M3's **type scale roles** (Display, Headline, Title, Body, Label — each with Large/Medium/Small) applied by *role*, not by picking arbitrary font sizes. E.g. a screen title is always a Title role, a card's primary label is always Label or Title depending on hierarchy — stay consistent screen to screen.
-- Placeholder typeface: **Roboto** (or M3's default) until real brand type tokens are supplied. Do not introduce a second display font for "personality" — this is a utility app, not editorial content.
-- Line length and density: favor **information density** (smaller type scale roles, tighter spacing) on Home, Discover, and Leaderboard — screens checked quickly and often. Favor slightly more generous spacing on Event Detail and Club Profile, which are read more slowly and benefit from breathing room.
+The color system is organized into tonal container layers and semantic status roles, fully implemented in `apps/mobile/src/ui/theme.ts`:
 
----
+### 2.1 Dark Palette (Kinetic Noir — Default)
+| Role / Token | Hex Value | Usage |
+|---|---|---|
+| `surface` | `#131313` | Root background |
+| `surfaceSubdued` | `#1A1A1A` | Secondary background sections |
+| `surfaceContainerLowest`| `#0e0e0e` | Bottom tab bar, deep background |
+| `surfaceContainerLow` | `#1b1b1b` | Cards, list item containers |
+| `surfaceContainer` | `#1f1f1f` | Neutral containers, dividers |
+| `surfaceContainerHigh` | `#2a2a2a` | Highlighted cards, chips, active tabs |
+| `surfaceContainerHighest`| `#353535` | Inactive switch tracks, elevated chips |
+| `primary` | `#b7c4ff` | Primary CTA, focused borders, active icons |
+| `primaryFixed` | `#dde1ff` | High-visibility primary badges |
+| `onPrimary` | `#002682` | Text on filled primary buttons |
+| `secondary` | `#7bd0ff` | Organizer badges, secondary highlights |
+| `onSecondary` | `#00354a` | Text on filled secondary buttons |
+| `error` | `#ffb4ab` | Error borders, live status tags, alert pills |
+| `errorContainer` | `#93000a` | Access denied banners, critical notices |
+| `onErrorContainer` | `#ffdad6` | Text within error containers |
+| `onSurface` | `#e2e2e2` | Primary typography |
+| `onSurfaceVariant` | `#c3c5d9` | Subtitles, labels, metadata |
+| `outline` | `#8d90a2` | Muted labels, secondary indicators |
+| `outlineVariant` / `borderHairline` | `#434656` | 1px card borders, section separators |
 
-## 4. Component Usage Rules
+### 2.2 Light Palette (Stark Light)
+| Role / Token | Hex Value | Usage |
+|---|---|---|
+| `surface` | `#fbfbfb` | Root background |
+| `surfaceContainerLowest`| `#ffffff` | Elevated pure white containers |
+| `surfaceContainerLow` | `#f7f7f7` | Card backgrounds |
+| `surfaceContainerHigh` | `#e8e8e8` | Active tab background |
+| `primary` | `#0046d1` | Primary actions, high-contrast borders |
+| `onPrimary` | `#ffffff` | Text on primary buttons |
+| `secondary` | `#006a8f` | Accent and organizer tags |
+| `error` | `#ba1a1a` | Live badges, attendance failures |
+| `onSurface` | `#131313` | Primary body typography |
+| `onSurfaceVariant` | `#434656` | Muted text, secondary captions |
+| `outlineVariant` / `borderHairline` | `#d1d3df` | 1px card borders, section dividers |
 
-Use the correct M3 component for the job — don't substitute a custom-styled generic `<div>`/`<View>` when a named M3 component exists for the pattern:
-
-| UI need | M3 component |
-|---|---|
-| Discover ↔ Leaderboard toggle, Upcoming ↔ Past toggle | **Segmented button** |
-| EventType filtering, "My Clubs" filter | **Filter chip** (horizontally scrollable row) |
-| Role badges (Member/Core Member/Club Admin), status labels | **Assist chip** or a compact badge — pick one pattern and reuse it everywhere roles/status appear |
-| Event cards, leaderboard rows, home feed action items | **Card** (pick either elevated or outlined variant as the one standard — do not mix both variants for the same kind of content across different screens) |
-| Register, Confirm, Scan (primary commitments) | **Filled button** |
-| View Details, secondary navigation actions | **Outlined button** |
-| Dismiss, Skip, low-emphasis actions | **Text button** |
-| Register confirmation, Leave Team, Transfer Leadership, Log Out | **Dialog** (M3 basic dialog) — any action with real consequence gets a dialog, not an inline toggle |
-| Ephemeral QR scan flow | **Full-screen dialog** pattern, not a small modal — this is a focused task that deserves the whole screen |
-| Notification Preferences toggles | **Switch**, one per preference, flat list — never grouped under a single master switch that implies hierarchy that doesn't exist in the data |
-| Bottom navigation (mobile) | **Navigation bar**, exactly 3 destinations (Home, Campus, Profile) — never more, never fewer, per the confirmed IA |
-| Sidebar/top nav (web) | Equivalent persistent global nav shell reflecting the same 3 sections |
-| Elevated content (scan modal, bottom sheets, dialogs) | **Elevation/surface tonal levels**, never a hand-drawn `box-shadow`/drop shadow — use M3's elevation system so it responds correctly to light/dark mode |
-| Empty states | Centered icon + short text + (if applicable) one primary action — no dense illustration-heavy empty states; keep it plain and fast to parse |
-
----
-
-## 5. Spacing, Shape, and Layout
-
-- Use a consistent spacing scale (e.g. 4dp/px base unit, multiples of 4 or 8) throughout — don't introduce arbitrary one-off spacing values per screen.
-- **Corner radius: restrained end of M3's range.** Small-to-medium rounding on cards, buttons, and chips. Avoid the very rounded, "pill-everything" extreme associated with M3 Expressive — this should read as clean and institutional, not playful.
-- Touch targets: **minimum 48dp** on mobile for any tappable element, without exception — this app is used quickly, often one-handed, sometimes while walking toward a scan window that's about to expire.
-- Grid/layout: web dashboard should use a clear column grid (sidebar/nav + main content, with sensible max-width on wide screens so content doesn't stretch edge-to-edge on large monitors). Mobile should be single-column, full-width, with consistent horizontal padding.
-
----
-
-## 6. Motion
-
-- Keep motion **functional, not decorative**: use it to communicate state changes (a card transitioning from "queued offline" to "confirmed," a dialog appearing/dismissing, a chip filter applying) — not for flourish.
-- Standard M3 easing/duration curves; nothing bouncy, elastic, or exaggerated (that's Expressive territory, which this app should avoid).
-- The QR scan flow's transitions between states (validating → success/failure) should feel immediate and confident — no gratuitous delay or animation dragging out a moment that's meant to reduce anxiety, not build suspense.
-
----
-
-## 7. Friction Model — where to add it, where to remove it
-
-This governs interaction design as much as visuals, and it's a recurring product principle worth stating explicitly:
-
-- **Add deliberate friction (a confirmation dialog, a clear warning tone) for:** registering for an event, cancelling a registration, joining/leaving a team, transferring team leadership, removing a team member, logging out, filing a dispute. These are commitments or consequential actions — the UI should never let them happen from a single accidental tap.
-- **Keep frictionless for:** browsing Discover, applying filters, viewing a leaderboard, viewing a club profile, viewing notifications. Passive/exploratory actions should never require a confirm step or extra tap.
-- **Never show an optimistic/instant success state before the server confirms.** This applies to registration and to QR scan validation. Always show a brief, honest pending/loading moment. This is a hard product rule (optimistic UI was explicitly evaluated and rejected for this platform), not a stylistic preference — do not "improve perceived speed" by faking a checkmark early.
+### 2.3 Status Color Mapping
+| Status | Token Role | Format / Visual Pattern |
+|---|---|---|
+| **Registered / Present / Verified** | `primary` / `primaryFixed` | `[PRESENT]`, `[REGISTERED]` badge with solid hairline border |
+| **Live / Active Session** | `error` | `[LIVE NOW]` badge with red ping dot indicator |
+| **Waitlisted / Pending / Below Min** | Warning / Yellow / `secondary` | `[WAITLISTED]`, `[PENDING]` caution status badge |
+| **Cancelled / Rejected / Absent** | `error` / `errorContainer` | `[ABSENT]`, `[REJECTED]` badge |
+| **Neutral / Idempotent (Already Checked In)**| `onSurfaceVariant` | `[ATTENDANCE MARKED]` neutral status box, never styled as error |
 
 ---
 
-## 8. Status & Error Copy Tone
+## 3. Typography Hierarchy
 
-- **Neutral outcomes read as neutral, not as errors.** E.g. "Already checked in at [time]" is informational, not a failure state — don't style it in `error` red or use an alarming icon.
-- **Security-sensitive failures use identical, non-revealing copy.** Geofence failure and location-spoofing detection must show the exact same student-facing message ("We couldn't verify your location for this event") and identical visual treatment — the backend distinguishes them; the UI never should. Do not add fields, icons, or details that would let someone infer which specific check failed.
-- **Recoverable failures always offer a next step**, not a dead end. Expired QR code → immediately re-prompt the camera. Location verification failed → offer a retry and, if applicable, a path to file a dispute. Never leave the student on a screen with only a generic error and no way forward.
-- **Ineligibility is explained, not hidden.** If a student can't register for an event, show why (a visible eligibility notice), rather than simply omitting or disabling the button with no explanation.
+The typography system pairs geometric display headers with readable body sans-serif and rigorous monospace labels:
 
----
+| Category | Font Family | Token Name | Purpose |
+|---|---|---|---|
+| **Display / Hero** | `Syne` (Bold / ExtraBold) | `syneBold`, `syneExtraBold` | Screen titles, hero headlines, event names |
+| **Body Sans** | `Inter` (Regular, Medium, SemiBold) | `interRegular`, `interMedium`, `interSemiBold` | Event descriptions, body text, dialogue copy |
+| **Technical Mono** | `JetBrains Mono` (Regular, Med, Bold) | `monoRegular`, `monoMedium`, `monoBold` | Metadata labels, timestamps, status badges, code pills |
 
-## 9. Accessibility Minimums
-
-- Every status must be conveyed by more than color alone (icon + text label).
-- Minimum 48dp touch targets on mobile (see Section 5).
-- Sufficient contrast in both light and dark mode — verify against M3's tonal contrast guidance, don't eyeball it.
-- All interactive elements need visible focus states on web (keyboard navigation must work, not just mouse/touch).
-- Camera/QR scan screen needs a non-visual fallback path described in-flow if camera access is denied (e.g. clear instructional text, not a silent blank camera view).
+### Rules:
+- Display headings should use uppercase or tight tracking for emphasis.
+- Metadata and system statuses MUST use `JetBrains Mono` with uppercase notation (e.g. `LOCATION // MAIN AUDITORIUM`, `STATUS: NOT REGISTERED`).
+- Never introduce generic browser fallback fonts or soft rounded display fonts.
 
 ---
 
-## 10. Explicit Don'ts
+## 4. Component Standards & Usage Rules
 
-- Don't invent custom components when an M3 component already covers the pattern.
-- Don't mix card variants (elevated vs. outlined) for the same content type across different screens.
-- Don't use drop shadows — use M3 elevation/surface tonal levels.
-- Don't hardcode colors, spacing, or type sizes as literal values where a token/role should be used instead.
-- Don't use M3 Expressive shapes, motion, or asymmetry.
-- Don't design an idle/empty state for the QR scanner — it is an ephemeral modal that only exists during an active attendance window; there is no "browse the scanner" screen.
-- Don't design an avatar/photo upload affordance — avatars are generated from initials (or pulled from Google), never uploaded by the student in V1.
-- Don't design a "follow a club" affordance separate from membership — club membership is binary and admin-granted only.
+Use the verified Neo-Brutalist components in `apps/mobile/src/ui/`:
+
+### 4.1 Shell & Structure (`MobileShell`)
+- Standardized screen container providing:
+  - Top header with mono system label (`NST EVENTS // ATTENDANCE`).
+  - Active connection ping dot and notification counter access.
+  - Optional back button (`showBackButton`).
+  - Scrollable view with native `RefreshControl` integration.
+
+### 4.2 Buttons (`Button`)
+- Sharp rectangular corners (`borderRadius: 0` or `borderRadius.sm: 2`).
+- Bold uppercase typography (`monoBold` or `interSemiBold`).
+- High-contrast states:
+  - `primary`: Filled primary with `onPrimary` text.
+  - `secondary`: Hairline outlined box with subtle container background.
+  - `danger`: Error container border with error action text.
+  - `disabled`: Muted opacity (`0.4`), non-interactive.
+
+### 4.3 Status Badges (`StatusBadge`)
+- Compact monospace pill wrapped in square brackets: `[STATUS]`.
+- Enclosed in a 1px border matching the status color.
+
+### 4.4 Cards & Data Rows (`Cards`)
+- **EventCard:** High-contrast bordered card with status pill, event title, date/time, venue, and chevron action indicator.
+- **ActiveAttendanceCard:** Dominant elevated card with `[LIVE NOW]` tag and direct action button `[SCAN QR / MARK ATTENDANCE]`.
+- **MatrixCard / LedgerBox:** Tabular key-value rows separated by 1px hairline dividers for technical auditability.
+
+### 4.5 QR Scanner Viewport (`ScannerOverlay`)
+- Clean hardware camera overlay with four crisp corner framing brackets.
+- Live scan line and torch control toggle button.
+- Monospace telemetry overlay indicating geofence verification status.
+
+### 4.6 Dialogs & Friction Moments
+- Add deliberate modal confirmation dialogs for consequential actions:
+  - Event registration & cancellation.
+  - Accepting / declining team invitations.
+  - Terminating user session (Logout).
+  - Filing attendance disputes.
+- Never execute consequential state changes from a single unconfirmed tap.
 
 ---
 
-## 11. Reference
+## 5. Spacing, Borders & Touch Targets
 
-Screen-by-screen content, flows, and state definitions live in the companion UX/IA spec (`nst-events-student-ux-spec.md`). This document should be read alongside that one — this doc answers "how should it look and behave," the other answers "what screens exist and what do they contain."
+- **Base Spacing Grid:** 4px / 8px / 12px / 16px (`base`) / 20px / 24px (`xl`).
+- **Border Standards:**
+  - Standard container border: `1px solid borderHairline` (`#434656` dark / `#d1d3df` light).
+  - Focused/active container border: `1.5px` or `2px solid primary`.
+  - Corner radius: `0px` sharp edges across all cards, buttons, and badges.
+- **Touch Targets:** Minimum **48dp** height/width for all interactive buttons and actionable card surfaces.
+
+---
+
+## 6. Tone & Error Handling Guidelines
+
+1. **Security-Sensitive Parity:**
+   - Geofence verification failures and location spoofing detections MUST display the identical neutral copy:
+     `"We couldn't verify your location for this event."`
+   - Never reveal detection heuristics to end-users.
+2. **Actionable Recovery:**
+   - Expired QR code → immediate viewfinder reset, re-prompt camera.
+   - Network drop → explicit `NETWORK_OFFLINE` guidance: `"Active network connection required to verify attendance."`
+3. **Idempotent States:**
+   - Re-scanning an already checked-in session renders neutral status: `"Already checked in at [time]"`, never an error tone.
+
+---
+
+## 7. Explicit Prohibitions
+
+- **NO Material Design 3 (M3) components, rounded pill shapes, or M3 elevation levels.**
+- **NO drop shadows, blurry glows, or gradient fills.**
+- **NO soft pastel palettes or un-tokenized ad hoc colors.**
+- **NO optimistic UI updates for QR scans, registrations, or dispute submissions.**
+- **NO avatar photo upload UI — student avatars are generated from initials or Google SSO.**

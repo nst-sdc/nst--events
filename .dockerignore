@@ -1,15 +1,22 @@
 # Node
 node_modules/
+**/node_modules/
 .npm/
 .pnpm-store/
 
 # Build
 dist/
+**/dist/
 build/
+**/build/
 .next/
+**/.next/
 .expo/
+**/.expo/
 coverage/
+**/coverage/
 .turbo/
+**/.turbo/
 *.tsbuildinfo
 
 # Environment

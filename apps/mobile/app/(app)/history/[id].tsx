@@ -3,15 +3,17 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
 } from 'react-native';
+import { ActivityIndicator } from '../../../src/ui/core/ActivityIndicator';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAppTheme } from '../../../src/store/theme-store';
 import { useEvent, useEventSessions } from '../../../src/hooks/use-events';
 import { useAttendanceHistory } from '../../../src/hooks/use-attendance-history';
 import { useMyDisputes } from '../../../src/hooks/use-disputes';
+import { StatusBadge } from '../../../src/ui/core/StatusBadge';
+import { Button } from '../../../src/ui/Button';
 import { MobileShell } from '../../../src/ui/core/MobileShell';
-import { Title, Body, MonoLabel, Mono } from '../../../src/ui/core/Typography';
+import { Title, Body, MonoLabel, Mono, Display } from '../../../src/ui/core/Typography';
 
 export default function AttendanceDetailScreen() {
   const router = useRouter();
@@ -20,14 +22,14 @@ export default function AttendanceDetailScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
   const eventId = params.id || '';
 
-  const { data: event, isLoading: loadingEvent } = useEvent(eventId);
+  const { data: event, isLoading: loadingEvent, isError: eventError } = useEvent(eventId);
   const { data: sessions, isLoading: loadingSessions } = useEventSessions(eventId);
   const { data: attendanceHistory, isLoading: loadingHistory } = useAttendanceHistory(eventId);
   const { data: disputes, isLoading: loadingDisputes } = useMyDisputes(eventId);
 
   const isLoading = loadingEvent || loadingSessions || loadingHistory || loadingDisputes;
 
-  const eventTitle = event?.title || 'LOADING EVENT...';
+  const eventTitle = event?.title || '';
   const venue = event?.locationName || 'UNSPECIFIED VENUE';
   const eventDate = event?.startTime 
     ? new Date(event.startTime).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }).toUpperCase()
@@ -43,6 +45,29 @@ export default function AttendanceDetailScreen() {
     loadingContainer: {
       marginTop: 40,
       alignItems: 'center',
+      gap: 12,
+    },
+    errorContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 48,
+      paddingHorizontal: 24,
+      gap: 12,
+    },
+    errorTitle: {
+      fontSize: 18,
+      textAlign: 'center',
+    },
+    errorSub: {
+      textAlign: 'center',
+      lineHeight: 18,
+      color: theme.colors.onSurfaceVariant,
+    },
+    emptySessionText: {
+      color: theme.colors.onSurfaceVariant,
+      fontSize: 11,
+      fontStyle: 'italic',
+      marginTop: 8,
     },
     eventHeader: {
       marginBottom: 32,
@@ -118,10 +143,29 @@ export default function AttendanceDetailScreen() {
   }), [theme]);
 
   return (
-    <MobileShell title="ATTENDANCE" showBackButton scrollable={true}>
+    <MobileShell title="SESSION DETAILS" showBackButton scrollable={true} onBackPress={() => {
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/(app)/history');
+      }
+    }}>
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
+          <MonoLabel>FETCHING ATTENDANCE RECORD...</MonoLabel>
+        </View>
+      ) : !eventId || eventError || (!loadingEvent && !event) ? (
+        <View style={styles.errorContainer}>
+          <StatusBadge status="[NOT FOUND]" type="error" />
+          <Display style={styles.errorTitle}>EVENT NOT FOUND</Display>
+          <Body style={styles.errorSub}>The requested event record could not be found or attendance details are unavailable.</Body>
+          <Button
+            title="RETURN TO ATTENDANCE HISTORY"
+            variant="secondary"
+            onPress={() => router.replace('/(app)/history')}
+            style={{ marginTop: 8 }}
+          />
         </View>
       ) : (
         <>
@@ -138,6 +182,10 @@ export default function AttendanceDetailScreen() {
             <MonoLabel style={styles.sectionTitle}>ATTENDANCE</MonoLabel>
             <View style={styles.divider} />
             
+            {(!sessions || sessions.length === 0) && (
+              <Mono style={styles.emptySessionText}>NO SESSIONS REGISTERED FOR THIS EVENT</Mono>
+            )}
+
             {sessions?.map((session) => {
               const record = allRecords.find((r) => r.sessionId === session.id);
               const dispute = allDisputes.find((d) => d.sessionId === session.id);
@@ -163,7 +211,20 @@ export default function AttendanceDetailScreen() {
                       {dispute ? (
                         <TouchableOpacity 
                           style={styles.disputeActionBox}
-                          onPress={() => router.push(`/disputes/submitted?disputeId=${dispute.id}&eventTitle=${encodeURIComponent(eventTitle)}&sessionId=${session.id}`)}
+                          onPress={() => router.push({
+                            pathname: '/(app)/disputes/[id]',
+                            params: {
+                              id: dispute.id,
+                              sessionId: session.id,
+                              eventId: session.eventId,
+                              reason: dispute.reason,
+                              status: dispute.status,
+                              submittedAt: dispute.submittedAt,
+                              reviewedAt: dispute.reviewedAt || '',
+                              reviewNotes: dispute.reviewNotes || '',
+                              eventTitle,
+                            },
+                          })}
                         >
                           <MonoLabel style={styles.disputeActionText}>DISPUTE {dispute.status}</MonoLabel>
                         </TouchableOpacity>
@@ -171,7 +232,7 @@ export default function AttendanceDetailScreen() {
                         <TouchableOpacity 
                           style={styles.disputeActionBox}
                           onPress={() => router.push({
-                            pathname: '/disputes/new',
+                            pathname: '/(app)/disputes/new',
                             params: {
                               sessionId: session.id,
                               eventId: session.eventId,

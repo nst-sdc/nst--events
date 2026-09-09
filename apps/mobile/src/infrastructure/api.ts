@@ -18,12 +18,17 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
   }
 
   const fullUrl = `${API_BASE_URL}${endpoint}`;
-  console.log('[API FETCH] Full constructed URL:', fullUrl, '| Method:', options.method || 'GET');
+  if (typeof __DEV__ !== 'undefined' && __DEV__) {
+    console.log('[API FETCH] Full constructed URL:', fullUrl, '| Method:', options.method || 'GET');
+  }
 
   const response = await fetch(fullUrl, {
     ...options,
     headers,
   });
+  if (typeof __DEV__ !== 'undefined' && __DEV__) {
+    console.log('[API RESP] Status:', response.status, 'for', fullUrl);
+  }
 
   // Automatic token refresh on 401
   if (response.status === 401 && token) {
@@ -47,7 +52,12 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
 
       if (!retryResponse.ok) {
         const errorBody = await retryResponse.json().catch(() => ({}));
-        throw { status: retryResponse.status, message: errorBody.message || errorBody.error || 'API Request Failed', body: errorBody };
+        const message =
+          errorBody.detail ||
+          errorBody.message ||
+          errorBody.error ||
+          'API Request Failed';
+        throw { status: retryResponse.status, message, body: errorBody };
       }
 
       const text = await retryResponse.text();
@@ -61,7 +71,12 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
 
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({}));
-    throw { status: response.status, message: errorBody.message || errorBody.error || 'API Request Failed', body: errorBody };
+    const message =
+      errorBody.detail ||
+      errorBody.message ||
+      errorBody.error ||
+      'API Request Failed';
+    throw { status: response.status, message, body: errorBody };
   }
 
   // Handle empty responses

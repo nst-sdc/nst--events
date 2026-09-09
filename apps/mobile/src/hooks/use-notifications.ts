@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
@@ -7,17 +7,22 @@ import { Platform } from 'react-native';
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '../infrastructure/api';
 import { useAuthStore } from '../store/auth';
-import { useRouter } from 'expo-router';
+import { useRouter, usePathname } from 'expo-router';
 import { getPersistentDeviceId } from '../lib/device-id';
+import { resolveNotificationRoute } from '../lib/notification-routing';
 
 const TOKEN_CACHE_KEY = 'last_synced_push_token';
 const USER_CACHE_KEY = 'last_synced_push_user_id';
+
+const normalizeRoute = (path?: string | null) => (path || '').replace(/^\/(\(app\)\/)?/, '').replace(/\/$/, '');
 
 export function useNotifications() {
   const userId = useAuthStore((state) => state.userId);
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const router = useRouter();
+  const pathname = usePathname();
   const lastNotificationResponse = Notifications.useLastNotificationResponse();
+  const coldStartHandledRef = useRef<string | null>(null);
 
   const { mutate: syncToken } = useMutation({
     mutationFn: async (expoToken: string) => {
@@ -26,9 +31,9 @@ export function useNotifications() {
       return apiClient('/users/me/push-token', {
         method: 'POST',
         body: JSON.stringify({
-          expoToken,
-          deviceId,
-          platform: Platform.OS.toUpperCase(),
+          device_id: deviceId,
+          expo_token: expoToken,
+          platform: Platform.OS.toLowerCase(),
         }),
       });
     },
@@ -42,20 +47,46 @@ export function useNotifications() {
     retry: 3, // Safe React Query exponential backoff
   });
 
-  // Handle incoming notification interaction (Deep Linking)
+  // Handle cold-start notification tap interaction
   useEffect(() => {
     if (lastNotificationResponse && isLoggedIn) {
-      const { notification } = lastNotificationResponse;
-      const metadata = notification.request.content.data?.metadata as any;
-      
-      if (metadata?.entity_ids?.invitation_id) {
-        // Preferred deep link for team invitations
-        router.push({ pathname: '/invitations', params: { invitationId: metadata.entity_ids.invitation_id } });
-      } else if (metadata?.routing?.target === 'event_details' && metadata?.routing?.params?.id) {
-        router.push(`/events/${metadata.routing.params.id}`);
+      const responseId = lastNotificationResponse.notification.request.identifier;
+      if (coldStartHandledRef.current === responseId) return;
+
+      const data = lastNotificationResponse.notification.request.content.data as any;
+      const route = resolveNotificationRoute({
+        type: data?.notification_type || data?.type,
+        metadata: data?.metadata,
+      });
+      if (route) {
+        coldStartHandledRef.current = responseId;
+        if (normalizeRoute(pathname) !== normalizeRoute(route)) {
+          router.push(route as any);
+        }
       }
     }
-  }, [lastNotificationResponse, isLoggedIn, router]);
+  }, [lastNotificationResponse, isLoggedIn, router, pathname]);
+
+  // Handle runtime notification tap interaction (app in foreground or background)
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      if (!isLoggedIn) return;
+      const data = response.notification.request.content.data as any;
+      const route = resolveNotificationRoute({
+        type: data?.notification_type || data?.type,
+        metadata: data?.metadata,
+      });
+      if (route) {
+        if (normalizeRoute(pathname) !== normalizeRoute(route)) {
+          router.push(route as any);
+        }
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [isLoggedIn, router, pathname]);
 
   useEffect(() => {
     let isMounted = true;
@@ -87,17 +118,26 @@ export function useNotifications() {
         return;
       }
 
+      // Android 8.0+ channel requirement
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('default', {
+          name: 'default',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+        });
+      }
+
       try {
         const projectId = Constants.expoConfig?.extra?.eas?.projectId;
         if (!projectId) {
           console.warn('EAS projectId not configured — push token registration skipped');
           return;
         }
-        
+
         const tokenResponse = await Notifications.getExpoPushTokenAsync({
           projectId,
         });
-        
+
         const token = tokenResponse.data;
 
         if (!isMounted) return;

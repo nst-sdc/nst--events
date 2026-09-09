@@ -11,10 +11,16 @@
       "distribution": "internal",
       "ios": {
         "simulator": false
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.nst-events.nstsdc.org"
       }
     },
     "production": {
-      "distribution": "store"
+      "distribution": "store",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.nst-events.nstsdc.org"
+      }
     }
   }
 }

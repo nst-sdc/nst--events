@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getWebAuthStore } from '../lib/auth-store';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import { API_BASE_URL } from '../lib/api';
 
 export function useRealtimeNotifications() {
   const queryClient = useQueryClient();

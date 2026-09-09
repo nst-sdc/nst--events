@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: nst-postgres
-  namespace: default
+  namespace: nst-events
 spec:
   serviceName: nst-postgres-service
   replicas: 1
@@ -14,14 +14,56 @@ spec:
       labels:
         app: nst-postgres
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: NotIn
+                    values:
+                      - nst-n1
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 80
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - nst-n6
+            - weight: 20
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: NotIn
+                    values:
+                      - nst-n7
       containers:
         - name: postgres
-          image: quay.io/tembo/pg16-pgmq:latest
+          image: localhost:30500/nst-postgres:v1
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5432
           envFrom:
             - secretRef:
-                name: nst-secrets
+                name: nst-db-admin-secrets
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres", "-d", "nst_events"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres", "-d", "nst_events"]
+            initialDelaySeconds: 15
+            periodSeconds: 20
           volumeMounts:
             - name: postgres-data
               mountPath: /var/lib/postgresql/data
@@ -29,7 +71,8 @@ spec:
     - metadata:
         name: postgres-data
       spec:
-        accessModes: ['ReadWriteOnce']
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: longhorn
         resources:
           requests:
             storage: 10Gi
@@ -38,7 +81,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: nst-postgres-service
-  namespace: default
+  namespace: nst-events
 spec:
   type: ClusterIP
   selector:

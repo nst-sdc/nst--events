@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import AppHomeScreen from '../app/(app)/index';
+import AppHomeScreen from '../app/(app)/(tabs)/index';
 import EventScreen from '../app/(app)/events/[id]/index';
 import TeamsScreen from '../app/(app)/events/[id]/teams';
 import InvitationsScreen from '../app/(app)/invitations';

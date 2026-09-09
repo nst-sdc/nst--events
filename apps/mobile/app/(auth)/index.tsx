@@ -1,37 +1,68 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, StatusBar, TouchableOpacity, Platform, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAppTheme } from '../../src/store/theme-store';
 import { Button } from '../../src/ui/Button';
 import { useAuthStore } from '../../src/store/auth';
 import { apiClient } from '../../src/infrastructure/api';
+import { GOOGLE_WEB_CLIENT_ID, GOOGLE_IOS_CLIENT_ID, SUPPORT_EMAIL } from '../../src/infrastructure/config';
 
 import { GoogleSignin, isErrorWithCode, statusCodes } from '@react-native-google-signin/google-signin';
 
 GoogleSignin.configure({
-  webClientId: '590987407822-nqlm9puo59u6kjotfp3eqsliq3imkr2s.apps.googleusercontent.com', // from API .env
-  iosClientId: '590987407822-ho2vv2d0994vhqag2i7r08jchnfb201l.apps.googleusercontent.com',
+  webClientId: GOOGLE_WEB_CLIENT_ID,
+  iosClientId: GOOGLE_IOS_CLIENT_ID,
 });
+
+interface AuthError {
+  type: 'INSTITUTIONAL_DOMAIN_NOT_ALLOWED' | 'STUDENT_ACCESS_NOT_AUTHORIZED' | 'GENERIC';
+  title: string;
+  message: string;
+  email?: string;
+}
 
 export default function LoginGatewayScreen() {
   const router = useRouter();
   const theme = useAppTheme();
-  
   const setSession = useAuthStore((state) => state.setSession);
-  const [domainError, setDomainError] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<AuthError | null>(null);
+  const [attemptedEmail, setAttemptedEmail] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
   const handleGoogleLogin = async () => {
     setLoading(true);
-    setDomainError(null);
+    setAuthError(null);
+    let currentEmail = attemptedEmail;
+
+    if (!GOOGLE_WEB_CLIENT_ID) {
+      setAuthError({
+        type: 'GENERIC',
+        title: 'CONFIGURATION ERROR',
+        message: 'Google Web Client ID is not configured (missing EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID). Authentication cannot proceed.',
+      });
+      setLoading(false);
+      return;
+    }
 
     try {
-      await GoogleSignin.hasPlayServices();
+      if (Platform.OS === 'android') {
+        await GoogleSignin.hasPlayServices();
+      }
       const userInfo = await GoogleSignin.signIn();
       const idToken = userInfo.data?.idToken || (userInfo as any).idToken;
+      const userEmail = userInfo.data?.user?.email || (userInfo as any).user?.email || '';
+
+      if (userEmail) {
+        currentEmail = userEmail;
+        setAttemptedEmail(userEmail);
+      }
 
       if (!idToken) {
-        setDomainError('No ID token received from Google');
+        setAuthError({
+          type: 'GENERIC',
+          title: 'AUTHENTICATION FAILED',
+          message: 'No ID token received from Google',
+        });
         return;
       }
 
@@ -44,7 +75,11 @@ export default function LoginGatewayScreen() {
       });
 
       if (!exchangeRes?.access_token || !exchangeRes?.refresh_token) {
-        setDomainError('Token exchange failed');
+        setAuthError({
+          type: 'GENERIC',
+          title: 'AUTHENTICATION FAILED',
+          message: 'Token exchange failed',
+        });
         return;
       }
 
@@ -57,25 +92,73 @@ export default function LoginGatewayScreen() {
         console.log('[Auth] Authentication handshake complete for user ID:', userProfile.id);
         await setSession(userProfile.id, exchangeRes.access_token, exchangeRes.refresh_token);
 
-        if (userProfile.global_role === 'STUDENT') {
-          router.replace('/(app)');
-        } else {
-          router.replace('/(app)');
-        }
+        router.replace('/(app)');
         return;
       } else {
-         setDomainError('Failed to verify user profile');
-         return;
+        setAuthError({
+          type: 'GENERIC',
+          title: 'AUTHENTICATION FAILED',
+          message: 'Failed to verify user profile',
+        });
+        return;
       }
     } catch (err: any) {
       console.error('[Auth] OAuth initiation error:', err);
       if (isErrorWithCode(err) && err.code === statusCodes.SIGN_IN_CANCELLED) {
         console.log('[Auth] User cancelled OAuth flow');
+        return;
+      }
+
+      const errorCode = err?.body?.detail || err?.message;
+
+      if (errorCode === 'INSTITUTIONAL_DOMAIN_NOT_ALLOWED') {
+        setAuthError({
+          type: 'INSTITUTIONAL_DOMAIN_NOT_ALLOWED',
+          title: 'INSTITUTIONAL DOMAIN NOT ALLOWED',
+          message:
+            'NST Events is restricted to institutional accounts. Please sign in with your @adypu.edu.in or @newtonschool.co Google account.',
+        });
+      } else if (errorCode === 'STUDENT_ACCESS_NOT_AUTHORIZED') {
+        const emailToShow = currentEmail || 'Your account';
+        setAuthError({
+          type: 'STUDENT_ACCESS_NOT_AUTHORIZED',
+          title: 'STUDENT NOT ENROLLED IN DIRECTORY',
+          message: `Account Recognized, but Not Enrolled: ${emailToShow} is not listed in the active NST Student Directory.`,
+          email: currentEmail,
+        });
       } else {
-        setDomainError(err?.message || 'Failed to complete Google authentication');
+        setAuthError({
+          type: 'GENERIC',
+          title: 'AUTHENTICATION FAILED',
+          message: err?.message || 'Failed to complete Google authentication',
+        });
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSwitchAccount = async () => {
+    try {
+      await GoogleSignin.signOut();
+    } catch (e) {
+      console.warn('[Auth] Google sign-out error during account switch:', e);
+    }
+    setAuthError(null);
+    await handleGoogleLogin();
+  };
+
+  const handleContactCoordinator = async () => {
+    const emailToReport = authError?.email || attemptedEmail || '';
+    const subject = encodeURIComponent(`Student Directory Inquiry - ${emailToReport}`);
+    const body = encodeURIComponent(
+      'Student Name:\nProgram:\nBatch Year:\nStudent ID:\nProblem: Institutional account not authorized in NST Events.'
+    );
+    const mailtoUrl = `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
+    try {
+      await Linking.openURL(mailtoUrl);
+    } catch (e) {
+      console.error('[Auth] Failed to open mail client:', e);
     }
   };
 
@@ -249,6 +332,20 @@ export default function LoginGatewayScreen() {
       fontSize: 11,
       color: theme.colors.onError,
     },
+    stateBActionContainer: {
+      gap: 6,
+      marginTop: 8,
+    },
+    contactBtn: {
+      paddingVertical: 6,
+      alignItems: 'center',
+    },
+    contactBtnText: {
+      fontFamily: theme.typography.interMedium,
+      fontSize: 11,
+      color: theme.colors.onErrorContainer,
+      textDecorationLine: 'underline',
+    },
     footer: {
       gap: theme.spacing.md,
     },
@@ -282,9 +379,6 @@ export default function LoginGatewayScreen() {
           <View style={styles.badgeRow}>
             <View style={styles.pingDot} />
             <Text style={styles.headerMonoText}>AUTH GATEWAY // NST-NET</Text>
-          </View>
-          <View style={styles.statusPill}>
-            <Text style={styles.statusPillText}>BLR-CAMPUS-01</Text>
           </View>
         </View>
 
@@ -324,13 +418,50 @@ export default function LoginGatewayScreen() {
             </View>
           </View>
 
-          {domainError && (
+          {authError && (
             <View style={styles.errorBox}>
-              <Text style={styles.errorTitle}>INSTITUTIONAL DOMAIN NOT ALLOWED</Text>
-              <Text style={styles.errorBody}>{domainError}</Text>
-              <TouchableOpacity style={styles.errorBtn} onPress={() => setDomainError(null)}>
-                <Text style={styles.errorBtnText}>TRY A DIFFERENT ACCOUNT</Text>
-              </TouchableOpacity>
+              <Text style={styles.errorTitle}>{authError.title}</Text>
+              <Text style={styles.errorBody}>{authError.message}</Text>
+
+              {authError.type === 'INSTITUTIONAL_DOMAIN_NOT_ALLOWED' && (
+                <TouchableOpacity
+                  style={styles.errorBtn}
+                  onPress={handleSwitchAccount}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.errorBtnText}>SWITCH GOOGLE ACCOUNT</Text>
+                </TouchableOpacity>
+              )}
+
+              {authError.type === 'STUDENT_ACCESS_NOT_AUTHORIZED' && (
+                <View style={styles.stateBActionContainer}>
+                  <TouchableOpacity
+                    style={styles.errorBtn}
+                    onPress={handleSwitchAccount}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.errorBtnText}>SWITCH ACCOUNT</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.contactBtn}
+                    onPress={handleContactCoordinator}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.contactBtnText}>Contact Academic Coordinator</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {authError.type === 'GENERIC' && (
+                <TouchableOpacity
+                  style={styles.errorBtn}
+                  onPress={() => setAuthError(null)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.errorBtnText}>DISMISS</Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
         </View>
@@ -344,6 +475,7 @@ export default function LoginGatewayScreen() {
             variant="primary"
             style={styles.ctaButton}
           />
+
 
           <View style={styles.noticeBox}>
             <Text style={styles.noticeText}>RESTRICTED TO ENROLLED NST STUDENTS & FACULTY</Text>

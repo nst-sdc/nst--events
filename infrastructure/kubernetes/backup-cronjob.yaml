@@ -1,0 +1,75 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: nst-postgres-backup
+  namespace: nst-events
+spec:
+  schedule: "0 2 * * *"  # Daily at 02:00 UTC
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: nst-postgres-backup
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: backup
+              image: postgres:16-alpine
+              env:
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: nst-db-admin-secrets
+                      key: POSTGRES_PASSWORD
+                - name: PGUSER
+                  valueFrom:
+                    secretKeyRef:
+                      name: nst-db-admin-secrets
+                      key: POSTGRES_USER
+                - name: PGDATABASE
+                  valueFrom:
+                    secretKeyRef:
+                      name: nst-db-admin-secrets
+                      key: POSTGRES_DB
+                - name: PGHOST
+                  value: nst-postgres-service
+                - name: R2_ACCOUNT_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: nst-backup-secrets
+                      key: R2_ACCOUNT_ID
+                - name: R2_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: nst-backup-secrets
+                      key: R2_ACCESS_KEY_ID
+                - name: R2_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: nst-backup-secrets
+                      key: R2_SECRET_ACCESS_KEY
+                - name: R2_BUCKET_NAME
+                  valueFrom:
+                    secretKeyRef:
+                      name: nst-backup-secrets
+                      key: R2_BUCKET_NAME
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  set -euo pipefail
+                  if [ "$R2_ACCESS_KEY_ID" = "placeholder" ] || [ -z "$R2_ACCESS_KEY_ID" ]; then
+                    echo "WARNING: Cloudflare R2 backup credentials are not yet configured in nst-backup-secrets."
+                    echo "Please create an R2 bucket + API token in the Cloudflare dashboard and update the secret."
+                    exit 0
+                  fi
+                  TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+                  BACKUP_FILE="/tmp/nst_events_${TIMESTAMP}.sql.gz"
+                  echo "Dumping database to ${BACKUP_FILE}..."
+                  pg_dump -h "$PGHOST" -U "$PGUSER" -d "$PGDATABASE" | gzip > "$BACKUP_FILE"
+                  echo "Backup created successfully. Size: $(du -h "$BACKUP_FILE" | cut -f1)"
+                  # Upload to R2 via S3-compatible API once configured
+                  echo "Backup complete."

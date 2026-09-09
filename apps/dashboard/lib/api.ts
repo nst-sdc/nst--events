@@ -4,8 +4,9 @@
  * Establishes typed client, error handling, and authentication boundaries for Dashboard.
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 import { getWebAuthStore } from './auth-store';
+import { formatErrorMessage } from './error-utils';
 
 export class ApiError extends Error {
   status: number;
@@ -106,9 +107,14 @@ export const apiClient = async <T = any>(endpoint: string, options: RequestInit 
       authStore.logout();
     }
 
+    const rawMessage = errorBody?.detail || errorBody?.message;
+    const humanMessage = rawMessage
+      ? formatErrorMessage(rawMessage || errorBody, rawMessage)
+      : 'API Request Failed';
+
     throw new ApiError(
       response.status,
-      errorBody?.detail || errorBody?.message || 'API Request Failed',
+      humanMessage,
       errorBody,
       requestId
     );

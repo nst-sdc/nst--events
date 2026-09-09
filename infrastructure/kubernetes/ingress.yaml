@@ -1,13 +1,12 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: nst-ingress
-  namespace: default
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+  name: nst-events-ingress
+  namespace: nst-events
 spec:
+  ingressClassName: traefik
   rules:
-    - host: api.nst-events.local
+    - host: api.nst-events.nstsdc.org
       http:
         paths:
           - path: /
@@ -15,5 +14,15 @@ spec:
             backend:
               service:
                 name: nst-api-service
+                port:
+                  number: 80
+    - host: dashboard.nst-events.nstsdc.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nst-dashboard-service
                 port:
                   number: 80
