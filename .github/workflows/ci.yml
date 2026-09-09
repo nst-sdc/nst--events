@@ -106,6 +106,7 @@ jobs:
           echo "=== Smoke Testing Worker Container Startup ==="
           docker run -d --name ci-worker-smoke \
             --network host \
+            -e DATABASE_URL="${{ env.DATABASE_URL }}?schema=public" \
             -e WORKER_DATABASE_URL="${{ env.DATABASE_URL }}?schema=public" \
             -e EXPO_ACCESS_TOKEN="dummy" \
             nst-worker:ci
