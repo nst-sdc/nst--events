@@ -5,8 +5,16 @@ import jwt from 'jsonwebtoken';
 const prisma = new PrismaClient();
 
 async function run() {
-  const user = await prisma.user.findUnique({ where: { email: 'e25b070564@adypu.edu.in' } });
-  if (!user) throw new Error("No user");
+  const targetEmail = (process.argv[2] || process.env.TEST_USER_EMAIL || '').trim().toLowerCase();
+  if (!targetEmail) {
+    console.error('Error: Email argument is required.\nUsage: npx ts-node test_api.ts <user-email>');
+    process.exit(1);
+  }
+
+  const user = await prisma.user.findUnique({ where: { email: targetEmail } });
+  if (!user) throw new Error(`No user found with email: ${targetEmail}`);
+
+  console.log(`Testing API endpoints as: ${user.email} (${user.fullName || 'No Name'}, Role: ${user.globalRole})`);
   
   const jwtSecret = process.env.JWT_SECRET;
   if (!jwtSecret) throw new Error("JWT_SECRET environment variable is required");
