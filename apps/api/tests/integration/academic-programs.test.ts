@@ -21,7 +21,6 @@ test('Phase API-FACULTY-ADMIN-ACADEMIC-PROGRAMS API', async (t) => {
     await adminPrisma.eventRegistration.deleteMany({});
     await adminPrisma.attendanceRecord.deleteMany({});
     await adminPrisma.attendanceSession.deleteMany({});
-    await adminPrisma.teamInvitation.deleteMany({});
     await adminPrisma.team.deleteMany({});
     await adminPrisma.eventAudienceBatch.deleteMany({});
     await adminPrisma.eventClub.deleteMany({});

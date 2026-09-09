@@ -28,7 +28,6 @@ test('Phase UI-14D Academic Identity Integration', async (t) => {
     await adminPrisma.academicBatch.deleteMany({});
     await adminPrisma.academicProgram.deleteMany({});
     await adminPrisma.eventRegistration.deleteMany({});
-    await adminPrisma.teamInvitation.deleteMany({});
     await adminPrisma.team.deleteMany({});
     await adminPrisma.event.deleteMany({});
     await adminPrisma.clubMembership.deleteMany({});

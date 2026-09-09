@@ -29,10 +29,11 @@ describe('WEB-54C Admin Provisioning and Directory (Backend)', () => {
   });
 
   after(async () => {
-  await adminPrisma.$executeRaw`DELETE FROM club_memberships WHERE user_id IN (SELECT id FROM users WHERE email IN ('test-student@adypu.edu.in', 'test-clubadmin@adypu.edu.in'))`;
-  await adminPrisma.$executeRaw`DELETE FROM users WHERE email IN ('test-student@adypu.edu.in', 'test-clubadmin@adypu.edu.in')`;
-  await prisma.clubMembership.deleteMany({ where: { clubId } });
-  try { await prisma.club.delete({ where: { id: clubId } }); } catch (e) {}
+    await adminPrisma.$executeRaw`DELETE FROM club_memberships WHERE user_id IN (SELECT id FROM users WHERE email LIKE '%test-%')`;
+    await adminPrisma.$executeRaw`DELETE FROM user_academic_profiles WHERE user_id IN (SELECT id FROM users WHERE email LIKE '%test-%')`;
+    await adminPrisma.$executeRaw`DELETE FROM users WHERE email IN ('test-student@adypu.edu.in', 'test-clubadmin@adypu.edu.in')`;
+    await prisma.clubMembership.deleteMany({ where: { clubId } });
+    try { await prisma.club.delete({ where: { id: clubId } }); } catch (e) {}
     await prisma.user.deleteMany({ where: { email: { contains: 'test-' } } });
     await prisma.authorizedStudent.deleteMany({ where: { normalizedEmail: { contains: 'test-' } } });
     try { await prisma.user.delete({ where: { id: adminUserId } }); } catch (e) {}

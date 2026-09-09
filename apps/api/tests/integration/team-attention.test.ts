@@ -70,11 +70,11 @@ describe('Team Attention & Below Minimum Signal', () => {
     await prisma.eventClub.create({ data: { eventId, clubId: club.id, isPrimary: true } });
 
     // Create Teams
-    const t1 = await prisma.team.create({ data: { eventId, leaderId: leader1Id, name: 'Team 1', status: 'FORMING' } });
-    const t2 = await prisma.team.create({ data: { eventId, leaderId: leader2Id, name: 'Team 2', status: 'WAITLISTED' } });
-    const t3 = await prisma.team.create({ data: { eventId, leaderId: leader3Id, name: 'Team 3', status: 'CANCELLED' } });
-    const t4 = await prisma.team.create({ data: { eventId, leaderId: leader4Id, name: 'Team 4', status: 'REGISTERED' } });
-    const t5 = await prisma.team.create({ data: { eventId, leaderId: leader5Id, name: 'Team 5', status: 'REGISTERED' } });
+    const t1 = await prisma.team.create({ data: { eventId, leaderId: leader1Id, name: 'Team 1', normalizedName: 'team 1', status: 'FORMING' } });
+    const t2 = await prisma.team.create({ data: { eventId, leaderId: leader2Id, name: 'Team 2', normalizedName: 'team 2', status: 'WAITLISTED' } });
+    const t3 = await prisma.team.create({ data: { eventId, leaderId: leader3Id, name: 'Team 3', normalizedName: 'team 3', status: 'CANCELLED' } });
+    const t4 = await prisma.team.create({ data: { eventId, leaderId: leader4Id, name: 'Team 4', normalizedName: 'team 4', status: 'REGISTERED' } });
+    const t5 = await prisma.team.create({ data: { eventId, leaderId: leader5Id, name: 'Team 5', normalizedName: 'team 5', status: 'REGISTERED' } });
 
     team1Id = t1.id; team2Id = t2.id; team3Id = t3.id; team4Id = t4.id; team5Id = t5.id;
 

@@ -25,7 +25,6 @@ describe('AUTH-10 Manual Waitlist Promotion Tests', () => {
   beforeAll(async () => {
     // Cleanup first
     await prisma.eventRegistration.deleteMany({});
-    await prisma.teamInvitation.deleteMany({});
     await prisma.team.deleteMany({});
     await prisma.auditLog.deleteMany({});
     await prisma.notificationJob.deleteMany({});
@@ -120,7 +119,6 @@ describe('AUTH-10 Manual Waitlist Promotion Tests', () => {
   afterAll(async () => {
     // Teardown
     await prisma.eventRegistration.deleteMany({});
-    await prisma.teamInvitation.deleteMany({});
     await prisma.team.deleteMany({});
     await prisma.auditLog.deleteMany({});
     await prisma.notificationJob.deleteMany({});
@@ -143,6 +141,7 @@ describe('AUTH-10 Manual Waitlist Promotion Tests', () => {
         eventId,
         leaderId,
         name: 'Waitlist Team',
+        normalizedName: 'waitlist team',
         status: 'WAITLISTED'
       }
     });
@@ -166,6 +165,7 @@ describe('AUTH-10 Manual Waitlist Promotion Tests', () => {
         eventId: eventId2,
         leaderId,
         name: 'Waitlist Team 2',
+        normalizedName: 'waitlist team 2',
         status: 'WAITLISTED'
       }
     });
@@ -173,7 +173,7 @@ describe('AUTH-10 Manual Waitlist Promotion Tests', () => {
     await prisma.eventRegistration.create({ data: { eventId: eventId2, userId: leaderId, teamId: teamId2, registrationStatus: 'WAITLISTED' } });
     await prisma.eventRegistration.create({ data: { eventId: eventId2, userId: memberId, teamId: teamId2, registrationStatus: 'WAITLISTED' } });
 
-    await assert.rejects(manualWaitlistPromotion(adminId, teamId2), { message: /Not enough capacity/ });
+    await assert.rejects(manualWaitlistPromotion(adminId, teamId2), { message: /Event capacity is full/ });
   });
 
   it('TEST - CAPACITY: Succeeds if team size equals capacity', async () => {
@@ -252,7 +252,7 @@ describe('AUTH-10 Manual Waitlist Promotion Tests', () => {
     assert.ok(countBefore >= 2);
 
     // Check idempotency: attempt promotion again
-    await assert.rejects(manualWaitlistPromotion(adminId, teamId), { message: /Team is not waitlisted/ });
+    await assert.rejects(manualWaitlistPromotion(adminId, teamId), { message: /TEAM_NOT_WAITLISTED/ });
     const notifsAfter = await prisma.notification.findMany({ where: { userId: { in: [leaderId, memberId] }, type: 'WAITLIST_PROMOTED' } });
     assert.strictEqual(notifsAfter.length, countBefore); // No new notifications
   });

@@ -74,7 +74,6 @@ test('Phase AUTH-07 - Academic Profile RLS & Concurrency', async (t) => {
     await adminPrisma.academicBatch.deleteMany({});
     await adminPrisma.academicProgram.deleteMany({});
     await adminPrisma.eventRegistration.deleteMany({});
-    await adminPrisma.teamInvitation.deleteMany({});
     await adminPrisma.team.deleteMany({});
     await adminPrisma.event.deleteMany({});
     await adminPrisma.clubMembership.deleteMany({});

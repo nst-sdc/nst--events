@@ -6,10 +6,10 @@ import { adminPrisma } from '../helpers/adminDb';
 import { signJwt } from '../../src/lib/jwt';
 
 
-import crypto from 'crypto';
+import crypto, { randomUUID } from 'crypto';
 
 function generateCustomQrPayload(sessionId: string, qrSecret: string, offsetWindows: number): string {
-  const windowEpoch = Math.floor(Date.now() / 15000) + offsetWindows;
+  const windowEpoch = Math.floor(Date.now() / 30000) + offsetWindows;
   const hmacInput = `v1:${sessionId}:${windowEpoch}`;
   const hmac = crypto.createHmac('sha256', qrSecret);
   hmac.update(hmacInput);
@@ -18,16 +18,16 @@ function generateCustomQrPayload(sessionId: string, qrSecret: string, offsetWind
   return `v1:${sessionId}:${signature}`;
 }
 
-
 const app = createApp();
 
 describe('Phase 26G: GPS Consistency', () => {
-  const eventId = 'f74c7c5b-7b00-4b6c-8c01-8b01c0c0c990';
-  const sessionId = 'f74c7c5b-7b00-4b6c-8c01-8b01c0c0c991';
-  const clubId = 'f74c7c5b-7b00-4b6c-8c01-8b01c0c0c992';
+  const runId = randomUUID().slice(0, 6);
+  const eventId = randomUUID();
+  const sessionId = randomUUID();
+  const clubId = randomUUID();
   
-  const admin = 'f74c7c5b-7b00-4b6c-8c01-8b01c0c0c993';
-  const student = 'f74c7c5b-7b00-4b6c-8c01-8b01c0c0c994';
+  const admin = randomUUID();
+  const student = randomUUID();
   
   let adminToken: string;
   let studentToken: string;
@@ -38,34 +38,19 @@ describe('Phase 26G: GPS Consistency', () => {
   const deviceId = 'test_device';
 
   before(async () => {
-
-    await adminPrisma.$executeRawUnsafe(`ALTER TABLE users DISABLE ROW LEVEL SECURITY`);
-    await adminPrisma.leaderboardScore.deleteMany({ where: { userId: { in: [admin, student] } } });
-    await adminPrisma.attendanceRecord.deleteMany({ where: { sessionId } });
-    await adminPrisma.consumedQrSignature.deleteMany({ where: { sessionId } });
-    await adminPrisma.eventRegistration.deleteMany({ where: { eventId } });
-    await adminPrisma.attendanceSession.deleteMany({ where: { eventId } });
-    await adminPrisma.clubMembership.deleteMany({ where: { clubId } });
-    await adminPrisma.eventClub.deleteMany({ where: { eventId } });
-    await adminPrisma.event.deleteMany({ where: { id: eventId } });
-    await adminPrisma.club.deleteMany({ where: { id: clubId } });
-    await adminPrisma.user.deleteMany({ where: { id: { in: [admin, student] } } });
-    await adminPrisma.$executeRawUnsafe(`ALTER TABLE users ENABLE ROW LEVEL SECURITY`);
-
-
     await adminPrisma.user.createMany({
       data: [
-        { id: admin, email: 'admin_g99@adypu.edu.in', googleSub: 'ag99', fullName: 'AG', globalRole: 'STUDENT' },
-        { id: student, email: 'student_g99@adypu.edu.in', googleSub: 'sg99', fullName: 'SG', globalRole: 'STUDENT' },
+        { id: admin, email: `admin_g_${runId}@adypu.edu.in`, googleSub: `ag_${runId}`, fullName: 'AG', globalRole: 'STUDENT' },
+        { id: student, email: `student_g_${runId}@adypu.edu.in`, googleSub: `sg_${runId}`, fullName: 'SG', globalRole: 'STUDENT' },
       ]
     });
 
-    await adminPrisma.club.create({ data: { id: clubId, name: 'CG99' } });
+    await adminPrisma.club.create({ data: { id: clubId, name: `CG_${runId}` } });
 
     await adminPrisma.event.create({
       data: {
         id: eventId,
-        title: 'EG99',
+        title: `EG_${runId}`,
         state: 'PUBLISHED',
         visibility: 'PUBLIC',
         isLocked: false,
@@ -95,10 +80,8 @@ describe('Phase 26G: GPS Consistency', () => {
   });
 
   after(async () => {
-    await adminPrisma.$executeRawUnsafe(`ALTER TABLE users DISABLE ROW LEVEL SECURITY`);
     await adminPrisma.leaderboardScore.deleteMany({ where: { userId: { in: [admin, student] } } });
     await adminPrisma.attendanceRecord.deleteMany({ where: { sessionId } });
-    await adminPrisma.consumedQrSignature.deleteMany({ where: { sessionId } });
     await adminPrisma.eventRegistration.deleteMany({ where: { eventId } });
     await adminPrisma.attendanceSession.deleteMany({ where: { eventId } });
     await adminPrisma.clubMembership.deleteMany({ where: { clubId } });
@@ -106,7 +89,6 @@ describe('Phase 26G: GPS Consistency', () => {
     await adminPrisma.event.deleteMany({ where: { id: eventId } });
     await adminPrisma.club.deleteMany({ where: { id: clubId } });
     await adminPrisma.user.deleteMany({ where: { id: { in: [admin, student] } } });
-    await adminPrisma.$executeRawUnsafe(`ALTER TABLE users ENABLE ROW LEVEL SECURITY`);
   });
 
   it('Live: invalid latitude bounds -> 400', async () => {
@@ -180,7 +162,6 @@ describe('Phase 26G: GPS Consistency', () => {
     // We need to delete the live attendance record first to test offline properly for the same user
     await adminPrisma.leaderboardScore.deleteMany({ where: { userId: student } });
     await adminPrisma.attendanceRecord.deleteMany({ where: { userId: student } });
-    await adminPrisma.consumedQrSignature.deleteMany({ where: { sessionId } });
 
     const res = await request(app).post('/v1/attendance/sync-offline').set('Authorization', `Bearer ${studentToken}`).send({
       records: [

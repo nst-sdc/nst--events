@@ -1,7 +1,7 @@
 import { describe, it, before as beforeAll, after as afterAll } from 'node:test';
 import assert from 'node:assert';
 import { adminPrisma as prisma } from '../helpers/adminDb';
-import { createTeam, inviteMember, acceptInvitation, leaveTeam, joinTeam } from '../../src/modules/teams/teams.service';
+import { createTeam, leaveTeam, joinTeam } from '../../src/modules/teams/teams.service';
 import { manualWaitlistPromotion, cancelTeam, transferLeadership, removeMember } from '../../src/modules/admin/teams.service';
 
 describe('Team Lifecycle Integration Tests', () => {
@@ -12,12 +12,10 @@ describe('Team Lifecycle Integration Tests', () => {
   let member2Id: string;
   let adminId: string;
   let teamId: string;
-  let invitationId: string;
 
   beforeAll(async () => {
     // Cleanup first just in case
     await prisma.eventRegistration.deleteMany({});
-    await prisma.teamInvitation.deleteMany({});
     await prisma.team.deleteMany({});
     await prisma.notificationJob.deleteMany({});
     await prisma.notification.deleteMany({});
@@ -78,7 +76,6 @@ describe('Team Lifecycle Integration Tests', () => {
   afterAll(async () => {
     // Cleanup
     await prisma.eventRegistration.deleteMany({});
-    await prisma.teamInvitation.deleteMany({});
     await prisma.team.deleteMany({});
     await prisma.notificationJob.deleteMany({});
     await prisma.notification.deleteMany({});
@@ -98,24 +95,15 @@ describe('Team Lifecycle Integration Tests', () => {
     assert.strictEqual(event?.registrationCount, 0); // FORMING doesn't count
   });
 
-  it('should invite a member and leave team as FORMING', async () => {
-    const inv = await inviteMember(leaderId, teamId, member1Id);
-    assert.ok(inv.id);
-    invitationId = inv.id;
-
-    const team = await prisma.team.findUnique({ where: { id: teamId } });
-    assert.strictEqual(team?.status, 'FORMING');
-  });
-
-  it('should accept invitation and register team since it meets minimum size (2)', async () => {
-    const res = await acceptInvitation(member1Id, teamId, invitationId);
+  it('should register team when member1 joins since it meets minimum size (2)', async () => {
+    const res = await joinTeam(member1Id, teamId);
     assert.strictEqual(res.status, 'REGISTERED');
 
     const team = await prisma.team.findUnique({ where: { id: teamId } });
     assert.strictEqual(team?.status, 'REGISTERED');
 
     const event = await prisma.event.findUnique({ where: { id: eventId } });
-    assert.strictEqual(event?.registrationCount, 2); // Now it consumed capacity
+    assert.strictEqual(event?.registrationCount, 1); // Team slot = 1
   });
 
   it('should join team via joinTeam (bypassing invite for test sake) and respect max capacity', async () => {
@@ -124,7 +112,7 @@ describe('Team Lifecycle Integration Tests', () => {
     assert.strictEqual(res.status, 'REGISTERED');
 
     const event = await prisma.event.findUnique({ where: { id: eventId } });
-    assert.strictEqual(event?.registrationCount, 3); // 3 members total
+    assert.strictEqual(event?.registrationCount, 1); // 1 team slot total
   });
 
   it('should allow admin to transfer leadership (setup for later tests)', async () => {
@@ -137,7 +125,7 @@ describe('Team Lifecycle Integration Tests', () => {
     // Admin removes the old leader (now a normal member)
     await removeMember(adminId, teamId, leaderId);
     const event = await prisma.event.findUnique({ where: { id: eventId } });
-    assert.strictEqual(event?.registrationCount, 2); // Reduced by 1
+    assert.strictEqual(event?.registrationCount, 1); // Team still holds 1 slot
 
     const team = await prisma.team.findUnique({ where: { id: teamId } });
     assert.strictEqual(team?.status, 'REGISTERED'); // Still registered even though below min size conceptually (lazy cleanup handles cancelling later)
@@ -179,8 +167,7 @@ describe('Team Lifecycle Integration Tests', () => {
     const t = await createTeam(leaderId, eventId, 'Demotion Team');
     const newTeamId = t.team_id;
 
-    const inv = await inviteMember(leaderId, newTeamId, member1Id);
-    await acceptInvitation(member1Id, newTeamId, inv.id);
+    await joinTeam(member1Id, newTeamId);
     
     // Team now has 2 members and is REGISTERED (min size is 2).
     let team = await prisma.team.findUnique({ where: { id: newTeamId } });
@@ -190,22 +177,14 @@ describe('Team Lifecycle Integration Tests', () => {
     // we just check if it decreased by exactly 2.
     const beforeCount = event?.registrationCount || 0;
 
-    // Member leaves (member1), size drops to 1, falling below minimum of 2.
+    // Member leaves (member1)
     await leaveTeam(member1Id, newTeamId);
 
     team = await prisma.team.findUnique({ where: { id: newTeamId } });
-    assert.strictEqual(team?.status, 'WAITLISTED');
+    assert.strictEqual(team?.status, 'REGISTERED'); // Team remains REGISTERED as per fix_team_capacity_waitlist_state_machine
 
     event = await prisma.event.findUnique({ where: { id: eventId } });
-    assert.strictEqual(event?.registrationCount, beforeCount - 2); // Decreased by exactly N (2)
-    
-    // Assert audit log was created by the SQL function
-    const log = await prisma.auditLog.findFirst({ where: { entityId: newTeamId, action: 'TEAM_DEMOTED_TO_WAITLIST' } });
-    assert.ok(log, 'Audit log TEAM_DEMOTED_TO_WAITLIST should exist from SQL function');
-    
-    const jobs = await prisma.notificationJob.findMany();
-    const waitlistJobs = jobs.filter(j => (j.payload as any).notification_type === 'TEAM_WAITLISTED' && (j.payload as any).user_id === leaderId);
-    assert.strictEqual(waitlistJobs.length, 1, 'Should enqueue TEAM_WAITLISTED notification for the remaining member (leader)');
+    assert.strictEqual(event?.registrationCount, beforeCount);
   });
 
   it('TEST - isolated scenario: leader leaves a team of 3, exactly 2 remaining members get TEAM_CANCELLED', async () => {
@@ -240,11 +219,8 @@ describe('Team Lifecycle Integration Tests', () => {
     const t = await createTeam(leaderId, isolatedEventId, 'Isolated 3-Member Team');
     const isoTeamId = t.team_id;
 
-    const inv1 = await inviteMember(leaderId, isoTeamId, member1Id);
-    await acceptInvitation(member1Id, isoTeamId, inv1.id);
-    
-    const inv2 = await inviteMember(leaderId, isoTeamId, member2Id);
-    await acceptInvitation(member2Id, isoTeamId, inv2.id);
+    await joinTeam(member1Id, isoTeamId);
+    await joinTeam(member2Id, isoTeamId);
     
     // Team now has 3 members. Leader leaves.
     await leaveTeam(leaderId, isoTeamId);

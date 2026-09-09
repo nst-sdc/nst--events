@@ -54,7 +54,7 @@ describe('AUTH-12: Manual Waitlist Promotion Capacity Atomicity', () => {
     // Team A (Waitlisted, size 2)
     const teamA = await prisma.team.create({
       data: {
-        eventId, name: 'Team A', leaderId: user1, status: 'WAITLISTED',
+        eventId, name: 'Team A', normalizedName: 'team a', leaderId: user1, status: 'WAITLISTED',
         eventRegistrations: {
           create: [
             { userId: user1, eventId, registrationStatus: 'WAITLISTED' },
@@ -68,7 +68,7 @@ describe('AUTH-12: Manual Waitlist Promotion Capacity Atomicity', () => {
     // Team B (Waitlisted, size 2)
     const teamB = await prisma.team.create({
       data: {
-        eventId, name: 'Team B', leaderId: user3, status: 'WAITLISTED',
+        eventId, name: 'Team B', normalizedName: 'team b', leaderId: user3, status: 'WAITLISTED',
         eventRegistrations: {
           create: [
             { userId: user3, eventId, registrationStatus: 'WAITLISTED' },

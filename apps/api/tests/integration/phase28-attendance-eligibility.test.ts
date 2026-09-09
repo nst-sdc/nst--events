@@ -86,7 +86,6 @@ async function cleanup(userIds: string[], eventIds: string[], sessionIds: string
   // Order matters: attendance records → scores → signatures → sessions → registrations → audience batches → events → profiles → users
   for (const sid of sessionIds) {
     await adminPrisma.attendanceRecord.deleteMany({ where: { sessionId: sid } });
-    await adminPrisma.consumedQrSignature.deleteMany({ where: { sessionId: sid } });
   }
   await adminPrisma.leaderboardScore.deleteMany({ where: { userId: { in: userIds } } });
   for (const sid of sessionIds) {

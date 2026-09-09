@@ -10,7 +10,7 @@ import { randomUUID } from 'crypto';
 const app = createApp();
 
 function generateCustomQrPayload(sessionId: string, qrSecret: string, offsetWindows: number): string {
-  const windowEpoch = Math.floor(Date.now() / 15000) + offsetWindows;
+  const windowEpoch = Math.floor(Date.now() / 30000) + offsetWindows;
   const hmacInput = `v1:${sessionId}:${windowEpoch}`;
   const hmac = crypto.createHmac('sha256', qrSecret);
   hmac.update(hmacInput);
@@ -28,6 +28,7 @@ describe('Phase 26E: Device Collision Race and Hardening', () => {
   let clubId = randomUUID();
   let eventId = randomUUID();
   let sessionId = randomUUID();
+  const runId = randomUUID().slice(0, 6);
 
   let student1Token: string;
   let student2Token: string;
@@ -37,28 +38,22 @@ describe('Phase 26E: Device Collision Race and Hardening', () => {
 
   before(async () => {
     sandbox = require('sinon').createSandbox();
-    const { prisma } = require('@nst/database');
-    const rawSess = await adminPrisma.$queryRawUnsafe(`SELECT * FROM attendance_sessions WHERE id = '${sessionId}'`); console.log('RAW DEBUG:', rawSess);
-    await adminPrisma.$executeRawUnsafe(`ALTER TABLE users DISABLE ROW LEVEL SECURITY`);
-
-    await adminPrisma.leaderboardScore.deleteMany({ where: { user: { email: { in: ['s4@adypu.edu.in', 's5@adypu.edu.in'] } } } });
-    await adminPrisma.user.deleteMany({ where: { email: { in: ['s4@adypu.edu.in', 's5@adypu.edu.in'] } } });
 
     await adminPrisma.user.createMany({
       data: [
-        { id: student1, email: 's1@adypu.edu.in', googleSub: 'e1', fullName: 'S1', globalRole: 'STUDENT' },
-        { id: student2, email: 's2@adypu.edu.in', googleSub: 'e2', fullName: 'S2', globalRole: 'STUDENT' },
-        { id: student3, email: 's3@adypu.edu.in', googleSub: 'e3', fullName: 'S3', globalRole: 'STUDENT' },
-        { id: admin, email: 'admin@adypu.edu.in', googleSub: 'ea', fullName: 'A', globalRole: 'STUDENT' },
+        { id: student1, email: `s1_26e_${runId}@adypu.edu.in`, googleSub: `e1_${runId}`, fullName: 'S1', globalRole: 'STUDENT' },
+        { id: student2, email: `s2_26e_${runId}@adypu.edu.in`, googleSub: `e2_${runId}`, fullName: 'S2', globalRole: 'STUDENT' },
+        { id: student3, email: `s3_26e_${runId}@adypu.edu.in`, googleSub: `e3_${runId}`, fullName: 'S3', globalRole: 'STUDENT' },
+        { id: admin, email: `admin_26e_${runId}@adypu.edu.in`, googleSub: `ea_${runId}`, fullName: 'A', globalRole: 'STUDENT' },
       ]
     });
 
-    await adminPrisma.club.create({ data: { id: clubId, name: 'C1' } });
+    await adminPrisma.club.create({ data: { id: clubId, name: `Club 26E ${runId}` } });
 
     await adminPrisma.event.create({
       data: {
         id: eventId,
-        title: 'E1',
+        title: `Event 26E ${runId}`,
         state: 'PUBLISHED',
         visibility: 'PUBLIC',
         isLocked: false,
@@ -96,8 +91,6 @@ describe('Phase 26E: Device Collision Race and Hardening', () => {
       ]
     });
 
-    await adminPrisma.$executeRawUnsafe(`ALTER TABLE users ENABLE ROW LEVEL SECURITY`);
-
     student1Token = signJwt(student1);
     student2Token = signJwt(student2);
     student3Token = signJwt(student3);
@@ -107,16 +100,13 @@ describe('Phase 26E: Device Collision Race and Hardening', () => {
   after(async () => {
     await adminPrisma.leaderboardScore.deleteMany({ where: { userId: { in: [student1, student2, student3] } } });
     await adminPrisma.attendanceRecord.deleteMany({ where: { sessionId } });
-    await adminPrisma.consumedQrSignature.deleteMany({ where: { sessionId } });
     await adminPrisma.attendanceSession.deleteMany({ where: { id: sessionId } });
     await adminPrisma.eventRegistration.deleteMany({ where: { eventId } });
     await adminPrisma.eventClub.deleteMany({ where: { eventId } });
     await adminPrisma.event.deleteMany({ where: { id: eventId } });
     await adminPrisma.clubMembership.deleteMany({ where: { clubId } });
     await adminPrisma.club.deleteMany({ where: { id: clubId } });
-    await adminPrisma.$executeRawUnsafe(`ALTER TABLE users DISABLE ROW LEVEL SECURITY`);
     await adminPrisma.user.deleteMany({ where: { id: { in: [student1, student2, student3, admin] } } });
-    await adminPrisma.$executeRawUnsafe(`ALTER TABLE users ENABLE ROW LEVEL SECURITY`);
   });
 
   it('Concurrent live scan (Promise.all) safely flags exactly one and awards 5 points to the other', async () => {
@@ -168,16 +158,18 @@ describe('Phase 26E: Device Collision Race and Hardening', () => {
 
     // We will use student3 and student4.
     const student4 = randomUUID();
-    await adminPrisma.$executeRawUnsafe(`ALTER TABLE users DISABLE ROW LEVEL SECURITY`);
-    await adminPrisma.user.create({ data: { id: student4, email: 's4@adypu.edu.in', googleSub: 's4-sub', fullName: 'S4', globalRole: 'STUDENT' }});
+    await adminPrisma.user.create({ data: { id: student4, email: `s4_26e_${runId}@adypu.edu.in`, googleSub: `s4-sub-${runId}`, fullName: 'S4', globalRole: 'STUDENT' }});
     await adminPrisma.eventRegistration.create({ data: { eventId: eventId, userId: student4 }});
-    await adminPrisma.$executeRawUnsafe(`ALTER TABLE users ENABLE ROW LEVEL SECURITY`);
+
+    const nowIso = new Date().toISOString();
+    const tokenA = generateCustomQrPayload(sessionId, 'SECRET', 0);
+    const tokenB = generateCustomQrPayload(sessionId, 'SECRET', 0);
 
     const payload3 = {
       user_id: student3,
       session_id: sessionId,
-      scanned_token: generateCustomQrPayload(sessionId, 'SECRET', -2),
-      scan_timestamp: new Date(Date.now() - 30000).toISOString(),
+      scanned_token: tokenA,
+      scan_timestamp: nowIso,
       device_id: batchDevice,
       gps_lat: 10,
       gps_lng: 10,
@@ -189,8 +181,8 @@ describe('Phase 26E: Device Collision Race and Hardening', () => {
     const payload4 = {
       user_id: student4, 
       session_id: sessionId,
-      scanned_token: generateCustomQrPayload(sessionId, 'SECRET', -3),
-      scan_timestamp: new Date(Date.now() - 45000).toISOString(),
+      scanned_token: tokenB,
+      scan_timestamp: nowIso,
       device_id: batchDevice,
       gps_lat: 10,
       gps_lng: 10,
@@ -244,47 +236,39 @@ describe('Phase 26E: Device Collision Race and Hardening', () => {
     await adminPrisma.attendanceRecord.deleteMany({ where: { userId: student4 } });
     await adminPrisma.leaderboardScore.deleteMany({ where: { userId: student4 } });
     await adminPrisma.eventRegistration.deleteMany({ where: { userId: student4 } });
-    await adminPrisma.$executeRawUnsafe(`ALTER TABLE users DISABLE ROW LEVEL SECURITY`);
     await adminPrisma.user.deleteMany({ where: { id: student4 } });
-    await adminPrisma.$executeRawUnsafe(`ALTER TABLE users ENABLE ROW LEVEL SECURITY`);
   });
 
   it('Device ID boundaries (1, 255, 256, empty)', async () => {
-    const student4 = randomUUID();
-    await adminPrisma.$executeRawUnsafe(`ALTER TABLE users DISABLE ROW LEVEL SECURITY`);
-    await adminPrisma.user.create({ data: { id: student4, email: 's5@adypu.edu.in', googleSub: 's5', fullName: 'S5', globalRole: 'STUDENT' }});
-    await adminPrisma.eventRegistration.create({ data: { eventId: eventId, userId: student4 }});
-    await adminPrisma.$executeRawUnsafe(`ALTER TABLE users ENABLE ROW LEVEL SECURITY`);
-    const student4Token = signJwt(student4);
+    const student5 = randomUUID();
+    await adminPrisma.user.create({ data: { id: student5, email: `s5_26e_${runId}@adypu.edu.in`, googleSub: `s5_${runId}`, fullName: 'S5', globalRole: 'STUDENT' }});
+    await adminPrisma.eventRegistration.create({ data: { eventId: eventId, userId: student5 }});
+    const student5Token = signJwt(student5);
 
     const token = generateCustomQrPayload(sessionId, 'SECRET', 1); // valid next window (allowed by drift)
 
     // Empty device_id -> 400
-    const res1 = await request(app).post('/v1/attendance/mark').set('Authorization', `Bearer ${student4Token}`).send({
+    const res1 = await request(app).post('/v1/attendance/mark').set('Authorization', `Bearer ${student5Token}`).send({
       session_id: sessionId, totp_token: token, latitude: 10, longitude: 10, device_id: '', device_os: 'iOS', gps_accuracy: 5, mock_location_detected: false, app_version: '1.0'
     });
     assert.strictEqual(res1.status, 400);
 
     // 256 length -> 400
-    const res2 = await request(app).post('/v1/attendance/mark').set('Authorization', `Bearer ${student4Token}`).send({
+    const res2 = await request(app).post('/v1/attendance/mark').set('Authorization', `Bearer ${student5Token}`).send({
       session_id: sessionId, totp_token: token, latitude: 10, longitude: 10, device_id: 'a'.repeat(256), device_os: 'iOS', gps_accuracy: 5, mock_location_detected: false, app_version: '1.0'
     });
     assert.strictEqual(res2.status, 400);
 
     // 255 length -> 201
-    const res3 = await request(app).post('/v1/attendance/mark').set('Authorization', `Bearer ${student4Token}`).send({
+    const res3 = await request(app).post('/v1/attendance/mark').set('Authorization', `Bearer ${student5Token}`).send({
       session_id: sessionId, totp_token: token, latitude: 10, longitude: 10, device_id: 'a'.repeat(255), device_os: 'iOS', gps_accuracy: 5, mock_location_detected: false, app_version: '1.0'
     });
     assert.strictEqual(res3.status, 201);
 
-    await adminPrisma.leaderboardScore.deleteMany({ where: { userId: student4 } });
-    await adminPrisma.attendanceRecord.deleteMany({ where: { userId: student4 } });
-    await adminPrisma.eventRegistration.deleteMany({ where: { userId: student4 } });
-    await adminPrisma.$executeRawUnsafe(`ALTER TABLE attendance_sessions ENABLE ROW LEVEL SECURITY`);
-    await adminPrisma.$executeRawUnsafe(`ALTER TABLE events ENABLE ROW LEVEL SECURITY`);
-    await adminPrisma.$executeRawUnsafe(`ALTER TABLE users DISABLE ROW LEVEL SECURITY`);
-    await adminPrisma.user.deleteMany({ where: { id: student4 } });
-    await adminPrisma.$executeRawUnsafe(`ALTER TABLE users ENABLE ROW LEVEL SECURITY`);
+    await adminPrisma.leaderboardScore.deleteMany({ where: { userId: student5 } });
+    await adminPrisma.attendanceRecord.deleteMany({ where: { userId: student5 } });
+    await adminPrisma.eventRegistration.deleteMany({ where: { userId: student5 } });
+    await adminPrisma.user.deleteMany({ where: { id: student5 } });
     
     sandbox.restore();
   });

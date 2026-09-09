@@ -11,7 +11,7 @@ import { randomUUID } from 'crypto';
 const app = createApp();
 
 function generateCustomQrPayload(sessionId: string, qrSecret: string, offsetWindows: number): string {
-  const windowEpoch = Math.floor(Date.now() / 15000) + offsetWindows;
+  const windowEpoch = Math.floor(Date.now() / 30000) + offsetWindows;
   const hmacInput = `v1:${sessionId}:${windowEpoch}`;
   const hmac = crypto.createHmac('sha256', qrSecret);
   hmac.update(hmacInput);
@@ -108,7 +108,6 @@ describe('Phase 26D: Leaderboard Point Deferral and Idempotency', () => {
   after(async () => {
     await adminPrisma.leaderboardScore.deleteMany({ where: { userId: { in: [student1, student2] } } });
     await adminPrisma.attendanceRecord.deleteMany({ where: { sessionId } });
-    await adminPrisma.consumedQrSignature.deleteMany({ where: { sessionId } });
     await adminPrisma.attendanceSession.deleteMany({ where: { id: sessionId } });
     await adminPrisma.eventRegistration.deleteMany({ where: { eventId } });
     await adminPrisma.eventClub.deleteMany({ where: { eventId } });
