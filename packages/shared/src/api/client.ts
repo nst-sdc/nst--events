@@ -5,7 +5,7 @@ const getBaseUrl = (): string => {
     if (env?.EXPO_PUBLIC_API_URL) return env.EXPO_PUBLIC_API_URL;
     if (env?.NEXT_PUBLIC_API_URL) return env.NEXT_PUBLIC_API_URL;
   }
-  return 'https://nst-api.nstsdc.org';
+  return 'https://events.nstsdc.org';
 };
 
 export const API_BASE_URL = getBaseUrl();
