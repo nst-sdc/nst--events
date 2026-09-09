@@ -142,11 +142,11 @@ async function runTests() {
     }
   };
 
-  // Mock Expo Send
+  // Mock Expo Send on worker expo instance
   let mockSendError: any = null;
   let mockReceipts: any = null;
 
-  Expo.prototype.sendPushNotificationsAsync = async (chunks: any[]) => {
+  const defaultSendPush = async (chunks: any[]) => {
     if (mockSendError) throw mockSendError;
     return chunks.flat().map((msg: any) => ({
       status: 'ok',
@@ -154,7 +154,10 @@ async function runTests() {
     }));
   };
 
-  Expo.prototype.getPushNotificationReceiptsAsync = async (ticketIds: any[]) => {
+  expo.sendPushNotificationsAsync = defaultSendPush;
+  Expo.prototype.sendPushNotificationsAsync = defaultSendPush;
+
+  const defaultGetReceipts = async (ticketIds: any[]) => {
     if (mockReceipts) return mockReceipts;
     const res: any = {};
     ticketIds.forEach((id: string) => {
@@ -162,6 +165,9 @@ async function runTests() {
     });
     return res;
   };
+
+  expo.getPushNotificationReceiptsAsync = defaultGetReceipts;
+  Expo.prototype.getPushNotificationReceiptsAsync = defaultGetReceipts;
 
   await runTest('Happy Path: APPROVAL_REQUEST (Producer -> Queue -> Processing -> Waiting -> Completed)', async () => {
     await adminPrisma.event.update({ where: { id: testEventId }, data: { state: 'DRAFT' } });
@@ -210,13 +216,15 @@ async function runTests() {
   await runTest('Permanent Failure Verification', async () => {
     await adminPrisma.event.update({ where: { id: testEventId }, data: { state: 'PENDING_APPROVAL' } });
     // We'll mock the Expo send ticket returning DeviceNotRegistered
-    Expo.prototype.sendPushNotificationsAsync = async (chunks: any[]) => {
+    const permanentErrorMock = async (chunks: any[]) => {
       return chunks.flat().map((msg: any) => ({
         status: 'error',
         message: 'Device not registered',
         details: { error: 'DeviceNotRegistered' }
       }));
     };
+    expo.sendPushNotificationsAsync = permanentErrorMock;
+    Expo.prototype.sendPushNotificationsAsync = permanentErrorMock;
 
     await rejectEvent(testAdminId, testEventId, 'Missing flyer');
     const allJobs = await adminPrisma.notificationJob.findMany({ where: { status: 'PENDING' }, orderBy: { createdAt: 'desc' } });
@@ -226,32 +234,34 @@ async function runTests() {
     let updatedJob = await adminPrisma.notificationJob.findUnique({ where: { id: job!.id } });
     assert.strictEqual(updatedJob!.status, 'FAILED');
     
-    Expo.prototype.sendPushNotificationsAsync = async (chunks: any[]) => {
-      return chunks.flat().map((msg: any) => ({ status: 'ok', id: `ticket-${Date.now()}` }));
-    };
+    expo.sendPushNotificationsAsync = defaultSendPush;
+    Expo.prototype.sendPushNotificationsAsync = defaultSendPush;
   });
 
   await runTest('Preference Verification', async () => {
-    // Disable attendance_alerts
+    // Delete any prior jobs for testUserId
+    await adminPrisma.notificationJob.deleteMany({ where: { payload: { path: ['user_id'], equals: testUserId } } });
+
+    // Disable pushEnabled preference
     await adminPrisma.notificationPreference.update({
       where: { userId: testUserId },
-      data: { attendanceAlerts: false }
+      data: { pushEnabled: false }
     });
 
-    await attendanceService.resolveAttendanceDispute(testUserId, testDisputeId, { resolution: 'APPROVED' });
+    await updateMemberRole(testUserId, testClubId, testUserId, 'CLUB_ADMIN');
 
     // Should create a Notification row but NO Queue job
-    const notif = await adminPrisma.notification.findFirst({ where: { type: 'ATTENDANCE_DISPUTE_RESOLVED', userId: testUserId } });
+    const notif = await adminPrisma.notification.findFirst({ where: { type: 'ROLE_CHANGED', userId: testUserId } });
     assert.ok(notif, 'Notification created in DB');
 
     const jobs = await adminPrisma.notificationJob.findMany();
-    const job = jobs.find(j => (j.payload as any).notification_type === 'ATTENDANCE_DISPUTE_RESOLVED' && (j.payload as any).user_id === testUserId);
+    const job = jobs.find(j => (j.payload as any).notification_type === 'ROLE_CHANGED' && (j.payload as any).user_id === testUserId);
     assert.ok(!job, 'No job queued due to preference gate');
 
     // Re-enable
     await adminPrisma.notificationPreference.update({
       where: { userId: testUserId },
-      data: { attendanceAlerts: true }
+      data: { pushEnabled: true }
     });
   });
 
@@ -275,12 +285,14 @@ async function runTests() {
   await adminPrisma.attendanceDispute.deleteMany({ where: { session: { eventId: testEventId } } });
   await adminPrisma.attendanceRecord.deleteMany({ where: { session: { eventId: testEventId } } });
   await adminPrisma.attendanceSession.deleteMany({ where: { eventId: testEventId } });
+  await adminPrisma.eventClub.deleteMany({ where: { eventId: testEventId } });
   await adminPrisma.event.delete({ where: { id: testEventId } });
   await adminPrisma.clubMembership.deleteMany({ where: { clubId: testClubId } });
   await adminPrisma.club.delete({ where: { id: testClubId } });
   await adminPrisma.notificationJob.deleteMany({ where: { payload: { path: ['user_id'], equals: testUserId } } });
   await adminPrisma.notificationJob.deleteMany({ where: { payload: { path: ['user_id'], equals: testAdminId } } });
   await adminPrisma.notification.deleteMany({ where: { userId: { in: [testUserId, testAdminId] } } });
+  await adminPrisma.notificationPreference.deleteMany({ where: { userId: { in: [testUserId, testAdminId] } } });
   await adminPrisma.pushToken.deleteMany({ where: { userId: { in: [testUserId, testAdminId] } } });
   await adminPrisma.user.delete({ where: { id: testUserId } });
   await adminPrisma.user.delete({ where: { id: testAdminId } });

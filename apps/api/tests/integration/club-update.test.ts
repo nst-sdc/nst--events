@@ -24,13 +24,19 @@ test('PATCH /clubs/:id', async (t) => {
   t.before(async () => {
     // Clean up
     await prisma.clubMembership.deleteMany({
-      where: { user: { email: { endsWith: '@example.com' } } }
+      where: { user: { email: { in: ['platform@example.com', 'clubadmin@example.com', 'otherca@example.com', 'student@example.com'] } } }
     });
     await prisma.club.deleteMany({
-      where: { name: { in: ['Target Club', 'Other Club'] } }
+      where: { name: { in: ['Target Club', 'Other Club', 'Platform Updated'] } }
+    });
+    await prisma.notificationPreference.deleteMany({
+      where: { user: { email: { in: ['platform@example.com', 'clubadmin@example.com', 'otherca@example.com', 'student@example.com'] } } }
+    });
+    await prisma.notification.deleteMany({
+      where: { user: { email: { in: ['platform@example.com', 'clubadmin@example.com', 'otherca@example.com', 'student@example.com'] } } }
     });
     await prisma.user.deleteMany({
-      where: { email: { endsWith: '@example.com' } }
+      where: { email: { in: ['platform@example.com', 'clubadmin@example.com', 'otherca@example.com', 'student@example.com'] } }
     });
 
     // Create users
@@ -80,13 +86,19 @@ test('PATCH /clubs/:id', async (t) => {
 
   t.after(async () => {
     await prisma.clubMembership.deleteMany({
-      where: { user: { email: { endsWith: '@example.com' } } }
+      where: { user: { email: { in: ['platform@example.com', 'clubadmin@example.com', 'otherca@example.com', 'student@example.com'] } } }
     });
     await prisma.club.deleteMany({
-      where: { name: { in: ['Target Club', 'Other Club'] } }
+      where: { name: { in: ['Target Club', 'Other Club', 'Platform Updated'] } }
+    });
+    await prisma.notificationPreference.deleteMany({
+      where: { user: { email: { in: ['platform@example.com', 'clubadmin@example.com', 'otherca@example.com', 'student@example.com'] } } }
+    });
+    await prisma.notification.deleteMany({
+      where: { user: { email: { in: ['platform@example.com', 'clubadmin@example.com', 'otherca@example.com', 'student@example.com'] } } }
     });
     await prisma.user.deleteMany({
-      where: { email: { endsWith: '@example.com' } }
+      where: { email: { in: ['platform@example.com', 'clubadmin@example.com', 'otherca@example.com', 'student@example.com'] } }
     });
   });
 
