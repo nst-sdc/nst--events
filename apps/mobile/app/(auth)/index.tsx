@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView, StatusBar, TouchableOpacity, Plat
 import { useRouter } from 'expo-router';
 import { useAppTheme } from '../../src/store/theme-store';
 import { Button } from '../../src/ui/Button';
+import { NstLogo } from '../../src/ui/NstLogo';
 import { useAuthStore } from '../../src/store/auth';
 import { apiClient } from '../../src/infrastructure/api';
 import { GOOGLE_WEB_CLIENT_ID, GOOGLE_IOS_CLIENT_ID, SUPPORT_EMAIL } from '../../src/infrastructure/config';
@@ -396,6 +397,8 @@ export default function LoginGatewayScreen() {
 
         {/* Editorial Section */}
         <View style={styles.bodySection}>
+          <NstLogo size="md" style={{ marginBottom: 4 }} />
+
           <View style={styles.sectionTagRow}>
             <Text style={styles.sectionTagText}>IDENTITY VERIFICATION</Text>
             <Text style={styles.sectionTagCode}>// SEC-02</Text>

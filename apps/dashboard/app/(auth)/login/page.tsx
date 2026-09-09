@@ -4,6 +4,7 @@ import React, { useEffect, useState, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getWebAuthStore } from '../../../lib/auth-store';
 import { API_BASE_URL } from '../../../lib/api';
+import { NstLogoMark } from '../../../components/brand/NstLogo';
 
 const SUPPORT_EMAIL = 'events-support@adypu.edu.in';
 
@@ -180,8 +181,21 @@ function LoginContent() {
         </div>
       </div>
 
+      {/* Brand Header */}
+      <div suppressHydrationWarning className="mt-6 mb-2 flex items-center gap-3">
+        <NstLogoMark size={36} className="w-9 h-9 shrink-0" withSquircle />
+        <div suppressHydrationWarning className="flex flex-col leading-none">
+          <div suppressHydrationWarning className="font-stitch-headline text-[20px] font-extrabold tracking-tight text-white">
+            NST <span className="text-[#0047FF]">EVENTS</span>
+          </div>
+          <div suppressHydrationWarning className="font-stitch-label text-[9px] font-semibold tracking-widest text-[#717487] uppercase mt-1">
+            Newton School of Technology
+          </div>
+        </div>
+      </div>
+
       {/* Editorial Section Header */}
-      <div suppressHydrationWarning className="mt-6 mb-5">
+      <div suppressHydrationWarning className="mt-5 mb-5">
         <div suppressHydrationWarning className="flex items-center gap-2 mb-2">
           <span
             suppressHydrationWarning
