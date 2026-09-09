@@ -23,7 +23,7 @@ export interface ClubDetailResponse {
 export const useClubDetail = (clubId: string) => {
   return useQuery<ClubDetailResponse>({
     queryKey: ['clubs', 'detail', clubId],
-    queryFn: () => apiClient<ClubDetailResponse>(`/v1/clubs/${clubId}`),
+    queryFn: () => apiClient<ClubDetailResponse>(`/clubs/${clubId}`),
     enabled: !!clubId,
   });
 };
@@ -38,7 +38,7 @@ export const useAddClubMember = (clubId: string) => {
 
   return useMutation({
     mutationFn: (data: AddClubMemberRequest) =>
-      apiClient(`/v1/clubs/${clubId}/members`, {
+      apiClient(`/clubs/${clubId}/members`, {
         method: 'POST',
         body: JSON.stringify(data),
       }),
@@ -58,7 +58,7 @@ export const useUpdateClubMemberRole = (clubId: string, userId: string) => {
 
   return useMutation({
     mutationFn: (data: UpdateClubMemberRoleRequest) =>
-      apiClient(`/v1/clubs/${clubId}/members/${userId}`, {
+      apiClient(`/clubs/${clubId}/members/${userId}`, {
         method: 'PATCH',
         body: JSON.stringify(data),
       }),
@@ -74,7 +74,7 @@ export const useRemoveClubMember = (clubId: string) => {
 
   return useMutation({
     mutationFn: (userId: string) =>
-      apiClient(`/v1/clubs/${clubId}/members/${userId}`, {
+      apiClient(`/clubs/${clubId}/members/${userId}`, {
         method: 'DELETE',
       }),
     onSuccess: () => {
