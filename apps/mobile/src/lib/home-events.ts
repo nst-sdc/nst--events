@@ -65,11 +65,13 @@ export function classifyAndSortHomeEvents(
   now: Date,
   liveEventIds: Set<string> = new Set()
 ): ClassifiedHomeEvents {
-  // Derive state and log for each event
+  // Derive state and log for each event in DEV
   publishedEvents.forEach((event) => {
     const hasActiveSession = liveEventIds.has(event.id);
     const derivedState = getDerivedEventState(event, now, hasActiveSession);
-    console.log(`[Home][EventState] ${event.id}, ${event.title}, ${event.startTime}, ${event.endTime}, ${derivedState}`);
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+      console.log(`[Home][EventState] ${event.id}, ${event.title}, ${event.startTime}, ${event.endTime}, ${derivedState}`);
+    }
   });
 
   // Filter into ongoing and upcoming, excluding PAST
@@ -104,7 +106,9 @@ export function classifyAndSortHomeEvents(
 
   // Ongoing events ALWAYS appear before upcoming events
   const finalOrderedEvents = [...ongoingEvents, ...upcomingEvents];
-  console.log(`[Home][Order] ${finalOrderedEvents.map((e) => `${e.id}: ${e.title}`).join(' | ')}`);
+  if (typeof __DEV__ !== 'undefined' && __DEV__) {
+    console.log(`[Home][Order] ${finalOrderedEvents.map((e) => `${e.id}: ${e.title}`).join(' | ')}`);
+  }
 
   return {
     ongoingEvents,

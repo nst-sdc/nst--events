@@ -30,28 +30,36 @@ export async function logout(): Promise<void> {
     }
   } catch (err) {
     // Treat logout cleanup as local cleanup even if the server logout request fails.
-    console.warn('[Session] Server-side logout failed, proceeding with local cleanup:', err);
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+      console.warn('[Session] Server-side logout failed, proceeding with local cleanup:', err);
+    }
   }
 
   // 2. Clear SecureStore and auth state (Zustand)
   try {
     await useAuthStore.getState().clearSession();
   } catch (err) {
-    console.warn('[Session] Failed to clear SecureStore session:', err);
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+      console.warn('[Session] Failed to clear SecureStore session:', err);
+    }
   }
 
   // 3. Clear React Query cache to prevent cross-session cache bleed
   try {
     queryClient.clear();
   } catch (err) {
-    console.warn('[Session] Failed to clear query client cache:', err);
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+      console.warn('[Session] Failed to clear query client cache:', err);
+    }
   }
 
   // 4. Sign out of Google SSO to permit subsequent account selection
   try {
     await GoogleSignin.signOut();
   } catch (err) {
-    console.warn('[Session] Google sign out failed:', err);
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+      console.warn('[Session] Google sign out failed:', err);
+    }
   }
 
   // 5. Reset navigation to authentication boundary

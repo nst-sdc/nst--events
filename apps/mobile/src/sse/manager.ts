@@ -56,7 +56,9 @@ export class SSEManager {
           this.listeners.get(parsed.type)?.forEach((cb) => cb(parsed));
         }
       } catch (err) {
-        console.warn('SSE message parse error:', err);
+        if (typeof __DEV__ !== 'undefined' && __DEV__) {
+          console.warn('SSE message parse error:', err);
+        }
       }
     });
 
@@ -70,7 +72,9 @@ export class SSEManager {
             const parsed = typeof e.data === 'string' ? JSON.parse(e.data || '{}') : (e.data || {});
             this.listeners.get(eventName)?.forEach((cb) => cb(parsed));
           } catch (err) {
-            console.warn(`SSE ${eventName} parse error:`, err);
+            if (typeof __DEV__ !== 'undefined' && __DEV__) {
+              console.warn(`SSE ${eventName} parse error:`, err);
+            }
           }
         });
       }
@@ -126,7 +130,9 @@ export class SSEManager {
             const parsed = typeof e.data === 'string' ? JSON.parse(e.data || '{}') : (e.data || {});
             this.listeners.get(event)?.forEach((cb) => cb(parsed));
           } catch (err) {
-            console.warn(`SSE ${event} parse error:`, err);
+            if (typeof __DEV__ !== 'undefined' && __DEV__) {
+              console.warn(`SSE ${event} parse error:`, err);
+            }
           }
         });
       }
