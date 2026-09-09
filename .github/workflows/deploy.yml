@@ -129,13 +129,14 @@ jobs:
         run: |
           TAG="ghcr.io/nst-sdc/nst-dashboard:${{ steps.vars.outputs.target_sha }}"
           echo "Building Dashboard image: ${TAG}"
-          docker build -f docker/Dockerfile.dashboard -t "${TAG}" .
+          docker build --build-arg NEXT_PUBLIC_API_URL="https://api.nst-events.nstsdc.org" -f docker/Dockerfile.dashboard -t "${TAG}" .
           docker push "${TAG}"
 
       - name: Apply PodDisruptionBudgets & Infrastructure Manifests
         run: |
-          echo "Applying PodDisruptionBudgets in nst-events..."
+          echo "Applying PodDisruptionBudgets & Ingress in nst-events..."
           kubectl apply -f infrastructure/kubernetes/pod-disruption-budgets.yaml
+          kubectl apply -f infrastructure/kubernetes/ingress.yaml
 
       - name: Deploy & Rollout Gate - API
         if: steps.filter.outputs.build_api == 'true'
