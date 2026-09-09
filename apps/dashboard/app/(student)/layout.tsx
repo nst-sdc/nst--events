@@ -4,7 +4,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { getWebAuthStore } from '../../lib/auth-store';
-import { apiClient, refreshToken } from '../../lib/api';
+import { refreshToken } from '../../lib/api';
 import { StudentAppShell } from '../../components/layout/StudentAppShell';
 import { ClubAdminProvider } from '../../components/layout/ClubAdminProvider';
 

@@ -31,7 +31,10 @@ export const refreshToken = async (): Promise<string | null> => {
   if (!refreshPromise) {
     refreshPromise = fetch(`${API_BASE_URL}/auth/refresh`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Client-Platform': 'web',
+      },
       credentials: 'include',
     })
       .then(async (res) => {
@@ -58,6 +61,7 @@ export const apiClient = async <T = any>(endpoint: string, options: RequestInit 
   // Currently backend relies on `Authorization: Bearer` or cookies. Dashboard will use cookies.
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'X-Client-Platform': 'web',
     ...(options.headers as Record<string, string> || {}),
   };
 

@@ -1,7 +1,11 @@
+import Constants from 'expo-constants';
 import { useAuthStore } from '../store/auth';
+import { useAppVersionStore } from '../store/app-version-store';
 import { API_BASE_URL } from './config';
 
 export { API_BASE_URL };
+
+export const APP_VERSION = Constants.expoConfig?.version || '1.0.0';
 
 let isRefreshing = false;
 let refreshPromise: Promise<string | null> | null = null;
@@ -10,6 +14,7 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
   const token = useAuthStore.getState().accessToken;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'X-App-Version': APP_VERSION,
     ...(options.headers as Record<string, string> || {}),
   };
   
@@ -52,6 +57,26 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
         headers,
       });
 
+      if (retryResponse.status === 426) {
+        const errorBody = await retryResponse.json().catch(() => ({}));
+        const minVersion = errorBody.minVersion || null;
+        const message =
+          errorBody.message ||
+          errorBody.detail ||
+          'App update required. Please update to the latest version of NST Events to continue.';
+        useAppVersionStore.getState().setUpdateRequired({
+          required: true,
+          minVersion,
+        });
+        throw {
+          status: 426,
+          code: 'APP_VERSION_UNSUPPORTED',
+          message,
+          minVersion,
+          body: errorBody,
+        };
+      }
+
       if (!retryResponse.ok) {
         const errorBody = await retryResponse.json().catch(() => ({}));
         const message =
@@ -69,6 +94,26 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
     // Refresh failed — session is dead
     await useAuthStore.getState().clearSession();
     throw { status: 401, message: 'Session expired' };
+  }
+
+  if (response.status === 426) {
+    const errorBody = await response.json().catch(() => ({}));
+    const minVersion = errorBody.minVersion || null;
+    const message =
+      errorBody.message ||
+      errorBody.detail ||
+      'App update required. Please update to the latest version of NST Events to continue.';
+    useAppVersionStore.getState().setUpdateRequired({
+      required: true,
+      minVersion,
+    });
+    throw {
+      status: 426,
+      code: 'APP_VERSION_UNSUPPORTED',
+      message,
+      minVersion,
+      body: errorBody,
+    };
   }
 
   if (!response.ok) {

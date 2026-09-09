@@ -25,6 +25,7 @@ import { dashboardRouter } from './modules/dashboard/dashboard.router';
 import { errorHandler } from './middleware/error-handler';
 import { requestIdMiddleware } from './middleware/request-id';
 import { requestLogger } from './middleware/request-logger';
+import { appVersionMiddleware } from './middleware/version-check';
 import { sseRouter } from './modules/sse/sse.router';
 import { pgListener } from './modules/sse/pg-listener';
 import { academicBatchesRouter } from './modules/academic-batches/academic-batches.router';
@@ -74,6 +75,7 @@ export function createApp(): Express {
 
 
   app.use(globalLimiter);
+  app.use(appVersionMiddleware);
 
   app.use('/auth', authRouter);
   app.use('/users', usersRouter);

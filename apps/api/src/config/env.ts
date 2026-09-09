@@ -14,6 +14,7 @@ const envSchema = z.object({
   ALLOWED_ORIGINS: z.string().default('http://localhost:3000,http://localhost:3001'),
   WEB_APP_URL: z.string().url('WEB_APP_URL must be a valid URL').default('http://localhost:3000'),
   ALLOW_INSECURE_COOKIES_LOCAL_DEV: z.coerce.boolean().default(false),
+  MIN_APP_VERSION: z.string().default('1.0.0'),
 });
 
 export type Env = z.infer<typeof envSchema>;
