@@ -4,7 +4,12 @@
  * Establishes typed client, error handling, and authentication boundaries for Dashboard.
  */
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+export const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL !== undefined && process.env.NEXT_PUBLIC_API_URL !== ''
+    ? process.env.NEXT_PUBLIC_API_URL
+    : process.env.NODE_ENV === 'production'
+      ? ''
+      : 'http://localhost:3001';
 import { getWebAuthStore } from './auth-store';
 import { formatErrorMessage } from './error-utils';
 
