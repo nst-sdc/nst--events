@@ -18,17 +18,19 @@ test('Phase API-FACULTY-ADMIN-ACADEMIC-PROGRAMS API', async (t) => {
   let existingProgramId: string;
 
   t.before(async () => {
-    await adminPrisma.eventRegistration.deleteMany({});
-    await adminPrisma.attendanceRecord.deleteMany({});
-    await adminPrisma.attendanceSession.deleteMany({});
-    await adminPrisma.team.deleteMany({});
-    await adminPrisma.eventAudienceBatch.deleteMany({});
-    await adminPrisma.eventClub.deleteMany({});
-    await adminPrisma.event.deleteMany({});
     await adminPrisma.userAcademicProfile.deleteMany({});
+    await adminPrisma.eventAudienceBatch.deleteMany({});
     await adminPrisma.academicBatch.deleteMany({});
     await adminPrisma.academicProgram.deleteMany({});
-    await adminPrisma.clubMembership.deleteMany({});
+    await adminPrisma.clubMembership.deleteMany({
+      where: {
+        user: {
+          email: {
+            in: ['pa@newtonschool.co', 'fa@newtonschool.co', 'student@adypu.edu.in', 'ca@adypu.edu.in', 'cm@adypu.edu.in']
+          }
+        }
+      }
+    });
     await adminPrisma.club.deleteMany({ where: { name: 'Test Club' } });
     await adminPrisma.user.deleteMany({ 
       where: { 
@@ -43,7 +45,7 @@ test('Phase API-FACULTY-ADMIN-ACADEMIC-PROGRAMS API', async (t) => {
         email: 'pa@newtonschool.co',
         fullName: 'PA',
         globalRole: 'PLATFORM_ADMIN',
-        googleSub: 'google-pa',
+        googleSub: 'google-sub-ap-pa',
       },
     });
     platformAdminToken = signJwt(pa.id);
@@ -53,7 +55,7 @@ test('Phase API-FACULTY-ADMIN-ACADEMIC-PROGRAMS API', async (t) => {
         email: 'fa@newtonschool.co',
         fullName: 'FA',
         globalRole: 'FACULTY_ADMIN',
-        googleSub: 'google-fa',
+        googleSub: 'google-sub-ap-fa',
       },
     });
     facultyAdminToken = signJwt(fa.id);
@@ -63,7 +65,7 @@ test('Phase API-FACULTY-ADMIN-ACADEMIC-PROGRAMS API', async (t) => {
         email: 'student@adypu.edu.in',
         fullName: 'Student',
         globalRole: 'STUDENT',
-        googleSub: 'google-st',
+        googleSub: 'google-sub-ap-st',
       },
     });
     studentToken = signJwt(st.id);
@@ -73,7 +75,7 @@ test('Phase API-FACULTY-ADMIN-ACADEMIC-PROGRAMS API', async (t) => {
         email: 'ca@adypu.edu.in',
         fullName: 'Club Admin',
         globalRole: 'STUDENT',
-        googleSub: 'google-ca',
+        googleSub: 'google-sub-ap-ca',
       },
     });
     clubAdminToken = signJwt(ca.id);
@@ -83,7 +85,7 @@ test('Phase API-FACULTY-ADMIN-ACADEMIC-PROGRAMS API', async (t) => {
         email: 'cm@adypu.edu.in',
         fullName: 'Core Member',
         globalRole: 'STUDENT',
-        googleSub: 'google-cm',
+        googleSub: 'google-sub-ap-cm',
       },
     });
     coreMemberToken = signJwt(cm.id);
@@ -121,7 +123,27 @@ test('Phase API-FACULTY-ADMIN-ACADEMIC-PROGRAMS API', async (t) => {
   });
 
   t.after(async () => {
-    // Let the test runner handle process exit and connection teardown
+    await adminPrisma.userAcademicProfile.deleteMany({});
+    await adminPrisma.eventAudienceBatch.deleteMany({});
+    await adminPrisma.academicBatch.deleteMany({});
+    await adminPrisma.academicProgram.deleteMany({});
+    await adminPrisma.clubMembership.deleteMany({
+      where: {
+        user: {
+          email: {
+            in: ['pa@newtonschool.co', 'fa@newtonschool.co', 'student@adypu.edu.in', 'ca@adypu.edu.in', 'cm@adypu.edu.in']
+          }
+        }
+      }
+    });
+    await adminPrisma.club.deleteMany({ where: { name: 'Test Club' } });
+    await adminPrisma.user.deleteMany({ 
+      where: { 
+        email: { 
+          in: ['pa@newtonschool.co', 'fa@newtonschool.co', 'student@adypu.edu.in', 'ca@adypu.edu.in', 'cm@adypu.edu.in'] 
+        } 
+      } 
+    });
   });
 
   await t.test('1. PLATFORM_ADMIN receives 200 and list', async () => {

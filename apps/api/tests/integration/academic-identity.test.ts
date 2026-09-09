@@ -25,57 +25,65 @@ test('Phase UI-14D Academic Identity Integration', async (t) => {
 
   t.before(async () => {
     await adminPrisma.userAcademicProfile.deleteMany({});
+    await adminPrisma.eventAudienceBatch.deleteMany({});
     await adminPrisma.academicBatch.deleteMany({});
     await adminPrisma.academicProgram.deleteMany({});
-    await adminPrisma.eventRegistration.deleteMany({});
-    await adminPrisma.team.deleteMany({});
-    await adminPrisma.event.deleteMany({});
-    await adminPrisma.clubMembership.deleteMany({});
-    await adminPrisma.club.deleteMany({});
-    await adminPrisma.user.deleteMany({});
+    await adminPrisma.user.deleteMany({
+      where: {
+        email: {
+          in: ['faculty@newtonschool.co', 'e25b070564@adypu.edu.in', 'e25c999@adypu.edu.in']
+        }
+      }
+    });
 
     // Setup base users
-    const pa = await adminPrisma.user.create({
-      data: {
+    const pa = await adminPrisma.user.upsert({
+      where: { email: 'admin@newtonschool.co' },
+      update: { globalRole: 'PLATFORM_ADMIN', googleSub: 'google-sub-ai-pa' },
+      create: {
         email: 'admin@newtonschool.co',
         fullName: 'Platform Admin',
         globalRole: 'PLATFORM_ADMIN',
-        googleSub: 'google-pa',
+        googleSub: 'google-sub-ai-pa',
       },
     });
     platformAdminId = pa.id;
     platformAdminToken = signJwt(pa.id);
 
-    const fa = await adminPrisma.user.create({
-      data: {
+    const fa = await adminPrisma.user.upsert({
+      where: { email: 'faculty@newtonschool.co' },
+      update: { globalRole: 'FACULTY_ADMIN', googleSub: 'google-sub-ai-fa' },
+      create: {
         email: 'faculty@newtonschool.co',
         fullName: 'Faculty Admin',
         globalRole: 'FACULTY_ADMIN',
-        googleSub: 'google-fa',
+        googleSub: 'google-sub-ai-fa',
       },
     });
     facultyAdminId = fa.id;
     facultyAdminToken = signJwt(fa.id);
 
-    const st = await adminPrisma.user.create({
-      data: {
+    const st = await adminPrisma.user.upsert({
+      where: { email: 'student@adypu.edu.in' },
+      update: { globalRole: 'STUDENT', googleSub: 'google-sub-ai-st' },
+      create: {
         email: 'student@adypu.edu.in',
         fullName: 'Student',
         globalRole: 'STUDENT',
-        googleSub: 'google-st',
+        googleSub: 'google-sub-ai-st',
       },
     });
     studentId = st.id;
     studentToken = signJwt(st.id);
 
     // Setup Student Directory for login tests
-    await adminPrisma.authorizedStudent.createMany({
-      data: [
-        { normalizedEmail: 'e25b070564@adypu.edu.in', status: 'ACTIVE' },
-        { normalizedEmail: 'student@adypu.edu.in', status: 'ACTIVE' },
-        { normalizedEmail: 'e25c999@adypu.edu.in', status: 'ACTIVE' }
-      ]
-    });
+    for (const normalizedEmail of ['e25b070564@adypu.edu.in', 'student@adypu.edu.in', 'e25c999@adypu.edu.in']) {
+      await adminPrisma.authorizedStudent.upsert({
+        where: { normalizedEmail },
+        update: { status: 'ACTIVE' },
+        create: { normalizedEmail, status: 'ACTIVE' },
+      });
+    }
   });
 
   t.afterEach(() => {
@@ -84,13 +92,23 @@ test('Phase UI-14D Academic Identity Integration', async (t) => {
 
   t.after(async () => {
     await adminPrisma.userAcademicProfile.deleteMany({});
+    await adminPrisma.eventAudienceBatch.deleteMany({});
     await adminPrisma.academicBatch.deleteMany({});
     await adminPrisma.academicProgram.deleteMany({});
-    await adminPrisma.event.deleteMany({});
-    await adminPrisma.clubMembership.deleteMany({});
-    await adminPrisma.club.deleteMany({});
-    await adminPrisma.authorizedStudent.deleteMany({});
-    await adminPrisma.user.deleteMany({});
+    await adminPrisma.user.deleteMany({
+      where: {
+        email: {
+          in: ['faculty@newtonschool.co', 'e25b070564@adypu.edu.in', 'e25c999@adypu.edu.in']
+        }
+      }
+    });
+    await adminPrisma.authorizedStudent.deleteMany({
+      where: {
+        normalizedEmail: {
+          in: ['e25c999@adypu.edu.in']
+        }
+      }
+    });
   });
 
   await t.test('Migration-backed Model Access', async () => {

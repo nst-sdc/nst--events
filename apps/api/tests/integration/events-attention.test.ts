@@ -12,10 +12,10 @@ describe('Event Attention Aggregate - below_minimum_team_count', () => {
   before(async () => {
     const adminUser = await prisma.user.create({
       data: {
-        email: 'test_admin_attention@example.com',
+        email: `test_admin_attention_${Date.now()}@example.com`,
         fullName: 'Admin User',
         globalRole: 'PLATFORM_ADMIN',
-        googleSub: 'mock-admin-sub',
+        googleSub: `mock-ea-admin-${Date.now()}`,
       },
     });
     adminUserId = adminUser.id;
@@ -24,10 +24,10 @@ describe('Event Attention Aggregate - below_minimum_team_count', () => {
     for (let i = 0; i < 20; i++) {
       const user = await prisma.user.create({
         data: {
-          email: `test_team_user_${i}@example.com`,
+          email: `test_team_user_${Date.now()}_${i}@example.com`,
           fullName: `Test User ${i}`,
           globalRole: 'STUDENT',
-          googleSub: `mock-sub-${i}`,
+          googleSub: `mock-ea-sub-${Date.now()}-${i}`,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -37,7 +37,7 @@ describe('Event Attention Aggregate - below_minimum_team_count', () => {
 
     const club = await prisma.club.create({
       data: {
-        name: 'Test Aggregate Club',
+        name: `Test Aggregate Club ${Date.now()}`,
         description: 'Testing team aggregates',
         status: 'ACTIVE',
       },
@@ -74,7 +74,7 @@ describe('Event Attention Aggregate - below_minimum_team_count', () => {
     await prisma.eventClub.deleteMany({ where: { eventId: testEventId } });
     await prisma.event.deleteMany({ where: { id: testEventId } });
     await prisma.club.deleteMany({ where: { id: testClubId } });
-    await prisma.user.deleteMany({ where: { email: { in: ['test_admin_attention@example.com', ...users.map(u => u.email)] } } });
+    await prisma.user.deleteMany({ where: { id: { in: [adminUserId, ...users.map(u => u.id)] } } });
   });
 
   const createTeam = async (name: string, status: any, memberCount: number, userStartIndex: number) => {
@@ -104,7 +104,7 @@ describe('Event Attention Aggregate - below_minimum_team_count', () => {
   };
 
   it('initially has 0 below_minimum_team_count', async () => {
-    const res = await listEvents(adminUserId, { limit: 10 });
+    const res = await listEvents(adminUserId, { limit: 10, filter_club_id: testClubId });
     const event = res.data.find((e: any) => e.id === testEventId);
     assert.ok(event);
     assert.strictEqual(event.below_minimum_team_count, 0);
@@ -113,7 +113,7 @@ describe('Event Attention Aggregate - below_minimum_team_count', () => {
   it('ignores FORMING teams', async () => {
     await createTeam('Forming Team', 'FORMING', 1, 0);
 
-    const res = await listEvents(adminUserId, { limit: 10 });
+    const res = await listEvents(adminUserId, { limit: 10, filter_club_id: testClubId });
     const event = res.data.find((e: any) => e.id === testEventId);
     assert.strictEqual(event.below_minimum_team_count, 0);
   });
@@ -122,7 +122,7 @@ describe('Event Attention Aggregate - below_minimum_team_count', () => {
     // minimum is 3, memberCount is 2
     await createTeam('Understaffed Team', 'REGISTERED', 2, 1);
 
-    const res = await listEvents(adminUserId, { limit: 10 });
+    const res = await listEvents(adminUserId, { limit: 10, filter_club_id: testClubId });
     const event = res.data.find((e: any) => e.id === testEventId);
     assert.strictEqual(event.below_minimum_team_count, 1);
 
@@ -135,7 +135,7 @@ describe('Event Attention Aggregate - below_minimum_team_count', () => {
     // minimum is 3, memberCount is 3
     await createTeam('Valid Team', 'REGISTERED', 3, 3);
 
-    const res = await listEvents(adminUserId, { limit: 10 });
+    const res = await listEvents(adminUserId, { limit: 10, filter_club_id: testClubId });
     const event = res.data.find((e: any) => e.id === testEventId);
     // Still 1 because of the previous understaffed team
     assert.strictEqual(event.below_minimum_team_count, 1);
@@ -154,7 +154,7 @@ describe('Event Attention Aggregate - below_minimum_team_count', () => {
       data: { deletedAt: new Date() },
     });
 
-    const res = await listEvents(adminUserId, { limit: 10 });
+    const res = await listEvents(adminUserId, { limit: 10, filter_club_id: testClubId });
     const event = res.data.find((e: any) => e.id === testEventId);
     // Now there are 2 teams understaffed
     assert.strictEqual(event.below_minimum_team_count, 2);
@@ -164,7 +164,7 @@ describe('Event Attention Aggregate - below_minimum_team_count', () => {
     await createTeam('Waitlist Team', 'WAITLISTED', 1, 9);
     await createTeam('Cancelled Team', 'CANCELLED', 1, 10);
 
-    const res = await listEvents(adminUserId, { limit: 10 });
+    const res = await listEvents(adminUserId, { limit: 10, filter_club_id: testClubId });
     const event = res.data.find((e: any) => e.id === testEventId);
     assert.strictEqual(event.below_minimum_team_count, 2);
   });

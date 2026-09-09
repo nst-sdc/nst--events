@@ -71,15 +71,23 @@ test('Phase AUTH-07 - Academic Profile RLS & Concurrency', async (t) => {
     await prisma.$disconnect();
     // Teardown
     await adminPrisma.userAcademicProfile.deleteMany({});
+    await adminPrisma.eventAudienceBatch.deleteMany({});
     await adminPrisma.academicBatch.deleteMany({});
     await adminPrisma.academicProgram.deleteMany({});
-    await adminPrisma.eventRegistration.deleteMany({});
-    await adminPrisma.team.deleteMany({});
-    await adminPrisma.event.deleteMany({});
-    await adminPrisma.clubMembership.deleteMany({});
-    await adminPrisma.club.deleteMany({});
-    await adminPrisma.user.deleteMany({});
-    await adminPrisma.authorizedStudent.deleteMany({});
+    await adminPrisma.user.deleteMany({
+      where: {
+        email: {
+          in: ['admin@newtonschool.co', 'st1@adypu.edu.in', 'st2@adypu.edu.in', 'e25concurrent1@adypu.edu.in', 'f25concurrent2@adypu.edu.in']
+        }
+      }
+    });
+    await adminPrisma.authorizedStudent.deleteMany({
+      where: {
+        normalizedEmail: {
+          in: ['st1@adypu.edu.in', 'st2@adypu.edu.in', 'e25concurrent1@adypu.edu.in', 'f25concurrent2@adypu.edu.in']
+        }
+      }
+    });
   });
 
   await t.test('1. nst_app cannot create profile for arbitrary user', async () => {
