@@ -37,7 +37,7 @@ export function useCurrentUser() {
 
   return useQuery<CurrentUser>({
     queryKey: ['users', 'me'],
-    queryFn: () => apiClient<CurrentUser>('/v1/users/me'),
+    queryFn: () => apiClient<CurrentUser>('/users/me'),
     enabled: isAuthenticated, // Only fetch if authenticated
     staleTime: 5 * 60 * 1000,
   });

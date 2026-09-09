@@ -24,9 +24,9 @@ export const useClubs = (query: string = '') => {
     queryKey: query ? ['clubs', 'search', query] : ['clubs', 'list'],
     queryFn: () => {
       if (query) {
-        return apiClient<ClubsResponse>(`/v1/clubs/search?q=${encodeURIComponent(query)}`);
+        return apiClient<ClubsResponse>(`/clubs/search?q=${encodeURIComponent(query)}`);
       }
-      return apiClient<ClubsResponse>('/v1/clubs');
+      return apiClient<ClubsResponse>('/clubs');
     },
     staleTime: 10 * 60 * 1000, // 10 minutes from clubs.md
   });
