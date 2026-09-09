@@ -21,7 +21,7 @@ export const useUpdateClub = () => {
 
   return useMutation({
     mutationFn: async ({ id, payload }: { id: string; payload: UpdateClubPayload }) => {
-      const data = await apiClient<ClubUpdateResponse>(`/clubs/${id}`, {
+      const data = await apiClient<ClubUpdateResponse>(`/v1/clubs/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(payload),
       });
@@ -45,7 +45,7 @@ export const useUpdateClubStatus = () => {
 
   return useMutation({
     mutationFn: async ({ id, payload }: { id: string; payload: UpdateClubStatusPayload }) => {
-      const data = await apiClient<ClubUpdateResponse>(`/clubs/${id}/status`, {
+      const data = await apiClient<ClubUpdateResponse>(`/v1/clubs/${id}/status`, {
         method: 'PATCH',
         body: JSON.stringify(payload),
       });

@@ -19,7 +19,7 @@ export function useCreateClub() {
 
   return useMutation({
     mutationFn: async (payload: CreateClubPayload) => {
-      return apiClient<CreateClubResponse>('/clubs', {
+      return apiClient<CreateClubResponse>('/v1/clubs', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
