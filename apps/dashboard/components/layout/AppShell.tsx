@@ -27,6 +27,7 @@ import { getWebAuthStore } from '../../lib/auth-store';
 import { canViewStudentDirectory, canViewAcademicCatalog } from '../../lib/auth-helpers';
 import { NotificationPopover } from '../notifications/NotificationPopover';
 import { useRealtimeNotifications } from '../../hooks/useRealtimeNotifications';
+import { NstLogoMark } from '../brand/NstLogo';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -201,7 +202,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         width={220}
         style={{ borderRight: `1px solid ${token.colorBorderSecondary}`, overflow: 'auto', height: '100vh' }}
       >
-        <div style={{ height: 48, display: 'flex', alignItems: 'center', padding: '0 16px', borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
+        <div style={{ height: 48, display: 'flex', alignItems: 'center', gap: 10, padding: '0 16px', borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
+          <NstLogoMark size={22} className="w-[22px] h-[22px]" />
           <Text style={{ color: '#FFFFFF', fontWeight: 600, fontSize: 14, letterSpacing: -0.2 }}>NST Events</Text>
         </div>
         <Menu 

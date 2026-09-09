@@ -11,6 +11,7 @@ import { BackButton } from '../ui/BackButton';
 import { StudentNotificationPopover } from '../notifications/StudentNotificationPopover';
 import { useClubAdmin } from './ClubAdminProvider';
 import { ClubAdminToggle } from './ClubAdminToggle';
+import { NstLogoMark } from '../brand/NstLogo';
 
 const studentNavItems = [
   { label: 'Home', href: '/student/home', icon: Home },
@@ -58,8 +59,25 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
             {isDeepRoute ? (
               <BackButton className="md:hidden" />
             ) : null}
-            <Link aria-label="NST Events Home" href={isClubAdminMode ? "/student/manage/club" : "/student/home"} className={clsx("font-stitch-headline text-[32px] font-bold text-stitch-primary tracking-tight", isDeepRoute ? "hidden md:block" : "block")}>
-              NST
+            <Link
+              aria-label="NST Events Home"
+              href={isClubAdminMode ? "/student/manage/club" : "/student/home"}
+              className={clsx(
+                "flex items-center gap-2.5 transition-opacity hover:opacity-90",
+                isDeepRoute ? "hidden md:flex" : "flex"
+              )}
+            >
+              <NstLogoMark size={28} className="w-7 h-7" />
+              <div className="flex flex-col leading-none">
+                <span className="font-stitch-headline text-[20px] font-extrabold tracking-tight text-stitch-on-surface">
+                  NST <span className="text-stitch-primary">EVENTS</span>
+                </span>
+                {isClubAdminMode ? (
+                  <span className="font-stitch-label text-[8px] font-bold tracking-widest text-[#9a9db0] uppercase mt-0.5">
+                    CLUB PORTAL
+                  </span>
+                ) : null}
+              </div>
             </Link>
 
             {/* Navigation Links (Desktop) */}
