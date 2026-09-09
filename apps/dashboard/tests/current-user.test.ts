@@ -10,7 +10,7 @@ beforeEach(() => {
   queryClient.clear();
 });
 
-test('Web Current User: Fetch successful /users/me', async () => {
+test('Web Current User: Fetch successful /v1/users/me', async () => {
   const mockResponse = {
     id: 'user-123',
     email: 'test@university.edu',
@@ -33,7 +33,7 @@ test('Web Current User: Fetch successful /users/me', async () => {
   // set token to simulate authenticated state
   getWebAuthStore().setAccessToken('secret-token');
 
-  const result = await apiClient('/users/me');
+  const result = await apiClient('/v1/users/me');
   
   expect(result).toEqual(mockResponse);
   expect(result.global_role).toBe('PLATFORM_ADMIN');
@@ -51,7 +51,7 @@ test('Web Current User: API Error', async () => {
 
   getWebAuthStore().setAccessToken('secret-token');
 
-  await expect(apiClient('/users/me')).rejects.toThrow('Internal Server Error');
+  await expect(apiClient('/v1/users/me')).rejects.toThrow('Internal Server Error');
 });
 
 test('Web Current User: Logout clears cached current-user data', () => {
