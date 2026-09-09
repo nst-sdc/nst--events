@@ -67,7 +67,7 @@ describe('Phase 23: Registration Contract', () => {
       .set('Authorization', `Bearer ${token1}`);
     
     assert.strictEqual(res.status, 200);
-    assert.deepStrictEqual(res.body, { status: 'REGISTERED' });
+    assert.strictEqual(res.body.status, 'REGISTERED');
   });
 
   it('WAITLISTED status is preserved', async () => {
@@ -76,6 +76,7 @@ describe('Phase 23: Registration Contract', () => {
       .set('Authorization', `Bearer ${token2}`);
     
     assert.strictEqual(res.status, 200);
-    assert.deepStrictEqual(res.body, { status: 'WAITLISTED' });
+    assert.strictEqual(res.body.status, 'WAITLISTED');
+    assert.strictEqual(res.body.waitlist_position, 1);
   });
 });

@@ -82,6 +82,7 @@ describe('Event Attention Aggregate - below_minimum_team_count', () => {
       data: {
         eventId: testEventId,
         name,
+        normalizedName: name.toLowerCase().trim(),
         leaderId: users[userStartIndex].id,
         status,
       },

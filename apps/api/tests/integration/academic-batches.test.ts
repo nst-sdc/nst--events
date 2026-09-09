@@ -21,7 +21,6 @@ test('Phase UI-17A Academic Batches API', async (t) => {
     await adminPrisma.academicBatch.deleteMany({});
     await adminPrisma.academicProgram.deleteMany({});
     await adminPrisma.eventRegistration.deleteMany({});
-    await adminPrisma.teamInvitation.deleteMany({});
     await adminPrisma.team.deleteMany({});
     await adminPrisma.eventClub.deleteMany({});
     await adminPrisma.event.deleteMany({});

@@ -1,13 +1,12 @@
 import { describe, it, before as beforeAll, after as afterAll } from 'node:test';
 import assert from 'node:assert';
 import { adminPrisma as prisma } from '../helpers/adminDb';
-import { createTeam, inviteMember, acceptInvitation, declineInvitation, cancelInvitation } from '../../src/modules/teams/teams.service';
-import { getPendingTeamInvitations } from '../../src/modules/users/users.service';
+import { createTeam, joinTeam } from '../../src/modules/teams/teams.service';
 import { searchEligibleInvitees } from '../../src/modules/registrations/registrations.service';
-import { ForbiddenError, BadRequestError } from '../../src/lib/errors';
+import { ForbiddenError } from '../../src/lib/errors';
 import { AssignmentSource } from '@nst/database';
 
-describe('Team Invitations & Discovery Integration Tests', () => {
+describe('Team Discovery & Member Lookup Integration Tests', () => {
   let eventId: string;
   let batchId: string;
   let leaderId: string;
@@ -15,12 +14,10 @@ describe('Team Invitations & Discovery Integration Tests', () => {
   let member2Id: string; // Not eligible
   let member3Id: string; // Eligible
   let teamId: string;
-  let invitationId: string;
 
   beforeAll(async () => {
     // Cleanup first just in case
     await prisma.eventRegistration.deleteMany({});
-    await prisma.teamInvitation.deleteMany({});
     await prisma.team.deleteMany({});
     await prisma.notificationJob.deleteMany({});
     await prisma.notification.deleteMany({});
@@ -82,7 +79,6 @@ describe('Team Invitations & Discovery Integration Tests', () => {
   afterAll(async () => {
     // Cleanup
     await prisma.eventRegistration.deleteMany({});
-    await prisma.teamInvitation.deleteMany({});
     await prisma.team.deleteMany({});
     await prisma.notificationJob.deleteMany({});
     await prisma.notification.deleteMany({});
@@ -110,12 +106,6 @@ describe('Team Invitations & Discovery Integration Tests', () => {
     assert.ok(!ids.includes(member2Id));
   });
 
-  it('Safe invitee lookup: Empty/short query should fail', async () => {
-    // Controller should enforce this via zod, but let's test if service fails on empty? 
-    // The service doesn't fail, but it relies on controller validation (z.string().min(2))
-    // We'll trust Zod schema for this.
-  });
-
   it('Safe invitee lookup: Non-leader rejected', async () => {
     await assert.rejects(
       searchEligibleInvitees(member1Id, eventId, 'member'),
@@ -126,70 +116,16 @@ describe('Team Invitations & Discovery Integration Tests', () => {
     );
   });
 
-  it('Leader invites Member 1', async () => {
-    const inv = await inviteMember(leaderId, teamId, member1Id);
-    invitationId = inv.id;
-    assert.ok(invitationId);
-  });
-
-  it('Notification contains invitation_id and team_id', async () => {
-    const notif = await prisma.notification.findFirst({ where: { userId: member1Id } });
-    assert.ok(notif);
-    const meta = notif.metadata as any;
-    assert.strictEqual(meta.entity_ids.team_id, teamId);
-    assert.strictEqual(meta.entity_ids.invitation_id, invitationId);
-  });
-
-  it('Pending Invitations API: Member 1 sees invitation', async () => {
-    const invs = await getPendingTeamInvitations(member1Id);
-    assert.strictEqual(invs.length, 1);
-    assert.strictEqual(invs[0].invitation_id, invitationId);
-    assert.strictEqual(invs[0].team.team_id, teamId);
-    assert.strictEqual(invs[0].event.event_id, eventId);
-  });
-
-  it('Pending Invitations API: Expired invitation is not returned as PENDING', async () => {
-    // Manually expire
-    await prisma.teamInvitation.update({
-      where: { id: invitationId },
-      data: { expiresAt: new Date(Date.now() - 1000) }
-    });
-
-    const invs = await getPendingTeamInvitations(member1Id);
-    assert.strictEqual(invs.length, 0);
-
-    const check = await prisma.teamInvitation.findUnique({ where: { id: invitationId } });
-    assert.strictEqual(check?.status, 'EXPIRED'); // Lazily transitioned
-  });
-
-  it('Pending Invitations API: BOLA protection', async () => {
-    // Member 3 should see 0 invitations
-    const invs = await getPendingTeamInvitations(member3Id);
-    assert.strictEqual(invs.length, 0);
-  });
-
-  it('Duplicate invitation logic handles EXPIRED correctly', async () => {
-    // Leader can invite again since old is EXPIRED
-    const newInv = await inviteMember(leaderId, teamId, member1Id);
-    assert.ok(newInv.id !== invitationId);
-    invitationId = newInv.id;
-  });
-
-  it('Safe invitee lookup: excludes users with pending invitations', async () => {
-    const results = await searchEligibleInvitees(leaderId, eventId, 'member');
-    // Member 1 has pending invitation now, should be excluded
-    const ids = results.map(r => r.user_id);
-    assert.ok(!ids.includes(member1Id));
-    assert.ok(ids.includes(member3Id)); // Member 3 still eligible
+  it('Member 1 joins the team directly via joinTeam', async () => {
+    const joinRes = await joinTeam(member1Id, teamId);
+    assert.ok(joinRes);
   });
 
   it('Safe invitee lookup: excludes existing team members', async () => {
-    await acceptInvitation(member1Id, teamId, invitationId);
-
     const results = await searchEligibleInvitees(leaderId, eventId, 'member');
     const ids = results.map(r => r.user_id);
-    assert.ok(!ids.includes(member1Id)); // Now a member
-    assert.ok(ids.includes(member3Id));
+    assert.ok(!ids.includes(member1Id)); // Now a member, excluded
+    assert.ok(ids.includes(member3Id)); // Member 3 still eligible
   });
 
 });

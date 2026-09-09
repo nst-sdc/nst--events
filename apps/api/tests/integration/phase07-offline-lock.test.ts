@@ -24,12 +24,19 @@ describe('ATTENDANCE-07: Offline Attendance 24-Hour Lock Time Correction', () =>
 
   before(async () => {
     // Clear out potential leftovers from failed runs
-    await adminPrisma.leaderboardScore.deleteMany({
-      where: { user: { email: { in: ['studentA_phase07@nst.com', 'studentB_phase07@nst.com'] } } }
+    const existingUsers = await adminPrisma.user.findMany({
+      where: { email: { in: ['studentA_phase07@nst.com', 'studentB_phase07@nst.com'] } },
+      select: { id: true }
     });
-    await adminPrisma.user.deleteMany({
-      where: { email: { in: ['studentA_phase07@nst.com', 'studentB_phase07@nst.com'] } }
-    });
+    const uids = existingUsers.map((u) => u.id);
+    if (uids.length > 0) {
+      await adminPrisma.attendanceRecord.deleteMany({ where: { userId: { in: uids } } });
+      await adminPrisma.eventRegistration.deleteMany({ where: { userId: { in: uids } } });
+      await adminPrisma.attendanceSession.deleteMany({ where: { createdBy: { in: uids } } });
+      await adminPrisma.event.deleteMany({ where: { createdBy: { in: uids } } });
+      await adminPrisma.leaderboardScore.deleteMany({ where: { userId: { in: uids } } });
+      await adminPrisma.user.deleteMany({ where: { id: { in: uids } } });
+    }
 
     // Create users
     const studentA = await adminPrisma.user.create({ data: { id: crypto.randomUUID(), email: 'studentA_phase07@nst.com', fullName: 'Student A', globalRole: 'STUDENT', googleSub: 'subA_07' } });
@@ -101,7 +108,6 @@ describe('ATTENDANCE-07: Offline Attendance 24-Hour Lock Time Correction', () =>
     sinon.restore();
     await adminPrisma.leaderboardScore.deleteMany({ where: { userId: { in: [studentAId, studentBId] } } });
     await adminPrisma.attendanceRecord.deleteMany({ where: { sessionId } });
-    await adminPrisma.consumedQrSignature.deleteMany({ where: { sessionId } });
     await adminPrisma.attendanceSession.deleteMany({ where: { id: sessionId } });
     await adminPrisma.eventRegistration.deleteMany({ where: { eventId } });
     await adminPrisma.event.deleteMany({ where: { id: eventId } });

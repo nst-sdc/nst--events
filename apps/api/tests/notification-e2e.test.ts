@@ -272,7 +272,9 @@ async function runTests() {
 
   // 🧹 Cleanup
   await adminPrisma.eventRegistration.deleteMany({ where: { eventId: testEventId } });
-  await adminPrisma.attendanceRecord.deleteMany({ where: { eventId: testEventId } });
+  await adminPrisma.attendanceDispute.deleteMany({ where: { session: { eventId: testEventId } } });
+  await adminPrisma.attendanceRecord.deleteMany({ where: { session: { eventId: testEventId } } });
+  await adminPrisma.attendanceSession.deleteMany({ where: { eventId: testEventId } });
   await adminPrisma.event.delete({ where: { id: testEventId } });
   await adminPrisma.clubMembership.deleteMany({ where: { clubId: testClubId } });
   await adminPrisma.club.delete({ where: { id: testClubId } });

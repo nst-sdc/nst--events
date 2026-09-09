@@ -2,7 +2,7 @@ import test from 'node:test';
 import * as assert from 'node:assert';
 import { before } from 'node:test';
 import { adminPrisma as prisma } from '../helpers/adminDb';
-import { cancelTeam, removeMember, transferLeadership, cancelInvitation } from '../../src/modules/admin/teams.service';
+import { cancelTeam, removeMember, transferLeadership } from '../../src/modules/admin/teams.service';
 import { BadRequestError } from '../../src/lib/errors';
 import { randomUUID } from 'crypto';
 
@@ -15,7 +15,6 @@ test('AUTH-11 Event Lock Clock Authority Tests', async (t) => {
   before(async () => {
 
   await prisma.eventRegistration.deleteMany({});
-  await prisma.teamInvitation.deleteMany({});
   await prisma.team.deleteMany({});
   await prisma.event.deleteMany({ where: { title: 'Auth11 Event' } });
   
@@ -56,8 +55,9 @@ test('AUTH-11 Event Lock Clock Authority Tests', async (t) => {
       }
     });
 
+    const teamName = `Team ${teamId.substring(0, 5)}`;
     await prisma.team.create({
-      data: { id: teamId, eventId, name: `Team ${teamId.substring(0, 5)}`, leaderId, status: 'REGISTERED' }
+      data: { id: teamId, eventId, name: teamName, normalizedName: teamName.toLowerCase(), leaderId, status: 'REGISTERED' }
     });
 
     await prisma.eventRegistration.createMany({
@@ -114,65 +114,6 @@ test('AUTH-11 Event Lock Clock Authority Tests', async (t) => {
     await assert.rejects(transferLeadership(adminId, teamId, memberId), { message: 'Event is locked' });
   });
 
-  const setupInvitation = async (teamId: string, eventId: string) => {
-    const invId = randomUUID();
-    await prisma.teamInvitation.create({
-      data: {
-        id: invId,
-        teamId,
-        
-        inviteeId: nonMemberId,
-        expiresAt: new Date(Date.now() + 10000)
-      }
-    });
-    return invId;
-  };
-
-  await t.test('TEST - cancelInvitation: unlocked succeeds', async () => {
-    const { teamId, eventId } = await setupEventAndTeam(Date.now() + 24 * 60 * 60 * 1000, false);
-    const invId = await setupInvitation(teamId, eventId);
-    await assert.doesNotReject(cancelInvitation(adminId, teamId, invId));
-    
-    const check = await prisma.teamInvitation.findUnique({ where: { id: invId } });
-    assert.strictEqual(check?.status, 'CANCELLED');
-  });
-
-  await t.test('TEST - cancelInvitation: explicitly locked is rejected', async () => {
-    const { teamId, eventId } = await setupEventAndTeam(Date.now() + 24 * 60 * 60 * 1000, true);
-    const invId = await setupInvitation(teamId, eventId);
-    await assert.rejects(cancelInvitation(adminId, teamId, invId), { message: 'Event is locked' });
-  });
-
-  await t.test('TEST - cancelInvitation: boundary before (allowed)', async () => {
-    const dbTimeResult = await prisma.$queryRaw<{ now: Date }[]>`SELECT now() as now`;
-    const dbNow = dbTimeResult[0].now.getTime();
-    
-    // end_time = dbNow - 24 hours + 1000ms (so 1 second before the lock)
-    const { teamId, eventId } = await setupEventAndTeam(dbNow - 24 * 60 * 60 * 1000 + 1000, false);
-    const invId = await setupInvitation(teamId, eventId);
-    await assert.doesNotReject(cancelInvitation(adminId, teamId, invId));
-  });
-
-  await t.test('TEST - cancelInvitation: exact boundary (rejected)', async () => {
-    const dbTimeResult = await prisma.$queryRaw<{ now: Date }[]>`SELECT now() as now`;
-    const dbNow = dbTimeResult[0].now.getTime();
-    
-    // end_time = dbNow - 24 hours (exactly on lock boundary)
-    const { teamId, eventId } = await setupEventAndTeam(dbNow - 24 * 60 * 60 * 1000, false);
-    const invId = await setupInvitation(teamId, eventId);
-    await assert.rejects(cancelInvitation(adminId, teamId, invId), { message: 'Event is locked' });
-  });
-
-  await t.test('TEST - cancelInvitation: boundary after (rejected)', async () => {
-    const dbTimeResult = await prisma.$queryRaw<{ now: Date }[]>`SELECT now() as now`;
-    const dbNow = dbTimeResult[0].now.getTime();
-    
-    // end_time = dbNow - 24 hours - 1000ms (1 second past the lock)
-    const { teamId, eventId } = await setupEventAndTeam(dbNow - 24 * 60 * 60 * 1000 - 1000, false);
-    const invId = await setupInvitation(teamId, eventId);
-    await assert.rejects(cancelInvitation(adminId, teamId, invId), { message: 'Event is locked' });
-  });
-
   await t.test('TEST - Error contract: SQLSTATE maps correctly to AppError without leaking SQLERRM', async () => {
     const { teamId } = await setupEventAndTeam(Date.now() + 24 * 60 * 60 * 1000, true);
     
@@ -189,7 +130,7 @@ test('AUTH-11 Event Lock Clock Authority Tests', async (t) => {
   await t.test('TEST - Authorization: unauthorized user is rejected', async () => {
     const { teamId } = await setupEventAndTeam(Date.now() + 24 * 60 * 60 * 1000, false);
     // nonMemberId is not an admin, nor leader
-    await assert.rejects(cancelTeam(nonMemberId, teamId), { message: 'An unexpected error occurred' });
+    await assert.rejects(cancelTeam(nonMemberId, teamId), { message: 'UNAUTHORIZED' });
   });
 
 });

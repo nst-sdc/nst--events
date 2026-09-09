@@ -105,6 +105,7 @@ describe("Unit: Minimum App Version Enforcement Mechanism", () => {
 
   describe("3. Middleware HTTP Verification", () => {
     const testApp = express();
+    (testApp as any)._skipDefaultPlatformHeader = true;
     testApp.use(appVersionMiddleware);
 
     testApp.get("/health", (_req: Request, res: Response) => {

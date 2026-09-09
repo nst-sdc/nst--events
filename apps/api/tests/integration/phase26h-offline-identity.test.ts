@@ -23,7 +23,6 @@ describe('ATTENDANCE-06: Offline Identity Binding BOLA Protection', () => {
     // Clear out
     await adminPrisma.team.deleteMany({});
     await adminPrisma.attendanceRecord.deleteMany({});
-    await adminPrisma.consumedQrSignature.deleteMany({});
     await adminPrisma.attendanceSession.deleteMany({});
     await adminPrisma.eventRegistration.deleteMany({});
     await adminPrisma.eventAudienceBatch.deleteMany({});
@@ -108,7 +107,6 @@ describe('ATTENDANCE-06: Offline Identity Binding BOLA Protection', () => {
   };
 
   it('Student A + payload user_id B -> Attendance credited to A (BOLA protection)', async () => {
-    await adminPrisma.consumedQrSignature.deleteMany({});
     const scanTimeMs = Date.now();
     const res = await runSync(studentAId, studentBId, scanTimeMs);
     console.log('SYNC RES:', res);
@@ -123,7 +121,6 @@ describe('ATTENDANCE-06: Offline Identity Binding BOLA Protection', () => {
   });
 
   it('Student A + malformed user_id -> Attendance credited to A', async () => {
-    await adminPrisma.consumedQrSignature.deleteMany({});
     const scanTimeMs = Date.now();
     await runSync(studentAId, 'not-a-uuid', scanTimeMs);
 
@@ -133,7 +130,6 @@ describe('ATTENDANCE-06: Offline Identity Binding BOLA Protection', () => {
   });
 
   it('Student B + normal sync -> Attendance credited to B', async () => {
-    await adminPrisma.consumedQrSignature.deleteMany({});
     const scanTimeMs = Date.now();
     await runSync(studentBId, studentBId, scanTimeMs);
 

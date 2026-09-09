@@ -142,7 +142,6 @@ describe('Phase 26B: Offline Attendance Cryptographic Integrity', () => {
     await adminPrisma.$executeRaw`DELETE FROM club_memberships WHERE user_id = ${organizerId}::uuid`;
     await adminPrisma.$executeRaw`DELETE FROM clubs WHERE name = 'Phase 26B Club'`;
     await adminPrisma.$executeRaw`DELETE FROM users WHERE id IN (${organizerId}::uuid, ${nonOrganizerId}::uuid, ${studentId}::uuid)`;
-    await adminPrisma.$executeRaw`DELETE FROM consumed_qr_signatures WHERE session_id IN (${session1Id}::uuid, ${session2Id}::uuid)`;
   });
 
   it('1. Valid offline attendance proof -> success', async () => {
@@ -360,9 +359,7 @@ describe('Phase 26B: Offline Attendance Cryptographic Integrity', () => {
 
     assert.strictEqual(res2.status, 200);
     assert.strictEqual(res2.body.processed, 0);
-    assert.strictEqual(res2.body.skipped, 0);
-    assert.strictEqual(res2.body.errors.length, 1);
-    assert.strictEqual(res2.body.errors[0].error_code, 'SIGNATURE_ALREADY_CONSUMED');
+    assert.strictEqual(res2.body.skipped, 1);
   });
 
   it('8 & 11. Mixed authorized/unauthorized batch -> safe rejection', async () => {

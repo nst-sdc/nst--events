@@ -95,33 +95,33 @@ describe('Phase 26A: Attendance Dispute Authorization', () => {
     await adminPrisma.$executeRaw`DELETE FROM users WHERE id IN (${student1}::uuid, ${student2}::uuid, ${admin}::uuid, ${nonAdmin}::uuid);`;
   });
 
-  it('1. STUDENT resolving own dispute -> 403', async () => {
-    // Student1 is a CLUB_ADMIN, but it's their OWN dispute, so should be 403
+  it('1. STUDENT resolving own dispute -> 422', async () => {
+    // Student1 is a CLUB_ADMIN, but it's their OWN dispute, so should be 422 UNAUTHORIZED
     const res = await request(app)
       .patch(`/v1/attendance/disputes/${dispute1}`)
       .set('Authorization', `Bearer ${student1Token}`)
       .send({ resolution: 'APPROVED' });
     
-    assert.strictEqual(res.status, 403);
+    assert.strictEqual(res.status, 422);
   });
 
-  it('2. STUDENT resolving another users dispute -> 403', async () => {
+  it('2. STUDENT resolving another users dispute -> 422', async () => {
     // Student2 is just a regular student, resolving Student1's dispute
     const res = await request(app)
       .patch(`/v1/attendance/disputes/${dispute1}`)
       .set('Authorization', `Bearer ${student2Token}`)
       .send({ resolution: 'APPROVED' });
     
-    assert.strictEqual(res.status, 403);
+    assert.strictEqual(res.status, 422);
   });
 
-  it('3. Unauthorized non-admin caller -> 403', async () => {
+  it('3. Unauthorized non-admin caller -> 422', async () => {
     const res = await request(app)
       .patch(`/v1/attendance/disputes/${dispute1}`)
       .set('Authorization', `Bearer ${nonAdminToken}`)
       .send({ resolution: 'APPROVED' });
     
-    assert.strictEqual(res.status, 403);
+    assert.strictEqual(res.status, 422);
   });
 
   it('4. Authorized resolver -> success', async () => {

@@ -2,7 +2,7 @@ import { describe, it, before } from 'node:test';
 import * as assert from 'node:assert';
 import { prisma } from '../../src/lib/prisma';
 import { adminPrisma } from '../helpers/adminDb';
-import { createTeam, getSentTeamInvitations } from '../../src/modules/teams/teams.service';
+import { createTeam } from '../../src/modules/teams/teams.service';
 
 describe('SECURITY DEFINER Helpers BOLA & Validation Tests', () => {
   let eventId: string;
@@ -15,15 +15,17 @@ describe('SECURITY DEFINER Helpers BOLA & Validation Tests', () => {
   before(async () => {
     // Basic setup
     await adminPrisma.eventRegistration.deleteMany({});
-    await adminPrisma.teamInvitation.deleteMany({});
     await adminPrisma.team.deleteMany({});
     await adminPrisma.eventAudienceBatch.deleteMany({});
     await adminPrisma.userAcademicProfile.deleteMany({});
     await adminPrisma.academicBatch.deleteMany({});
     await adminPrisma.academicProgram.deleteMany({});
+    await adminPrisma.attendanceDispute.deleteMany({});
     await adminPrisma.attendanceRecord.deleteMany({});
-  await adminPrisma.eventRegistration.deleteMany({});
-  await adminPrisma.event.deleteMany({});
+    await adminPrisma.attendanceSession.deleteMany({});
+    await adminPrisma.eventRegistration.deleteMany({});
+    await adminPrisma.eventClub.deleteMany({});
+    await adminPrisma.event.deleteMany({ where: { id: '00000000-0000-0000-0000-0000000000e1' } });
     await adminPrisma.user.deleteMany({
       where: { email: { in: ['leaderA@nst.com', 'leaderB@nst.com', 'member@nst.com'] } }
     });
@@ -116,35 +118,4 @@ describe('SECURITY DEFINER Helpers BOLA & Validation Tests', () => {
     });
     assert.strictEqual(result[0].is_user_available_for_team, false);
   });
-
-  it('Leader A can view sent invitations for Team A', async () => {
-    // Setup an invitation
-    await adminPrisma.teamInvitation.create({
-      data: {
-        teamId: teamAId,
-        inviteeId: memberId,
-        status: 'PENDING',
-        expiresAt: new Date(Date.now() + 100000)
-      }
-    });
-
-    try {
-      const invitations = await getSentTeamInvitations(leaderAId, eventId, teamAId);
-      assert.strictEqual(invitations.length, 1);
-      assert.strictEqual(invitations[0].invitee.user_id, memberId);
-    } catch (e) {
-      console.error('TEST FAILURE DETAILS:', e);
-      throw e;
-    }
-  });
-
-  it('BOLA: Leader B cannot view sent invitations for Team A', async () => {
-    await assert.rejects(
-      async () => {
-        await getSentTeamInvitations(leaderBId, eventId, teamAId);
-      },
-      (err: any) => err.message === 'Only the team leader can view sent invitations'
-    );
-  });
-
 });

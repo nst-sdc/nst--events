@@ -2,7 +2,7 @@ import { describe, it, before as beforeAll, after as afterAll } from 'node:test'
 import assert from 'node:assert';
 import { adminPrisma as prisma } from '../helpers/adminDb';
 import { createEvent, updateEvent, getEventById, submitForApproval, approveEvent, lockEvent } from '../../src/modules/events/events.service';
-import { createTeam, inviteMember, acceptInvitation, joinTeam, leaveTeam } from '../../src/modules/teams/teams.service';
+import { createTeam, joinTeam, leaveTeam } from '../../src/modules/teams/teams.service';
 import { createSession } from '../../src/modules/events/attendance.service';
 import { AttendanceType, EventAudience, EventState, EventType, EventVisibility, RegistrationType, AssignmentSource } from '@nst/database';
 
@@ -26,10 +26,10 @@ describe('Phase 19 E2E Audit', () => {
 
   beforeAll(async () => {
     // Cleanup first to avoid unique constraint failures
+    await prisma.attendanceDispute.deleteMany({});
     await prisma.eventRegistration.deleteMany({});
     await prisma.attendanceRecord.deleteMany({});
     await prisma.attendanceSession.deleteMany({});
-    await prisma.teamInvitation.deleteMany({});
     await prisma.team.deleteMany({});
     await prisma.eventAudienceBatch.deleteMany({});
     await prisma.eventClub.deleteMany({});
@@ -84,7 +84,6 @@ describe('Phase 19 E2E Audit', () => {
     await prisma.eventRegistration.deleteMany({});
     await prisma.attendanceRecord.deleteMany({});
     await prisma.attendanceSession.deleteMany({});
-    await prisma.teamInvitation.deleteMany({});
     await prisma.team.deleteMany({});
     await prisma.eventAudienceBatch.deleteMany({});
     await prisma.eventClub.deleteMany({});
@@ -155,40 +154,30 @@ describe('Phase 19 E2E Audit', () => {
     const ev1 = await getEventById(adminId, eventId);
     assert.strictEqual(ev1.registrationCount, 0);
 
-    // 5. Team Invitations
-    // Student A invites Student C
-    const inv = await inviteMember(studentAId, teamId, studentCId);
-    assert.strictEqual(inv.status, 'PENDING');
+    // 5. Team Joining & Registration
+    // Student B (Batch Y) tries to join -> Fails (academically ineligible)
+    await assert.rejects(joinTeam(studentBId, teamId));
 
-    // Student A invites Student B (Batch Y) -> Fails
-    await assert.rejects(inviteMember(studentAId, teamId, studentBId), /AUDIENCE_NOT_ELIGIBLE/);
-
-    // 6. Invitation Acceptance & Team Registration
-    const invC = await prisma.teamInvitation.findFirst({ where: { teamId, inviteeId: studentCId } });
-    assert.ok(invC);
-    
-    await acceptInvitation(studentCId, teamId, invC!.id);
+    // 6. Team Registration
+    // Student C joins -> Team reaches minimum size (2) and transitions to REGISTERED
+    await joinTeam(studentCId, teamId);
     const teamAfterC = await prisma.team.findUnique({ where: { id: teamId } });
     assert.strictEqual(teamAfterC?.status, 'REGISTERED');
 
-    // Capacity should be 2 now
+    // Capacity should be 1 team now
     const ev2 = await getEventById(adminId, eventId);
-    assert.strictEqual(ev2.registrationCount, 2);
+    assert.strictEqual(ev2.registrationCount, 1);
 
     // 7. Team Maximum
-    const invD = await inviteMember(studentAId, teamId, studentDId);
-    await acceptInvitation(studentDId, teamId, invD.id);
-
-    const invE = await inviteMember(studentAId, teamId, studentEId);
-    await acceptInvitation(studentEId, teamId, invE.id);
+    await joinTeam(studentDId, teamId);
+    await joinTeam(studentEId, teamId);
     
     // Team should have 4 members now (max was updated to 5 in draft round trip)
     const teamAfterE = await prisma.team.findUnique({ where: { id: teamId }, include: { eventRegistrations: true } });
     assert.strictEqual(teamAfterE?.eventRegistrations.length, 4);
 
     // 5th member joins
-    const invF = await inviteMember(studentAId, teamId, studentFId);
-    await acceptInvitation(studentFId, teamId, invF.id);
+    await joinTeam(studentFId, teamId);
 
     const teamAfterF = await prisma.team.findUnique({ where: { id: teamId }, include: { eventRegistrations: true } });
     assert.strictEqual(teamAfterF?.eventRegistrations.length, 5);

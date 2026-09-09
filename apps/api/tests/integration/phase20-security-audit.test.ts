@@ -2,7 +2,7 @@ import { describe, it, before as beforeAll, after as afterAll } from 'node:test'
 import assert from 'node:assert';
 import { adminPrisma as prisma } from '../helpers/adminDb';
 import { createEvent, updateEvent, getEventById, submitForApproval, approveEvent, lockEvent } from '../../src/modules/events/events.service';
-import { createTeam, inviteMember, acceptInvitation, joinTeam, leaveTeam } from '../../src/modules/teams/teams.service';
+import { createTeam, joinTeam, leaveTeam } from '../../src/modules/teams/teams.service';
 import { registerEvent } from '../../src/modules/registrations/registrations.service';
 import { AttendanceType, EventAudience, EventState, EventType, EventVisibility, RegistrationType, AssignmentSource } from '@nst/database';
 
@@ -31,7 +31,6 @@ describe('Phase 20 Security Audit', () => {
     await prisma.eventRegistration.deleteMany({});
     await prisma.attendanceRecord.deleteMany({});
     await prisma.attendanceSession.deleteMany({});
-    await prisma.teamInvitation.deleteMany({});
     await prisma.team.deleteMany({});
     await prisma.eventAudienceBatch.deleteMany({});
     await prisma.eventClub.deleteMany({});
@@ -94,7 +93,6 @@ describe('Phase 20 Security Audit', () => {
     await prisma.eventRegistration.deleteMany({});
     await prisma.attendanceRecord.deleteMany({});
     await prisma.attendanceSession.deleteMany({});
-    await prisma.teamInvitation.deleteMany({});
     await prisma.team.deleteMany({});
     await prisma.eventAudienceBatch.deleteMany({});
     await prisma.eventClub.deleteMany({});
@@ -141,19 +139,10 @@ describe('Phase 20 Security Audit', () => {
     await approveEvent(adminId, eventAId);
   });
 
-  it('3. BOLA / IDOR - Teams and Invitations', async () => {
+  it('3. BOLA / IDOR - Teams and Membership', async () => {
     const team = await createTeam(studentAId, eventAId, 'Team A');
     teamAId = (team as any).team_id;
 
-    // Student B attempts to read Student A team members directly?
-    // Wait, get_team_member_ids is tested in teams-security.test.ts, let's try inviting someone and B accepting it
-    
-    // Student A invites Student B
-    const inv = await inviteMember(studentAId, teamAId, studentBId);
-
-    // Student C attempts to accept Student B's invitation
-    await assert.rejects(acceptInvitation(studentCId, teamAId, inv.id), /NotFound|Forbidden/);
-    
     // Student C attempts to leave Team A (they are not in it)
     await assert.rejects(leaveTeam(studentCId, teamAId), /NotFound|Forbidden|Not in team|Registration not found/i);
   });
@@ -169,7 +158,7 @@ describe('Phase 20 Security Audit', () => {
     assert.strictEqual(successes.length, 1, 'Only one team creation should succeed due to unique registration constraint');
   });
 
-  it('5. Concurrent Duplicate Invitation Acceptance', async () => {
+  it('5. Concurrent Duplicate Team Join', async () => {
     // Let's create an event B that is individual
     const ev = await createEvent(adminId, {
       title: 'Race Event',
@@ -189,16 +178,14 @@ describe('Phase 20 Security Audit', () => {
     const team = await createTeam(studentCId, ev.id, 'Race Team');
     const tId = (team as any).team_id;
 
-    const inv = await inviteMember(studentCId, tId, studentBId);
-
-    // B accepts twice concurrently
+    // B attempts to join twice concurrently
     const accepts = await Promise.allSettled([
-      acceptInvitation(studentBId, tId, inv.id),
-      acceptInvitation(studentBId, tId, inv.id),
+      joinTeam(studentBId, tId),
+      joinTeam(studentBId, tId),
     ]);
 
     const accepted = accepts.filter(r => r.status === 'fulfilled');
-    assert.strictEqual(accepted.length, 1, 'Invitation should only be accepted once');
+    assert.strictEqual(accepted.length, 1, 'User should only join once');
   });
 
   it('6. Browser Clock Attack / Permanent Lock', async () => {
@@ -271,18 +258,11 @@ describe('Phase 20 Security Audit', () => {
     const t = await createTeam(studentDId, eventAId, 'Max Size Race Team');
     const tId = (t as any).team_id;
 
-    // Student D invites E, admin (as student), and clubAdminA (as student)
-    const [invE, invCA, invCB] = await Promise.all([
-      inviteMember(studentDId, tId, studentEId),
-      inviteMember(studentDId, tId, clubAdminAId),
-      inviteMember(studentDId, tId, clubAdminBId)
-    ]);
-
-    // Concurrently accept 3 invitations (but max size is 3, including leader, so only 2 should succeed)
+    // Concurrently join 3 members (but max size is 3, including leader, so only 2 should succeed)
     const accepts = await Promise.allSettled([
-      acceptInvitation(studentEId, tId, invE.id),
-      acceptInvitation(clubAdminAId, tId, invCA.id),
-      acceptInvitation(clubAdminBId, tId, invCB.id)
+      joinTeam(studentEId, tId),
+      joinTeam(clubAdminAId, tId),
+      joinTeam(clubAdminBId, tId)
     ]);
 
     const acceptedCount = accepts.filter(r => r.status === 'fulfilled').length;
