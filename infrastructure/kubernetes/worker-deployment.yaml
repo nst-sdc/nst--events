@@ -17,6 +17,8 @@ spec:
       labels:
         app: nst-worker
     spec:
+      imagePullSecrets:
+        - name: ghcr-pull-secret
       automountServiceAccountToken: false
       affinity:
         nodeAffinity:
@@ -44,7 +46,7 @@ spec:
                       - nst-n7
       containers:
         - name: worker
-          image: localhost:30500/nst-worker:v1
+          image: ghcr.io/nst-sdc/nst-worker:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3002

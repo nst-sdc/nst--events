@@ -15,6 +15,8 @@ spec:
       labels:
         app: nst-api
     spec:
+      imagePullSecrets:
+        - name: ghcr-pull-secret
       automountServiceAccountToken: false
       affinity:
         nodeAffinity:
@@ -42,7 +44,7 @@ spec:
                       - nst-n7
       containers:
         - name: api
-          image: localhost:30500/nst-api:v1
+          image: ghcr.io/nst-sdc/nst-api:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3001
