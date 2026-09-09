@@ -6,33 +6,182 @@ on:
     types:
       - completed
     branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   deploy:
-    name: Build & Deploy
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    runs-on: ubuntu-latest
+    name: Build, Deploy & Rollout Gate
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: [self-hosted, linux, x64, n6]
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v6.0.9
+        uses: actions/checkout@v4
         with:
-          version: 9
+          fetch-depth: 50
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: 20
-          cache: 'pnpm'
+      - name: Determine Target Commit SHA
+        id: vars
+        run: |
+          TARGET_SHA="${{ github.event.workflow_run.head_sha || github.sha }}"
+          SHORT_SHA=$(git rev-parse --short "${TARGET_SHA}")
+          echo "target_sha=${TARGET_SHA}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "Deploying commit: ${TARGET_SHA} (${SHORT_SHA})"
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Log in to GitHub Container Registry (GHCR)
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Build workspaces
-        run: pnpm build
+      - name: Path Filtering & Component Change Detection
+        id: filter
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TARGET_SHA="${{ steps.vars.outputs.target_sha }}"
 
-      - name: Deploy stub
-        run: echo "Deploy workflow stub - Phase 0 skeleton ready"
+          echo "Querying GitHub Actions API for last successful deploy run on main..."
+          PREV_DEPLOY_SHA=$(gh api "repos/${{ github.repository }}/actions/workflows/deploy.yml/runs?status=success&branch=main&per_page=1" --jq '.workflow_runs[0].head_sha // empty' 2>/dev/null || true)
+
+          if [ -z "$PREV_DEPLOY_SHA" ]; then
+            echo "No successful deploy.yml run found in GitHub Actions history. Checking live K8s cluster..."
+            RUNNING_IMG=$(kubectl get deployment nst-api -n nst-events -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null || true)
+            if [[ "$RUNNING_IMG" =~ :([a-f0-9]{7,40})$ ]]; then
+              PREV_DEPLOY_SHA="${BASH_REMATCH[1]}"
+              echo "Discovered previous deployed commit from running nst-api deployment: ${PREV_DEPLOY_SHA}"
+            fi
+          else
+            echo "Discovered last successful deploy run SHA from GitHub API: ${PREV_DEPLOY_SHA}"
+          fi
+
+          if [ -z "$PREV_DEPLOY_SHA" ]; then
+            echo "No previous successful deploy commit identified (first deployment through CD pipeline). Building all components."
+            BUILD_API=true
+            BUILD_WORKER=true
+            BUILD_DASHBOARD=true
+          else
+            echo "Fetching git history for previous deploy commit ${PREV_DEPLOY_SHA}..."
+            git fetch origin "${PREV_DEPLOY_SHA}" --depth=50 2>/dev/null || git fetch origin main --depth=100 2>/dev/null || true
+
+            if ! git rev-parse --verify "${PREV_DEPLOY_SHA}" >/dev/null 2>&1; then
+              echo "Previous deploy SHA ${PREV_DEPLOY_SHA} could not be resolved in git history. Building all components."
+              BUILD_API=true
+              BUILD_WORKER=true
+              BUILD_DASHBOARD=true
+            else
+              echo "Comparing diff between last successful deploy (${PREV_DEPLOY_SHA}) and target (${TARGET_SHA}):"
+              DIFF=$(git diff --name-only "${PREV_DEPLOY_SHA}" "${TARGET_SHA}")
+              echo "$DIFF"
+
+              BUILD_API=false
+              BUILD_WORKER=false
+              BUILD_DASHBOARD=false
+
+              # Shared packages, lockfile, or root configs affect all services
+              if echo "$DIFF" | grep -qE '^(packages/|pnpm-lock\.yaml|pnpm-workspace\.yaml|package\.json)'; then
+                echo "Shared package, workspace config, or lockfile changed. Rebuilding API, worker, and dashboard."
+                BUILD_API=true
+                BUILD_WORKER=true
+                BUILD_DASHBOARD=true
+              fi
+
+              if echo "$DIFF" | grep -qE '^(apps/api/|docker/Dockerfile\.api)'; then
+                BUILD_API=true
+              fi
+
+              if echo "$DIFF" | grep -qE '^(apps/worker/|docker/Dockerfile\.worker)'; then
+                BUILD_WORKER=true
+              fi
+
+              if echo "$DIFF" | grep -qE '^(apps/dashboard/|docker/Dockerfile\.dashboard)'; then
+                BUILD_DASHBOARD=true
+              fi
+            fi
+          fi
+
+          echo "build_api=${BUILD_API}" >> "$GITHUB_OUTPUT"
+          echo "build_worker=${BUILD_WORKER}" >> "$GITHUB_OUTPUT"
+          echo "build_dashboard=${BUILD_DASHBOARD}" >> "$GITHUB_OUTPUT"
+
+      - name: Build & Push API Image
+        if: steps.filter.outputs.build_api == 'true'
+        run: |
+          TAG="ghcr.io/nst-sdc/nst-api:${{ steps.vars.outputs.target_sha }}"
+          echo "Building API image: ${TAG}"
+          docker build -f docker/Dockerfile.api -t "${TAG}" .
+          docker push "${TAG}"
+
+      - name: Build & Push Worker Image
+        if: steps.filter.outputs.build_worker == 'true'
+        run: |
+          TAG="ghcr.io/nst-sdc/nst-worker:${{ steps.vars.outputs.target_sha }}"
+          echo "Building Worker image: ${TAG}"
+          docker build -f docker/Dockerfile.worker -t "${TAG}" .
+          docker push "${TAG}"
+
+      - name: Build & Push Dashboard Image
+        if: steps.filter.outputs.build_dashboard == 'true'
+        run: |
+          TAG="ghcr.io/nst-sdc/nst-dashboard:${{ steps.vars.outputs.target_sha }}"
+          echo "Building Dashboard image: ${TAG}"
+          docker build -f docker/Dockerfile.dashboard -t "${TAG}" .
+          docker push "${TAG}"
+
+      - name: Apply PodDisruptionBudgets & Infrastructure Manifests
+        run: |
+          echo "Applying PodDisruptionBudgets in nst-events..."
+          kubectl apply -f infrastructure/kubernetes/pod-disruption-budgets.yaml
+
+      - name: Deploy & Rollout Gate - API
+        if: steps.filter.outputs.build_api == 'true'
+        run: |
+          TAG="ghcr.io/nst-sdc/nst-api:${{ steps.vars.outputs.target_sha }}"
+          echo "Patching nst-api image to ${TAG}..."
+          kubectl set image deployment/nst-api api="${TAG}" -n nst-events
+          ./scripts/deploy-rollout.sh nst-api nst-events 300s
+
+      - name: Deploy & Rollout Gate - Worker
+        if: steps.filter.outputs.build_worker == 'true'
+        run: |
+          TAG="ghcr.io/nst-sdc/nst-worker:${{ steps.vars.outputs.target_sha }}"
+          echo "Patching nst-worker image to ${TAG}..."
+          kubectl set image deployment/nst-worker worker="${TAG}" -n nst-events
+          ./scripts/deploy-rollout.sh nst-worker nst-events 300s
+
+      - name: Deploy & Rollout Gate - Dashboard
+        if: steps.filter.outputs.build_dashboard == 'true'
+        run: |
+          TAG="ghcr.io/nst-sdc/nst-dashboard:${{ steps.vars.outputs.target_sha }}"
+          echo "Patching nst-dashboard image to ${TAG}..."
+          kubectl set image deployment/nst-dashboard dashboard="${TAG}" -n nst-events
+          ./scripts/deploy-rollout.sh nst-dashboard nst-events 300s
+
+      - name: Notification & Summary
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "## 🚀 Deployment Pipeline Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Status** | **${STATUS}** |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Commit** | \`${{ steps.vars.outputs.target_sha }}\` (\`${{ steps.vars.outputs.short_sha }}\`) |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Node** | \`n6\` (Runner: \`nst-n6-runner\`) |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Namespace** | \`nst-events\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **API Rebuilt** | \`${{ steps.filter.outputs.build_api }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Worker Rebuilt** | \`${{ steps.filter.outputs.build_worker }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Dashboard Rebuilt** | \`${{ steps.filter.outputs.build_dashboard }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$STATUS" = "success" ]; then
+            echo "::notice title=CD Deployment Succeeded::All components deployed and passed rollout status gating on nst-events."
+            echo "> [!NOTE]" >> "$GITHUB_STEP_SUMMARY"
+            echo "> All selected components successfully deployed and passed rollout health gating on \`nst-events\`." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::error title=CD Deployment Failed::One or more deployment steps failed or timed out. Review annotations and step summary for component-level details."
+          fi

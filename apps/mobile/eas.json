@@ -13,13 +13,13 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.nst-events.nstsdc.org"
+        "EXPO_PUBLIC_API_URL": "https://nst-api.nstsdc.org"
       }
     },
     "production": {
       "distribution": "store",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.nst-events.nstsdc.org"
+        "EXPO_PUBLIC_API_URL": "https://nst-api.nstsdc.org"
       }
     }
   }
