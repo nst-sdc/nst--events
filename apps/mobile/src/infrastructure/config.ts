@@ -5,7 +5,7 @@ const getApiBaseUrl = () => {
     return process.env.EXPO_PUBLIC_API_URL;
   }
   if (typeof __DEV__ !== 'undefined' && !__DEV__) {
-    return process.env.EXPO_PUBLIC_PROD_API_URL || 'https://api.nst-events.nstsdc.org';
+    return process.env.EXPO_PUBLIC_PROD_API_URL || 'https://nst-api.nstsdc.org';
   }
   if (Platform.OS === 'android') {
     // Android emulator communicates via adb reverse tunnel on localhost:3001

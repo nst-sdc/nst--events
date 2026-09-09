@@ -62,3 +62,41 @@ pnpm --filter @nst/database bootstrap-admin -- coordinator@adypu.edu.in --yes
 - **Confirmation Guard**: Prompts the operator to type `yes` before committing the change unless the `--yes` or `-y` flag is supplied.
 - **Idempotent**: If the specified user is already a `PLATFORM_ADMIN`, the script reports this clearly and exits with code `0` without making redundant updates.
 - **Application Isolation**: This script is a standalone command-line utility. It is **not** exposed through any Express API route, Next.js dashboard route, or mobile interface.
+
+---
+
+## 2. CI/CD Deployer ServiceAccount & Runner Token Security
+
+### Overview
+Automated deployments via `.github/workflows/deploy.yml` run on the self-hosted GitHub Actions runner installed on cluster node `nst-n6` (`192.168.136.150`). The runner authenticates to the Kubernetes API server (`https://192.168.136.145:6443`) using a dedicated, scoped Kubernetes ServiceAccount: `github-actions-deployer`.
+
+### Token Storage & Scope
+- **File Location on `n6`**: `/home/github-runner/.kube/config` (mode `0600`, owned by system user `github-runner:github-runner`).
+- **Cluster Secret**: `github-actions-deployer-token` (in namespace `nst-events`).
+- **Permissions Boundary**: Strictly confined to namespace `nst-events` by Role `github-actions-deployer-role`.
+  - Resources: `deployments`, `deployments/rollback`, `deployments/scale`, `replicasets`, `pods`, `pods/log`, `services`, `events`, `configmaps`, `ingresses`, `poddisruptionbudgets`.
+  - Verbs: `get`, `list`, `watch`, `create`, `update`, `patch`.
+  - **No cluster-admin**: The token cannot access or list resources in `kube-system`, `default`, or other cluster namespaces.
+  - **No secret reading**: The deployer cannot read generic secrets (such as database credentials or API secrets) in `nst-events`.
+
+### Revocation & Rotation Procedure
+If `nst-n6` is decommissioned, compromised, or the token requires periodic rotation:
+1. **Immediate Revocation**: Delete the static token secret from the cluster:
+   ```bash
+   kubectl delete secret github-actions-deployer-token -n nst-events
+   ```
+   *Effect*: The token sitting on `n6` is immediately invalidated by the Kubernetes API server.
+2. **Issue New Token**:
+   ```bash
+   cat <<EOF | kubectl apply -f -
+   apiVersion: v1
+   kind: Secret
+   metadata:
+     name: github-actions-deployer-token
+     namespace: nst-events
+     annotations:
+       kubernetes.io/service-account.name: github-actions-deployer
+   type: kubernetes.io/service-account-token
+   EOF
+   ```
+3. **Re-install Scoped Kubeconfig**: Extract the newly generated token from the secret (`kubectl get secret github-actions-deployer-token -n nst-events -o jsonpath="{.data.token}" | base64 --decode`) and update `/home/github-runner/.kube/config` on `nst-n6`.

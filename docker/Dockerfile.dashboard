@@ -4,7 +4,7 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 COPY . .
 RUN pnpm install --frozen-lockfile
-ARG NEXT_PUBLIC_API_URL=https://api.nst-events.nstsdc.org
+ARG NEXT_PUBLIC_API_URL=https://nst-api.nstsdc.org
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN pnpm --filter @nst/dashboard... build
 

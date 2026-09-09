@@ -1,0 +1,25 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: nst-api-pdb
+  namespace: nst-events
+  labels:
+    app: nst-api
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: nst-api
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: nst-dashboard-pdb
+  namespace: nst-events
+  labels:
+    app: nst-dashboard
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: nst-dashboard
