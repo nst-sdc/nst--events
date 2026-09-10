@@ -14,9 +14,6 @@ import { App } from 'antd';
 
 // Setup basic mocks
 vi.mock('../hooks/useCurrentUser');
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() })
-}));
 vi.mock('../hooks/useClubs');
 vi.mock('../hooks/useUpdateClub');
 vi.mock('antd/es/app', () => ({

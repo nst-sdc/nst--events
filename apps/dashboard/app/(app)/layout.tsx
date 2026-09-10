@@ -6,7 +6,7 @@ import { getWebAuthStore } from '../../lib/auth-store';
 import { AppShell } from '../../components/layout/AppShell';
 import { apiClient } from '../../lib/api';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
-import { Spin, Layout } from 'antd';
+import { Spin, Layout, Result, Button } from 'antd';
 
 // Module-level promise to prevent duplicate concurrent refresh requests across remounts
 let refreshPromise: Promise<string | null> | null = null;
@@ -18,7 +18,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const [isHydrating, setIsHydrating] = useState(!store.accessToken);
   const [isAuthenticated, setIsAuthenticated] = useState(!!store.accessToken);
 
-  const { data: user, isLoading: isUserLoading } = useCurrentUser();
+  const { data: user, isLoading: isUserLoading, isError: isUserError } = useCurrentUser();
 
   useEffect(() => {
     if (store.accessToken) {
@@ -68,6 +68,19 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     return (
       <Layout className="h-screen w-full flex items-center justify-center bg-gray-50">
         <Spin size="large" />
+      </Layout>
+    );
+  }
+
+  if (isAuthenticated && isUserError) {
+    return (
+      <Layout className="h-screen w-full flex flex-col items-center justify-center bg-gray-50">
+        <Result
+          status="500"
+          title="Failed to Load User Profile"
+          subTitle="We couldn't connect to the server or your session is invalid. Please try again."
+          extra={<Button type="primary" onClick={() => window.location.reload()}>Retry</Button>}
+        />
       </Layout>
     );
   }

@@ -83,12 +83,7 @@ export const apiClient = async <T = any>(endpoint: string, options: RequestInit 
     credentials: endpoint === '/auth/refresh' ? 'include' : 'omit',
   };
 
-  let requestPath = endpoint;
-  if (API_BASE_URL === '' && !endpoint.startsWith('/v1') && !endpoint.startsWith('/auth')) {
-    requestPath = `/api-proxy${endpoint}`;
-  }
-
-  let response = await fetch(`${API_BASE_URL}${requestPath}`, fetchOptions);
+  let response = await fetch(`${API_BASE_URL}${endpoint}`, fetchOptions);
   let requestId = response.headers.get('x-request-id') || undefined;
 
   // Intercept 401 Unauthorized for transparent refresh & retry (exactly once)
@@ -102,7 +97,7 @@ export const apiClient = async <T = any>(endpoint: string, options: RequestInit 
         ...fetchOptions.headers,
         'Authorization': `Bearer ${newToken}`,
       };
-      response = await fetch(`${API_BASE_URL}${requestPath}`, fetchOptions);
+      response = await fetch(`${API_BASE_URL}${endpoint}`, fetchOptions);
       requestId = response.headers.get('x-request-id') || undefined;
     }
   }

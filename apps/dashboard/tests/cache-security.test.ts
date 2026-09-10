@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { test, expect, vi, beforeEach } from 'vitest';
 import { getWebAuthStore } from '../lib/auth-store';
 import { getQueryClient } from '../lib/query-client';
