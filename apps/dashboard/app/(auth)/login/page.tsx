@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { getWebAuthStore } from '../../../lib/auth-store';
 import { API_BASE_URL } from '../../../lib/api';
 import { NstLogoMark } from '../../../components/brand/NstLogo';
+import { DevClubBadge } from '../../../components/brand/DevClubBadge';
+import { DevClubCreditsModal } from '../../../components/brand/DevClubCreditsModal';
 
 const SUPPORT_EMAIL = 'events-support@adypu.edu.in';
 
@@ -114,6 +116,7 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const store = getWebAuthStore();
   const [isLoading, setIsLoading] = useState(false);
+  const [isCreditsOpen, setIsCreditsOpen] = useState(false);
 
   const [isDismissed, setIsDismissed] = useState(false);
   const [prevErrorParam, setPrevErrorParam] = useState<string | null>(null);
@@ -459,7 +462,18 @@ function LoginContent() {
         >
           SEC-02 IDENTITY GATEWAY // @ADYPU.EDU.IN & @NEWTONSCHOOL.CO
         </span>
+        <div className="mt-2.5 pt-2.5 border-t border-dashed border-[#242530] w-full flex items-center justify-center">
+          <DevClubBadge
+            variant="signature"
+            size="sm"
+            onClick={() => setIsCreditsOpen(true)}
+          />
+        </div>
       </div>
+      <DevClubCreditsModal
+        isOpen={isCreditsOpen}
+        onClose={() => setIsCreditsOpen(false)}
+      />
     </div>
   );
 }

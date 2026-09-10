@@ -16,6 +16,8 @@ import { StatusBadge } from '../../src/ui/core/StatusBadge';
 import { ActivityIndicator } from '../../src/ui/core/ActivityIndicator';
 import { logout } from '../../src/services/session';
 import { PRIVACY_POLICY_URL } from '../../src/infrastructure/config';
+import { DevClubCreditsModal } from '../../src/ui/brand/DevClubCreditsModal';
+import { MOBILE_APP_VERSION } from '../../src/infrastructure/brand-config';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -31,6 +33,7 @@ export default function SettingsScreen() {
   } = useNotificationPreferences();
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showCreditsModal, setShowCreditsModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isSwitchingAccount, setIsSwitchingAccount] = useState(false);
 
@@ -376,6 +379,33 @@ export default function SettingsScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* ENGINEERING & CREDITS SECTION */}
+      <View style={[styles.sectionHeader, { marginTop: theme.spacing.xl }]}>
+        <MonoLabel style={styles.sectionTitle}>ENGINEERING & ABOUT</MonoLabel>
+        <Body style={styles.sectionDesc}>System architecture and development credits.</Body>
+      </View>
+
+      <View style={styles.optionsList}>
+        <TouchableOpacity
+          style={styles.optionRow}
+          onPress={() => setShowCreditsModal(true)}
+          activeOpacity={0.8}
+        >
+          <View style={styles.optionContent}>
+            <Title>NST Developers Club</Title>
+            <Mono>View architecture and official links</Mono>
+          </View>
+          <MonoLabel>[ CREDITS ]</MonoLabel>
+        </TouchableOpacity>
+        <View style={styles.optionRow}>
+          <View style={styles.optionContent}>
+            <Title>App Version</Title>
+            <Mono>Installed release bundle</Mono>
+          </View>
+          <MonoLabel>v{MOBILE_APP_VERSION}</MonoLabel>
+        </View>
+      </View>
+
       {/* ACCOUNT / SESSION ACTIONS */}
       <View style={[styles.sectionHeader, { marginTop: theme.spacing.xl }]}>
         <MonoLabel style={styles.sectionTitle}>ACCOUNT / SESSION</MonoLabel>
@@ -440,6 +470,11 @@ export default function SettingsScreen() {
           </View>
         </View>
       </Modal>
+
+      <DevClubCreditsModal
+        visible={showCreditsModal}
+        onClose={() => setShowCreditsModal(false)}
+      />
     </MobileShell>
   );
 }

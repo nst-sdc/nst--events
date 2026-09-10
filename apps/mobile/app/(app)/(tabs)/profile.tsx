@@ -15,6 +15,9 @@ import { useUserProfile } from '../../../src/hooks/use-user-profile';
 import { logout } from '../../../src/services/session';
 import { MobileShell } from '../../../src/ui/core/MobileShell';
 import { Title, Body, MonoLabel, Mono, Display } from '../../../src/ui/core/Typography';
+import { DevClubBadge } from '../../../src/ui/brand/DevClubBadge';
+import { DevClubCreditsModal } from '../../../src/ui/brand/DevClubCreditsModal';
+import { MOBILE_APP_VERSION } from '../../../src/infrastructure/brand-config';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -22,6 +25,7 @@ export default function ProfileScreen() {
   const { data: profile, isLoading, isError, error, refetch } = useUserProfile();
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showCreditsModal, setShowCreditsModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const fullName = profile?.full_name || profile?.email || '';
@@ -295,6 +299,24 @@ export default function ProfileScreen() {
               </View>
             </View>
 
+            <View style={{ marginTop: 12, padding: 14, backgroundColor: theme.colors.surfaceContainerLow, borderWidth: 1, borderColor: theme.colors.borderHairline, gap: 10 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <DevClubBadge
+                  variant="signature"
+                  size="sm"
+                  onPress={() => setShowCreditsModal(true)}
+                />
+                <MonoLabel>v{MOBILE_APP_VERSION}</MonoLabel>
+              </View>
+              <TouchableOpacity
+                style={{ borderWidth: 1, borderColor: theme.colors.borderHairline, paddingVertical: 8, alignItems: 'center', backgroundColor: theme.colors.surface }}
+                onPress={() => setShowCreditsModal(true)}
+                activeOpacity={0.8}
+              >
+                <MonoLabel style={{ color: theme.colors.primary }}>[ VIEW DEVELOPERS CLUB CREDITS ]</MonoLabel>
+              </TouchableOpacity>
+            </View>
+
             <View style={styles.bottomSection}>
               <Button
                 title="[ LOG OUT ]"
@@ -340,6 +362,11 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
+
+      <DevClubCreditsModal
+        visible={showCreditsModal}
+        onClose={() => setShowCreditsModal(false)}
+      />
     </MobileShell>
   );
 }

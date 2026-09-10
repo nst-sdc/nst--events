@@ -7,6 +7,8 @@ import { NstLogo } from '../../src/ui/NstLogo';
 import { useAuthStore } from '../../src/store/auth';
 import { apiClient } from '../../src/infrastructure/api';
 import { GOOGLE_WEB_CLIENT_ID, GOOGLE_IOS_CLIENT_ID, SUPPORT_EMAIL } from '../../src/infrastructure/config';
+import { DevClubBadge } from '../../src/ui/brand/DevClubBadge';
+import { DevClubCreditsModal } from '../../src/ui/brand/DevClubCreditsModal';
 
 import { GoogleSignin, isErrorWithCode, statusCodes } from '@react-native-google-signin/google-signin';
 
@@ -29,6 +31,7 @@ export default function LoginGatewayScreen() {
   const [authError, setAuthError] = useState<AuthError | null>(null);
   const [attemptedEmail, setAttemptedEmail] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [isCreditsOpen, setIsCreditsOpen] = useState(false);
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -495,9 +498,20 @@ export default function LoginGatewayScreen() {
           <View style={styles.noticeBox}>
             <Text style={styles.noticeText}>RESTRICTED TO ENROLLED NST STUDENTS & FACULTY</Text>
             <Text style={styles.noticeSub}>SINGLE DEVICE BOUND // HARDWARE KEY VERIFIED</Text>
+            <View style={{ marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: theme.colors.borderHairline, alignItems: 'center' }}>
+              <DevClubBadge
+                variant="signature"
+                size="sm"
+                onPress={() => setIsCreditsOpen(true)}
+              />
+            </View>
           </View>
         </View>
       </View>
+      <DevClubCreditsModal
+        visible={isCreditsOpen}
+        onClose={() => setIsCreditsOpen(false)}
+      />
     </SafeAreaView>
   );
 }
