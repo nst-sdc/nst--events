@@ -13,6 +13,9 @@ import {
 } from '../../../../hooks/useNotificationPreferences';
 import { LogOut, ChevronRight } from 'lucide-react';
 import { Modal } from '../../../../components/ui/Modal';
+import { DevClubBadge } from '../../../../components/brand/DevClubBadge';
+import { DevClubCreditsModal } from '../../../../components/brand/DevClubCreditsModal';
+import { DASHBOARD_APP_VERSION, DEV_CLUB_MISSION } from '../../../../lib/brand-config';
 
 export default function StudentProfilePage() {
   const { data: user, isLoading: isLoadingUser, isError: isErrorUser, error: errorUser, refetch: refetchUser } = useCurrentUser();
@@ -24,6 +27,7 @@ export default function StudentProfilePage() {
 
   const [mounted, setMounted] = useState(false);
   const [isSignOutModalOpen, setIsSignOutModalOpen] = useState(false);
+  const [isCreditsOpen, setIsCreditsOpen] = useState(false);
   const [updatingKey, setUpdatingKey] = useState<keyof NotificationPreferences | null>(null);
   const [updateError, setUpdateError] = useState<string | null>(null);
 
@@ -365,7 +369,48 @@ export default function StudentProfilePage() {
             </button>
           </div>
         </section>
+
+        {/* 6. ABOUT PLATFORM & DEVELOPERS CLUB */}
+        <section className="space-y-2 pt-2">
+          <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-stitch-secondary uppercase">
+            Platform & Engineering
+          </h2>
+          <div className="border border-stitch-outline-variant bg-stitch-surface-container-lowest p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stitch-outline-variant">
+              <div>
+                <DevClubBadge
+                  variant="signature"
+                  size="md"
+                  onClick={() => setIsCreditsOpen(true)}
+                />
+                <p className="text-xs text-stitch-secondary mt-1 max-w-md">
+                  {DEV_CLUB_MISSION}
+                </p>
+              </div>
+              <span className="font-mono text-xs text-stitch-secondary shrink-0">
+                v{DASHBOARD_APP_VERSION}
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+              <span className="text-xs font-mono text-stitch-secondary">
+                Official Campus Experience System
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsCreditsOpen(true)}
+                className="px-3 py-1.5 border border-stitch-outline-variant bg-stitch-surface-variant hover:bg-stitch-on-surface hover:text-stitch-surface-container-lowest text-stitch-on-surface font-mono text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+              >
+                [ VIEW CREDITS ]
+              </button>
+            </div>
+          </div>
+        </section>
       </div>
+
+      <DevClubCreditsModal
+        isOpen={isCreditsOpen}
+        onClose={() => setIsCreditsOpen(false)}
+      />
     </div>
   );
 }

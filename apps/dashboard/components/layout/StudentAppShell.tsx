@@ -12,6 +12,7 @@ import { StudentNotificationPopover } from '../notifications/StudentNotification
 import { useClubAdmin } from './ClubAdminProvider';
 import { ClubAdminToggle } from './ClubAdminToggle';
 import { NstLogoMark } from '../brand/NstLogo';
+import { StudentFooter } from '../brand/StudentFooter';
 
 const studentNavItems = [
   { label: 'Home', href: '/student/home', icon: Home },
@@ -171,6 +172,9 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
       <div className="flex-grow flex w-full max-w-[1440px] mx-auto">
         {children}
       </div>
+
+      {/* Global Student Footer */}
+      <StudentFooter />
 
       {/* Mobile Bottom Navigation (Hidden on Desktop & Deep Routes) */}
       <nav className={clsx(

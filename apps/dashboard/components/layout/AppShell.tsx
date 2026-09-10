@@ -18,7 +18,8 @@ import {
   SunOutlined,
   MoonOutlined,
   BookOutlined,
-  BlockOutlined
+  BlockOutlined,
+  InfoCircleOutlined
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
@@ -28,6 +29,9 @@ import { canViewStudentDirectory, canViewAcademicCatalog } from '../../lib/auth-
 import { NotificationPopover } from '../notifications/NotificationPopover';
 import { useRealtimeNotifications } from '../../hooks/useRealtimeNotifications';
 import { NstLogoMark } from '../brand/NstLogo';
+import { DevClubBadge } from '../brand/DevClubBadge';
+import { DevClubCreditsModal } from '../brand/DevClubCreditsModal';
+import { DASHBOARD_APP_VERSION } from '../../lib/brand-config';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -86,6 +90,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { theme, setTheme } = useTheme();
   const { token } = useToken();
   const [mounted, setMounted] = useState(false);
+  const [isCreditsOpen, setIsCreditsOpen] = useState(false);
 
   // Initialize global real-time notifications
   useRealtimeNotifications();
@@ -200,20 +205,41 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         collapsedWidth="0"
         theme="dark"
         width={220}
-        style={{ borderRight: `1px solid ${token.colorBorderSecondary}`, overflow: 'auto', height: '100vh' }}
+        style={{ borderRight: `1px solid ${token.colorBorderSecondary}`, height: '100vh', display: 'flex', flexDirection: 'column' }}
       >
-        <div style={{ height: 48, display: 'flex', alignItems: 'center', gap: 10, padding: '0 16px', borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
+        <div style={{ height: 48, display: 'flex', alignItems: 'center', gap: 10, padding: '0 16px', borderBottom: `1px solid ${token.colorBorderSecondary}`, flexShrink: 0 }}>
           <NstLogoMark size={22} className="w-[22px] h-[22px]" />
           <Text style={{ color: '#FFFFFF', fontWeight: 600, fontSize: 14, letterSpacing: -0.2 }}>NST Events</Text>
         </div>
-        <Menu 
-          theme="dark" 
-          mode="inline" 
-          selectedKeys={selectedKeys}
-          onClick={({ key }) => router.push(key)}
-          items={menuItems}
-          style={{ padding: '8px 4px', borderRight: 0, background: 'transparent' }}
-        />
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          <Menu 
+            theme="dark" 
+            mode="inline" 
+            selectedKeys={selectedKeys}
+            onClick={({ key }) => router.push(key)}
+            items={menuItems}
+            style={{ padding: '8px 4px', borderRight: 0, background: 'transparent' }}
+          />
+        </div>
+        <div style={{ padding: '12px 14px', borderTop: `1px solid ${token.colorBorderSecondary}`, flexShrink: 0, backgroundColor: 'rgba(12, 13, 18, 0.7)' }}>
+          <DevClubBadge
+            variant="terminal"
+            size="sm"
+            onClick={() => setIsCreditsOpen(true)}
+            className="w-full justify-center"
+          />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6, fontSize: 10, color: '#717487', fontFamily: 'monospace' }}>
+            <span>v{DASHBOARD_APP_VERSION}</span>
+            <button 
+              type="button" 
+              onClick={() => setIsCreditsOpen(true)}
+              style={{ color: '#9a9db0', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              className="hover:text-white"
+            >
+              Credits
+            </button>
+          </div>
+        </div>
       </Sider>
       <Layout>
         <Header style={{ 
@@ -235,6 +261,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               menu={{
                 items: [
                   ...themeMenu,
+                  {
+                    key: 'about-dev-club',
+                    icon: <InfoCircleOutlined />,
+                    label: 'NST Developers Club',
+                    onClick: () => setIsCreditsOpen(true),
+                  },
                   {
                     key: 'logout',
                     icon: <LogoutOutlined />,
@@ -275,6 +307,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {children}
         </Content>
       </Layout>
+      <DevClubCreditsModal
+        isOpen={isCreditsOpen}
+        onClose={() => setIsCreditsOpen(false)}
+      />
     </Layout>
   );
 }

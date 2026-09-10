@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView, StatusBar, Animated } from 'react
 import { useRouter } from 'expo-router';
 import { useAppTheme } from '../src/store/theme-store';
 import { useAuthStore } from '../src/store/auth';
+import { DEV_CLUB_NAME, MOBILE_APP_VERSION } from '../src/infrastructure/brand-config';
 
 export default function SplashScreen() {
   const router = useRouter();
@@ -243,7 +244,7 @@ export default function SplashScreen() {
         <View style={styles.header}>
           <View style={styles.badgeRow}>
             <View style={styles.pingDot} />
-            <Text style={styles.headerMonoText}>SYS.BOOT // V1.0.4</Text>
+            <Text style={styles.headerMonoText}>SYS.BOOT // V{MOBILE_APP_VERSION}</Text>
           </View>
           <View style={styles.statusPill}>
             <Text style={styles.statusPillText}>[INITIALIZING]</Text>
@@ -268,6 +269,9 @@ export default function SplashScreen() {
             <View style={styles.subtitleBox}>
               <Text style={styles.subtitleMain}>Newton School of Technology</Text>
               <Text style={styles.subtitleSub}>ATTENDANCE TERMINAL // OPERATIONAL PROTOCOL</Text>
+              <Text style={[styles.subtitleSub, { color: theme.colors.secondary, fontFamily: theme.typography.monoBold, marginTop: 4 }]}>
+                ENGINEERED BY {DEV_CLUB_NAME.toUpperCase()}
+              </Text>
             </View>
 
             <View style={styles.cryptoBox}>
@@ -305,7 +309,7 @@ export default function SplashScreen() {
 
           <View style={styles.diagnosticsRow}>
             <View style={styles.diagnosticItem}>
-              <Text style={styles.diagnosticText}>GATEWAY: ESTABLISHED</Text>
+              <Text style={styles.diagnosticText}>DEV: NST DEVELOPERS CLUB</Text>
             </View>
             <View style={styles.diagnosticItem}>
               <Text style={styles.diagnosticText}>AUTH: HSM VALIDATED</Text>
