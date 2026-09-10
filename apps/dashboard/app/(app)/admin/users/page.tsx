@@ -228,9 +228,43 @@ export default function UserManagementPage() {
       okType: 'danger',
       cancelText: 'Cancel',
       onOk: () => {
-        removeStudent.mutate(id, {
-          onSuccess: () => message.success('Student access revoked'),
-          onError: () => message.error('Failed to revoke access'),
+        return new Promise((resolve, reject) => {
+          removeStudent.mutate(id, {
+            onSuccess: () => {
+              message.success('Student access revoked');
+              resolve(true);
+            },
+            onError: (err: unknown) => {
+              message.error('Failed to revoke access');
+              reject(err);
+            }
+          });
+        });
+      }
+    });
+  };
+
+  const handleReactivateStudent = (email: string) => {
+    confirm({
+      title: 'Reactivate Student Access?',
+      icon: <ExclamationCircleOutlined className="text-blue-500" />,
+      content: `This will restore NST Events eligibility for ${email}. Their account and history will be fully active again.`,
+      okText: 'Reactivate Access',
+      okType: 'primary',
+      cancelText: 'Cancel',
+      onOk: () => {
+        return new Promise((resolve, reject) => {
+          addStudent.mutate(email, {
+            onSuccess: () => {
+              message.success('Student access reactivated successfully');
+              resolve(true);
+            },
+            onError: (err: unknown) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              message.error((err as any).response?.data?.error || 'Failed to reactivate student access');
+              reject(err);
+            }
+          });
         });
       }
     });
@@ -244,14 +278,18 @@ export default function UserManagementPage() {
       okText: 'Force Logout',
       okType: 'danger',
       cancelText: 'Cancel',
-      onOk: async () => {
-        try {
-          await revokeSessions.mutateAsync(user.id);
-          message.success('User sessions revoked successfully');
-        } catch (err: unknown) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          message.error((err as any).response?.data?.error || 'Failed to revoke sessions');
-        }
+      onOk: () => {
+        return new Promise(async (resolve, reject) => {
+          try {
+            await revokeSessions.mutateAsync(user.id);
+            message.success('User sessions revoked successfully');
+            resolve(true);
+          } catch (err: unknown) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            message.error((err as any).response?.data?.error || 'Failed to revoke sessions');
+            reject(err);
+          }
+        });
       }
     });
   };
@@ -321,7 +359,7 @@ export default function UserManagementPage() {
       render: (_: unknown, user: AdminUser) => {
         const items = [];
         
-        if (canChangeGlobalRole(currentUser, user)) {
+        if (canChangeGlobalRole(currentUser, user) || (isPlatformAdmin && currentUser?.id === user.id)) {
           const isSelf = currentUser?.id === user.id;
           items.push({ 
             key: 'role', 
@@ -333,6 +371,7 @@ export default function UserManagementPage() {
             ),
             disabled: isSelf,
             onClick: () => { 
+              if (isSelf) return;
               setRoleModalUser(user); 
               setSelectedRole(user.globalRole); 
               updateRole.reset(); 
@@ -424,12 +463,21 @@ export default function UserManagementPage() {
         }
         
         if (canRemove) {
-          if (items.length > 0) items.push({ type: 'divider' as const });
-          items.push({
-            key: 'remove',
-            label: <span className="text-red-500">Remove</span>,
-            onClick: () => handleRevokeStudent(row.id)
-          });
+          if (row.status === 'ACTIVE') {
+            if (items.length > 0) items.push({ type: 'divider' as const });
+            items.push({
+              key: 'remove',
+              label: <span className="text-red-500">Remove</span>,
+              onClick: () => handleRevokeStudent(row.id)
+            });
+          } else {
+            if (items.length > 0) items.push({ type: 'divider' as const });
+            items.push({
+              key: 'reactivate',
+              label: <span className="text-blue-500 font-medium">Reactivate Student</span>,
+              onClick: () => handleReactivateStudent(row.normalizedEmail)
+            });
+          }
         }
         
         if (items.length === 0) return <span style={{ opacity: 0.45 }}>-</span>;
