@@ -155,8 +155,7 @@ vi.mock('../hooks/useUserManagement', () => ({
   useAdminUsers: (...args: any[]) => mockUseAdminUsers(...args),
   useUpdateUserRole: () => mockUseUpdateUserRole(),
   useUpdateUserAcademicBatch: () => ({ mutate: vi.fn(), reset: vi.fn(), isPending: false }),
-  useProvisionUser: () => mockUseProvisionUser(),
-  useRevokeUserSessions: () => ({ mutate: vi.fn(), reset: vi.fn(), isPending: false })
+  useProvisionUser: () => mockUseProvisionUser()
 }));
 
 vi.mock('../hooks/useAdminAcademicBatches', () => ({

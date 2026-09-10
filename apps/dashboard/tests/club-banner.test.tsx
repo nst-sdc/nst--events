@@ -14,10 +14,6 @@ import * as useCreateClubHook from '../hooks/useCreateClub';
 
 // Setup basic mocks
 vi.mock('../hooks/useCurrentUser');
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() })
-}));
-
 vi.mock('../hooks/useClubs');
 vi.mock('../hooks/useUserManagement');
 vi.mock('../hooks/useCreateClub');

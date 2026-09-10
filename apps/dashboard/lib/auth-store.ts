@@ -8,8 +8,6 @@ export interface WebAuthStore {
   logout: () => void;
 }
 
-import { getQueryClient } from './query-client';
-
 const authState: WebAuthStore = {
   accessToken: null,
   setAccessToken: (token: string | null) => {
@@ -17,7 +15,6 @@ const authState: WebAuthStore = {
   },
   logout: () => {
     authState.accessToken = null;
-    getQueryClient().clear();
     if (typeof window !== 'undefined') {
       window.location.href = '/login';
     }
