@@ -117,6 +117,7 @@ function LoginContent() {
   const store = getWebAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [isCreditsOpen, setIsCreditsOpen] = useState(false);
+  const lastLoginClickRef = React.useRef<number>(0);
 
   const [isDismissed, setIsDismissed] = useState(false);
   const [prevErrorParam, setPrevErrorParam] = useState<string | null>(null);
@@ -126,12 +127,44 @@ function LoginContent() {
   if (errorParam !== prevErrorParam) {
     setPrevErrorParam(errorParam);
     setIsDismissed(false);
+    if (isLoading) {
+      setIsLoading(false);
+    }
   }
 
   const authError = useMemo(() => {
     if (!errorParam || isDismissed) return null;
     return resolveAuthError(errorParam);
   }, [errorParam, isDismissed]);
+
+  useEffect(() => {
+    const handleResetLoading = () => {
+      if (Date.now() - lastLoginClickRef.current < 500) {
+        return;
+      }
+      setIsLoading(false);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        handleResetLoading();
+      }
+    };
+
+    const handlePageShow = () => {
+      setIsLoading(false);
+    };
+
+    window.addEventListener('focus', handleResetLoading);
+    window.addEventListener('pageshow', handlePageShow);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('focus', handleResetLoading);
+      window.removeEventListener('pageshow', handlePageShow);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   useEffect(() => {
     if (store.accessToken) {
@@ -152,6 +185,7 @@ function LoginContent() {
   }, [store.accessToken, router, searchParams]);
 
   const handleLogin = () => {
+    lastLoginClickRef.current = Date.now();
     setIsLoading(true);
     const returnTo = searchParams.get('return_to');
     if (returnTo && typeof window !== 'undefined') {
