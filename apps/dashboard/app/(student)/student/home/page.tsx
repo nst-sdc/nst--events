@@ -130,6 +130,12 @@ export default function StudentHomePage() {
             <span className="w-[8px] h-[8px] bg-stitch-primary rounded-full animate-pulse"></span>
             Starting Soon
           </p>
+          {Boolean((activeEventReg.event?.metadata as Record<string, string | undefined>)?.banner_url) && (
+            <div className="w-full h-48 md:h-64 bg-stitch-surface-container-highest mb-stitch-lg overflow-hidden relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={(activeEventReg.event?.metadata as Record<string, string | undefined>)?.banner_url} alt={activeEventReg.event?.title || ''} className="w-full h-full object-cover" />
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-stitch-gutter items-center">
             <div className="order-2 md:order-1 col-span-12">
               <h2 className="stitch-text-display-lg-mobile md:stitch-text-display-lg text-stitch-on-background leading-none mb-stitch-lg">
@@ -165,6 +171,12 @@ export default function StudentHomePage() {
         <section className="mb-16">
           <div className="border-b border-stitch-outline-variant pb-12">
             <p className="stitch-text-label-mono text-stitch-secondary uppercase tracking-widest mb-stitch-md">Next Registered Event</p>
+            {Boolean((nextEventReg.event?.metadata as Record<string, string | undefined>)?.banner_url) && (
+              <div className="w-full h-48 md:h-64 bg-stitch-surface-container-highest mb-stitch-lg overflow-hidden relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={(nextEventReg.event?.metadata as Record<string, string | undefined>)?.banner_url} alt={nextEventReg.event?.title || ''} className="w-full h-full object-cover" />
+              </div>
+            )}
             <div className="max-w-4xl">
               <h2 className="stitch-text-display-lg-mobile md:stitch-text-display-lg text-stitch-on-background leading-tight mb-stitch-lg">
                 {nextEventReg.event?.title || 'Event'}

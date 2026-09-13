@@ -18,6 +18,11 @@ vi.mock('../hooks/useCurrentUser');
 vi.mock('../hooks/useClubs');
 vi.mock('../hooks/useUserManagement');
 vi.mock('../hooks/useCreateClub');
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(),
+  usePathname: () => '/clubs',
+}));
 vi.mock('antd/es/app', () => ({
   App: {
     useApp: () => ({

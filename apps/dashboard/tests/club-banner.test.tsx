@@ -17,6 +17,11 @@ vi.mock('../hooks/useCurrentUser');
 vi.mock('../hooks/useClubs');
 vi.mock('../hooks/useUserManagement');
 vi.mock('../hooks/useCreateClub');
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(),
+  usePathname: () => '/clubs',
+}));
 vi.mock('antd/es/app', () => ({
   App: {
     useApp: () => ({
@@ -127,8 +132,8 @@ describe('Club Banner UX (WEB-39)', () => {
     const onClose = vi.fn();
     renderWithProviders(<CreateClubModal open={true} onClose={onClose} />);
     
-    // Check that the URL input exists by its new label
-    const urlInput = screen.getByRole('textbox', { name: /Club Banner \(Optional\)/i });
+    // Check that the URL input exists by its label
+    const urlInput = screen.getByRole('textbox', { name: /Club Banner/i });
     expect(urlInput).toBeInTheDocument();
     
     // Check that there is NO file upload button

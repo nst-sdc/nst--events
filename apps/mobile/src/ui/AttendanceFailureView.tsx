@@ -37,16 +37,10 @@ export function getAttendanceErrorDetails(errorCode: string = 'ATTENDANCE_FAILED
         reason: 'This event is no longer accepting attendance changes.',
         action: 'Please contact the organizer if you believe this is an error.',
       };
-    case 'OUTSIDE_GEOFENCE':
-      return {
-        title: 'Outside Venue',
-        reason: 'We couldn\'t verify your location inside the authorized area.',
-        action: 'Please move closer to the venue and try again.',
-      };
-    case 'MOCK_LOCATION_REJECTED':
+    case 'LOCATION_VERIFICATION_FAILED':
       return {
         title: 'Location Check Failed',
-        reason: 'We were unable to verify a highly accurate GPS location.',
+        reason: 'We couldn\'t verify your location. Move closer to the venue and try again.',
         action: 'Ensure GPS accuracy is enabled and you have a clear signal.',
       };
     case 'ALREADY_RECORDED':

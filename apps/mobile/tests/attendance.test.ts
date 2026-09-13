@@ -246,8 +246,6 @@ describe('Phase 3 — Mobile Attendance Reliability Tests', () => {
       expect(getAttendanceErrorDetails('QR_EXPIRED').title).toBe('QR Code Expired');
       expect(getAttendanceErrorDetails('SESSION_CLOSED').title).toBe('Session Closed');
       expect(getAttendanceErrorDetails('EVENT_LOCKED').title).toBe('Event Locked');
-      expect(getAttendanceErrorDetails('OUTSIDE_GEOFENCE').title).toBe('Outside Venue');
-      expect(getAttendanceErrorDetails('MOCK_LOCATION_REJECTED').title).toBe('Location Check Failed');
       expect(getAttendanceErrorDetails('ALREADY_RECORDED').title).toBe('Already Marked');
       expect(getAttendanceErrorDetails('NOT_REGISTERED').title).toBe('Not Registered');
       expect(getAttendanceErrorDetails('WAITLISTED').title).toBe('Waitlisted');
@@ -255,6 +253,13 @@ describe('Phase 3 — Mobile Attendance Reliability Tests', () => {
       expect(getAttendanceErrorDetails('NETWORK_OFFLINE').reason).toBe('An active network connection is required to verify attendance.');
       expect(getAttendanceErrorDetails('REGISTRATION_NOT_ELIGIBLE').title).toBe('Ineligible Batch');
       expect(getAttendanceErrorDetails('ACADEMICALLY_INELIGIBLE').title).toBe('Ineligible Batch');
+    });
+
+    it('LOCATION_VERIFICATION_FAILED provides identical, idempotent UI for spoofing and geofence errors', () => {
+      const details = getAttendanceErrorDetails('LOCATION_VERIFICATION_FAILED');
+      expect(details.title).toBe('Location Check Failed');
+      expect(details.reason).toBe('We couldn\'t verify your location. Move closer to the venue and try again.');
+      expect(details.action).toContain('GPS accuracy');
     });
   });
 
@@ -389,6 +394,11 @@ describe('Phase 3 — Mobile Attendance Reliability Tests', () => {
       expect(scanContent).toContain("parsedCode = 'LOCATION_TIMEOUT'");
       expect(scanContent).toContain("parsedCode = 'LOCATION_UNRELIABLE'");
       expect(scanContent).toContain("parsedCode = 'ACADEMIC_PROFILE_MISSING'");
+    });
+
+    it('passes through LOCATION_VERIFICATION_FAILED idempotently and strips logs', () => {
+      expect(scanContent).toContain("parsedCode = 'LOCATION_VERIFICATION_FAILED'");
+      expect(scanContent).toContain("mock_location_detected=[REDACTED]");
     });
   });
 });

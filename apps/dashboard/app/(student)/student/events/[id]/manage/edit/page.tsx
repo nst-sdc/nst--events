@@ -35,6 +35,7 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
   const [formData, setFormData] = useState({
     title: '',
     description: '',
+    banner_url: '',
     startDate: '',
     startTime: '',
     endDate: '',
@@ -63,6 +64,7 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
       setFormData({
         title: event.title || '',
         description: event.description || '',
+        banner_url: metadata.banner_url || '',
         startDate: event.startTime ? new Date(event.startTime).toISOString().split('T')[0] : '',
         startTime: event.startTime ? new Date(event.startTime).toISOString().split('T')[1].slice(0, 5) : '',
         endDate: event.endTime ? new Date(event.endTime).toISOString().split('T')[0] : '',
@@ -126,6 +128,11 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
     const start_time = new Date(`${formData.startDate}T${formData.startTime}`).toISOString();
     const end_time = new Date(`${formData.endDate}T${formData.endTime}`).toISOString();
 
+    if (!formData.banner_url.trim()) {
+      alert('Event Banner Image URL is mandatory.');
+      return;
+    }
+
     updateEvent.mutate({
       title: formData.title,
       description: formData.description,
@@ -139,10 +146,13 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
       max_capacity: formData.max_capacity ? parseInt(formData.max_capacity) : null,
       audience: formData.audience as any,
       audience_batch_ids: formData.audience === 'SPECIFIC_BATCHES' ? formData.audience_batch_ids : undefined,
-      metadata: formData.registration_type === 'TEAM' ? {
-        minimum_team_size: formData.minimum_team_size ? parseInt(formData.minimum_team_size) : undefined,
-        maximum_team_size: formData.maximum_team_size ? parseInt(formData.maximum_team_size) : undefined,
-      } : undefined,
+      metadata: {
+        banner_url: formData.banner_url.trim(),
+        ...(formData.registration_type === 'TEAM' ? {
+          minimum_team_size: formData.minimum_team_size ? parseInt(formData.minimum_team_size) : undefined,
+          maximum_team_size: formData.maximum_team_size ? parseInt(formData.maximum_team_size) : undefined,
+        } : {}),
+      },
     }, {
       onSuccess: () => {
         alert('Draft saved successfully!');
@@ -207,6 +217,30 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
               rows={4}
               className="w-full bg-stitch-surface border border-stitch-outline-variant px-3 py-2 text-sm font-sans text-stitch-on-surface focus:border-stitch-primary focus:outline-none transition-colors"
             />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-mono font-bold text-stitch-secondary uppercase tracking-widest mb-1.5">Event Banner Image URL *</label>
+            <input 
+              required
+              type="url"
+              name="banner_url"
+              value={formData.banner_url}
+              onChange={handleChange}
+              className="w-full bg-stitch-surface border border-stitch-outline-variant px-3 py-2 text-sm font-mono text-stitch-on-surface focus:border-stitch-primary focus:outline-none transition-colors"
+              placeholder="https://images.unsplash.com/... or https://cdn.example.com/banner.jpg"
+            />
+            {formData.banner_url && (
+              <div className="mt-2 border border-stitch-outline-variant overflow-hidden max-h-48 bg-black">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img 
+                  src={formData.banner_url} 
+                  alt="Banner preview" 
+                  className="w-full h-48 object-cover" 
+                  onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                />
+              </div>
+            )}
           </div>
         </section>
 

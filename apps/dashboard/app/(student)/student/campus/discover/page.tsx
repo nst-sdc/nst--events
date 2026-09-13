@@ -179,6 +179,7 @@ export default function DiscoverPage() {
             const dateLabel = date.format('ddd, MMM D');
             const typeLabel = event.eventType ? event.eventType.charAt(0).toUpperCase() + event.eventType.slice(1).toLowerCase() : 'Event';
             const locationLabel = event.locationName || 'Campus';
+            const bannerUrl = (event.metadata as Record<string, unknown> | null | undefined)?.banner_url as string | undefined;
 
             return (
               <Link 
@@ -186,6 +187,12 @@ export default function DiscoverPage() {
                 href={`/student/events/${event.id}`} 
                 className="group block border-b border-stitch-outline-variant pb-stitch-md transition-colors"
               >
+                {bannerUrl && (
+                  <div className="w-full h-48 bg-stitch-surface-container-highest mb-stitch-md overflow-hidden relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={bannerUrl} alt={event.title} className="w-full h-full object-cover" />
+                  </div>
+                )}
                 <h3 className="stitch-text-headline-lg text-stitch-on-background mb-stitch-xs line-clamp-2 group-hover:text-stitch-primary transition-colors leading-tight">
                   {event.title}
                 </h3>

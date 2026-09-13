@@ -49,6 +49,7 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
         max_capacity: event.maxCapacity,
         minimum_team_size: event.metadata?.minimum_team_size as number | undefined,
         maximum_team_size: event.metadata?.maximum_team_size as number | undefined,
+        banner_url: ((event.metadata as Record<string, unknown> | null | undefined)?.banner_url as string) || '',
         audience: event.audience,
         audience_batch_ids: event.audienceBatchIds,
       });
@@ -122,6 +123,7 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
   interface EditEventFormValues {
     title: string;
     description?: string;
+    banner_url: string;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     dateRange: [any, any];
     location_name?: string;
@@ -157,6 +159,7 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
       };
 
       const updatedMetadata: Record<string, unknown> = { ...(event.metadata || {}) };
+      updatedMetadata.banner_url = values.banner_url.trim();
       if (values.registration_type === 'TEAM') {
         updatedMetadata.minimum_team_size = values.minimum_team_size;
         updatedMetadata.maximum_team_size = values.maximum_team_size;
@@ -301,6 +304,28 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
                 ]}
               />
             </Form.Item>
+            <Form.Item
+              name="banner_url"
+              label="Event Banner Image URL"
+              extra="Mandatory direct image URL for Discover poster wall and event admission passes (recommended 16:9 or 21:9 ratio)."
+              rules={[
+                { required: true, message: 'Please enter an event banner image URL' },
+                { type: 'url', message: 'Please enter a valid HTTP/HTTPS URL' },
+              ]}
+            >
+              <Input placeholder="https://images.unsplash.com/... or https://cdn.example.com/banner.jpg" allowClear />
+            </Form.Item>
+            {form.getFieldValue('banner_url') && (
+              <div style={{ marginBottom: 16, border: '1px solid #d9d9d9', borderRadius: 6, overflow: 'hidden', maxHeight: 200, backgroundColor: '#050505' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img 
+                  src={form.getFieldValue('banner_url')} 
+                  alt="Banner preview" 
+                  style={{ width: '100%', height: 200, objectFit: 'cover' }} 
+                  onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                />
+              </div>
+            )}
           </Card>
 
           {/* SCHEDULE & LOCATION */}

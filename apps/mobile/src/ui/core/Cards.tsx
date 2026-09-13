@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, ViewStyle, Image } from 'react-native';
 import { MonoLabel, Title, Body, Mono } from './Typography';
 import { useAppTheme } from '../../store/theme-store';
 
@@ -12,6 +12,7 @@ interface EventCardProps {
   statusColor?: string;
   onPress: () => void;
   style?: ViewStyle;
+  bannerUrl?: string;
 }
 
 export function EventCard({
@@ -23,6 +24,7 @@ export function EventCard({
   statusColor,
   onPress,
   style,
+  bannerUrl,
 }: EventCardProps) {
   const theme = useAppTheme();
   
@@ -59,10 +61,19 @@ export function EventCard({
     dateTime: {
       flexShrink: 0,
     },
+    banner: {
+      width: '100%',
+      height: 120,
+      marginBottom: theme.spacing.md,
+      backgroundColor: theme.colors.surfaceContainerHighest,
+    },
   }), [theme, statusColor]);
 
   return (
     <TouchableOpacity style={[styles.card, style]} onPress={onPress} activeOpacity={0.7}>
+      {bannerUrl && (
+        <Image source={{ uri: bannerUrl }} style={styles.banner} resizeMode="cover" />
+      )}
       <View style={styles.header}>
         <Title style={styles.title}>{title}</Title>
       </View>
@@ -83,6 +94,7 @@ interface ActiveAttendanceCardProps {
   status: 'SCAN_QR' | 'ATTENDANCE_MARKED';
   onPressAction: () => void;
   onPressCard: () => void;
+  bannerUrl?: string;
 }
 
 export function ActiveAttendanceCard({
@@ -93,6 +105,7 @@ export function ActiveAttendanceCard({
   status,
   onPressAction,
   onPressCard,
+  bannerUrl,
 }: ActiveAttendanceCardProps) {
   const theme = useAppTheme();
 
@@ -141,10 +154,19 @@ export function ActiveAttendanceCard({
     dateTime: {
       flexShrink: 0,
     },
+    banner: {
+      width: '100%',
+      height: 140,
+      marginBottom: theme.spacing.md,
+      backgroundColor: theme.colors.surfaceContainerHighest,
+    },
   }), [theme, status]);
 
   return (
     <TouchableOpacity style={styles.container} onPress={onPressCard} activeOpacity={0.7}>
+      {bannerUrl && (
+        <Image source={{ uri: bannerUrl }} style={styles.banner} resizeMode="cover" />
+      )}
       <View style={styles.headerRow}>
         <Title style={styles.title}>{title}</Title>
         <MonoLabel style={styles.liveBadge}>[ LIVE NOW ]</MonoLabel>

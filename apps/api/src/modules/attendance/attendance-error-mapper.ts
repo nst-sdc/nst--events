@@ -17,9 +17,18 @@ export function sanitizeOfflineError(
   const mapping = SQLSTATE_MAP[record.error_code];
 
   if (mapping) {
+    let semanticCode = mapping.semanticCode;
+    if (semanticCode === 'OUTSIDE_GEOFENCE' || semanticCode === 'MOCK_LOCATION_REJECTED') {
+      logger.info(
+        { user_id: record.user_id, raw_error_code: record.error_code, internal_reason: semanticCode },
+        'Offline location verification failed'
+      );
+      semanticCode = 'LOCATION_VERIFICATION_FAILED';
+    }
+
     return {
       user_id: record.user_id,
-      error_code: mapping.semanticCode,
+      error_code: semanticCode,
     };
   }
 

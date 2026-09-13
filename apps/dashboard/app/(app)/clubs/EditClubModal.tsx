@@ -99,7 +99,8 @@ export function EditClubModal({ open, onClose, club }: EditClubModalProps) {
           <div
             style={{
               height: 120,
-              backgroundColor: token.colorFillQuaternary,
+              backgroundColor: imgError ? token.colorErrorBg : token.colorFillQuaternary,
+              border: imgError ? `1px dashed ${token.colorError}` : 'none',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -107,7 +108,9 @@ export function EditClubModal({ open, onClose, club }: EditClubModalProps) {
               marginBottom: 8,
             }}
           >
-            <Text type="secondary">No Banner</Text>
+            <Text type={imgError ? 'danger' : 'secondary'}>
+              {imgError ? 'Failed to load image' : 'No Banner'}
+            </Text>
           </div>
         </div>
       );
@@ -131,12 +134,16 @@ export function EditClubModal({ open, onClose, club }: EditClubModalProps) {
             src={previewUrl}
             alt="Banner preview"
             style={{ display: 'none' }}
-            onError={() => setFailedUrl(previewUrl)}
+            onError={() => {
+              setFailedUrl(previewUrl);
+              setTimeout(() => form.validateFields(['banner_url']), 0);
+            }}
           />
         </div>
       </div>
     );
   };
+
 
   return (
     <Modal
@@ -175,9 +182,23 @@ export function EditClubModal({ open, onClose, club }: EditClubModalProps) {
           extra="Recommended: 1600 × 400 px (4:1), JPG/PNG/WebP, up to 8 MB. Use a direct image URL, not a webpage or album link."
           rules={[
             { type: 'url', message: 'Please enter a valid HTTP/HTTPS URL' },
+            () => ({
+              validator(_, value) {
+                if (value && failedUrl === value) {
+                  return Promise.reject(new Error('Image failed to load. Please provide a working direct image URL.'));
+                }
+                return Promise.resolve();
+              },
+            }),
           ]}
         >
-          <Input placeholder="https://cdn.example.com/club-banner.jpg" allowClear />
+          <Input 
+            placeholder="https://cdn.example.com/club-banner.jpg" 
+            allowClear 
+            onChange={() => {
+              if (failedUrl) setFailedUrl(null);
+            }}
+          />
         </Form.Item>
         <div style={{
           backgroundColor: token.colorInfoBg,

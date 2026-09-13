@@ -73,16 +73,25 @@ export default function StudentEventsPage() {
         ? 'text-stitch-secondary'
         : 'text-stitch-on-surface';
 
+    const bannerUrl = (reg.event?.metadata as Record<string, unknown> | null | undefined)?.banner_url as string | undefined;
+
     return (
       <div key={reg.id} className={clsx(
         "border-b border-stitch-outline-variant py-5 flex flex-col md:flex-row justify-between md:items-center gap-4 hover:bg-stitch-surface transition-colors group",
         isPast && "opacity-70 hover:opacity-100"
       )}>
-        <div className="flex-grow pr-4">
-          <Link href={`/student/events/${reg.eventId}`} className="block">
-            <h3 className="stitch-text-headline-lg text-stitch-on-background group-hover:text-stitch-primary transition-colors leading-tight mb-stitch-xs">
-              {reg.event?.title || 'Unknown Event'}
-            </h3>
+        <div className="flex gap-4 flex-grow">
+          {bannerUrl && (
+            <div className="hidden sm:block w-32 h-24 shrink-0 bg-stitch-surface-container-highest overflow-hidden relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={bannerUrl} alt={reg.event?.title || ''} className="w-full h-full object-cover" />
+            </div>
+          )}
+          <div className="flex-grow pr-4">
+            <Link href={`/student/events/${reg.eventId}`} className="block">
+              <h3 className="stitch-text-headline-lg text-stitch-on-background group-hover:text-stitch-primary transition-colors leading-tight mb-stitch-xs">
+                {reg.event?.title || 'Unknown Event'}
+              </h3>
             <div className="stitch-text-label-mono text-stitch-secondary uppercase tracking-widest flex items-center flex-wrap gap-2 mt-2">
               <span className="flex items-center gap-1"><CalendarIcon className="w-3 h-3" />{dateLabel}</span>
               <span className="text-stitch-outline-variant">|</span>
@@ -95,6 +104,7 @@ export default function StudentEventsPage() {
               )}
             </div>
           </Link>
+        </div>
         </div>
         
         <div className="flex flex-col items-start md:items-end gap-3 shrink-0 mt-4 md:mt-0">
