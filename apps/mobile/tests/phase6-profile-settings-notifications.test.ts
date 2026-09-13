@@ -114,11 +114,11 @@ describe('Phase 6 — Profile, Settings & Notifications UI & Contract Tests', ()
   });
 
   // 7. Notification preference persistence uses the established contract
-  it('7. Notification preference persistence uses GET and PATCH /v1/notifications/preferences with subordination', () => {
+  it('7. Notification preference persistence uses GET and PATCH /v1/notifications/preferences and keeps 4 toggles independent', () => {
     expect(useNotificationPreferencesContent).toContain("apiClient('/v1/notifications/preferences')");
     expect(useNotificationPreferencesContent).toContain("method: 'PATCH'");
 
-    // Subordination: child preferences are disabled when push_enabled is false
+    // No Subordination: child preferences are completely independent of push_enabled
     const prefs = {
       push_enabled: false,
       event_reminders: true,
@@ -127,22 +127,15 @@ describe('Phase 6 — Profile, Settings & Notifications UI & Contract Tests', ()
     };
     const updateFn = vi.fn();
     const handleToggle = (key: 'event_reminders' | 'club_announcements' | 'attendance_alerts') => {
-      if (prefs.push_enabled) {
-        updateFn({ [key]: !prefs[key] });
-      }
+      updateFn({ [key]: !prefs[key] });
     };
+    
     handleToggle('event_reminders');
-    expect(updateFn).not.toHaveBeenCalled();
-
-    // When push_enabled is true, toggle succeeds
-    const activePrefs = { ...prefs, push_enabled: true };
-    const handleActiveToggle = (key: 'event_reminders' | 'club_announcements' | 'attendance_alerts') => {
-      if (activePrefs.push_enabled) {
-        updateFn({ [key]: !activePrefs[key] });
-      }
-    };
-    handleActiveToggle('event_reminders');
     expect(updateFn).toHaveBeenCalledWith({ event_reminders: false });
+
+    // The UI must not disable the other toggles
+    expect(settingsContent).not.toContain('disabled={!preferences.push_enabled}');
+    expect(settingsContent).not.toContain('if (preferences.push_enabled)');
   });
 
   // 8. Notification inbox loading

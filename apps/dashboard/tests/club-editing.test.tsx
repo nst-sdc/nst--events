@@ -16,6 +16,11 @@ import { App } from 'antd';
 vi.mock('../hooks/useCurrentUser');
 vi.mock('../hooks/useClubs');
 vi.mock('../hooks/useUpdateClub');
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(),
+  usePathname: () => '/clubs',
+}));
 vi.mock('antd/es/app', () => ({
   App: {
     useApp: () => ({

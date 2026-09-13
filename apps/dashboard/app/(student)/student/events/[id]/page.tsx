@@ -357,6 +357,14 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
           <ArrowLeft className="w-3.5 h-3.5" /> Back
         </button>
 
+        {/* Hero Banner */}
+        {(event.metadata as any)?.banner_url && (
+          <div className="w-full h-48 md:h-64 lg:h-80 bg-stitch-surface-container-highest mb-6 overflow-hidden relative border border-stitch-outline-variant">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={(event.metadata as any)?.banner_url as string} alt={event.title} className="w-full h-full object-cover" />
+          </div>
+        )}
+
         {/* Event Header */}
         <div className="border-b border-stitch-outline-variant pb-4 mb-5">
           {event.eventType && (

@@ -105,12 +105,12 @@ describe('Phase 26G: GPS Consistency', () => {
     assert.strictEqual(res.status, 400);
   });
 
-  it('Live: mock_location_detected=true -> rejected', async () => {
+    it('Live: mock_location_detected=true -> rejected', async () => {
     const res = await request(app).post('/v1/attendance/mark').set('Authorization', `Bearer ${studentToken}`).send({
       session_id: sessionId, totp_token: generateCustomQrPayload(sessionId, 'SECRET', 0), latitude: 10, longitude: 10, device_id: deviceId, device_os: 'iOS', gps_accuracy: 5, mock_location_detected: true, app_version: '1.0'
     });
     assert.strictEqual(res.status, 422);
-    assert.strictEqual(res.body.detail, 'MOCK_LOCATION_REJECTED');
+    assert.strictEqual(res.body.detail, 'LOCATION_VERIFICATION_FAILED');
   });
 
   it('Live: outside geofence -> rejected', async () => {
@@ -118,7 +118,7 @@ describe('Phase 26G: GPS Consistency', () => {
       session_id: sessionId, totp_token: generateCustomQrPayload(sessionId, 'SECRET', 0), latitude: outsideLat, longitude: validLng, device_id: deviceId, device_os: 'iOS', gps_accuracy: 5, mock_location_detected: false, app_version: '1.0'
     });
     assert.strictEqual(res.status, 422);
-    assert.strictEqual(res.body.detail, 'OUTSIDE_GEOFENCE');
+    assert.strictEqual(res.body.detail, 'LOCATION_VERIFICATION_FAILED');
   });
 
   it('Live: valid coordinates inside geofence -> success', async () => {
@@ -139,7 +139,7 @@ describe('Phase 26G: GPS Consistency', () => {
     });
     assert.strictEqual(res.status, 200);
     assert.strictEqual(res.body.processed, 0);
-    assert.strictEqual(res.body.errors[0].error_code, 'MOCK_LOCATION_REJECTED');
+    assert.strictEqual(res.body.errors[0].error_code, 'LOCATION_VERIFICATION_FAILED');
   });
 
   it('Offline: outside geofence -> rejected in batch', async () => {
@@ -152,7 +152,7 @@ describe('Phase 26G: GPS Consistency', () => {
     });
     assert.strictEqual(res.status, 200);
     assert.strictEqual(res.body.processed, 0);
-    assert.strictEqual(res.body.errors[0].error_code, 'OUTSIDE_GEOFENCE');
+    assert.strictEqual(res.body.errors[0].error_code, 'LOCATION_VERIFICATION_FAILED');
   });
 
   it('Offline: valid coordinates inside geofence -> success', async () => {

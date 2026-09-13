@@ -18,11 +18,18 @@ export function errorHandler(
     if (err.statusCode >= 500) {
       logger.error({ err, request_id: requestId, instance }, err.message);
     }
+    let detail = err.message;
+
+    if (detail === 'OUTSIDE_GEOFENCE' || detail === 'MOCK_LOCATION_REJECTED') {
+      logger.info({ request_id: requestId, instance, internal_reason: detail }, 'Location verification failed');
+      detail = 'LOCATION_VERIFICATION_FAILED';
+    }
+
     res.status(err.statusCode).json({
       type: err.type,
       title: err.title,
       status: err.statusCode,
-      detail: err.message,
+      detail: detail,
       instance,
       request_id: requestId,
     });

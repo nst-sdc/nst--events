@@ -193,7 +193,7 @@ export default function ScanAttendanceScreen() {
       }
 
       if (typeof __DEV__ !== 'undefined' && __DEV__) {
-        console.log(`[Attendance][Location] Coordinates captured. gps_accuracy=${location.coords.accuracy}m, mock_location_detected=${location.mocked}`);
+        console.log(`[Attendance][Location] Coordinates captured. gps_accuracy=${location.coords.accuracy}m, mock_location_detected=[REDACTED]`);
       }
 
       // 3. Client-side accuracy enforcement (must be <= 100m)
@@ -240,6 +240,7 @@ export default function ScanAttendanceScreen() {
           device_id: `${payload.device_id.slice(0, 8)}...[REDACTED]`,
           latitude: '[REDACTED]',
           longitude: '[REDACTED]',
+          mock_location_detected: '[REDACTED]',
         }));
       }
 
@@ -290,13 +291,6 @@ export default function ScanAttendanceScreen() {
       }
       setFlowState('SUCCESS');
     } catch (err: any) {
-      if (typeof __DEV__ !== 'undefined' && __DEV__) {
-        console.log(`[Attendance][API] Raw error caught:`, err);
-        console.log(`[Attendance][API] HTTP Status:`, err.status || 'unknown');
-        console.log(`[Attendance][API] Error body:`, err.body ? JSON.stringify(err.body) : 'none');
-        console.log(`[Attendance][Error] full parsed backend error body/code/message:`, err.message);
-      }
-
       let rawMsg = err.message || 'ATTENDANCE_FAILED';
       let parsedCode = 'ATTENDANCE_FAILED';
 
@@ -304,6 +298,13 @@ export default function ScanAttendanceScreen() {
         parsedCode = err.body.code;
       } else if (err.body && err.body.error) {
         parsedCode = err.body.error;
+      }
+
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.log(`[Attendance][API] Raw error caught:`, err);
+        console.log(`[Attendance][API] HTTP Status:`, err.status || 'unknown');
+        console.log(`[Attendance][API] Error body:`, err.body ? JSON.stringify(err.body) : 'none');
+        console.log(`[Attendance][Error] full parsed backend error body/code/message:`, err.message);
       }
 
       if (
@@ -329,14 +330,12 @@ export default function ScanAttendanceScreen() {
         rawMsg = 'Unrecognized QR code format. Please scan the official NST-Events session QR code.';
       } else if (rawMsg.includes('QR_EXPIRED') || parsedCode === 'QR_EXPIRED') {
         parsedCode = 'QR_EXPIRED';
-      } else if (rawMsg.includes('OUTSIDE_GEOFENCE') || parsedCode === 'OUTSIDE_GEOFENCE') {
-        parsedCode = 'OUTSIDE_GEOFENCE';
+      } else if (parsedCode === 'LOCATION_VERIFICATION_FAILED') {
+        parsedCode = 'LOCATION_VERIFICATION_FAILED';
       } else if (rawMsg.includes('SESSION_CLOSED') || parsedCode === 'SESSION_CLOSED') {
         parsedCode = 'SESSION_CLOSED';
       } else if (rawMsg.includes('EVENT_LOCKED') || parsedCode === 'EVENT_LOCKED') {
         parsedCode = 'EVENT_LOCKED';
-      } else if (rawMsg.includes('MOCK_LOCATION_REJECTED') || parsedCode === 'MOCK_LOCATION_REJECTED') {
-        parsedCode = 'MOCK_LOCATION_REJECTED';
       } else if (rawMsg.includes('ALREADY_RECORDED') || parsedCode === 'ALREADY_RECORDED') {
         if (typeof __DEV__ !== 'undefined' && __DEV__) {
           console.log(`[Attendance][Error] Handling ALREADY_RECORDED special case`);

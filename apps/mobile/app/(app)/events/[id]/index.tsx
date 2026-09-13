@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Image } from 'react-native';
 import { ActivityIndicator } from '../../../../src/ui/core/ActivityIndicator';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -75,11 +75,19 @@ export default function EventScreen() {
   const isLive = isSessionActive || isEventCurrentlyLive(event, now);
   const isEventEnded = event?.endTime ? (new Date(event.endTime) < now && !isSessionActive) : false;
 
+  const bannerUrl = event?.metadata?.banner_url as string | undefined;
+
   const styles = useMemo(() => StyleSheet.create({
     heroSection: {
       paddingBottom: theme.spacing.sm,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.borderHairline,
+    },
+    heroBanner: {
+      width: '100%',
+      height: 200,
+      marginBottom: theme.spacing.md,
+      backgroundColor: theme.colors.surfaceContainerHighest,
     },
     statusRow: {
       marginBottom: theme.spacing.sm,
@@ -306,6 +314,9 @@ export default function EventScreen() {
       ) : (
         <>
           <View style={styles.heroSection}>
+            {bannerUrl && (
+              <Image source={{ uri: bannerUrl }} style={styles.heroBanner} resizeMode="cover" />
+            )}
             <View style={styles.statusRow}>
               <StatusBadge 
                 status={getStatusDisplay()} 

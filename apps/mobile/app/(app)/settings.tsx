@@ -285,8 +285,8 @@ export default function SettingsScreen() {
             activeOpacity={0.8}
           >
             <View style={styles.optionContent}>
-              <Title>MASTER PUSH</Title>
-              <Mono>All mobile push notifications</Mono>
+              <Title>MASTER PUSH (DEVICE LEVEL)</Title>
+              <Mono>Overall OS push delivery gate</Mono>
             </View>
             <View style={[styles.toggleBadge, preferences.push_enabled ? styles.toggleBadgeOn : styles.toggleBadgeOff]}>
               <MonoLabel style={preferences.push_enabled ? styles.toggleTextOn : styles.toggleTextOff}>
@@ -297,66 +297,51 @@ export default function SettingsScreen() {
 
           {/* 2. EVENT REMINDERS */}
           <TouchableOpacity
-            style={[styles.toggleRow, !preferences.push_enabled && styles.toggleRowDisabled]}
-            onPress={() => {
-              if (preferences.push_enabled) {
-                updatePreferences({ event_reminders: !preferences.event_reminders });
-              }
-            }}
-            disabled={!preferences.push_enabled}
+            style={styles.toggleRow}
+            onPress={() => updatePreferences({ event_reminders: !preferences.event_reminders })}
             activeOpacity={0.8}
           >
             <View style={styles.optionContent}>
-              <Title style={!preferences.push_enabled ? styles.textDisabled : undefined}>EVENT REMINDERS</Title>
-              <Mono style={!preferences.push_enabled ? styles.textDisabled : undefined}>Starting within 15–30 minutes</Mono>
+              <Title>EVENT REMINDERS</Title>
+              <Mono>Starting within 15–30 minutes</Mono>
             </View>
-            <View style={[styles.toggleBadge, preferences.push_enabled && preferences.event_reminders ? styles.toggleBadgeOn : styles.toggleBadgeOff]}>
-              <MonoLabel style={preferences.push_enabled && preferences.event_reminders ? styles.toggleTextOn : styles.toggleTextOff}>
-                {preferences.push_enabled && preferences.event_reminders ? '[ON]' : '[OFF]'}
+            <View style={[styles.toggleBadge, preferences.event_reminders ? styles.toggleBadgeOn : styles.toggleBadgeOff]}>
+              <MonoLabel style={preferences.event_reminders ? styles.toggleTextOn : styles.toggleTextOff}>
+                {preferences.event_reminders ? '[ON]' : '[OFF]'}
               </MonoLabel>
             </View>
           </TouchableOpacity>
 
           {/* 3. CLUB UPDATES */}
           <TouchableOpacity
-            style={[styles.toggleRow, !preferences.push_enabled && styles.toggleRowDisabled]}
-            onPress={() => {
-              if (preferences.push_enabled) {
-                updatePreferences({ club_announcements: !preferences.club_announcements });
-              }
-            }}
-            disabled={!preferences.push_enabled}
+            style={styles.toggleRow}
+            onPress={() => updatePreferences({ club_announcements: !preferences.club_announcements })}
             activeOpacity={0.8}
           >
             <View style={styles.optionContent}>
-              <Title style={!preferences.push_enabled ? styles.textDisabled : undefined}>CLUB UPDATES</Title>
-              <Mono style={!preferences.push_enabled ? styles.textDisabled : undefined}>Club news and broadcasts</Mono>
+              <Title>CLUB UPDATES</Title>
+              <Mono>Club news and broadcasts</Mono>
             </View>
-            <View style={[styles.toggleBadge, preferences.push_enabled && preferences.club_announcements ? styles.toggleBadgeOn : styles.toggleBadgeOff]}>
-              <MonoLabel style={preferences.push_enabled && preferences.club_announcements ? styles.toggleTextOn : styles.toggleTextOff}>
-                {preferences.push_enabled && preferences.club_announcements ? '[ON]' : '[OFF]'}
+            <View style={[styles.toggleBadge, preferences.club_announcements ? styles.toggleBadgeOn : styles.toggleBadgeOff]}>
+              <MonoLabel style={preferences.club_announcements ? styles.toggleTextOn : styles.toggleTextOff}>
+                {preferences.club_announcements ? '[ON]' : '[OFF]'}
               </MonoLabel>
             </View>
           </TouchableOpacity>
 
           {/* 4. ATTENDANCE & CLAIMS */}
           <TouchableOpacity
-            style={[styles.toggleRow, !preferences.push_enabled && styles.toggleRowDisabled]}
-            onPress={() => {
-              if (preferences.push_enabled) {
-                updatePreferences({ attendance_alerts: !preferences.attendance_alerts });
-              }
-            }}
-            disabled={!preferences.push_enabled}
+            style={styles.toggleRow}
+            onPress={() => updatePreferences({ attendance_alerts: !preferences.attendance_alerts })}
             activeOpacity={0.8}
           >
             <View style={styles.optionContent}>
-              <Title style={!preferences.push_enabled ? styles.textDisabled : undefined}>ATTENDANCE & CLAIMS</Title>
-              <Mono style={!preferences.push_enabled ? styles.textDisabled : undefined}>Window open and dispute resolutions</Mono>
+              <Title>ATTENDANCE & CLAIMS</Title>
+              <Mono>Window open and dispute resolutions</Mono>
             </View>
-            <View style={[styles.toggleBadge, preferences.push_enabled && preferences.attendance_alerts ? styles.toggleBadgeOn : styles.toggleBadgeOff]}>
-              <MonoLabel style={preferences.push_enabled && preferences.attendance_alerts ? styles.toggleTextOn : styles.toggleTextOff}>
-                {preferences.push_enabled && preferences.attendance_alerts ? '[ON]' : '[OFF]'}
+            <View style={[styles.toggleBadge, preferences.attendance_alerts ? styles.toggleBadgeOn : styles.toggleBadgeOff]}>
+              <MonoLabel style={preferences.attendance_alerts ? styles.toggleTextOn : styles.toggleTextOff}>
+                {preferences.attendance_alerts ? '[ON]' : '[OFF]'}
               </MonoLabel>
             </View>
           </TouchableOpacity>

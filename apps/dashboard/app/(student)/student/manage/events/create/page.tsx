@@ -38,6 +38,7 @@ export default function CreateEventPage() {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
+    banner_url: '',
     startDate: '',
     startTime: '',
     endDate: '',
@@ -71,6 +72,11 @@ export default function CreateEventPage() {
     const start_time = new Date(`${formData.startDate}T${formData.startTime}`).toISOString();
     const end_time = new Date(`${formData.endDate}T${formData.endTime}`).toISOString();
 
+    if (!formData.banner_url.trim()) {
+      alert('Event Banner Image URL is mandatory.');
+      return;
+    }
+
     const payload = {
       title: formData.title,
       description: formData.description,
@@ -88,10 +94,13 @@ export default function CreateEventPage() {
         { club_id: activeClubId, is_primary: true },
         ...formData.collaborating_club_ids.map(id => ({ club_id: id, is_primary: false }))
       ],
-      metadata: formData.registration_type === 'TEAM' ? {
-        minimum_team_size: formData.minimum_team_size ? parseInt(formData.minimum_team_size) : undefined,
-        maximum_team_size: formData.maximum_team_size ? parseInt(formData.maximum_team_size) : undefined,
-      } : undefined,
+      metadata: {
+        banner_url: formData.banner_url.trim(),
+        ...(formData.registration_type === 'TEAM' ? {
+          minimum_team_size: formData.minimum_team_size ? parseInt(formData.minimum_team_size) : undefined,
+          maximum_team_size: formData.maximum_team_size ? parseInt(formData.maximum_team_size) : undefined,
+        } : {}),
+      },
     };
 
     try {
@@ -160,6 +169,30 @@ export default function CreateEventPage() {
               className="w-full bg-stitch-surface border border-stitch-outline-variant px-3 py-2 text-sm font-sans text-stitch-on-surface focus:border-stitch-primary focus:outline-none transition-colors"
               placeholder="What is this event about?"
             />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-mono font-bold text-stitch-secondary uppercase tracking-widest mb-1.5">Event Banner Image URL *</label>
+            <input 
+              required
+              type="url"
+              name="banner_url"
+              value={formData.banner_url}
+              onChange={handleChange}
+              className="w-full bg-stitch-surface border border-stitch-outline-variant px-3 py-2 text-sm font-mono text-stitch-on-surface focus:border-stitch-primary focus:outline-none transition-colors"
+              placeholder="https://images.unsplash.com/... or https://cdn.example.com/banner.jpg"
+            />
+            {formData.banner_url && (
+              <div className="mt-2 border border-stitch-outline-variant overflow-hidden max-h-48 bg-black">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img 
+                  src={formData.banner_url} 
+                  alt="Banner preview" 
+                  className="w-full h-48 object-cover" 
+                  onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                />
+              </div>
+            )}
           </div>
         </section>
 

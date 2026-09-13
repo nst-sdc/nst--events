@@ -67,6 +67,7 @@ function EventRow({
   const timeStr = new Date(event.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   const isLive = isSessionActive || isEventCurrentlyLive(event, now);
+  const bannerUrl = event.metadata?.banner_url as string | undefined;
 
   React.useEffect(() => {
     if (onLiveStatus && !sessionsLoading && !historyLoading) {
@@ -85,6 +86,7 @@ function EventRow({
           date={dateStr}
           time={timeStr}
           status={hasAttendanceForActiveSession ? 'ATTENDANCE_MARKED' : 'SCAN_QR'}
+          bannerUrl={bannerUrl}
           onPressAction={() => router.push(`/events/${event.id}/scan`)}
           onPressCard={() => router.push(`/events/${event.id}`)}
         />
@@ -114,6 +116,7 @@ function EventRow({
         time={timeStr}
         statusText={statusText}
         statusColor={statusColor}
+        bannerUrl={bannerUrl}
         onPress={() => router.push(`/events/${event.id}`)}
       />
     );
@@ -143,6 +146,7 @@ function EventRow({
       time={timeStr}
       statusText={statusText}
       statusColor={statusColor}
+      bannerUrl={bannerUrl}
       onPress={() => router.push(`/events/${event.id}`)}
     />
   );

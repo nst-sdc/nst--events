@@ -101,13 +101,28 @@ export function CreateClubModal({ open, onClose }: CreateClubModalProps) {
 
         <Form.Item
           name="banner_url"
-          label="Club Banner (Optional)"
+          label="Club Banner"
           extra="Recommended: 1600 × 400 px (4:1), JPG/PNG/WebP, up to 8 MB. Use a direct image URL, not a webpage or album link."
           rules={[
+            { required: true, message: 'Please enter a club banner image URL' },
             { type: 'url', message: 'Please enter a valid HTTP/HTTPS URL' },
+            () => ({
+              validator(_, value) {
+                if (value && failedUrl === value) {
+                  return Promise.reject(new Error('Image failed to load. Please provide a working direct image URL.'));
+                }
+                return Promise.resolve();
+              },
+            }),
           ]}
         >
-          <Input placeholder="https://cdn.example.com/club-banner.jpg" allowClear />
+          <Input 
+            placeholder="https://cdn.example.com/club-banner.jpg" 
+            allowClear 
+            onChange={() => {
+              if (failedUrl) setFailedUrl(null);
+            }}
+          />
         </Form.Item>
         <div style={{
           backgroundColor: token.colorInfoBg,
@@ -133,7 +148,8 @@ export function CreateClubModal({ open, onClose }: CreateClubModalProps) {
           <div
             style={{
               height: 120,
-              backgroundColor: token.colorFillQuaternary,
+              backgroundColor: imgError ? token.colorErrorBg : token.colorFillQuaternary,
+              border: imgError ? `1px dashed ${token.colorError}` : 'none',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -141,7 +157,9 @@ export function CreateClubModal({ open, onClose }: CreateClubModalProps) {
               marginBottom: 8,
             }}
           >
-            <Text type="secondary">No Banner</Text>
+            <Text type={imgError ? 'danger' : 'secondary'}>
+              {imgError ? 'Failed to load image' : 'No Banner'}
+            </Text>
           </div>
         ) : (
           <div
@@ -159,7 +177,11 @@ export function CreateClubModal({ open, onClose }: CreateClubModalProps) {
               src={previewUrl}
               alt="Banner preview"
               style={{ display: 'none' }}
-              onError={() => setFailedUrl(previewUrl)}
+              onError={() => {
+                setFailedUrl(previewUrl);
+                // Trigger validation to show the error message on the input
+                setTimeout(() => form.validateFields(['banner_url']), 0);
+              }}
             />
           </div>
         )}
