@@ -15,6 +15,7 @@ export default function StudentEventsPage() {
   useEffect(() => {
     const saved = sessionStorage.getItem('student-events-viewmode');
     if (saved === 'calendar' || saved === 'list') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setViewModeState(saved as 'list' | 'calendar');
     }
   }, []);
