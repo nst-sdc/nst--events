@@ -1,14 +1,29 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import dayjs from 'dayjs';
 import clsx from 'clsx';
 import { useMyRegistrations, MyRegistration } from '../../../../hooks/useMyRegistrations';
 import { ErrorState } from '../../../../components/ui/ErrorState';
-import { MapPin, CalendarIcon, ArrowRight } from 'lucide-react';
+import { MapPin, CalendarIcon, ArrowRight, List } from 'lucide-react';
+import { StudentCalendarView } from './components/StudentCalendarView';
 
 export default function StudentEventsPage() {
+  const [viewMode, setViewModeState] = useState<'list' | 'calendar'>('list');
+
+  useEffect(() => {
+    const saved = sessionStorage.getItem('student-events-viewmode');
+    if (saved === 'calendar' || saved === 'list') {
+      setViewModeState(saved as 'list' | 'calendar');
+    }
+  }, []);
+
+  const setViewMode = (mode: 'list' | 'calendar') => {
+    sessionStorage.setItem('student-events-viewmode', mode);
+    setViewModeState(mode);
+  };
+
   const { data: registrations, isLoading, isError, refetch } = useMyRegistrations();
   
   if (isLoading) {
@@ -143,49 +158,90 @@ export default function StudentEventsPage() {
 
   return (
     <main className="flex-grow w-full px-stitch-margin-mobile md:px-stitch-margin-desktop pt-12 pb-16 bg-stitch-background min-h-screen">
-      <div className="max-w-4xl">
-        <h1 className="stitch-text-display-lg text-stitch-on-background mb-stitch-md tracking-tight uppercase">MY EVENTS</h1>
+      <div className="w-full transition-all">
+        
+        {/* HEADER & VIEW TOGGLE */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-stitch-xl border-b border-stitch-outline-variant pb-6">
+          <div>
+            <h1 className="stitch-text-display-lg text-stitch-on-background tracking-tight uppercase">MY EVENTS</h1>
+            <p className="text-stitch-secondary stitch-text-body-sm mt-1">
+              Your registered commitments and interactive campus schedule.
+            </p>
+          </div>
 
-        {/* UPCOMING */}
-        <section className="mb-16">
-          <h2 className="stitch-text-label-mono text-stitch-secondary uppercase tracking-widest mb-stitch-md border-b border-stitch-outline-variant pb-2 inline-block w-full">
-            Upcoming
-          </h2>
-          {upcoming.length > 0 ? (
-            <div className="flex flex-col">
-              {upcoming.map(reg => renderRow(reg, false))}
-            </div>
-          ) : (
-            <div className="py-stitch-xl text-left">
-              <h3 className="stitch-text-headline-lg text-stitch-on-background mb-stitch-xs">No upcoming events</h3>
-              <p className="text-stitch-secondary stitch-text-body-lg mb-stitch-md">You don&apos;t have any upcoming event registrations.</p>
-              <Link 
-                href="/student/campus"
-                className="inline-flex items-center gap-2 bg-stitch-primary text-stitch-on-primary stitch-text-label-mono uppercase tracking-widest px-stitch-xl py-stitch-md hover:bg-stitch-surface-tint transition-colors"
-              >
-                Explore Events <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          )}
-        </section>
+          {/* View Toggle */}
+          <div className="inline-flex border border-stitch-outline-variant bg-stitch-surface-container-lowest p-1 self-start sm:self-center">
+            <button
+              onClick={() => setViewMode('list')}
+              className={clsx(
+                "flex items-center gap-2 px-4 py-2 stitch-text-label-mono text-xs uppercase tracking-wider transition-colors",
+                viewMode === 'list'
+                  ? "bg-stitch-surface-variant text-stitch-on-background font-bold"
+                  : "text-stitch-secondary hover:text-stitch-on-background"
+              )}
+            >
+              <List className="w-4 h-4" /> List
+            </button>
+            <button
+              onClick={() => setViewMode('calendar')}
+              className={clsx(
+                "flex items-center gap-2 px-4 py-2 stitch-text-label-mono text-xs uppercase tracking-wider transition-colors",
+                viewMode === 'calendar'
+                  ? "bg-stitch-primary text-stitch-on-primary font-bold"
+                  : "text-stitch-secondary hover:text-stitch-on-background"
+              )}
+            >
+              <CalendarIcon className="w-4 h-4" /> Calendar
+            </button>
+          </div>
+        </div>
 
-        {/* PAST & CANCELLED */}
-        {(pastAndCancelled.length > 0 || (upcoming.length === 0 && registrations && registrations.length === 0)) && (
-          <section className="mb-16">
-            <h2 className="stitch-text-label-mono text-stitch-secondary uppercase tracking-widest mb-stitch-md border-b border-stitch-outline-variant pb-2 mt-stitch-xl inline-block w-full">
-              Past &amp; Cancelled
-            </h2>
-            {pastAndCancelled.length > 0 ? (
-              <div className="flex flex-col">
-                {pastAndCancelled.map(reg => renderRow(reg, true))}
-              </div>
-            ) : (
-              <div className="py-stitch-xl text-left">
-                <h3 className="stitch-text-headline-lg text-stitch-on-background mb-stitch-xs">No historical events</h3>
-                <p className="text-stitch-secondary stitch-text-body-lg">You haven&apos;t attended or cancelled any events yet.</p>
-              </div>
+        {viewMode === 'calendar' ? (
+          <StudentCalendarView />
+        ) : (
+          <>
+            {/* UPCOMING */}
+            <section className="mb-16">
+              <h2 className="stitch-text-label-mono text-stitch-secondary uppercase tracking-widest mb-stitch-md border-b border-stitch-outline-variant pb-2 inline-block w-full">
+                Upcoming
+              </h2>
+              {upcoming.length > 0 ? (
+                <div className="flex flex-col">
+                  {upcoming.map(reg => renderRow(reg, false))}
+                </div>
+              ) : (
+                <div className="py-stitch-xl text-left">
+                  <h3 className="stitch-text-headline-lg text-stitch-on-background mb-stitch-xs">No upcoming events</h3>
+                  <p className="text-stitch-secondary stitch-text-body-lg mb-stitch-md">You don&apos;t have any upcoming event registrations.</p>
+                  <Link 
+                    href="/student/campus"
+                    className="inline-flex items-center gap-2 bg-stitch-primary text-stitch-on-primary stitch-text-label-mono uppercase tracking-widest px-stitch-xl py-stitch-md hover:bg-stitch-surface-tint transition-colors"
+                  >
+                    Explore Events <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              )}
+            </section>
+
+            {/* PAST & CANCELLED */}
+            {(pastAndCancelled.length > 0 || (upcoming.length === 0 && registrations && registrations.length === 0)) && (
+              <section className="mb-16">
+                <h2 className="stitch-text-label-mono text-stitch-secondary uppercase tracking-widest mb-stitch-md border-b border-stitch-outline-variant pb-2 mt-stitch-xl inline-block w-full">
+                  Past &amp; Cancelled
+                </h2>
+                {pastAndCancelled.length > 0 ? (
+                  <div className="flex flex-col">
+                    {pastAndCancelled.map(reg => renderRow(reg, true))}
+                  </div>
+                ) : (
+                  <div className="py-stitch-xl text-left">
+                    <h3 className="stitch-text-headline-lg text-stitch-on-background mb-stitch-xs">No historical events</h3>
+                    <p className="text-stitch-secondary stitch-text-body-lg">You haven&apos;t attended or cancelled any events yet.</p>
+                  </div>
+                )}
+              </section>
             )}
-          </section>
+          </>
         )}
 
       </div>
