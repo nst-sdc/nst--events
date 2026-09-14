@@ -1,5 +1,5 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any, react/no-unescaped-entities */
+/* eslint-disable @typescript-eslint/no-explicit-any, @next/next/no-img-element */
 
 import { use, useState } from 'react';
 import Link from 'next/link';
@@ -19,6 +19,294 @@ import { useClubAdmin } from '../../../../../components/layout/ClubAdminProvider
 const dateFormatter = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 const timeFormatter = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
+const eventDetailStyles = `
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&family=Outfit:wght@400;700;900&family=Syne:wght@700;800;900&display=swap');
+
+  :root {
+    --bg-black: #050505;
+    --bg-paper-white: #F5F5F2;
+    --bg-dark-card: #0d0e12;
+    --electric-blue: #0057FF;
+    --electric-blue-dark: #0042c7;
+    --acid-green: #C8FF00;
+    --warm-red: #FF3B30;
+    --warm-amber: #FF9500;
+    --font-display: 'Syne', 'Outfit', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  .ed-page {
+    width: 100%;
+    min-height: 100vh;
+    background-color: var(--bg-black);
+    color: var(--bg-paper-white);
+    font-family: var(--font-body);
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  .ed-inner {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 40px 32px 100px 32px;
+  }
+
+  /* ── Texture & Noise ── */
+  .collage-noise-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.35;
+    background-image: radial-gradient(rgba(245, 245, 242, 0.08) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  /* ── Micro Annotations ── */
+  .ed-micro {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #a0a4b8;
+  }
+  .ed-micro-blue { color: var(--electric-blue); }
+  .ed-micro-green { color: var(--acid-green); }
+
+  /* ── Back Button ── */
+  .ed-back-btn {
+    background: transparent;
+    color: #ffffff;
+    border: 2px solid rgba(245, 245, 242, 0.25);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 8px 18px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.15s;
+    margin-bottom: 28px;
+    border-radius: 0 !important;
+  }
+  .ed-back-btn:hover {
+    border-color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
+    transform: translate(-2px, -2px);
+    box-shadow: 3px 3px 0px #ffffff;
+  }
+
+  /* ── Banner Frame ── */
+  .ed-banner-card {
+    width: 100%;
+    height: 340px;
+    background: #111;
+    border: 3px solid #ffffff;
+    box-shadow: 12px 12px 0px var(--electric-blue);
+    margin-bottom: 36px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 0 !important;
+  }
+  .ed-banner-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: contrast(120%) grayscale(30%);
+  }
+  .ed-tape-strip {
+    position: absolute;
+    top: -12px;
+    left: 40px;
+    background: rgba(245, 245, 242, 0.85);
+    color: #000;
+    border: 1px dashed rgba(0, 0, 0, 0.4);
+    padding: 3px 18px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transform: rotate(-3deg);
+    z-index: 5;
+  }
+
+  /* ── Header Headline Area ── */
+  .ed-header {
+    border-bottom: 3px solid var(--bg-paper-white);
+    padding-bottom: 28px;
+    margin-bottom: 40px;
+    position: relative;
+  }
+
+  .ed-watermark {
+    position: absolute;
+    top: -24px;
+    right: 0;
+    font-family: var(--font-display);
+    font-size: clamp(60px, 12vw, 150px);
+    font-weight: 900;
+    color: rgba(245, 245, 242, 0.03);
+    text-transform: uppercase;
+    pointer-events: none;
+    user-select: none;
+    line-height: 0.8;
+  }
+
+  .ed-title {
+    font-family: var(--font-display);
+    font-size: clamp(36px, 6vw, 76px);
+    font-weight: 900;
+    line-height: 0.95;
+    letter-spacing: -2px;
+    text-transform: uppercase;
+    color: var(--bg-paper-white);
+    margin-top: 8px;
+    margin-bottom: 18px;
+    word-break: break-word;
+  }
+
+  .ed-host-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(245, 245, 242, 0.25);
+    padding: 6px 14px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.15s;
+    border-radius: 0 !important;
+  }
+  .ed-host-badge:hover {
+    border-color: var(--electric-blue);
+    background: rgba(0, 87, 255, 0.12);
+  }
+
+  /* ── Main Two Column Layout ── */
+  .ed-grid-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 48px;
+    align-items: start;
+  }
+
+  /* ── Section Box ── */
+  .ed-box {
+    border: 3px solid var(--bg-paper-white);
+    background: var(--bg-dark-card);
+    padding: 32px;
+    box-shadow: 10px 10px 0px #000000;
+    margin-bottom: 32px;
+    border-radius: 0 !important;
+  }
+
+  .ed-box-blue {
+    box-shadow: 10px 10px 0px var(--electric-blue);
+  }
+
+  .ed-box-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #ffffff;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+  }
+
+  .ed-box-title {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -0.5px;
+    color: #ffffff;
+  }
+
+  /* ── Primary CTA Button ── */
+  .ed-cta-btn {
+    width: 100%;
+    background: var(--electric-blue);
+    color: #ffffff;
+    border: 2px solid var(--bg-paper-white);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 14px 24px;
+    cursor: pointer;
+    box-shadow: 4px 4px 0px #ffffff;
+    transition: transform 0.15s, box-shadow 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    border-radius: 0 !important;
+  }
+  .ed-cta-btn:hover:not(:disabled) {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px #ffffff;
+  }
+  .ed-cta-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .ed-status-badge {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 10px 14px;
+    text-align: center;
+    border: 2px solid rgba(245, 245, 242, 0.25);
+    background: #000000;
+    color: #a0a4b8;
+    width: 100%;
+    display: block;
+  }
+
+  .ed-status-badge.confirmed {
+    background: rgba(0, 87, 255, 0.15);
+    color: var(--electric-blue);
+    border-color: var(--electric-blue);
+  }
+
+  .ed-status-badge.waitlisted {
+    background: rgba(255, 149, 0, 0.15);
+    color: var(--warm-amber);
+    border-color: var(--warm-amber);
+  }
+
+  /* ── Logistic Items ── */
+  .ed-spec-item {
+    display: flex;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px dashed rgba(245, 245, 242, 0.18);
+  }
+  .ed-spec-item:last-child {
+    border-bottom: none;
+  }
+
+  @media (max-width: 992px) {
+    .ed-grid-layout {
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+    .ed-inner {
+      padding: 32px 16px 80px 16px;
+    }
+  }
+`;
+
 export default function StudentEventDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: eventId } = use(params);
   const router = useRouter();
@@ -30,7 +318,6 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
   const { mutate: register, isPending: isRegistering } = useRegisterForEvent(eventId);
   const { mutate: cancel, isPending: isCanceling } = useCancelRegistration(eventId);
 
-  // If user is in a team for this event, fetch the team details
   const { data: team, isLoading: isLoadingTeam, isError: isErrorTeam } = useTeamLookup(registration?.team_id);
 
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
@@ -45,8 +332,6 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
   const { data: currentUser } = useCurrentUser();
   const { submitMutation } = useEventLifecycle();
 
-
-
   const isClubAdminForEvent = event?.eventClubs?.some((ec: any) => 
     ec.isPrimary && currentUser?.club_memberships?.some(m => m.club_id === ec.club.id && m.role === 'CLUB_ADMIN')
   );
@@ -54,23 +339,42 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
   // Grouped Loading state
   if (isLoadingEvent || isLoadingReg) {
     return (
-      <div className="w-full flex-grow flex justify-center items-center h-64">
-        <div className="animate-pulse flex flex-col items-center">
-          <div className="h-8 w-8 border-4 border-stitch-on-surface border-t-transparent rounded-full animate-spin"></div>
-          <p className="mt-4 text-sm font-medium text-stitch-secondary uppercase tracking-widest font-mono">Loading Event...</p>
+      <>
+        <style dangerouslySetInnerHTML={{ __html: eventDetailStyles }} />
+        <div className="ed-page">
+          <div className="ed-inner" style={{ paddingTop: '80px', textAlign: 'center' }}>
+            <div className="ed-micro ed-micro-blue" style={{ marginBottom: '16px' }}>
+              QUERYING ARCHIVE // EVENT DOSSIER
+            </div>
+            <div style={{ height: '48px', background: 'rgba(255,255,255,0.1)', width: '60%', margin: '0 auto 20px auto' }} />
+            <div style={{ height: '24px', background: 'rgba(255,255,255,0.06)', width: '40%', margin: '0 auto' }} />
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   if (isErrorEvent || !event) {
     return (
-      <div className="w-full flex-grow text-center py-20">
-        <p className="text-stitch-secondary mb-4">This event could not be loaded.</p>
-        <button onClick={() => router.back()} className="text-stitch-on-surface font-medium hover:underline font-mono uppercase text-sm tracking-widest">
-          Go Back
-        </button>
-      </div>
+      <>
+        <style dangerouslySetInnerHTML={{ __html: eventDetailStyles }} />
+        <div className="ed-page">
+          <div className="ed-inner" style={{ paddingTop: '100px', textAlign: 'center', maxWidth: '640px' }}>
+            <div className="ed-micro" style={{ color: 'var(--warm-red)', marginBottom: '16px' }}>
+              FAULT // RECORD NOT FOUND
+            </div>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '48px', fontWeight: 900, textTransform: 'uppercase', marginBottom: '16px' }}>
+              EVENT COULD NOT BE LOADED
+            </h1>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '16px', color: '#a0a4b8', marginBottom: '32px', lineHeight: 1.6 }}>
+              This campus event may have been removed or is temporarily unavailable.
+            </p>
+            <button onClick={() => router.back()} className="ed-cta-btn" style={{ display: 'inline-flex', width: 'auto' }}>
+              ← RETURN TO PREVIOUS VIEW
+            </button>
+          </div>
+        </div>
+      </>
     );
   }
 
@@ -79,11 +383,6 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
   const isPermanentLock = new Date(event.endTime).getTime() + 24 * 60 * 60 * 1000 <= dbNow.getTime();
   const isLocked = event.lock_state !== 'UNLOCKED' || isPermanentLock;
   const isEnded = new Date(event.endTime) <= dbNow;
-  
-  const disputeWindowEnd = new Date(event.endTime).getTime() + 24 * 60 * 60 * 1000;
-  const isDisputeWindowOpen = isEnded && dbNow.getTime() <= disputeWindowEnd;
-  const existingDispute = disputesData?.pages?.[0]?.data?.[0];
-  const primarySessionId = event.attendanceSessions?.[0]?.id;
 
   const registrationCount = (event as any).registrationCount ?? (event as any).registration_count;
   const isCapacityFull = event.maxCapacity !== null && typeof registrationCount === 'number' && registrationCount >= event.maxCapacity;
@@ -107,16 +406,16 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
   const renderRegistrationAction = () => {
     if (isEnded) {
       return (
-        <div className="w-full text-center px-4 py-3 bg-stitch-surface-variant text-stitch-secondary font-mono font-bold text-xs tracking-widest uppercase border border-stitch-outline-variant">
-          Event Ended
+        <div className="ed-status-badge">
+          SESSION CONCLUDED // EVENT ENDED
         </div>
       );
     }
 
     if (isLocked) {
       return (
-        <div className="w-full text-center px-4 py-3 bg-stitch-surface-variant text-stitch-secondary font-mono font-bold text-xs tracking-widest uppercase border border-stitch-outline-variant">
-          Registration Locked
+        <div className="ed-status-badge">
+          SYSTEM NOTICE // REGISTRATION LOCKED
         </div>
       );
     }
@@ -124,13 +423,15 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
     // Unregistered State for Team Event
     if (event.registrationType === 'TEAM' && (!registration || (!registration.team_id && registration.status !== 'REGISTERED' && registration.status !== 'WAITLISTED'))) {
       return (
-        <div className="space-y-3">
-          <p className="text-sm text-stitch-on-surface-variant">You need a team to participate in this event.</p>
+        <div>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: '#a0a4b8', marginBottom: '14px', lineHeight: 1.5 }}>
+            This is a collective team competition. Assemble or join an official squad to secure access.
+          </p>
           <button 
             onClick={() => setIsTeamGatewayOpen(true)}
-            className="w-full flex items-center justify-center px-6 py-3.5 bg-stitch-primary text-stitch-on-primary font-mono font-bold text-xs tracking-widest hover:bg-stitch-surface-tint transition-colors uppercase"
+            className="ed-cta-btn"
           >
-            Register / Join Team
+            REGISTER / JOIN SQUAD ↗
           </button>
         </div>
       );
@@ -141,9 +442,9 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
       return (
         <button
           onClick={() => setIsRegisterModalOpen(true)}
-          className="w-full flex items-center justify-center px-6 py-3.5 bg-stitch-primary text-stitch-on-primary font-mono font-bold text-xs tracking-widest hover:bg-stitch-surface-tint transition-colors uppercase"
+          className="ed-cta-btn"
         >
-          {isCapacityFull ? 'Join Waitlist' : 'Register'}
+          {isCapacityFull ? 'JOIN WAITLIST QUEUE ↗' : 'CONFIRM REGISTRATION PASS ↗'}
         </button>
       );
     }
@@ -153,17 +454,28 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
 
   const renderCancellation = () => {
     if (isEnded || isLocked || !registration || registration.status === 'NOT_REGISTERED' || registration.status === 'CANCELLED') return null;
-    
-    // Team cancellation happens via Team Hub
     if (event.registrationType === 'TEAM') return null;
 
     return (
-      <button 
-        onClick={() => setIsCancelModalOpen(true)}
-        className="text-xs font-mono font-bold uppercase tracking-widest text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 underline underline-offset-4 mt-4 inline-block"
-      >
-        Cancel Registration
-      </button>
+      <div style={{ marginTop: '16px', textAlign: 'center' }}>
+        <button 
+          onClick={() => setIsCancelModalOpen(true)}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '11px',
+            fontWeight: 700,
+            letterSpacing: '1.5px',
+            textTransform: 'uppercase',
+            color: 'var(--warm-red)',
+            textDecoration: 'underline',
+            cursor: 'pointer'
+          }}
+        >
+          DISMISS / CANCEL REGISTRATION ✕
+        </button>
+      </div>
     );
   };
 
@@ -176,72 +488,69 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
   };
 
   const renderDisputeSection = () => {
-    // Only relevant if student is registered, and there are sessions
     if (registration?.status !== 'REGISTERED' || !event.attendanceSessions?.length) return null;
 
     if (isLoadingDisputes || isLoadingAttendance) {
       return (
-        <div className="mt-4 p-4 border border-stitch-outline-variant bg-stitch-surface flex items-center justify-center">
-          <div className="w-4 h-4 border-2 border-stitch-on-surface border-t-transparent rounded-full animate-spin"></div>
+        <div style={{ marginTop: '20px', padding: '16px', border: '1px solid rgba(255,255,255,0.15)', textAlign: 'center' }}>
+          <span className="ed-micro">CHECKING ATTENDANCE LEDGER...</span>
         </div>
       );
     }
 
     return (
-      <div className="mt-4">
-        <h3 className="text-xs font-mono font-bold tracking-[0.2em] text-stitch-secondary uppercase border-b border-stitch-outline-variant pb-1.5 mb-3">Attendance</h3>
-        <div className="space-y-3">
+      <div style={{ marginTop: '24px' }}>
+        <div className="ed-micro ed-micro-blue" style={{ borderBottom: '1px dashed rgba(255,255,255,0.2)', paddingBottom: '8px', marginBottom: '12px' }}>
+          VERIFIED CHECK-IN LEDGER
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {event.attendanceSessions.map((session: any) => {
-            // Find the attendance record for this specific session
             const attendanceRecord = myAttendanceRecords.find(r => r.sessionId === session.id);
-            // Find any dispute for this specific session
             const sessionDispute = disputesData?.pages?.flatMap(p => p.data)?.find(d => d.sessionId === session.id);
-            
-            // Check if dispute window is open for this specific session
-            // The dispute window ends 24 hours after the event ends (per existing logic)
             const disputeWindowEnd = new Date(event.endTime).getTime() + 24 * 60 * 60 * 1000;
             const isWindowOpen = new Date().getTime() <= disputeWindowEnd;
 
             return (
-              <div key={session.id} className="p-3 border border-stitch-outline-variant bg-stitch-surface flex justify-between items-start gap-4">
+              <div key={session.id} style={{ padding: '12px 14px', border: '1px solid rgba(255,255,255,0.15)', background: '#000000', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <h4 className="text-[10px] font-mono font-bold text-stitch-on-surface uppercase mb-0.5">{session.title}</h4>
-                  <p className="text-[10px] text-stitch-secondary font-mono">
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700, color: '#fff' }}>
+                    {session.title}
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: '#888', marginTop: '2px' }}>
                     {formatModalDate(session.startTime)} • {formatModalTime(session.startTime)}
-                  </p>
+                  </div>
                 </div>
-                <div className="text-right">
+
+                <div>
                   {attendanceRecord ? (
-                    <div>
-                      <div className={`text-[10px] font-mono font-bold tracking-widest uppercase ${attendanceRecord.status === 'PRESENT' ? 'text-green-500' : attendanceRecord.status === 'EXCUSED' ? 'text-blue-500' : 'text-red-500'}`}>
-                        {attendanceRecord.status}
-                      </div>
-                    </div>
+                    <span 
+                      className="ed-micro" 
+                      style={{ 
+                        color: attendanceRecord.status === 'PRESENT' ? 'var(--acid-green)' : attendanceRecord.status === 'EXCUSED' ? 'var(--electric-blue)' : 'var(--warm-red)' 
+                      }}
+                    >
+                      {attendanceRecord.status}
+                    </span>
                   ) : sessionDispute ? (
-                    <div>
-                       <div className={`text-[10px] font-mono font-bold tracking-widest uppercase ${
-                          sessionDispute.status === 'APPROVED' ? 'text-green-500' : 
-                          sessionDispute.status === 'REJECTED' ? 'text-red-500' : 'text-yellow-500'
-                       }`}>
-                         DISPUTE {sessionDispute.status}
-                       </div>
-                    </div>
+                    <span className="ed-micro" style={{ color: 'var(--warm-amber)' }}>
+                      DISPUTE {sessionDispute.status}
+                    </span>
                   ) : (
                     <div>
                       {!isEnded ? (
-                        <div className="text-[10px] font-mono font-bold tracking-widest uppercase text-stitch-secondary mb-1">NOT MARKED</div>
+                        <span className="ed-micro" style={{ color: '#888' }}>PENDING</span>
                       ) : (
                         <>
-                          <div className="text-[10px] font-mono font-bold tracking-widest uppercase text-red-500 mb-1">ABSENT</div>
+                          <span className="ed-micro" style={{ color: 'var(--warm-red)', display: 'block', textAlign: 'right' }}>ABSENT</span>
                           {isWindowOpen ? (
                             <button 
                               onClick={() => setDisputeSessionId(session.id)}
-                              className="text-[10px] font-mono font-bold tracking-widest text-stitch-on-surface hover:underline uppercase"
+                              style={{ background: 'none', border: 'none', color: '#fff', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '9px', fontWeight: 700 }}
                             >
-                              REPORT ISSUE
+                              REPORT ISSUE ↗
                             </button>
                           ) : (
-                            <div className="text-[9px] font-mono text-stitch-secondary uppercase">Window Closed</div>
+                            <span className="ed-micro" style={{ fontSize: '8px', color: '#666' }}>LOCKED</span>
                           )}
                         </>
                       )}
@@ -256,54 +565,78 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
     );
   };
 
+  const bannerUrl = (event.metadata as any)?.banner_url as string | undefined;
+
   return (
-    <div className="w-full flex-grow bg-stitch-surface-container-lowest text-stitch-on-surface font-sans min-h-screen">
+    <>
+      <style dangerouslySetInnerHTML={{ __html: eventDetailStyles }} />
+      <div className="collage-noise-overlay" />
+
       {/* REGISTRATION MODAL */}
       <Modal 
         isOpen={isRegisterModalOpen} 
         onClose={() => !isRegistering && setIsRegisterModalOpen(false)} 
-        title={isCapacityFull ? "JOIN WAITLIST" : "CONFIRM REGISTRATION"}
+        title={isCapacityFull ? "JOIN WAITLIST QUEUE" : "CONFIRM EVENT PASS"}
       >
-        <div className="p-6 pt-0">
-          <h3 className="text-lg font-medium text-stitch-on-surface mb-6">{event.title}</h3>
+        <div style={{ padding: '24px', paddingTop: 0, fontFamily: 'var(--font-body)' }}>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', marginBottom: '20px' }}>
+            {event.title}
+          </h3>
           
-          <div className="flex flex-col border-y border-stitch-outline-variant py-4 mb-8 space-y-4">
+          <div style={{ borderTop: '2px solid #fff', borderBottom: '2px solid #fff', padding: '16px 0', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div>
-              <div className="text-xs font-mono text-stitch-secondary uppercase tracking-widest mb-1">Date</div>
-              <div className="text-base font-medium text-stitch-on-surface">{formatModalDate(event.startTime)}</div>
+              <div className="ed-micro">DATE SPECIFICATION</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 700, color: '#fff', marginTop: '2px' }}>
+                {formatModalDate(event.startTime)}
+              </div>
             </div>
             <div>
-              <div className="text-xs font-mono text-stitch-secondary uppercase tracking-widest mb-1">Time</div>
-              <div className="text-base font-medium text-stitch-on-surface">
+              <div className="ed-micro">SESSION WINDOW</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 700, color: '#fff', marginTop: '2px' }}>
                 {formatModalTime(event.startTime)} — {formatModalTime(event.endTime)}
               </div>
             </div>
             <div>
-              <div className="text-xs font-mono text-stitch-secondary uppercase tracking-widest mb-1">Format</div>
-              <div className="text-base font-medium text-stitch-on-surface">Individual Registration</div>
+              <div className="ed-micro">ADMISSION FORMAT</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 700, color: 'var(--electric-blue)', marginTop: '2px' }}>
+                Individual Registration Pass
+              </div>
             </div>
           </div>
 
           {isCapacityFull && (
-            <p className="text-sm text-stitch-on-surface-variant mb-6">
-              This event is currently at capacity. Joining the waitlist does not guarantee entry. You will be automatically registered if a spot opens up.
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: '#a0a4b8', marginBottom: '24px', lineHeight: 1.5 }}>
+              This session has reached maximum designated capacity. Joining the waitlist queues your ticket for automatic confirmation if a spot is freed.
             </p>
           )}
 
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
             <button 
               onClick={() => setIsRegisterModalOpen(false)}
               disabled={isRegistering}
-              className="w-full sm:w-auto px-6 py-3 border border-stitch-on-surface text-stitch-on-surface font-mono font-bold text-sm tracking-widest hover:bg-stitch-surface transition-colors uppercase disabled:opacity-50"
+              style={{
+                flex: 1,
+                background: 'transparent',
+                border: '2px solid #fff',
+                color: '#fff',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '12px',
+                fontWeight: 700,
+                letterSpacing: '1.5px',
+                textTransform: 'uppercase',
+                padding: '12px 20px',
+                cursor: 'pointer'
+              }}
             >
-              Cancel
+              DISMISS
             </button>
             <button 
               onClick={handleRegisterConfirm}
               disabled={isRegistering}
-              className="w-full sm:flex-1 px-6 py-3 bg-stitch-on-surface text-stitch-surface-container-lowest font-mono font-bold text-sm tracking-widest hover:opacity-80 transition-colors uppercase disabled:opacity-50"
+              className="ed-cta-btn"
+              style={{ flex: 2 }}
             >
-              {isRegistering ? 'Processing...' : isCapacityFull ? 'Join Waitlist' : 'Confirm Registration'}
+              {isRegistering ? 'PROCESSING...' : isCapacityFull ? 'CONFIRM WAITLIST ↗' : 'AUTHORIZE PASS ↗'}
             </button>
           </div>
         </div>
@@ -313,28 +646,52 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
       <Modal 
         isOpen={isCancelModalOpen} 
         onClose={() => !isCanceling && setIsCancelModalOpen(false)} 
-        title="CANCEL REGISTRATION"
+        title="DISMISS REGISTRATION"
       >
-        <div className="p-6 pt-0">
-          <p className="text-base text-stitch-on-surface-variant mb-8 leading-relaxed">
-            Are you sure you want to cancel your registration for <span className="font-semibold text-stitch-on-surface">{event.title}</span>? 
-            {event.maxCapacity !== null && " This will free up your spot for someone on the waitlist."} This action cannot be undone.
+        <div style={{ padding: '24px', paddingTop: 0, fontFamily: 'var(--font-body)' }}>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: '#a0a4b8', marginBottom: '24px', lineHeight: 1.6 }}>
+            Are you sure you want to release your confirmed pass for <strong style={{ color: '#fff' }}>{event.title}</strong>? 
+            {event.maxCapacity !== null && " Your allocated seat will immediately be passed to the next waitlisted student."}
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
             <button 
               onClick={() => setIsCancelModalOpen(false)}
               disabled={isCanceling}
-              className="w-full sm:w-auto px-6 py-3 border border-stitch-on-surface text-stitch-on-surface font-mono font-bold text-sm tracking-widest hover:bg-stitch-surface transition-colors uppercase disabled:opacity-50"
+              style={{
+                flex: 1,
+                background: 'transparent',
+                border: '2px solid #fff',
+                color: '#fff',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '12px',
+                fontWeight: 700,
+                letterSpacing: '1.5px',
+                textTransform: 'uppercase',
+                padding: '12px 20px',
+                cursor: 'pointer'
+              }}
             >
-              Keep Registration
+              KEEP PASS
             </button>
             <button 
               onClick={handleCancelConfirm}
               disabled={isCanceling}
-              className="w-full sm:flex-1 px-6 py-3 bg-red-600 text-white font-mono font-bold text-sm tracking-widest hover:bg-red-700 transition-colors uppercase disabled:opacity-50"
+              style={{
+                flex: 1,
+                background: 'var(--warm-red)',
+                border: '2px solid #fff',
+                color: '#fff',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '12px',
+                fontWeight: 700,
+                letterSpacing: '1.5px',
+                textTransform: 'uppercase',
+                padding: '12px 20px',
+                cursor: 'pointer'
+              }}
             >
-              {isCanceling ? 'Processing...' : 'Cancel Registration'}
+              {isCanceling ? 'RELEASING...' : 'CONFIRM CANCELLATION'}
             </button>
           </div>
         </div>
@@ -347,300 +704,321 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
         onClose={() => setIsTeamGatewayOpen(false)}
       />
 
-      <div className="w-full max-w-[1440px] mx-auto px-6 py-4 md:px-12 md:py-6 lg:px-16">
-        
-        {/* Back Button */}
-        <button 
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-widest text-stitch-on-surface hover:text-stitch-secondary transition-colors mb-2.5"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" /> Back
-        </button>
+      <div className="ed-page">
+        <div className="ed-inner">
 
-        {/* Hero Banner */}
-        {(event.metadata as any)?.banner_url && (
-          <div className="w-full h-48 md:h-64 lg:h-80 bg-stitch-surface-container-highest mb-6 overflow-hidden relative border border-stitch-outline-variant">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={(event.metadata as any)?.banner_url as string} alt={event.title} className="w-full h-full object-cover" />
+          {/* Top Return Button */}
+          <div>
+            <button onClick={() => router.back()} className="ed-back-btn">
+              <ArrowLeft size={14} /> RETURN TO PREVIOUS ARCHIVE
+            </button>
           </div>
-        )}
 
-        {/* Event Header */}
-        <div className="border-b border-stitch-outline-variant pb-4 mb-5">
-          {event.eventType && (
-            <div className="text-[11px] font-mono font-bold tracking-widest uppercase mb-1 text-stitch-on-surface">
-              {event.eventType.replace(/_/g, ' ')}
-            </div>
-          )}
-          <h1 
-            className="text-2xl sm:text-3xl md:text-4xl lg:text-[44px] font-black text-stitch-on-surface tracking-tight leading-tight mb-2 break-words"
-            style={{ fontFamily: 'Syne, sans-serif' }}
-          >
-            {event.title}
-          </h1>
-          
-          {primaryClub && (
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-mono text-stitch-secondary uppercase tracking-widest">Hosted by</span>
-              <Link href={`/student/campus/clubs/${primaryClub.id}`} className="flex items-center gap-2 group w-fit">
-                {primaryClub.bannerUrl ? (
-                  <img src={primaryClub.bannerUrl} alt={primaryClub.name} className="w-6 h-6 object-cover border border-stitch-outline-variant" />
-                ) : (
-                  <div className="w-6 h-6 bg-stitch-surface-variant flex items-center justify-center text-xs font-bold text-stitch-secondary border border-stitch-outline-variant">
-                    {primaryClub.name.charAt(0)}
-                  </div>
-                )}
-                <span className="text-sm font-semibold text-stitch-on-surface group-hover:underline">{primaryClub.name}</span>
-              </Link>
-            </div>
-          )}
-        </div>
-
-        {/* Main Content Layout (Desktop Grid: Left ~68%, Right ~32%) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-start">
-          
-          {/* Left Main Content Area */}
-          <div className="lg:col-span-7 xl:col-span-8 space-y-6">
-            
-            <section>
-              <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-stitch-on-surface uppercase border-b border-stitch-outline-variant pb-1.5 mb-3">About the Event</h2>
-              <div className="prose prose-gray max-w-none text-stitch-on-surface-variant leading-relaxed text-sm md:text-base break-words">
-                {event.description ? (
-                  event.description.split('\n').map((para, i) => (
-                    <p key={i} className="mb-3">{para}</p>
-                  ))
-                ) : (
-                  <p className="text-stitch-secondary italic">No description provided.</p>
-                )}
+          {/* Hero Banner Frame (if present) */}
+          {bannerUrl && (
+            <div className="ed-banner-card">
+              <div className="ed-tape-strip">
+                OFFICIAL DOSSIER // {event.eventType || 'CAMPUS EVENT'}
               </div>
-            </section>
+              <img src={bannerUrl} alt={event.title} />
+            </div>
+          )}
 
-            {event.metadata?.agenda && event.metadata.agenda.length > 0 && (
-              <section>
-                <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-stitch-on-surface uppercase border-b border-stitch-outline-variant pb-1.5 mb-3">Agenda</h2>
-                <div className="space-y-4">
-                  {event.metadata.agenda.map((item, idx) => {
-                    let formattedTime = item.time;
-                    try {
-                      formattedTime = timeFormatter.format(new Date(item.time));
-                    } catch (e) {
-                      // fallback
-                    }
-                    return (
-                      <div key={idx} className="flex flex-col sm:flex-row gap-2 sm:gap-4 group">
-                        <div className="w-20 flex-shrink-0">
-                          <span className="text-xs font-mono font-bold text-stitch-on-surface tabular-nums">{formattedTime}</span>
-                        </div>
-                        <div>
-                          <h3 className="text-sm font-semibold text-stitch-on-surface mb-0.5">{item.title}</h3>
-                          {item.description && (
-                            <p className="text-xs text-stitch-on-surface-variant leading-relaxed">{item.description}</p>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
-
-          </div>
-
-          {/* Right Sidebar Rail */}
-          <div className="lg:col-span-5 xl:col-span-4 space-y-5">
+          {/* Header Section */}
+          <section className="ed-header">
+            <div className="ed-watermark">ARCHIVE</div>
             
-            {/* Registration & Status Block */}
-            <div>
-              <h3 className="text-xs font-mono font-bold tracking-[0.2em] text-stitch-secondary uppercase border-b border-stitch-outline-variant pb-1.5 mb-3">Registration / Status</h3>
-              
-              {isClubAdminForEvent ? (
-                <div className="p-5 border border-stitch-outline-variant flex flex-col items-start bg-stitch-surface mb-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-1.5 h-1.5 bg-stitch-primary rounded-full"></div>
-                    <div className="text-[10px] font-mono font-bold tracking-[0.2em] uppercase text-stitch-primary">
-                      Organizer Mode
-                    </div>
-                  </div>
-                  
-                  <h4 className="text-sm font-semibold text-stitch-on-surface mb-1.5">
-                    You organize this event
-                  </h4>
-                  
-                  <p className="text-xs text-stitch-on-surface-variant mb-5 leading-relaxed font-mono">
-                    As a Club Admin for the primary organizing club, standard participation is disabled. Use the management portal to manage teams, attendance, and details.
-                  </p>
-                  
-                  {event.state === 'DRAFT' && (
-                    <button 
-                      onClick={() => submitMutation.mutate(eventId)}
-                      disabled={submitMutation.isPending}
-                      className="w-full px-4 py-3 mb-2 bg-stitch-primary text-stitch-on-primary font-mono font-bold text-[10px] tracking-widest uppercase hover:opacity-80 transition-opacity disabled:opacity-50"
-                    >
-                      {submitMutation.isPending ? 'Submitting...' : 'Submit for Approval'}
-                    </button>
-                  )}
-                  
-                  <button 
-                    onClick={() => {
-                      setClubAdminMode(true);
-                      if (primaryClub) setActiveClubId(primaryClub.id);
-                      router.push(`/student/events/${eventId}/manage`);
-                    }}
-                    className="w-full px-4 py-3 bg-stitch-on-surface text-stitch-surface-container-lowest font-mono font-bold text-[10px] tracking-widest uppercase hover:opacity-80 transition-opacity flex items-center justify-between group"
-                  >
-                    <span>Manage Event</span>
-                    <span className="transform group-hover:translate-x-1 transition-transform">→</span>
-                  </button>
-                </div>
-              ) : (
-                <>
-                  {/* Active Registration or Team Context */}
-                  {registration && (registration.status !== 'NOT_REGISTERED' || registration.team_id) ? (
-                    <div>
-                      {registration.status === 'CANCELLED' && (
-                        <div className="text-sm font-semibold text-stitch-secondary mb-3">Your registration was cancelled.</div>
-                      )}
-                      
-                      {event.registrationType === 'TEAM' && registration.team_id ? (
-                        <div className="p-3 border border-stitch-outline-variant flex flex-col items-start bg-stitch-surface mb-3">
-                          {isLoadingTeam ? (
-                            <div className="w-full flex items-center justify-center py-3">
-                              <div className="w-4 h-4 border-2 border-stitch-on-surface border-t-transparent rounded-full animate-spin"></div>
-                            </div>
-                          ) : isErrorTeam || !team ? (
-                            <div className="w-full flex items-center justify-center py-3 text-red-600 text-xs font-mono font-bold uppercase tracking-widest text-center dark:text-red-400">
-                              Unable to load team
-                            </div>
-                          ) : (
-                            <>
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-[10px] font-mono font-bold tracking-[0.2em] uppercase text-stitch-on-surface">TEAM</span>
-                                {team.status && (
-                                  <>
-                                    <span className="w-1 h-1 bg-stitch-on-surface rounded-full opacity-30"></span>
-                                    <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-stitch-secondary">{team.status}</span>
-                                  </>
-                                )}
-                              </div>
-                              <div className="text-base font-semibold text-stitch-on-surface mb-0.5">{team.name}</div>
-                              
-                              <div className="text-xs text-stitch-on-surface-variant mb-2.5 font-mono uppercase tracking-wide">
-                                {team.member_count} {event.metadata?.maximum_team_size ? `/ ${event.metadata.maximum_team_size}` : ''} MEMBERS
-                              </div>
-                              
-                              {event.metadata?.minimum_team_size && team.member_count < event.metadata.minimum_team_size && (
-                                <div className="w-full p-2 mb-2.5 bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs flex gap-2 items-start leading-relaxed dark:bg-yellow-900/30 dark:border-yellow-700/50 dark:text-yellow-200">
-                                  <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                                  <span>Below minimum of {event.metadata.minimum_team_size} members.</span>
-                                </div>
-                              )}
-                              
-                              <Link 
-                                href={`/student/events/${eventId}/team`} 
-                                className="w-full text-center px-4 py-2 bg-stitch-surface-container-lowest border border-stitch-on-surface text-stitch-on-surface font-mono font-bold text-xs tracking-widest hover:bg-stitch-on-surface hover:text-stitch-surface-container-lowest transition-colors uppercase block"
-                              >
-                                View Team
-                              </Link>
-                            </>
-                          )}
-                        </div>
-                      ) : (
-                        <>
-                          {registration.status === 'REGISTERED' && (
-                            <div className="text-sm font-semibold text-stitch-on-surface mb-2">You're registered for this event.</div>
-                          )}
-                          
-                          {registration.status === 'WAITLISTED' && (
-                            <div>
-                              <div className="text-sm font-semibold text-stitch-on-surface mb-1">You are on the waitlist.</div>
-                              {registration.waitlist_position && (
-                                <div className="text-xs text-stitch-on-surface-variant mb-2">Position #{registration.waitlist_position} on the waitlist</div>
-                              )}
-                            </div>
-                          )}
-                        </>
-                      )}
+            <div className="ed-micro ed-micro-blue" style={{ marginBottom: '6px' }}>
+              CAMPUS EVENT RECORD // {event.eventType ? event.eventType.replace(/_/g, ' ') : 'EVENT DOSSIER'}
+            </div>
 
-                      {renderCancellation()}
-                    </div>
+            <h1 className="ed-title">
+              {event.title}
+            </h1>
+
+            {primaryClub && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <span className="ed-micro">HOSTED BY:</span>
+                <Link href={`/student/campus/clubs/${primaryClub.id}`} className="ed-host-badge">
+                  {primaryClub.bannerUrl ? (
+                    <img 
+                      src={primaryClub.bannerUrl} 
+                      alt={primaryClub.name} 
+                      style={{ width: '20px', height: '20px', objectFit: 'cover', border: '1px solid #fff' }} 
+                    />
                   ) : (
-                    /* Unregistered / CTA Action */
-                    renderRegistrationAction()
+                    <div style={{ width: '20px', height: '20px', background: 'var(--electric-blue)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 900 }}>
+                      {primaryClub.name.charAt(0)}
+                    </div>
                   )}
-                </>
+                  <span style={{ fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 800, textTransform: 'uppercase', color: '#fff' }}>
+                    {primaryClub.name} ↗
+                  </span>
+                </Link>
+              </div>
+            )}
+          </section>
+
+          {/* Main 2-Column Grid */}
+          <div className="ed-grid-layout">
+            
+            {/* Left Column: Manifesto & Agenda */}
+            <div>
+              {/* About Section */}
+              <div className="ed-box">
+                <div className="ed-box-header">
+                  <span className="ed-box-title">ABOUT THE EVENT</span>
+                  <span className="ed-micro ed-micro-blue">MANIFESTO</span>
+                </div>
+
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: '15px', color: '#e0e0e0', lineHeight: 1.7 }}>
+                  {event.description ? (
+                    event.description.split('\n').map((para, i) => (
+                      <p key={i} style={{ marginBottom: '16px' }}>{para}</p>
+                    ))
+                  ) : (
+                    <p style={{ color: '#888', fontStyle: 'italic' }}>No detailed manifesto provided for this campus session.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Agenda Section */}
+              {event.metadata?.agenda && event.metadata.agenda.length > 0 && (
+                <div className="ed-box">
+                  <div className="ed-box-header">
+                    <span className="ed-box-title">TIMELINE &amp; AGENDA</span>
+                    <span className="ed-micro ed-micro-green">{event.metadata.agenda.length} BLOCKS</span>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {event.metadata.agenda.map((item, idx) => {
+                      let formattedTime = item.time;
+                      try {
+                        formattedTime = timeFormatter.format(new Date(item.time));
+                      } catch {
+                        // fallback
+                      }
+
+                      return (
+                        <div key={idx} style={{ padding: '14px', border: '1px dashed rgba(245,245,242,0.2)', background: 'rgba(255,255,255,0.03)', display: 'flex', gap: '16px', alignItems: 'baseline' }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', fontWeight: 700, color: 'var(--electric-blue)', minWidth: '90px', flexShrink: 0 }}>
+                            {formattedTime}
+                          </span>
+                          <div>
+                            <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 800, textTransform: 'uppercase', color: '#fff', marginBottom: '4px' }}>
+                              {item.title}
+                            </h4>
+                            {item.description && (
+                              <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: '#a0a4b8', lineHeight: 1.5, margin: 0 }}>
+                                {item.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
-              {renderDisputeSection()}
             </div>
 
-            {/* Details Block */}
+            {/* Right Column: Status & Logistics */}
             <div>
-              <h3 className="text-xs font-mono font-bold tracking-[0.2em] text-stitch-secondary uppercase border-b border-stitch-outline-variant pb-1.5 mb-3">Details</h3>
               
-              <div className="space-y-2.5">
-                <div className="flex items-start gap-2.5">
-                  <Calendar className="w-4 h-4 text-stitch-on-surface mt-0.5 flex-shrink-0" />
-                  <div>
-                    <div className="text-[10px] font-mono text-stitch-secondary uppercase">Date</div>
-                    <div className="text-sm font-medium text-stitch-on-surface">{dateFormatter.format(new Date(event.startTime))}</div>
-                  </div>
+              {/* Registration / Status Box */}
+              <div className="ed-box ed-box-blue">
+                <div className="ed-box-header">
+                  <span className="ed-box-title">PASS STATUS</span>
+                  <span className="ed-micro ed-micro-blue">ADMISSION</span>
                 </div>
 
-                <div className="flex items-start gap-2.5">
-                  <Clock className="w-4 h-4 text-stitch-on-surface mt-0.5 flex-shrink-0" />
-                  <div>
-                    <div className="text-[10px] font-mono text-stitch-secondary uppercase">Time</div>
-                    <div className="text-sm font-medium text-stitch-on-surface">
-                      {timeFormatter.format(new Date(event.startTime))} — {timeFormatter.format(new Date(event.endTime))}
+                {isClubAdminForEvent ? (
+                  <div style={{ padding: '16px', border: '2px solid var(--electric-blue)', background: 'rgba(0,87,255,0.1)' }}>
+                    <div className="ed-micro ed-micro-blue" style={{ marginBottom: '6px' }}>
+                      SECURITY CLEARANCE // ORGANIZER
                     </div>
-                  </div>
-                </div>
+                    <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 800, color: '#fff', marginBottom: '8px' }}>
+                      You organize this event
+                    </h4>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#a0a4b8', lineHeight: 1.5, marginBottom: '18px' }}>
+                      Participant passes are disabled for primary organizers. Access operations via Club Management.
+                    </p>
 
-                {event.locationName && (
-                  <div className="flex items-start gap-2.5">
-                    <MapPin className="w-4 h-4 text-stitch-on-surface mt-0.5 flex-shrink-0" />
-                    <div>
-                      <div className="text-[10px] font-mono text-stitch-secondary uppercase">Location</div>
-                      <div className="text-sm font-medium text-stitch-on-surface break-words">{event.locationName}</div>
-                    </div>
+                    {event.state === 'DRAFT' && (
+                      <button 
+                        onClick={() => submitMutation.mutate(eventId)}
+                        disabled={submitMutation.isPending}
+                        className="ed-cta-btn"
+                        style={{ marginBottom: '10px' }}
+                      >
+                        {submitMutation.isPending ? 'SUBMITTING...' : 'SUBMIT FOR APPROVAL ↗'}
+                      </button>
+                    )}
+
+                    <button 
+                      onClick={() => {
+                        setClubAdminMode(true);
+                        if (primaryClub) setActiveClubId(primaryClub.id);
+                        router.push(`/student/events/${eventId}/manage`);
+                      }}
+                      className="ed-cta-btn"
+                    >
+                      EVENT MANAGEMENT ↗
+                    </button>
                   </div>
+                ) : (
+                  <>
+                    {registration && (registration.status !== 'NOT_REGISTERED' || registration.team_id) ? (
+                      <div>
+                        {registration.status === 'CANCELLED' && (
+                          <div className="ed-status-badge" style={{ color: 'var(--warm-red)', borderColor: 'var(--warm-red)' }}>
+                            REGISTRATION CANCELLED
+                          </div>
+                        )}
+
+                        {event.registrationType === 'TEAM' && registration.team_id ? (
+                          <div style={{ padding: '16px', border: '2px solid rgba(255,255,255,0.2)', background: '#000' }}>
+                            <div className="ed-micro ed-micro-blue" style={{ marginBottom: '4px' }}>
+                              SQUAD IDENTITY
+                            </div>
+                            {isLoadingTeam ? (
+                              <div className="ed-micro">SYNCHRONIZING TEAM...</div>
+                            ) : isErrorTeam || !team ? (
+                              <div className="ed-micro" style={{ color: 'var(--warm-red)' }}>TEAM LEDGER ERROR</div>
+                            ) : (
+                              <>
+                                <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', marginBottom: '6px' }}>
+                                  {team.name}
+                                </h4>
+                                <div className="ed-micro" style={{ marginBottom: '14px' }}>
+                                  STATUS: {team.status || 'ACTIVE'} &bull; {team.member_count} {event.metadata?.maximum_team_size ? `/ ${event.metadata.maximum_team_size}` : ''} MEMBERS
+                                </div>
+                                <Link href={`/student/events/${eventId}/team`} className="ed-cta-btn">
+                                  ACCESS TEAM HUB ↗
+                                </Link>
+                              </>
+                            )}
+                          </div>
+                        ) : (
+                          <>
+                            {registration.status === 'REGISTERED' && (
+                              <div className="ed-status-badge confirmed">
+                                ✓ ADMISSION PASS VERIFIED
+                              </div>
+                            )}
+
+                            {registration.status === 'WAITLISTED' && (
+                              <div className="ed-status-badge waitlisted">
+                                ⏳ WAITLISTED // POSITION #{registration.waitlist_position || 1}
+                              </div>
+                            )}
+                          </>
+                        )}
+
+                        {renderCancellation()}
+                      </div>
+                    ) : (
+                      renderRegistrationAction()
+                    )}
+                  </>
                 )}
 
-                {event.registrationType && (
-                  <div className="flex items-start gap-2.5">
-                    <Users className="w-4 h-4 text-stitch-on-surface mt-0.5 flex-shrink-0" />
+                {renderDisputeSection()}
+              </div>
+
+              {/* Event Logistics Details Box */}
+              <div className="ed-box">
+                <div className="ed-box-header">
+                  <span className="ed-box-title">LOGISTICS</span>
+                  <span className="ed-micro">SPECIFICATIONS</span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  {/* Date */}
+                  <div className="ed-spec-item">
+                    <Calendar size={18} style={{ color: 'var(--electric-blue)', flexShrink: 0, marginTop: '2px' }} />
                     <div>
-                      <div className="text-[10px] font-mono text-stitch-secondary uppercase">Format</div>
-                      <div className="text-sm font-medium text-stitch-on-surface">
-                        {event.registrationType === 'TEAM' ? (
-                           <>
-                             Team Event 
-                             {event.metadata?.minimum_team_size && <span className="text-stitch-secondary font-normal ml-1">({event.metadata.minimum_team_size}-{event.metadata.maximum_team_size || '∞'} members)</span>}
-                           </>
-                        ) : 'Individual Registration'}
+                      <div className="ed-micro">SESSION DATE</div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 700, color: '#fff', marginTop: '2px' }}>
+                        {dateFormatter.format(new Date(event.startTime))}
                       </div>
                     </div>
                   </div>
-                )}
-                
-                {/* Render Capacity only if API exposes maxCapacity and numeric registrationCount */}
-                {event.maxCapacity !== null && typeof registrationCount === 'number' && (
-                  <div className="flex items-start gap-2.5">
-                    <Info className="w-4 h-4 text-stitch-on-surface mt-0.5 flex-shrink-0" />
+
+                  {/* Time */}
+                  <div className="ed-spec-item">
+                    <Clock size={18} style={{ color: 'var(--electric-blue)', flexShrink: 0, marginTop: '2px' }} />
                     <div>
-                      <div className="text-[10px] font-mono text-stitch-secondary uppercase">Capacity</div>
-                      <div className="text-sm font-medium text-stitch-on-surface">
-                        {registrationCount} / {event.maxCapacity} <span className="text-stitch-secondary font-normal">{event.registrationType === 'TEAM' ? 'teams' : 'people'}</span>
+                      <div className="ed-micro">TIME WINDOW</div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 700, color: '#fff', marginTop: '2px' }}>
+                        {timeFormatter.format(new Date(event.startTime))} — {timeFormatter.format(new Date(event.endTime))}
                       </div>
                     </div>
                   </div>
-                )}
+
+                  {/* Location */}
+                  {event.locationName && (
+                    <div className="ed-spec-item">
+                      <MapPin size={18} style={{ color: 'var(--electric-blue)', flexShrink: 0, marginTop: '2px' }} />
+                      <div>
+                        <div className="ed-micro">CAMPUS LOCATION</div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 700, color: '#fff', marginTop: '2px' }}>
+                          {event.locationName}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Format */}
+                  {event.registrationType && (
+                    <div className="ed-spec-item">
+                      <Users size={18} style={{ color: 'var(--electric-blue)', flexShrink: 0, marginTop: '2px' }} />
+                      <div>
+                        <div className="ed-micro">PARTICIPATION FORMAT</div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 700, color: '#fff', marginTop: '2px' }}>
+                          {event.registrationType === 'TEAM' ? (
+                            <>
+                              TEAM COMPETITION 
+                              {event.metadata?.minimum_team_size && (
+                                <span style={{ color: '#a0a4b8', fontSize: '12px', marginLeft: '6px' }}>
+                                  ({event.metadata.minimum_team_size} - {event.metadata.maximum_team_size || '∞'} members)
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            'INDIVIDUAL REGISTRATION'
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Capacity */}
+                  {event.maxCapacity !== null && typeof registrationCount === 'number' && (
+                    <div className="ed-spec-item">
+                      <Info size={18} style={{ color: 'var(--electric-blue)', flexShrink: 0, marginTop: '2px' }} />
+                      <div>
+                        <div className="ed-micro">CAPACITY METRIC</div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 700, color: '#fff', marginTop: '2px' }}>
+                          {registrationCount} / {event.maxCapacity}{' '}
+                          <span style={{ fontSize: '11px', color: '#a0a4b8', fontWeight: 400 }}>
+                            {event.registrationType === 'TEAM' ? 'TEAMS' : 'SEATS'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
               </div>
+
             </div>
+
           </div>
+
         </div>
       </div>
-      
+
       {disputeSessionId && (
         <AttendanceDisputeModal
           isOpen={!!disputeSessionId}
@@ -649,8 +1027,6 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
           sessionId={disputeSessionId}
         />
       )}
-    </div>
+    </>
   );
 }
-
-

@@ -32,10 +32,10 @@ export default function EventManageLayout({ children, params }: { children: Reac
 
   if (!isHydrated || isLoading) {
     return (
-      <div className="w-full flex-grow flex justify-center items-center h-64">
-        <div className="animate-pulse flex flex-col items-center">
-          <div className="h-8 w-8 border-4 border-stitch-on-surface border-t-transparent rounded-full animate-spin"></div>
-          <p className="mt-4 text-sm font-medium text-stitch-secondary uppercase tracking-widest font-mono">Loading Event...</p>
+      <div className="w-full flex-grow flex justify-center items-center h-64 bg-[#050505]">
+        <div className="flex flex-col items-center">
+          <div className="h-8 w-8 border-3 border-[#0057FF] border-t-transparent rounded-full animate-spin"></div>
+          <p className="mt-4 text-xs font-mono text-[#a0a4b8] uppercase tracking-widest">Loading Event Management...</p>
         </div>
       </div>
     );
@@ -44,28 +44,34 @@ export default function EventManageLayout({ children, params }: { children: Reac
   if (!event) return null;
 
   return (
-    <div className="w-full max-w-[1440px] mx-auto px-6 py-6 md:px-12 md:py-8 lg:px-16">
+    <div className="w-full max-w-[1360px] mx-auto px-6 py-8 md:px-10 md:py-12 bg-[#050505] text-[#F5F5F2] font-sans">
       
       <Link 
         href={`/student/events/${eventId}`}
-        className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-widest text-stitch-on-surface hover:text-stitch-secondary transition-colors mb-6"
+        className="flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-widest text-[#0057FF] hover:text-white transition-colors mb-6 inline-flex"
       >
-        <ArrowLeft className="w-3.5 h-3.5" /> Back to Event
+        <ArrowLeft className="w-4 h-4" /> Return to Public Event View
       </Link>
 
-      <div className="mb-8">
-        <div className="text-[11px] font-mono font-bold tracking-widest uppercase mb-1 text-stitch-secondary flex items-center gap-2">
-          EVENT MANAGEMENT
+      <div className="mb-8 p-6 bg-[#090a0f] border-3 border-[#F5F5F2] shadow-[8px_8px_0px_#0057FF] relative overflow-hidden">
+        <div className="h-1 w-full bg-gradient-to-r from-[#0057FF] via-[#C8FF00] to-[#0057FF] absolute top-0 left-0" />
+        
+        <div className="font-mono text-[11px] font-bold tracking-widest uppercase mb-1.5 text-[#0057FF] flex items-center gap-2.5">
+          <span>EVENT MANAGEMENT PORTAL</span>
+          <span className="text-white/30">•</span>
           <span className={clsx(
-            "px-2 py-0.5 border text-[10px]",
-            event.state === 'PUBLISHED' ? "border-green-600 text-green-600 dark:border-green-400 dark:text-green-400" :
-            event.state === 'DRAFT' ? "border-yellow-600 text-yellow-600 dark:border-yellow-400 dark:text-yellow-400" :
-            "border-stitch-outline-variant text-stitch-secondary"
+            "px-2.5 py-0.5 text-[10px] font-black tracking-wider uppercase shadow-[2px_2px_0px_#000]",
+            event.state === 'PUBLISHED' ? "bg-[#C8FF00] text-black border border-black" :
+            event.state === 'DRAFT' ? "bg-[#FF9500]/20 text-[#FF9500] border border-[#FF9500]" :
+            "bg-white/10 text-white/70 border border-white/20"
           )}>
             {event.state}
           </span>
         </div>
-        <h1 className="text-3xl md:text-4xl font-black text-stitch-on-surface tracking-tight leading-tight uppercase" style={{ fontFamily: 'Syne, sans-serif' }}>
+        <h1 
+          className="text-2xl sm:text-3xl md:text-4xl font-black text-[#F5F5F2] tracking-tight leading-tight uppercase mt-1" 
+          style={{ fontFamily: "'Syne', sans-serif" }}
+        >
           {event.title}
         </h1>
       </div>
@@ -80,13 +86,13 @@ export default function EventManageLayout({ children, params }: { children: Reac
                 key={tab.name}
                 href={tab.path}
                 className={clsx(
-                  "flex items-center gap-3 px-4 py-3 border whitespace-nowrap transition-colors",
+                  "flex items-center gap-3 px-4 py-3 border-2 whitespace-nowrap transition-all shadow-[2px_2px_0px_#000]",
                   isActive 
-                    ? "bg-stitch-primary/10 border-stitch-primary text-stitch-primary font-bold" 
-                    : "border-stitch-outline-variant bg-stitch-surface-container-lowest hover:bg-stitch-surface text-stitch-secondary hover:text-stitch-on-surface font-medium"
+                    ? "bg-[#0057FF] border-[#0057FF] text-white font-bold shadow-[4px_4px_0px_#000]" 
+                    : "border-white/15 bg-[#090a0f] hover:border-white/40 text-[#a0a4b8] hover:text-white font-medium"
                 )}
               >
-                <tab.icon className={clsx("w-4 h-4", isActive ? "text-stitch-primary" : "text-stitch-secondary")} />
+                <tab.icon className={clsx("w-4 h-4", isActive ? "text-white" : "text-[#a0a4b8]")} />
                 <span className="text-xs font-mono uppercase tracking-widest">{tab.name}</span>
               </Link>
             )

@@ -15,7 +15,6 @@ export function AttendanceDisputes({ eventId, clubId, canManageAttendance }: { e
   const [selectedDispute, setSelectedDispute] = useState<AttendanceDispute | null>(null);
   const [form] = Form.useForm();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleResolve = async (values: any) => {
     if (!selectedDispute) return;
     try {

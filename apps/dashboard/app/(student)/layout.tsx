@@ -18,7 +18,7 @@ function StudentLayoutContent({ children }: { children: React.ReactNode }) {
   const [isHydrating, setIsHydrating] = useState(!store.accessToken);
   const [isAuthenticated, setIsAuthenticated] = useState(!!store.accessToken);
 
-  const { data: user, isLoading: isUserLoading, isError: isUserError } = useCurrentUser();
+  const { isLoading: isUserLoading, isError: isUserError } = useCurrentUser();
 
   useEffect(() => {
     if (store.accessToken) {

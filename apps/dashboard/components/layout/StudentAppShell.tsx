@@ -47,16 +47,19 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
   const isDeepRoute = segments.length > (segments[1] === 'campus' || segments[1] === 'manage' ? 3 : 2);
 
   const isCampusActive = !isClubAdminMode && isActive({ href: '/student/campus', exactMatch: false });
+  const isEditorial = pathname.startsWith('/student');
+  const rawFirstName = user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'STUDENT';
+  const displayFirstName = rawFirstName.toUpperCase();
 
   return (
-    <div className="min-h-screen bg-stitch-surface-container-lowest text-stitch-on-surface flex flex-col font-stitch-body stitch-text-body-md pb-[64px] md:pb-0">
+    <div className="min-h-screen flex flex-col font-sans pb-[64px] md:pb-0 bg-[#050505] text-[#F5F5F2] transition-colors">
       
       {/* Global Header (Desktop & Mobile) */}
-      <header className="bg-stitch-surface-container-lowest border-b border-stitch-outline-variant sticky top-0 z-50">
-        <div className="flex justify-between items-center w-full px-stitch-margin-mobile md:px-stitch-margin-desktop py-stitch-md max-w-[1440px] mx-auto">
+      <header className="sticky top-0 z-50 bg-[#050505]/95 border-b border-[#F5F5F2]/15 backdrop-blur-md text-[#F5F5F2] transition-colors">
+        <div className="flex justify-between items-center w-full px-4 md:px-8 py-3 max-w-[1360px] mx-auto">
           
           {/* Brand & Mobile Back Button */}
-          <div className="flex items-center gap-stitch-xl">
+          <div className="flex items-center gap-6">
             {isDeepRoute ? (
               <BackButton className="md:hidden" />
             ) : null}
@@ -64,32 +67,40 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
               aria-label="NST Events Home"
               href={isClubAdminMode ? "/student/manage/club" : "/student/home"}
               className={clsx(
-                "flex items-center gap-2.5 transition-opacity hover:opacity-90",
+                "flex items-center gap-3 transition-opacity hover:opacity-90",
                 isDeepRoute ? "hidden md:flex" : "flex"
               )}
             >
-              <NstLogoMark size={28} className="w-7 h-7" />
+              <div className="w-8 h-8 bg-[#0057FF] flex items-center justify-center shadow-[3px_3px_0px_#ffffff] flex-shrink-0">
+                <NstLogoMark size={20} color="#ffffff" />
+              </div>
               <div className="flex flex-col leading-none">
-                <span className="font-stitch-headline text-[20px] font-extrabold tracking-tight text-stitch-on-surface">
-                  NST <span className="text-stitch-primary">EVENTS</span>
+                <span className="font-['Syne',sans-serif] text-[19px] font-black tracking-tight text-[#F5F5F2] uppercase">
+                  NST EVENTS
                 </span>
                 {isClubAdminMode ? (
-                  <span className="font-stitch-label text-[8px] font-bold tracking-widest text-[#9a9db0] uppercase mt-0.5">
+                  <span className="font-['JetBrains_Mono',monospace] text-[8px] font-bold tracking-widest text-[#9a9db0] uppercase mt-0.5">
                     CLUB PORTAL
                   </span>
                 ) : null}
               </div>
             </Link>
+          </div>
 
-            {/* Navigation Links (Desktop) */}
-            <nav aria-label="Main Navigation" className="hidden md:flex items-center gap-stitch-lg font-stitch-label text-[13px] uppercase tracking-widest font-medium">
+          {/* Right: Navigation Links (Desktop) & Trailing Actions */}
+          <div className="flex items-center gap-8">
+            <nav aria-label="Main Navigation" className="hidden md:flex items-center gap-7 font-['JetBrains_Mono',monospace] text-[11px] font-bold uppercase tracking-[1.5px]">
               {!isClubAdminMode ? (
                 <>
-                  <Link aria-current={isActive({ href: '/student/home' }) ? 'page' : undefined} href="/student/home" className={clsx(
-                    "pb-1 transition-all duration-200", 
-                    isActive({ href: '/student/home' }) ? "text-stitch-primary border-b-2 border-stitch-primary" : "text-stitch-secondary hover:text-stitch-primary"
-                  )}>
-                    Home
+                  <Link
+                    aria-current={isActive({ href: '/student/home' }) ? 'page' : undefined}
+                    href="/student/home"
+                    className={clsx(
+                      "transition-colors duration-200", 
+                      isActive({ href: '/student/home' }) ? "text-[#0057FF]" : "text-[#a0a4b8] hover:text-[#0057FF]"
+                    )}
+                  >
+                    HOME
                   </Link>
                   
                   {/* Campus Dropdown */}
@@ -97,79 +108,71 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
                     <Link 
                       href="/student/campus" 
                       className={clsx(
-                        "flex items-center gap-stitch-xs pb-1 transition-colors relative z-10",
-                        isCampusActive ? "text-stitch-primary border-b-2 border-stitch-primary" : "text-stitch-secondary hover:text-stitch-primary"
+                        "flex items-center gap-1 transition-colors relative z-10",
+                        isCampusActive ? "text-[#0057FF]" : "text-[#a0a4b8] hover:text-[#0057FF]"
                       )}
                     >
-                      Campus
-                      <ChevronDown className="w-4 h-4 transition-transform duration-200 group-hover:rotate-180" />
+                      CAMPUS &darr;
                     </Link>
                     
                     {/* Nested Menu Container with transparent spacer for unbroken hit area */}
                     <div className="absolute top-full left-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                      <div className="w-48 bg-stitch-surface-container-lowest border border-stitch-outline-variant shadow-sm">
-                        <Link href="/student/campus/discover" className="block px-stitch-md py-stitch-sm text-stitch-secondary hover:text-stitch-primary hover:bg-stitch-surface border-b border-stitch-outline-variant transition-colors">Discover</Link>
-                        <Link href="/student/campus/leaderboard" className="block px-stitch-md py-stitch-sm text-stitch-secondary hover:text-stitch-primary hover:bg-stitch-surface border-b border-stitch-outline-variant transition-colors">Leaderboard</Link>
-                        <Link href="/student/campus/clubs" className="block px-stitch-md py-stitch-sm text-stitch-secondary hover:text-stitch-primary hover:bg-stitch-surface transition-colors">Clubs</Link>
+                      <div className="w-48 bg-[#0d0e12] border-2 border-[#000000] shadow-[4px_4px_0px_#0057FF]">
+                        <Link href="/student/campus/discover" className="block px-4 py-2.5 text-[11px] text-[#a0a4b8] hover:text-[#ffffff] hover:bg-[#0057FF] border-b border-[#222] transition-colors">DISCOVER</Link>
+                        <Link href="/student/campus/leaderboard" className="block px-4 py-2.5 text-[11px] text-[#a0a4b8] hover:text-[#ffffff] hover:bg-[#0057FF] border-b border-[#222] transition-colors">LEADERBOARD</Link>
+                        <Link href="/student/campus/clubs" className="block px-4 py-2.5 text-[11px] text-[#a0a4b8] hover:text-[#ffffff] hover:bg-[#0057FF] transition-colors">CLUBS</Link>
                       </div>
                     </div>
                   </div>
 
-                  <Link aria-current={isActive({ href: '/student/events' }) ? 'page' : undefined} href="/student/events" className={clsx(
-                    "pb-1 transition-all duration-200", 
-                    isActive({ href: '/student/events' }) ? "text-stitch-primary border-b-2 border-stitch-primary" : "text-stitch-secondary hover:text-stitch-primary"
-                  )}>
-                    My Events
+                  <Link
+                    aria-current={isActive({ href: '/student/events' }) ? 'page' : undefined}
+                    href="/student/events"
+                    className={clsx(
+                      "transition-colors duration-200", 
+                      isActive({ href: '/student/events' }) ? "text-[#0057FF]" : "text-[#a0a4b8] hover:text-[#0057FF]"
+                    )}
+                  >
+                    MY EVENTS
                   </Link>
                 </>
               ) : (
                 <>
                   <Link aria-current={isActive({ href: '/student/manage/club' }) ? 'page' : undefined} href="/student/manage/club" className={clsx(
                     "pb-1 transition-all duration-200", 
-                    isActive({ href: '/student/manage/club' }) ? "text-stitch-primary border-b-2 border-stitch-primary" : "text-stitch-secondary hover:text-stitch-primary"
+                    isActive({ href: '/student/manage/club' }) ? "text-[#0057FF] border-b-2 border-[#0057FF]" : "text-[#a0a4b8] hover:text-[#0057FF]"
                   )}>
                     Club Hub
                   </Link>
                   <Link aria-current={isActive({ href: '/student/manage/events', exactMatch: false }) ? 'page' : undefined} href="/student/manage/events" className={clsx(
                     "pb-1 transition-all duration-200", 
-                    isActive({ href: '/student/manage/events', exactMatch: false }) ? "text-stitch-primary border-b-2 border-stitch-primary" : "text-stitch-secondary hover:text-stitch-primary"
+                    isActive({ href: '/student/manage/events', exactMatch: false }) ? "text-[#0057FF] border-b-2 border-[#0057FF]" : "text-[#a0a4b8] hover:text-[#0057FF]"
                   )}>
                     Events
                   </Link>
                 </>
               )}
             </nav>
-          </div>
 
-          {/* Trailing Actions */}
-          <div className="flex items-center gap-stitch-lg">
-            
-            <ClubAdminToggle />
+            <div className="flex items-center gap-4">
+              <ClubAdminToggle />
 
-            {/* Notifications */}
-            <StudentNotificationPopover />
+              {/* Notifications */}
+              <StudentNotificationPopover />
 
-            {/* Profile Control (Desktop shows Name) */}
-            <Link aria-label="User Profile" href="/student/profile" className="flex items-center gap-stitch-sm text-stitch-on-surface hover:text-stitch-primary transition-colors group">
-              <div className="w-8 h-8 rounded-none border border-stitch-outline-variant bg-stitch-surface-variant flex items-center justify-center transition-colors overflow-hidden group-hover:border-stitch-primary">
-                {isUserLoading ? (
-                  <div className="w-full h-full bg-stitch-surface-variant animate-pulse" />
-                ) : user?.avatar_url ? (
-                  <img src={user.avatar_url} alt="Profile" className="w-full h-full object-cover" />
-                ) : (
-                  <User className="w-4 h-4" />
-                )}
-              </div>
-              <span className="font-stitch-label text-[13px] tracking-widest hidden md:block font-medium">
-                {user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Student'}
-              </span>
-            </Link>
+              {/* User Badge (hidden on reduced screen sizes) */}
+              <Link aria-label="User Profile" href="/student/profile" className="hidden md:flex items-center gap-2 group">
+                <div className="font-['JetBrains_Mono',monospace] text-[11px] font-bold tracking-wider text-[#ffffff] bg-[#0057FF] px-3.5 py-1.5 uppercase shadow-[3px_3px_0px_#ffffff] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5">
+                  {displayFirstName}
+                </div>
+              </Link>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-grow flex w-full max-w-[1440px] mx-auto">
+      <div className={clsx("flex-grow flex flex-col w-full", isEditorial ? "" : "max-w-[1440px] mx-auto")}>
         {children}
       </div>
 
@@ -178,7 +181,7 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Bottom Navigation (Hidden on Desktop & Deep Routes) */}
       <nav className={clsx(
-        "fixed bottom-0 w-full bg-stitch-surface-container-lowest border-t border-stitch-outline-variant z-50 md:hidden",
+        "fixed bottom-0 w-full bg-[#050505]/95 backdrop-blur-md border-t border-[#F5F5F2]/15 z-50 md:hidden",
         isDeepRoute && "hidden"
       )}>
         <div className="flex justify-around items-center h-[64px]">
@@ -190,13 +193,17 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
                 href={item.href}
                 className={clsx(
                   "flex flex-col items-center justify-center w-full h-full relative transition-colors",
-                  active ? "text-stitch-primary" : "text-stitch-secondary hover:text-stitch-primary"
+                  active ? "text-[#0057FF]" : "text-[#a0a4b8] hover:text-[#0057FF]"
                 )}
               >
                 <item.icon className="w-6 h-6" strokeWidth={active ? 2.5 : 2} />
-                <span className="font-stitch-label text-[10px] mt-stitch-xs uppercase">{item.label}</span>
+                <span
+                  className="font-['JetBrains_Mono',monospace] text-[9px] mt-1 uppercase tracking-widest font-bold"
+                >
+                  {item.label}
+                </span>
                 {active && (
-                  <div className="absolute top-0 w-1/2 h-[2px] bg-stitch-primary"></div>
+                  <div className="absolute top-0 w-1/2 h-[2px] bg-[#0057FF]"></div>
                 )}
               </Link>
             );

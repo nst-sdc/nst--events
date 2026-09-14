@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useTransferLeadership, Team, TeamMember } from '../../../../../../../hooks/useTeams';
 import { Modal } from '../../../../../../../components/ui/Modal';
+import { AlertTriangle } from 'lucide-react';
 
 interface TransferLeadershipModalProps {
   eventId: string;
@@ -50,24 +51,31 @@ export function TransferLeadershipModal({ eventId, team, isOpen, onClose }: Tran
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="TRANSFER LEADERSHIP">
-      <div className="p-6 pt-0">
-        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm font-sans dark:bg-yellow-900/30 dark:border-yellow-700/50 dark:text-yellow-200" role="alert">
-          <p className="font-bold mb-1 uppercase tracking-widest text-xs font-mono">Warning: Permanent Action</p>
-          <p>If you transfer leadership, you will become a regular team member and lose the ability to manage this team.</p>
+    <Modal isOpen={isOpen} onClose={handleClose} title="TRANSFER SQUAD LEADERSHIP">
+      <div className="p-6 pt-2 font-sans">
+        <div className="mb-6 p-4 bg-[#FF9500]/15 border-2 border-[#FF9500] text-[#FF9500] text-xs font-mono" role="alert">
+          <div className="flex items-center gap-2 font-bold mb-1 uppercase tracking-widest text-xs">
+            <AlertTriangle className="w-4 h-4" />
+            Warning: Irreversible Action
+          </div>
+          <p className="leading-relaxed">If you transfer leadership, you will become a regular member and yield control of the squad roster.</p>
         </div>
 
         {errorMsg && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 text-sm font-sans dark:bg-red-900/30 dark:border-red-700/50 dark:text-red-300" role="alert">
+          <div className="mb-6 p-4 bg-[#FF3B30]/15 border-2 border-[#FF3B30] text-[#FF3B30] text-xs font-mono font-bold uppercase" role="alert">
             {errorMsg}
           </div>
         )}
 
         <div className="mb-8">
-          <h3 className="text-xs font-mono font-bold tracking-[0.2em] text-stitch-secondary uppercase mb-3">Select New Leader</h3>
+          <h3 className="text-xs font-mono font-bold tracking-[0.2em] text-[#a0a4b8] uppercase mb-3">
+            Select Successor
+          </h3>
           
           {eligibleMembers.length === 0 ? (
-            <p className="text-sm text-stitch-on-surface-variant">There are no other members in this team.</p>
+            <p className="font-mono text-xs text-[#a0a4b8] border border-dashed border-white/15 p-4 text-center">
+              There are no other members currently in this squad.
+            </p>
           ) : (
             <div className="space-y-2">
               {eligibleMembers.map((member: TeamMember) => (
@@ -75,15 +83,15 @@ export function TransferLeadershipModal({ eventId, team, isOpen, onClose }: Tran
                   key={member.user_id}
                   onClick={() => setSelectedMemberId(member.user_id)}
                   disabled={isPending}
-                  className={`w-full flex items-center justify-between p-4 border transition-colors text-left disabled:opacity-50 ${
+                  className={`w-full flex items-center justify-between p-3.5 border-2 transition-all text-left disabled:opacity-50 ${
                     selectedMemberId === member.user_id 
-                      ? 'border-stitch-on-surface bg-stitch-surface text-stitch-on-surface' 
-                      : 'border-stitch-outline-variant text-stitch-on-surface hover:border-stitch-on-surface/50'
+                      ? 'border-[#0057FF] bg-[#0057FF]/15 text-white shadow-[3px_3px_0px_#000]' 
+                      : 'border-white/15 bg-[#0e1017] text-[#F5F5F2] hover:border-white/40'
                   }`}
                 >
-                  <div className="font-semibold text-sm">{member.full_name}</div>
+                  <div className="font-bold text-xs uppercase font-mono">{member.full_name}</div>
                   {selectedMemberId === member.user_id && (
-                    <div className="w-3 h-3 bg-stitch-on-surface flex-shrink-0"></div>
+                    <div className="w-2.5 h-2.5 bg-[#0057FF] shadow-[1px_1px_0px_#fff]"></div>
                   )}
                 </button>
               ))}
@@ -91,20 +99,20 @@ export function TransferLeadershipModal({ eventId, team, isOpen, onClose }: Tran
           )}
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col sm:flex-row gap-3">
           <button 
             onClick={handleClose}
             disabled={isPending}
-            className="w-full sm:w-auto px-6 py-3 border border-stitch-on-surface text-stitch-on-surface font-mono font-bold text-sm tracking-widest hover:bg-stitch-surface transition-colors uppercase disabled:opacity-50"
+            className="w-full sm:w-auto px-5 py-3 border-2 border-white/20 text-[#a0a4b8] hover:text-white hover:border-white font-mono font-bold text-xs tracking-widest uppercase transition-all disabled:opacity-50"
           >
             Cancel
           </button>
           <button 
             onClick={handleTransfer}
             disabled={!selectedMemberId || isPending}
-            className="w-full sm:flex-1 px-6 py-3 bg-red-600 text-white font-mono font-bold text-sm tracking-widest hover:bg-red-700 transition-colors uppercase disabled:opacity-50 flex items-center justify-center"
+            className="w-full sm:flex-1 px-6 py-3 bg-[#FF3B30] text-white font-mono font-bold text-xs tracking-widest hover:bg-[#d63026] border-2 border-[#FF3B30] shadow-[4px_4px_0px_#000] uppercase disabled:opacity-50 transition-all flex items-center justify-center"
           >
-            {isPending ? 'Processing...' : 'Confirm Transfer'}
+            {isPending ? 'Processing...' : 'Confirm Transfer ↗'}
           </button>
         </div>
       </div>
