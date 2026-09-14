@@ -4,7 +4,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bell } from 'lucide-react';
 import { useNotifications, useReadNotification, useUnreadCount, Notification } from '../../hooks/useNotifications';
 import { resolveStudentNotificationTarget } from '../../lib/student-notification-utils';
 
@@ -70,101 +69,246 @@ export function StudentNotificationPopover() {
     if (!now) return '';
     const diffMs = now - new Date(isoString).getTime();
     const diffMins = Math.floor(diffMs / 60000);
-    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffMins < 60) return `${diffMins}M AGO`;
     const diffHrs = Math.floor(diffMins / 60);
-    if (diffHrs < 24) return `${diffHrs}h ago`;
-    return `${Math.floor(diffHrs / 24)}d ago`;
+    if (diffHrs < 24) return `${diffHrs}H AGO`;
+    return `${Math.floor(diffHrs / 24)}D AGO`;
   };
 
   return (
     <div className="relative" ref={popoverRef}>
-      {/* Trigger */}
+      {/* Trigger: Brutalist Square Bell Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Notifications"
         aria-expanded={isOpen}
-        className="relative text-stitch-on-surface hover:text-stitch-secondary transition-colors p-2 rounded flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-stitch-outline-variant"
+        style={{
+          width: '36px',
+          height: '36px',
+          background: isOpen ? 'rgba(0, 87, 255, 0.15)' : 'transparent',
+          border: isOpen ? '2px solid var(--electric-blue, #0057FF)' : '2px solid rgba(245, 245, 242, 0.25)',
+          color: '#ffffff',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+          borderRadius: 0,
+          boxShadow: isOpen ? '3px 3px 0px var(--electric-blue, #0057FF)' : 'none',
+          transition: 'all 0.15s ease'
+        }}
+        className="hover:border-white hover:shadow-[3px_3px_0px_#ffffff]"
       >
-        <Bell className="w-5 h-5" strokeWidth={2} />
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
         {unreadCount > 0 && (
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-600 rounded-full border border-white"></span>
+          <span 
+            style={{
+              position: 'absolute',
+              top: '-3px',
+              right: '-3px',
+              width: '8px',
+              height: '8px',
+              background: '#0057FF',
+              border: '1px solid #ffffff',
+              borderRadius: 0
+            }} 
+          />
         )}
       </button>
 
       {/* Popover Content */}
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-72 bg-stitch-surface-container-lowest border border-stitch-outline-variant shadow-sm z-50 flex flex-col font-sans">
+        <div
+          style={{
+            position: 'absolute',
+            right: 0,
+            top: 'calc(100% + 10px)',
+            width: '340px',
+            background: 'var(--bg-dark-card, #0d0e12)',
+            border: '3px solid #ffffff',
+            boxShadow: '8px 8px 0px var(--electric-blue, #0057FF)',
+            zIndex: 9999,
+            borderRadius: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden'
+          }}
+        >
           {/* Header */}
-          <div className="px-3 py-2 border-b border-stitch-outline-variant flex items-center justify-between">
-            <h3 className="font-mono text-[10px] uppercase tracking-widest font-bold text-stitch-secondary">
-              Notifications
-            </h3>
-            {unreadCount > 0 && (
-              <span className="font-mono text-[10px] bg-stitch-surface-variant px-1.5 py-0.5 rounded text-stitch-on-surface-variant">
-                {unreadCount} New
+          <div
+            style={{
+              padding: '12px 16px',
+              background: '#000000',
+              borderBottom: '2px solid #ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}
+          >
+            <span
+              style={{
+                fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '1.5px',
+                textTransform: 'uppercase',
+                color: '#ffffff'
+              }}
+            >
+              NOTIFICATIONS // INBOX
+            </span>
+            {unreadCount > 0 ? (
+              <span
+                style={{
+                  fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  background: 'var(--electric-blue, #0057FF)',
+                  color: '#ffffff',
+                  padding: '2px 8px',
+                  letterSpacing: '1px'
+                }}
+              >
+                {unreadCount} NEW
+              </span>
+            ) : (
+              <span
+                style={{
+                  fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                  fontSize: '9px',
+                  fontWeight: 700,
+                  color: '#a0a4b8',
+                  letterSpacing: '1px'
+                }}
+              >
+                SYNCED
               </span>
             )}
           </div>
 
-          {/* List */}
-          <div className="max-h-[300px] overflow-y-auto">
+          {/* Notification List Container */}
+          <div style={{ maxHeight: '340px', overflowY: 'auto' }}>
             {isLoading && (
-              <div className="p-4 space-y-4">
-                <div className="animate-pulse flex space-x-3">
-                  <div className="flex-1 space-y-2 py-1">
-                    <div className="h-3 bg-stitch-surface-variant w-3/4"></div>
-                    <div className="h-3 bg-stitch-surface-variant w-1/2"></div>
-                  </div>
-                </div>
+              <div style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ height: '14px', background: 'rgba(255,255,255,0.1)', width: '70%' }} />
+                <div style={{ height: '12px', background: 'rgba(255,255,255,0.06)', width: '90%' }} />
               </div>
             )}
 
             {isError && (
-              <div className="p-6 text-center text-xs font-mono text-stitch-secondary">
-                Failed to load notifications.
+              <div style={{ padding: '32px 16px', textAlign: 'center' }}>
+                <div
+                  style={{
+                    fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    color: 'var(--warm-red, #FF3B30)',
+                    letterSpacing: '1px',
+                    textTransform: 'uppercase'
+                  }}
+                >
+                  FAULT // FAILED TO LOAD
+                </div>
               </div>
             )}
 
             {!isLoading && !isError && notifications.length === 0 && (
-              <div className="p-6 text-center text-xs font-mono text-stitch-secondary">
-                You're all caught up.
+              <div style={{ padding: '36px 20px', textAlign: 'center' }}>
+                <div
+                  style={{
+                    fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    color: '#ffffff',
+                    letterSpacing: '1px',
+                    marginBottom: '6px'
+                  }}
+                >
+                  YOU'RE ALL CAUGHT UP.
+                </div>
+                <div
+                  style={{
+                    fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                    fontSize: '10px',
+                    color: '#a0a4b8',
+                    letterSpacing: '1.5px',
+                    textTransform: 'uppercase'
+                  }}
+                >
+                  NO NEW CAMPUS DISPATCHES
+                </div>
               </div>
             )}
 
             {!isLoading && !isError && notifications.length > 0 && (
-              <div className="divide-y divide-stitch-outline-variant">
+              <div>
                 {notifications.map((notif) => {
                   const isUnread = !notif.readAt;
                   const targetHref = resolveStudentNotificationTarget(notif);
-                  
+
                   return (
                     <div
                       key={notif.id}
                       onClick={() => handleNotificationClick(notif, targetHref)}
-                      className={`block px-3 py-2.5 border-b border-stitch-outline-variant last:border-0 transition-colors cursor-pointer hover:bg-stitch-surface-variant ${isUnread ? 'bg-stitch-surface dark:bg-stitch-surface-variant' : 'bg-stitch-surface-container-lowest'}`}
-                      role={targetHref ? "link" : "button"}
-                      tabIndex={0}
+                      style={{
+                        padding: '14px 16px',
+                        borderBottom: '1px dashed rgba(245, 245, 242, 0.18)',
+                        background: isUnread ? 'rgba(0, 87, 255, 0.08)' : 'transparent',
+                        borderLeft: isUnread ? '3px solid var(--electric-blue, #0057FF)' : '3px solid transparent',
+                        cursor: 'pointer',
+                        transition: 'background 0.15s'
+                      }}
+                      className="hover:bg-white/[0.06]"
                     >
-                      <div className="flex gap-2">
-                        {/* Unread Indicator dot */}
-                        <div className="mt-1 shrink-0 w-1.5 h-1.5">
-                          {isUnread && <div className="w-1.5 h-1.5 bg-blue-600 rounded-full" />}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+                        <div
+                          style={{
+                            fontFamily: 'var(--font-display, "Syne", sans-serif)',
+                            fontSize: '13px',
+                            fontWeight: 800,
+                            textTransform: 'uppercase',
+                            color: isUnread ? '#ffffff' : '#e0e0e0',
+                            letterSpacing: '-0.3px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            paddingRight: '8px'
+                          }}
+                        >
+                          {notif.title || notif.body}
                         </div>
-                        
-                        <div className="flex-1 min-w-0 space-y-0.5">
-                          <p className={`text-[12px] tracking-tight leading-snug truncate ${isUnread ? 'font-bold text-stitch-on-surface' : 'font-medium text-stitch-on-surface-variant'}`}>
-                            {notif.title || notif.body}
-                          </p>
-                          {notif.title && (
-                            <p className="text-[11px] text-stitch-secondary line-clamp-1 leading-snug">
-                              {notif.body}
-                            </p>
-                          )}
-                          <p className="font-mono text-[9px] text-stitch-secondary uppercase tracking-widest pt-0.5">
-                            {formatRelativeTime(notif.createdAt)}
-                          </p>
-                        </div>
+                        <span
+                          style={{
+                            fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                            fontSize: '9px',
+                            fontWeight: 700,
+                            color: isUnread ? 'var(--electric-blue, #0057FF)' : '#888888',
+                            flexShrink: 0
+                          }}
+                        >
+                          {formatRelativeTime(notif.createdAt)}
+                        </span>
                       </div>
+
+                      {notif.title && (
+                        <div
+                          style={{
+                            fontFamily: 'var(--font-body, "Inter", sans-serif)',
+                            fontSize: '12px',
+                            color: '#a0a4b8',
+                            lineHeight: 1.4,
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden'
+                          }}
+                        >
+                          {notif.body}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -172,14 +316,33 @@ export function StudentNotificationPopover() {
             )}
           </div>
 
-          {/* Footer */}
-          <div className="border-t border-stitch-outline-variant bg-stitch-surface">
+          {/* Footer CTA */}
+          <div
+            style={{
+              borderTop: '2px solid #ffffff',
+              background: '#000000',
+              padding: '10px 16px',
+              textAlign: 'center'
+            }}
+          >
             <Link
               href="/student/notifications"
               onClick={() => setIsOpen(false)}
-              className="block w-full px-3 py-2 text-center text-[10px] font-mono uppercase tracking-widest text-stitch-secondary hover:text-stitch-on-surface hover:bg-stitch-surface-variant transition-colors font-bold"
+              style={{
+                display: 'block',
+                width: '100%',
+                fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '2px',
+                textTransform: 'uppercase',
+                color: 'var(--electric-blue, #0057FF)',
+                textDecoration: 'none',
+                transition: 'color 0.15s'
+              }}
+              className="hover:text-white"
             >
-              View All
+              VIEW ALL DISPATCHES ↗
             </Link>
           </div>
         </div>

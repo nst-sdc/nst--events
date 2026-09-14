@@ -16,7 +16,9 @@ import {
   CheckCircle2, 
   Clock3, 
   X,
-  Sparkles
+  Sparkles,
+  Calendar as CalendarIcon,
+  Radio
 } from 'lucide-react';
 
 dayjs.extend(isBetween);
@@ -239,28 +241,31 @@ export function StudentCalendarView() {
   }, [selectedDate]);
 
   return (
-    <div className="w-full flex flex-col gap-6">
+    <div className="w-full flex flex-col gap-6 font-sans">
       {/* TOOLBAR & CONTROLS */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-stitch-outline-variant pb-6">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b-2 border-white/15 pb-6">
         
         {/* Month Navigation */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center border border-stitch-outline-variant bg-stitch-surface-container-lowest">
+          <div className="flex items-center border-2 border-white/20 bg-[#090a0f] shadow-[3px_3px_0px_#000]">
             <button 
               onClick={handlePrevMonth}
-              className="p-2.5 text-stitch-on-background hover:bg-stitch-surface-variant transition-colors"
+              className="p-2.5 text-white/80 hover:text-white hover:bg-white/10 transition-colors"
               aria-label="Previous Month"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <div className="px-4 py-2 text-center min-w-[170px] border-x border-stitch-outline-variant">
-              <span className="stitch-text-headline-sm uppercase tracking-wider font-bold text-stitch-on-background">
+            <div className="px-5 py-2 text-center min-w-[180px] border-x-2 border-white/20">
+              <span 
+                style={{ fontFamily: "'Syne', 'Outfit', sans-serif" }} 
+                className="text-base uppercase tracking-wider font-extrabold text-[#F5F5F2]"
+              >
                 {currentMonth.format('MMMM YYYY')}
               </span>
             </div>
             <button 
               onClick={handleNextMonth}
-              className="p-2.5 text-stitch-on-background hover:bg-stitch-surface-variant transition-colors"
+              className="p-2.5 text-white/80 hover:text-white hover:bg-white/10 transition-colors"
               aria-label="Next Month"
             >
               <ChevronRight className="w-5 h-5" />
@@ -269,23 +274,23 @@ export function StudentCalendarView() {
 
           <button
             onClick={handleToday}
-            className="px-3 py-2 border border-stitch-outline-variant text-stitch-secondary hover:text-stitch-on-background hover:bg-stitch-surface-variant stitch-text-label-mono uppercase text-[11px] tracking-wider transition-colors"
+            className="px-4 py-2 border-2 border-white/20 text-[#a0a4b8] hover:text-white hover:border-white hover:bg-white/10 font-mono uppercase text-xs tracking-wider transition-all shadow-[2px_2px_0px_#000]"
           >
             Today
           </button>
         </div>
 
-        {/* Status / Metric Chips */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Status / Scope / Timeline Filters */}
+        <div className="flex flex-wrap items-center gap-3">
           {/* Scope Toggle */}
-          <div className="inline-flex border border-stitch-outline-variant bg-stitch-surface-container-lowest p-0.5">
+          <div className="inline-flex border-2 border-white/20 bg-[#090a0f] p-1 shadow-[3px_3px_0px_#000]">
             <button
               onClick={() => setScopeFilter('ALL')}
               className={clsx(
-                "px-3 py-1.5 stitch-text-label-mono text-[11px] uppercase tracking-wider transition-colors",
+                "px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider transition-all",
                 scopeFilter === 'ALL' 
-                  ? "bg-stitch-surface-variant text-stitch-on-background font-bold" 
-                  : "text-stitch-secondary hover:text-stitch-on-background"
+                  ? "bg-[#0057FF] text-white font-bold shadow-[2px_2px_0px_#000]" 
+                  : "text-[#a0a4b8] hover:text-white"
               )}
             >
               All Events ({unifiedEvents.length})
@@ -293,10 +298,10 @@ export function StudentCalendarView() {
             <button
               onClick={() => setScopeFilter('MY_REGISTRATIONS')}
               className={clsx(
-                "px-3 py-1.5 stitch-text-label-mono text-[11px] uppercase tracking-wider transition-colors flex items-center gap-1.5",
+                "px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider transition-all flex items-center gap-1.5",
                 scopeFilter === 'MY_REGISTRATIONS' 
-                  ? "bg-stitch-primary text-stitch-on-primary font-bold" 
-                  : "text-stitch-secondary hover:text-stitch-on-background"
+                  ? "bg-[#C8FF00] text-black font-black shadow-[2px_2px_0px_#000]" 
+                  : "text-[#a0a4b8] hover:text-white"
               )}
             >
               <Sparkles className="w-3 h-3" /> My Registrations ({myRegisteredCount})
@@ -304,12 +309,12 @@ export function StudentCalendarView() {
           </div>
 
           {/* Timeline Filter */}
-          <div className="inline-flex border border-stitch-outline-variant bg-stitch-surface-container-lowest p-0.5">
+          <div className="inline-flex border-2 border-white/20 bg-[#090a0f] p-1 shadow-[3px_3px_0px_#000]">
             <button
               onClick={() => setTimelineFilter('ALL')}
               className={clsx(
-                "px-2.5 py-1.5 stitch-text-label-mono text-[11px] uppercase transition-colors",
-                timelineFilter === 'ALL' ? "bg-stitch-surface-variant text-stitch-on-background font-bold" : "text-stitch-secondary hover:text-stitch-on-background"
+                "px-2.5 py-1.5 font-mono text-[11px] uppercase transition-all",
+                timelineFilter === 'ALL' ? "bg-white text-black font-extrabold shadow-[2px_2px_0px_#000]" : "text-[#a0a4b8] hover:text-white"
               )}
             >
               All
@@ -317,8 +322,8 @@ export function StudentCalendarView() {
             <button
               onClick={() => setTimelineFilter('UPCOMING')}
               className={clsx(
-                "px-2.5 py-1.5 stitch-text-label-mono text-[11px] uppercase transition-colors",
-                timelineFilter === 'UPCOMING' ? "bg-stitch-surface-variant text-stitch-on-background font-bold" : "text-stitch-secondary hover:text-stitch-on-background"
+                "px-2.5 py-1.5 font-mono text-[11px] uppercase transition-all",
+                timelineFilter === 'UPCOMING' ? "bg-white text-black font-extrabold shadow-[2px_2px_0px_#000]" : "text-[#a0a4b8] hover:text-white"
               )}
             >
               Upcoming
@@ -326,8 +331,8 @@ export function StudentCalendarView() {
             <button
               onClick={() => setTimelineFilter('PAST')}
               className={clsx(
-                "px-2.5 py-1.5 stitch-text-label-mono text-[11px] uppercase transition-colors",
-                timelineFilter === 'PAST' ? "bg-stitch-surface-variant text-stitch-on-background font-bold" : "text-stitch-secondary hover:text-stitch-on-background"
+                "px-2.5 py-1.5 font-mono text-[11px] uppercase transition-all",
+                timelineFilter === 'PAST' ? "bg-white text-black font-extrabold shadow-[2px_2px_0px_#000]" : "text-[#a0a4b8] hover:text-white"
               )}
             >
               Past
@@ -339,9 +344,9 @@ export function StudentCalendarView() {
             <select
               value={selectedEventType}
               onChange={(e) => setSelectedEventType(e.target.value)}
-              className="border border-stitch-outline-variant bg-stitch-surface-container-lowest text-stitch-on-background px-3 py-1.5 stitch-text-label-mono text-[11px] uppercase tracking-wider focus:outline-none focus:border-stitch-primary"
+              className="border-2 border-white/20 bg-[#090a0f] text-[#F5F5F2] px-3 py-2 font-mono text-[11px] uppercase tracking-wider focus:outline-none focus:border-[#0057FF] shadow-[3px_3px_0px_#000]"
             >
-              <option value="ALL">All Types</option>
+              <option value="ALL">All Event Types</option>
               {eventTypes.map(t => (
                 <option key={t} value={t}>{t}</option>
               ))}
@@ -352,47 +357,50 @@ export function StudentCalendarView() {
       </div>
 
       {/* LEGEND BAR */}
-      <div className="flex flex-wrap items-center gap-4 text-[11px] font-mono uppercase tracking-widest text-stitch-secondary">
-        <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 bg-stitch-primary inline-block"></span>
-          <span>Registered by You</span>
+      <div className="flex flex-wrap items-center gap-5 text-[11px] font-mono uppercase tracking-widest text-[#a0a4b8] bg-[#0c0e14] border border-white/10 p-3">
+        <span className="flex items-center gap-2">
+          <span className="w-3 h-3 bg-[#C8FF00] border border-black inline-block"></span>
+          <span className="text-white/90">Registered by You</span>
         </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 border border-amber-500 bg-amber-500/20 inline-block"></span>
+        <span className="flex items-center gap-2">
+          <span className="w-3 h-3 border-2 border-[#FF9500] bg-[#FF9500]/20 inline-block"></span>
           <span>Waitlisted</span>
         </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 bg-stitch-surface-variant inline-block"></span>
+        <span className="flex items-center gap-2">
+          <span className="w-3 h-3 bg-[#0057FF] inline-block"></span>
           <span>Open Campus Event</span>
         </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 bg-stitch-outline opacity-40 inline-block"></span>
+        <span className="flex items-center gap-2">
+          <span className="w-3 h-3 bg-white/20 inline-block"></span>
           <span>Past Event</span>
+        </span>
+        <span className="flex items-center gap-2 ml-auto text-[#0057FF] font-bold">
+          Click any date or event to open Day Agenda
         </span>
       </div>
 
       {/* LOADING STATE */}
       {isLoading ? (
-        <div className="grid grid-cols-7 gap-px bg-stitch-outline-variant border border-stitch-outline-variant animate-pulse">
+        <div className="grid grid-cols-7 gap-px bg-white/10 border-2 border-white/20 animate-pulse">
           {Array.from({ length: 35 }).map((_, i) => (
-            <div key={i} className="min-h-[110px] bg-stitch-surface-container-lowest p-2">
-              <div className="w-5 h-4 bg-stitch-surface-variant mb-2"></div>
-              <div className="w-full h-4 bg-stitch-surface-variant"></div>
+            <div key={i} className="min-h-[110px] bg-[#090a0f] p-2">
+              <div className="w-6 h-4 bg-white/10 mb-2"></div>
+              <div className="w-full h-4 bg-white/10"></div>
             </div>
           ))}
         </div>
       ) : (
         /* CALENDAR GRID */
-        <div className="w-full border border-stitch-outline-variant bg-stitch-outline-variant">
+        <div className="w-full border-2 border-white/20 bg-white/10 shadow-[8px_8px_0px_#000]">
           
           {/* Day of Week Headers */}
-          <div className="grid grid-cols-7 bg-stitch-surface-variant text-center border-b border-stitch-outline-variant">
+          <div className="grid grid-cols-7 bg-[#0c0e14] text-center border-b-2 border-white/20">
             {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((dayName, idx) => (
               <div 
                 key={dayName} 
                 className={clsx(
-                  "py-2.5 stitch-text-label-mono text-[11px] font-bold tracking-widest uppercase",
-                  idx >= 5 ? "text-stitch-primary" : "text-stitch-secondary"
+                  "py-3 font-mono text-xs font-bold tracking-widest uppercase",
+                  idx >= 5 ? "text-[#0057FF]" : "text-[#a0a4b8]"
                 )}
               >
                 {dayName}
@@ -401,7 +409,7 @@ export function StudentCalendarView() {
           </div>
 
           {/* Day Cells (7-column grid) */}
-          <div className="grid grid-cols-7 gap-px bg-stitch-outline-variant">
+          <div className="grid grid-cols-7 gap-px bg-white/10">
             {calendarDays.map(({ date, isCurrentMonth, dateKey }) => {
               const dayEvents = dateMap.get(dateKey) || [];
               const isToday = date.isSame(now, 'day');
@@ -429,14 +437,14 @@ export function StudentCalendarView() {
                   tabIndex={dayEvents.length > 0 ? 0 : undefined}
                   aria-label={dayEvents.length > 0 ? `${date.format('MMMM D, YYYY')}, ${dayEvents.length} events` : date.format('MMMM D, YYYY')}
                   className={clsx(
-                    "min-h-[105px] md:min-h-[125px] p-2 flex flex-col justify-between transition-all select-none relative group",
-                    isCurrentMonth ? "bg-stitch-surface-container-lowest" : "bg-stitch-surface/60 opacity-50",
-                    dayEvents.length > 0 ? "cursor-pointer hover:bg-stitch-surface-variant/40" : "cursor-default",
-                    isSelected && "ring-2 ring-stitch-primary z-10",
+                    "min-h-[110px] md:min-h-[135px] p-2 flex flex-col justify-between transition-all select-none relative group",
+                    isCurrentMonth ? "bg-[#090a0f]" : "bg-[#050608] opacity-35",
+                    dayEvents.length > 0 ? "cursor-pointer hover:bg-[#12141d]" : "cursor-default",
+                    isSelected && "ring-2 ring-[#0057FF] z-10 bg-[#12141d]",
                     hasRegisteredEvent && isCurrentMonth 
-                      ? "border-l-2 border-l-stitch-primary" 
+                      ? "border-l-4 border-l-[#C8FF00]" 
                       : hasWaitlistedEvent && isCurrentMonth 
-                        ? "border-l-2 border-l-amber-500" 
+                        ? "border-l-4 border-l-[#FF9500]" 
                         : undefined
                   )}
                 >
@@ -444,34 +452,34 @@ export function StudentCalendarView() {
                   <div className="flex items-center justify-between">
                     <span 
                       className={clsx(
-                        "stitch-text-label-mono text-[12px] font-bold inline-flex items-center justify-center w-6 h-6",
+                        "font-mono text-[12px] font-bold inline-flex items-center justify-center w-6 h-6",
                         isToday 
-                          ? "bg-stitch-primary text-stitch-on-primary font-black" 
+                          ? "bg-[#0057FF] text-white font-black shadow-[2px_2px_0px_#000]" 
                           : isCurrentMonth 
-                            ? "text-stitch-on-background" 
-                            : "text-stitch-secondary"
+                            ? "text-[#F5F5F2]" 
+                            : "text-[#a0a4b8]"
                       )}
                     >
                       {date.date()}
                     </span>
 
                     {/* Quick Count Badge if multiple */}
-                    {dayEvents.length > 1 && (
-                      <span className="text-[10px] font-mono text-stitch-secondary">
-                        {dayEvents.length} events
+                    {dayEvents.length > 0 && (
+                      <span className="text-[10px] font-mono text-[#a0a4b8] group-hover:text-white transition-colors">
+                        {dayEvents.length} {dayEvents.length === 1 ? 'evt' : 'evts'}
                       </span>
                     )}
                   </div>
 
                   {/* Day Event Preview Pills */}
-                  <div className="flex flex-col gap-1 my-1 overflow-hidden">
+                  <div className="flex flex-col gap-1.5 my-1 overflow-hidden">
                     {dayEvents.slice(0, 2).map(ev => {
                       if (ev.isRegistered) {
                         return (
                           <div 
                             key={ev.id}
                             title={`${ev.title} (Registered)`}
-                            className="bg-stitch-primary text-stitch-on-primary text-[10px] font-mono px-1.5 py-0.5 truncate uppercase font-bold tracking-tight"
+                            className="bg-[#C8FF00] text-black text-[10px] font-mono px-2 py-0.5 truncate uppercase font-extrabold tracking-tight border border-black shadow-[1px_1px_0px_#000]"
                           >
                             ⚡ {ev.title}
                           </div>
@@ -483,7 +491,7 @@ export function StudentCalendarView() {
                           <div 
                             key={ev.id}
                             title={`${ev.title} (Waitlist)`}
-                            className="border border-amber-500 bg-amber-500/10 text-amber-300 text-[10px] font-mono px-1.5 py-0.5 truncate uppercase"
+                            className="border border-[#FF9500] bg-[#FF9500]/20 text-[#FF9500] text-[10px] font-mono px-1.5 py-0.5 truncate uppercase font-bold"
                           >
                             ⏳ {ev.title}
                           </div>
@@ -495,7 +503,7 @@ export function StudentCalendarView() {
                           <div 
                             key={ev.id}
                             title={`${ev.title} (Past)`}
-                            className="bg-stitch-surface-variant text-stitch-secondary text-[10px] font-mono px-1.5 py-0.5 truncate uppercase opacity-60"
+                            className="bg-white/5 border border-white/10 text-[#a0a4b8]/70 text-[10px] font-mono px-1.5 py-0.5 truncate uppercase"
                           >
                             • {ev.title}
                           </div>
@@ -506,7 +514,7 @@ export function StudentCalendarView() {
                         <div 
                           key={ev.id}
                           title={`${ev.title} (Open)`}
-                          className="bg-stitch-surface-variant text-stitch-on-surface text-[10px] font-mono px-1.5 py-0.5 truncate uppercase"
+                          className="bg-[#0057FF]/15 border border-[#0057FF]/50 text-[#93c5fd] text-[10px] font-mono px-1.5 py-0.5 truncate uppercase font-semibold hover:border-[#0057FF]"
                         >
                           {ev.title}
                         </div>
@@ -514,16 +522,16 @@ export function StudentCalendarView() {
                     })}
 
                     {dayEvents.length > 2 && (
-                      <span className="text-[9px] font-mono text-stitch-secondary tracking-widest pl-0.5">
+                      <span className="text-[9px] font-mono text-[#0057FF] font-bold tracking-widest pl-0.5">
                         +{dayEvents.length - 2} MORE
                       </span>
                     )}
                   </div>
 
-                  {/* Bottom Indicator for Live / Registered status */}
+                  {/* Bottom Indicator for Live status */}
                   <div className="h-1 flex gap-1">
                     {dayEvents.some(e => e.isLiveNow) && (
-                      <span className="h-1 w-full bg-red-500 animate-pulse" title="Live Event Today"></span>
+                      <span className="h-1 w-full bg-[#FF3B30] animate-pulse" title="Live Event Today"></span>
                     )}
                   </div>
                 </div>
@@ -534,40 +542,75 @@ export function StudentCalendarView() {
         </div>
       )}
 
-      {/* DAY AGENDA MODAL / SLIDE-OUT DRAWER */}
+      {/* ─────────────────────────────────────────────────────────────
+          EDITORIAL BRUTALIST DAY AGENDA MODAL
+          ───────────────────────────────────────────────────────────── */}
       {selectedDate && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 sm:p-6 animate-in fade-in duration-200"
           onClick={() => setSelectedDate(null)}
         >
           <div 
-            className="bg-stitch-surface-container-lowest border border-stitch-outline-variant w-full max-w-xl max-h-[85vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-150"
+            className="bg-[#090a0f] border-2 sm:border-3 border-[#F5F5F2] w-full max-w-2xl max-h-[88vh] flex flex-col shadow-[12px_12px_0px_#0057FF] relative overflow-hidden animate-in zoom-in-95 duration-150"
             onClick={e => e.stopPropagation()}
           >
+            {/* Top decorative gradient stripe */}
+            <div className="h-1.5 w-full bg-gradient-to-r from-[#0057FF] via-[#C8FF00] to-[#0057FF] shrink-0" />
+
             {/* Modal Header */}
-            <div className="p-5 border-b border-stitch-outline-variant flex items-center justify-between bg-stitch-surface-variant">
-              <div>
-                <span className="stitch-text-label-mono text-stitch-secondary text-[11px] uppercase tracking-widest block">
-                  Campus Schedule
-                </span>
-                <h3 className="stitch-text-headline-lg uppercase text-stitch-on-background font-bold tracking-tight">
-                  {dayjs(selectedDate).format('dddd, MMMM D, YYYY')}
-                </h3>
+            <div className="p-6 border-b-2 border-white/15 bg-[#0e1017] shrink-0">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-[#0057FF] inline-block animate-pulse"></span>
+                    <span className="font-mono text-[11px] font-bold uppercase tracking-[2px] text-[#0057FF]">
+                      CAMPUS SCHEDULE // DAY AGENDA
+                    </span>
+                  </div>
+                  <h3 
+                    style={{ fontFamily: "'Syne', 'Outfit', sans-serif" }} 
+                    className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-[#F5F5F2] leading-none mt-1"
+                  >
+                    {dayjs(selectedDate).format('dddd, MMMM D, YYYY')}
+                  </h3>
+                  <div className="flex flex-wrap items-center gap-2.5 mt-2 font-mono text-[11px] text-[#a0a4b8]">
+                    <span>
+                      {selectedDayEvents.length} {selectedDayEvents.length === 1 ? 'EVENT' : 'EVENTS'} SCHEDULED
+                    </span>
+                    {selectedDayEvents.some(e => e.isRegistered) && (
+                      <>
+                        <span className="text-white/30">•</span>
+                        <span className="text-[#C8FF00] font-bold flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" />
+                          {selectedDayEvents.filter(e => e.isRegistered).length} REGISTERED BY YOU
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Close Button */}
+                <button 
+                  onClick={() => setSelectedDate(null)}
+                  className="border-2 border-white/20 bg-white/5 hover:bg-[#FF3B30] hover:text-white hover:border-[#FF3B30] text-[#a0a4b8] p-2 transition-colors shadow-[2px_2px_0px_#000] shrink-0"
+                  aria-label="Close modal"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <button 
-                onClick={() => setSelectedDate(null)}
-                className="text-stitch-secondary hover:text-stitch-on-background p-1.5 transition-colors"
-                aria-label="Close"
-              >
-                <X className="w-5 h-5" />
-              </button>
             </div>
 
             {/* Modal Event List */}
-            <div className="p-5 overflow-y-auto flex flex-col gap-4 divide-y divide-stitch-outline-variant">
+            <div className="p-6 overflow-y-auto flex flex-col gap-4 bg-[#07080b]">
               {selectedDayEvents.length === 0 ? (
-                <div className="py-8 text-center text-stitch-secondary font-mono text-sm">
-                  No events found for this day.
+                <div className="py-16 text-center flex flex-col items-center justify-center gap-3 border-2 border-dashed border-white/15 p-8 bg-[#090a0f]">
+                  <CalendarIcon className="w-10 h-10 text-white/30" />
+                  <div className="font-mono text-sm uppercase text-white/80 tracking-wider font-bold">
+                    No Events Scheduled
+                  </div>
+                  <p className="text-xs text-[#a0a4b8] font-mono max-w-sm">
+                    There are no campus sessions or registered activities scheduled for this date.
+                  </p>
                 </div>
               ) : (
                 selectedDayEvents.map(ev => {
@@ -575,76 +618,94 @@ export function StudentCalendarView() {
                   const endTimeStr = dayjs(ev.endTime).format('h:mm A');
 
                   return (
-                    <div key={ev.id} className="pt-4 first:pt-0 flex flex-col gap-3">
-                      
-                      {/* Top Badges */}
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="bg-stitch-surface-variant text-stitch-secondary stitch-text-label-mono uppercase text-[10px] px-2 py-0.5">
+                    <div 
+                      key={ev.id} 
+                      className={clsx(
+                        "bg-[#0e1017] border-2 transition-all p-5 flex flex-col gap-3.5 relative shadow-[4px_4px_0px_#000]",
+                        ev.isRegistered 
+                          ? "border-[#C8FF00]/40 hover:border-[#C8FF00]" 
+                          : "border-white/15 hover:border-[#0057FF]"
+                      )}
+                    >
+                      {/* Top Badges Row */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="bg-[#0057FF]/15 text-[#60a5fa] border border-[#0057FF]/40 font-mono text-[10px] font-bold uppercase tracking-wider px-2 py-0.5">
                             {ev.eventType}
                           </span>
                           {ev.primaryClubName && (
-                            <span className="stitch-text-label-mono text-[10px] text-stitch-secondary uppercase">
-                              by {ev.primaryClubName}
+                            <span className="font-mono text-[11px] text-[#a0a4b8] uppercase tracking-wider">
+                              BY <strong className="text-white font-semibold">{ev.primaryClubName}</strong>
                             </span>
                           )}
                         </div>
 
                         {/* Registration Status Pill */}
-                        {ev.isRegistered ? (
-                          <span className="bg-stitch-primary text-stitch-on-primary stitch-text-label-mono uppercase text-[10px] px-2 py-0.5 font-bold flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3" /> REGISTERED
-                          </span>
-                        ) : ev.isWaitlisted ? (
-                          <span className="border border-amber-500 bg-amber-500/20 text-amber-300 stitch-text-label-mono uppercase text-[10px] px-2 py-0.5 flex items-center gap-1">
-                            <Clock3 className="w-3 h-3" /> WAITLISTED
-                          </span>
-                        ) : ev.isPast ? (
-                          <span className="bg-stitch-surface-variant text-stitch-secondary stitch-text-label-mono uppercase text-[10px] px-2 py-0.5">
-                            PAST EVENT
-                          </span>
-                        ) : (
-                          <span className="border border-stitch-outline text-stitch-on-surface stitch-text-label-mono uppercase text-[10px] px-2 py-0.5">
-                            OPEN TO REGISTER
-                          </span>
-                        )}
+                        <div>
+                          {ev.isRegistered ? (
+                            <span className="bg-[#C8FF00] text-black font-mono font-black uppercase text-[10px] tracking-wider px-2.5 py-1 flex items-center gap-1.5 shadow-[2px_2px_0px_#000]">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> REGISTERED
+                            </span>
+                          ) : ev.isWaitlisted ? (
+                            <span className="border-2 border-[#FF9500] bg-[#FF9500]/20 text-[#FF9500] font-mono font-bold uppercase text-[10px] tracking-wider px-2.5 py-1 flex items-center gap-1.5">
+                              <Clock3 className="w-3.5 h-3.5" /> WAITLISTED
+                            </span>
+                          ) : ev.isPast ? (
+                            <span className="bg-white/10 text-white/40 font-mono font-bold uppercase text-[10px] tracking-wider px-2.5 py-1">
+                              PAST EVENT
+                            </span>
+                          ) : (
+                            <span className="bg-[#0057FF] text-white font-mono font-bold uppercase text-[10px] tracking-wider px-2.5 py-1 shadow-[2px_2px_0px_#000]">
+                              OPEN TO REGISTER
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       {/* Event Title */}
                       <Link 
                         href={`/student/events/${ev.id}`}
-                        className="stitch-text-headline-md text-stitch-on-background hover:text-stitch-primary transition-colors font-bold"
+                        style={{ fontFamily: "'Syne', 'Outfit', sans-serif" }}
+                        className="text-xl sm:text-2xl font-black text-[#F5F5F2] hover:text-[#0057FF] transition-colors leading-tight"
                       >
                         {ev.title}
                       </Link>
 
-                      {/* Time & Venue */}
-                      <div className="stitch-text-label-mono text-stitch-secondary text-[11px] uppercase tracking-wider flex flex-wrap items-center gap-3">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5 text-stitch-primary" /> {startTimeStr} – {endTimeStr}
+                      {/* Time, Venue & Live Indicator */}
+                      <div className="font-mono text-xs text-[#a0a4b8] tracking-wider flex flex-wrap items-center gap-3.5">
+                        <span className="flex items-center gap-1.5 text-white/90">
+                          <Clock className="w-3.5 h-3.5 text-[#0057FF]" /> {startTimeStr} – {endTimeStr}
                         </span>
                         {ev.locationName && (
                           <>
-                            <span className="text-stitch-outline-variant">|</span>
-                            <span className="flex items-center gap-1">
-                              <MapPin className="w-3.5 h-3.5 text-stitch-primary" /> {ev.locationName}
+                            <span className="text-white/20">|</span>
+                            <span className="flex items-center gap-1.5 text-white/90">
+                              <MapPin className="w-3.5 h-3.5 text-[#0057FF]" /> {ev.locationName}
+                            </span>
+                          </>
+                        )}
+                        {ev.isLiveNow && (
+                          <>
+                            <span className="text-white/20">|</span>
+                            <span className="flex items-center gap-1 text-[#FF3B30] font-bold animate-pulse">
+                              <Radio className="w-3.5 h-3.5" /> LIVE NOW
                             </span>
                           </>
                         )}
                       </div>
 
                       {/* Action CTA */}
-                      <div className="pt-2 flex justify-end">
+                      <div className="pt-2 flex justify-end border-t border-white/10 mt-1">
                         <Link
                           href={`/student/events/${ev.id}`}
                           className={clsx(
-                            "inline-flex items-center gap-2 stitch-text-label-mono uppercase text-[11px] tracking-widest px-4 py-2 transition-colors",
+                            "inline-flex items-center gap-2 font-mono uppercase text-[11px] tracking-widest px-5 py-2.5 transition-all",
                             ev.isRegistered 
-                              ? "bg-stitch-primary text-stitch-on-primary hover:bg-stitch-surface-tint font-bold" 
-                              : "border border-stitch-outline text-stitch-on-background hover:bg-stitch-surface-variant"
+                              ? "bg-[#C8FF00] text-black font-black hover:bg-white border-2 border-black shadow-[4px_4px_0px_#000] hover:translate-x-[-1px] hover:translate-y-[-1px]" 
+                              : "bg-[#0057FF] text-white font-bold hover:bg-[#0042c7] border-2 border-[#0057FF] shadow-[4px_4px_0px_rgba(0,0,0,0.8)] hover:translate-x-[-1px] hover:translate-y-[-1px]"
                           )}
                         >
-                          {ev.isRegistered ? "View Event Details" : "Event Details"} <ArrowRight className="w-3.5 h-3.5" />
+                          {ev.isRegistered ? "View Event Pass" : "Event Details"} <ArrowRight className="w-3.5 h-3.5" />
                         </Link>
                       </div>
 
@@ -655,10 +716,13 @@ export function StudentCalendarView() {
             </div>
 
             {/* Modal Footer */}
-            <div className="p-4 border-t border-stitch-outline-variant bg-stitch-surface flex justify-end">
+            <div className="p-4 border-t-2 border-white/15 bg-[#0e1017] flex items-center justify-between shrink-0">
+              <span className="font-mono text-[10px] text-[#a0a4b8]/70 uppercase tracking-widest">
+                Press <kbd className="px-1.5 py-0.5 bg-white/10 border border-white/20 text-white">ESC</kbd> or click outside to dismiss
+              </span>
               <button
                 onClick={() => setSelectedDate(null)}
-                className="border border-stitch-outline-variant text-stitch-secondary hover:text-stitch-on-background px-4 py-2 stitch-text-label-mono uppercase text-[11px] tracking-wider transition-colors"
+                className="border-2 border-white/20 text-[#a0a4b8] hover:text-white hover:border-white px-5 py-2 font-mono uppercase text-xs tracking-wider transition-all bg-transparent hover:bg-white/5 shadow-[2px_2px_0px_#000]"
               >
                 Close
               </button>

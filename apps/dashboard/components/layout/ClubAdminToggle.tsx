@@ -4,12 +4,11 @@ import React from 'react';
 import { useClubAdmin } from './ClubAdminProvider';
 import { ChevronDown } from 'lucide-react';
 import clsx from 'clsx';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 export function ClubAdminToggle() {
   const { isClubAdminMode, setClubAdminMode, activeClubId, setActiveClubId, managedClubs, isHydrated } = useClubAdmin();
   const router = useRouter();
-  const pathname = usePathname();
 
   // Do not render anything if not hydrated or if they have no managed clubs
   if (!isHydrated || managedClubs.length === 0) {
@@ -29,21 +28,21 @@ export function ClubAdminToggle() {
 
   const handleClubChange = (clubId: string) => {
     setActiveClubId(clubId);
-    // If we are currently on a manage route, we might want to redirect to the new club's hub.
-    // For simplicity, always go to club hub on change if in admin mode
     if (isClubAdminMode) {
       router.push(`/student/manage/club`);
     }
   };
 
   return (
-    <div className="flex items-center gap-2 border border-stitch-outline-variant bg-stitch-surface p-1 shadow-sm font-stitch-label text-[11px] uppercase tracking-widest font-semibold hidden md:flex">
+    <div className="flex items-center border-2 border-white/20 bg-[#090a0f] p-0.5 shadow-[3px_3px_0px_#000] font-['JetBrains_Mono',monospace] text-[11px] uppercase tracking-wider font-bold hidden md:flex">
       {/* Student Mode Button */}
       <button 
         onClick={() => handleToggle(false)}
         className={clsx(
-          "px-3 py-1.5 transition-colors",
-          !isClubAdminMode ? "bg-stitch-primary text-stitch-on-primary" : "text-stitch-secondary hover:text-stitch-primary hover:bg-stitch-surface-variant"
+          "px-3 py-1.5 transition-all",
+          !isClubAdminMode 
+            ? "bg-[#0057FF] text-white shadow-[2px_2px_0px_#000]" 
+            : "text-[#a0a4b8] hover:text-white"
         )}
       >
         STUDENT
@@ -51,14 +50,16 @@ export function ClubAdminToggle() {
 
       {/* Club Admin Mode Button & Dropdown */}
       <div className={clsx(
-        "flex items-center transition-colors relative group",
-        isClubAdminMode ? "bg-stitch-primary text-stitch-on-primary" : "text-stitch-secondary hover:bg-stitch-surface-variant hover:text-stitch-primary"
+        "flex items-center transition-all relative group",
+        isClubAdminMode 
+          ? "bg-[#0057FF] text-white shadow-[2px_2px_0px_#000]" 
+          : "text-[#a0a4b8] hover:text-white"
       )}>
         <button 
           onClick={() => {
             if (!isClubAdminMode) handleToggle(true);
           }}
-          className="pl-3 py-1.5 flex items-center h-full"
+          className="pl-3 py-1.5 flex items-center h-full text-left"
         >
           CLUB ADMIN
           {isClubAdminMode && activeClub && (
@@ -68,19 +69,21 @@ export function ClubAdminToggle() {
 
         {isClubAdminMode && managedClubs.length > 1 && (
           <div className="relative flex items-center h-full">
-            <div className="px-2 py-1.5 cursor-pointer h-full flex items-center">
+            <div className="px-2 py-1.5 cursor-pointer h-full flex items-center hover:opacity-80">
               <ChevronDown className="w-3 h-3" />
             </div>
             
             {/* Dropdown Menu */}
-            <div className="absolute top-full right-0 mt-1 w-48 bg-stitch-surface-container-lowest border border-stitch-outline-variant shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+            <div className="absolute top-full right-0 mt-1.5 w-52 bg-[#0d0e12] border-2 border-black shadow-[4px_4px_0px_#0057FF] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
               {managedClubs.map(club => (
                 <button
                   key={club.id}
                   onClick={() => handleClubChange(club.id)}
                   className={clsx(
-                    "w-full text-left px-3 py-2 border-b border-stitch-outline-variant last:border-b-0 hover:bg-stitch-surface hover:text-stitch-primary transition-colors",
-                    activeClubId === club.id ? "text-stitch-primary bg-stitch-surface-variant" : "text-stitch-secondary"
+                    "w-full text-left px-3.5 py-2.5 border-b border-white/10 last:border-b-0 text-[11px] tracking-wider transition-colors",
+                    activeClubId === club.id 
+                      ? "text-white bg-[#0057FF] font-bold" 
+                      : "text-[#a0a4b8] hover:text-white hover:bg-white/10"
                   )}
                 >
                   {club.name}

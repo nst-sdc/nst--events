@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { use, useState } from 'react';
-import { useTeamsList, Team, TeamMember } from '../../../../../../../hooks/useTeams';
+import { useTeamsList, TeamMember } from '../../../../../../../hooks/useTeams';
 import { useEventDetail } from '../../../../../../../hooks/useEventDetail';
 import { 
   useAdminCancelTeam, 

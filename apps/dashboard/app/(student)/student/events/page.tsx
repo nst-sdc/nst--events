@@ -2,15 +2,465 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
-import clsx from 'clsx';
 import { useMyRegistrations, MyRegistration } from '../../../../hooks/useMyRegistrations';
-import { ErrorState } from '../../../../components/ui/ErrorState';
-import { MapPin, CalendarIcon, ArrowRight, List } from 'lucide-react';
+import { CalendarIcon, MapPin, List, ArrowRight } from 'lucide-react';
 import { StudentCalendarView } from './components/StudentCalendarView';
 
+type MyEventsTab = 'upcoming' | 'past';
+
+const myEventsStyles = `
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&family=Outfit:wght@400;700;900&family=Syne:wght@700;800;900&display=swap');
+
+  :root {
+    --bg-black: #050505;
+    --bg-paper-white: #F5F5F2;
+    --bg-dark-card: #0d0e12;
+    --electric-blue: #0057FF;
+    --electric-blue-dark: #0042c7;
+    --acid-green: #C8FF00;
+    --warm-red: #FF3B30;
+    --warm-amber: #FF9500;
+    --font-display: 'Syne', 'Outfit', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  .me-page {
+    width: 100%;
+    min-height: 100vh;
+    background-color: var(--bg-black);
+    color: var(--bg-paper-white);
+    font-family: var(--font-body);
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  .me-inner {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 60px 32px 100px 32px;
+  }
+
+  /* ── Texture & Noise ── */
+  .collage-noise-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.35;
+    background-image: radial-gradient(rgba(245, 245, 242, 0.08) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  /* ── Micro Annotations ── */
+  .me-micro {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #a0a4b8;
+  }
+  .me-micro-blue { color: var(--electric-blue); }
+  .me-micro-green { color: var(--acid-green); }
+
+  /* ── Display Typography ── */
+  .me-hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(52px, 8.5vw, 120px);
+    font-weight: 900;
+    line-height: 0.88;
+    letter-spacing: -2px;
+    text-transform: uppercase;
+    color: var(--bg-paper-white);
+  }
+
+  .me-header {
+    border-bottom: 3px solid var(--bg-paper-white);
+    padding-bottom: 32px;
+    margin-bottom: 40px;
+    position: relative;
+  }
+
+  .me-watermark {
+    position: absolute;
+    top: -20px;
+    right: 0;
+    font-family: var(--font-display);
+    font-size: clamp(70px, 12vw, 160px);
+    font-weight: 900;
+    color: rgba(245, 245, 242, 0.03);
+    text-transform: uppercase;
+    pointer-events: none;
+    user-select: none;
+    line-height: 0.8;
+  }
+
+  /* ── Controls & Tabs Row ── */
+  .me-controls-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    border-bottom: 1px solid rgba(245,245,242,0.2);
+    padding-bottom: 20px;
+    margin-bottom: 48px;
+  }
+
+  .me-tabs-group {
+    display: flex;
+    gap: 12px;
+  }
+
+  .me-tab-btn {
+    background: transparent;
+    color: #a0a4b8;
+    border: 2px solid rgba(245,245,242,0.25);
+    padding: 10px 20px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    transition: all 0.15s;
+    border-radius: 0 !important;
+  }
+  .me-tab-btn:hover {
+    border-color: var(--bg-paper-white);
+    color: var(--bg-paper-white);
+  }
+  .me-tab-btn.active {
+    background: var(--electric-blue);
+    color: #ffffff;
+    border-color: var(--electric-blue);
+    box-shadow: 4px 4px 0px rgba(255,255,255,0.3);
+  }
+
+  .me-view-toggle {
+    display: inline-flex;
+    border: 2px solid rgba(245,245,242,0.25);
+    background: var(--bg-dark-card);
+    padding: 2px;
+    border-radius: 0 !important;
+  }
+
+  .me-view-btn {
+    background: transparent;
+    color: #a0a4b8;
+    border: none;
+    padding: 8px 16px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s;
+    border-radius: 0 !important;
+  }
+  .me-view-btn.active {
+    background: var(--bg-paper-white);
+    color: #000;
+    font-weight: 800;
+  }
+
+  /* ── Poster Wall Cards Grid ── */
+  .me-poster-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 40px;
+  }
+
+  .me-poster-card {
+    background: var(--bg-paper-white);
+    color: var(--bg-black);
+    border: 3px solid #000000;
+    padding: 20px;
+    box-shadow: 10px 10px 0px #000000;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    position: relative;
+    text-decoration: none;
+    border-radius: 0 !important;
+  }
+
+  .me-poster-card:hover {
+    transform: translate(-4px, -4px) rotate(-0.5deg);
+    box-shadow: 14px 14px 0px #000000;
+  }
+
+  .me-poster-card:nth-child(even) {
+    transform: rotate(1deg);
+  }
+
+  .me-poster-card:nth-child(even):hover {
+    transform: translate(-4px, -4px) rotate(0.5deg);
+  }
+
+  .me-poster-card.is-past {
+    filter: grayscale(40%);
+    opacity: 0.9;
+  }
+
+  .me-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #000;
+    padding-bottom: 10px;
+    margin-bottom: 14px;
+  }
+
+  .me-date-badge {
+    background: #000;
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .me-status-pill {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 800;
+    padding: 3px 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border: 1px solid #000;
+  }
+
+  .me-status-confirmed {
+    background: var(--electric-blue);
+    color: #fff;
+  }
+
+  .me-status-waitlisted {
+    background: var(--warm-amber);
+    color: #000;
+  }
+
+  .me-status-cancelled {
+    background: #e0e0e0;
+    color: #666;
+    text-decoration: line-through;
+  }
+
+  .me-photo-frame {
+    width: 100%;
+    height: 180px;
+    background: #111;
+    border: 2px solid #000;
+    margin-bottom: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .me-photo-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: contrast(130%) grayscale(70%);
+    transition: filter 0.3s;
+  }
+
+  .me-poster-card:hover .me-photo-frame img {
+    filter: contrast(115%) grayscale(20%);
+  }
+
+  .me-photo-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #0d0e12 0%, #161b26 50%, #002570 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .me-photo-placeholder::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(0,87,255,0.2) 1px, transparent 1px);
+    background-size: 16px 16px;
+  }
+
+  .me-photo-watermark {
+    font-family: var(--font-display);
+    font-size: 48px;
+    font-weight: 900;
+    color: rgba(255,255,255,0.08);
+    text-transform: uppercase;
+    letter-spacing: -2px;
+    z-index: 1;
+  }
+
+  .me-card-title {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 900;
+    line-height: 1.05;
+    text-transform: uppercase;
+    color: #000;
+    margin-bottom: 10px;
+    letter-spacing: -0.5px;
+    word-break: break-word;
+  }
+
+  .me-card-meta {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: #333;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .me-team-box {
+    background: #000;
+    color: #fff;
+    padding: 6px 10px;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+
+  .me-card-footer {
+    border-top: 2px dashed #000;
+    padding-top: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+  }
+
+  .me-pass-btn {
+    background: var(--electric-blue);
+    color: #ffffff;
+    border: 2px solid #000;
+    padding: 7px 16px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    box-shadow: 2px 2px 0px #000;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* ── Calendar Wrapper ── */
+  .me-calendar-container {
+    border: 3px solid var(--bg-paper-white);
+    background: var(--bg-dark-card);
+    padding: 32px 24px;
+    box-shadow: 12px 12px 0px var(--electric-blue);
+    border-radius: 0 !important;
+  }
+
+  /* ── Editorial Empty State Poster ── */
+  .me-empty-poster {
+    border: 3px solid var(--bg-paper-white);
+    background: var(--bg-dark-card);
+    padding: 60px 40px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 12px 12px 0px var(--electric-blue);
+    border-radius: 0 !important;
+  }
+
+  .me-empty-watermark {
+    position: absolute;
+    bottom: -20px;
+    right: -20px;
+    font-family: var(--font-display);
+    font-size: 140px;
+    font-weight: 900;
+    color: rgba(245, 245, 242, 0.04);
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .me-empty-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--electric-blue);
+    color: #ffffff;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 14px 28px;
+    border: 2px solid var(--bg-paper-white);
+    cursor: pointer;
+    box-shadow: 4px 4px 0px #ffffff;
+    transition: transform 0.15s, box-shadow 0.15s;
+    text-decoration: none;
+    border-radius: 0 !important;
+  }
+  .me-empty-btn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px #ffffff;
+  }
+
+  /* ── Skeletons ── */
+  .me-skeleton-card {
+    background: var(--bg-dark-card);
+    border: 3px solid rgba(255,255,255,0.15);
+    padding: 20px;
+    height: 380px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 8px 8px 0px rgba(255,255,255,0.05);
+    animation: mePulse 1.5s ease-in-out infinite;
+  }
+  @keyframes mePulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.85; }
+  }
+
+  @media (max-width: 768px) {
+    .me-inner { padding: 40px 16px 80px 16px; }
+    .me-poster-grid { grid-template-columns: 1fr; }
+    .me-poster-card:nth-child(even) { transform: none; }
+    .me-controls-row { flex-direction: column; align-items: stretch; }
+    .me-tabs-group { width: 100%; }
+    .me-tab-btn { flex: 1; text-align: center; }
+  }
+`;
+
 export default function StudentEventsPage() {
+  const router = useRouter();
   const [viewMode, setViewModeState] = useState<'list' | 'calendar'>('list');
+  const [activeTab, setActiveTab] = useState<MyEventsTab>('upcoming');
 
   useEffect(() => {
     const saved = sessionStorage.getItem('student-events-viewmode');
@@ -26,42 +476,14 @@ export default function StudentEventsPage() {
   };
 
   const { data: registrations, isLoading, isError, refetch } = useMyRegistrations();
-  
-  if (isLoading) {
-    return (
-      <main className="flex-grow w-full px-stitch-margin-mobile md:px-stitch-margin-desktop pt-stitch-xl pb-stitch-xxl bg-stitch-background min-h-screen">
-        <h1 className="stitch-text-display-lg text-stitch-on-background mb-stitch-xl tracking-tight">MY EVENTS</h1>
-        <div className="animate-pulse space-y-4 max-w-4xl">
-          <div className="h-24 bg-stitch-surface-variant w-full border-b border-stitch-outline-variant"></div>
-          <div className="h-24 bg-stitch-surface-variant w-full border-b border-stitch-outline-variant"></div>
-        </div>
-      </main>
-    );
-  }
-
-  if (isError) {
-    return (
-      <main className="flex-grow w-full px-stitch-margin-mobile md:px-stitch-margin-desktop pt-stitch-xl pb-stitch-xxl bg-stitch-background min-h-screen">
-        <h1 className="stitch-text-display-lg text-stitch-on-background mb-stitch-xl tracking-tight">MY EVENTS</h1>
-        <div className="max-w-4xl">
-          <ErrorState 
-            title="Could not load your events"
-            message="We encountered a problem retrieving your registrations."
-            action={<button className="border border-stitch-outline text-stitch-on-background stitch-text-label-mono uppercase px-stitch-lg py-stitch-md hover:bg-stitch-surface transition-colors" onClick={() => refetch()}>Retry</button>}
-          />
-        </div>
-      </main>
-    );
-  }
 
   const now = dayjs();
-  
   const upcoming: MyRegistration[] = [];
   const pastAndCancelled: MyRegistration[] = [];
 
   (registrations || []).forEach(reg => {
     const isCancelled = reg.registrationStatus === 'CANCELLED';
-    const isPast = dayjs(reg.event?.endTime).isBefore(now) || dayjs(reg.event?.endTime).isSame(now); // event.endTime <= now
+    const isPast = dayjs(reg.event?.endTime).isBefore(now) || dayjs(reg.event?.endTime).isSame(now);
 
     if (isCancelled || isPast) {
       pastAndCancelled.push(reg);
@@ -72,180 +494,274 @@ export default function StudentEventsPage() {
 
   // Sort upcoming chronologically ascending
   upcoming.sort((a, b) => dayjs(a.event?.startTime).valueOf() - dayjs(b.event?.startTime).valueOf());
-  
-  // Sort past chronologically descending (most recent first)
+  // Sort past chronologically descending
   pastAndCancelled.sort((a, b) => dayjs(b.event?.startTime).valueOf() - dayjs(a.event?.startTime).valueOf());
 
-  const renderRow = (reg: MyRegistration, isPast: boolean) => {
-    const date = dayjs(reg.event?.startTime);
-    const dateLabel = date.format('MMM D');
-    const timeLabel = date.format('h:mm A');
-    const locationLabel = reg.event?.locationName;
-    
-    // Status text color based on status
-    const statusColor = reg.registrationStatus === 'WAITLISTED' 
-      ? 'text-stitch-on-surface' 
-      : reg.registrationStatus === 'CANCELLED'
-        ? 'text-stitch-secondary'
-        : 'text-stitch-on-surface';
+  const displayedList = activeTab === 'upcoming' ? upcoming : pastAndCancelled;
 
-    const bannerUrl = (reg.event?.metadata as Record<string, unknown> | null | undefined)?.banner_url as string | undefined;
+  const renderLoadingState = () => (
+    <div className="me-poster-grid">
+      {[1, 2, 3, 4].map(i => (
+        <div key={i} className="me-skeleton-card">
+          <div style={{ height: '20px', background: 'rgba(255,255,255,0.1)', width: '50%', marginBottom: '14px' }} />
+          <div style={{ height: '180px', background: 'rgba(255,255,255,0.08)', marginBottom: '16px' }} />
+          <div style={{ height: '28px', background: 'rgba(255,255,255,0.12)', width: '80%', marginBottom: '10px' }} />
+          <div style={{ height: '16px', background: 'rgba(255,255,255,0.06)', width: '100%', marginBottom: '6px' }} />
+          <div style={{ height: '16px', background: 'rgba(255,255,255,0.06)', width: '70%', marginTop: 'auto' }} />
+        </div>
+      ))}
+    </div>
+  );
 
-    return (
-      <div key={reg.id} className={clsx(
-        "border-b border-stitch-outline-variant py-5 flex flex-col md:flex-row justify-between md:items-center gap-4 hover:bg-stitch-surface transition-colors group",
-        isPast && "opacity-70 hover:opacity-100"
-      )}>
-        <div className="flex gap-4 flex-grow">
-          {bannerUrl && (
-            <div className="hidden sm:block w-32 h-24 shrink-0 bg-stitch-surface-container-highest overflow-hidden relative">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={bannerUrl} alt={reg.event?.title || ''} className="w-full h-full object-cover" />
-            </div>
-          )}
-          <div className="flex-grow pr-4">
-            <Link href={`/student/events/${reg.eventId}`} className="block">
-              <h3 className="stitch-text-headline-lg text-stitch-on-background group-hover:text-stitch-primary transition-colors leading-tight mb-stitch-xs">
-                {reg.event?.title || 'Unknown Event'}
-              </h3>
-            <div className="stitch-text-label-mono text-stitch-secondary uppercase tracking-widest flex items-center flex-wrap gap-2 mt-2">
-              <span className="flex items-center gap-1"><CalendarIcon className="w-3 h-3" />{dateLabel}</span>
-              <span className="text-stitch-outline-variant">|</span>
-              <span>{timeLabel}</span>
-              {locationLabel && (
-                <>
-                  <span className="text-stitch-outline-variant">|</span>
-                  <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{locationLabel}</span>
-                </>
-              )}
-            </div>
+  const renderErrorState = () => (
+    <div className="me-empty-poster">
+      <div className="me-empty-watermark">ERROR</div>
+      <div className="me-micro" style={{ color: 'var(--warm-red)', marginBottom: '12px' }}>
+        LEDGER FAULT // RETRIEVAL INTERRUPTED
+      </div>
+      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(36px, 5vw, 60px)', fontWeight: 900, textTransform: 'uppercase', lineHeight: 0.95, marginBottom: '16px' }}>
+        COULD NOT LOAD<br />YOUR REGISTRATIONS.
+      </h2>
+      <p style={{ fontFamily: 'var(--font-body)', fontSize: '16px', color: '#a0a4b8', marginBottom: '32px', maxWidth: '520px', lineHeight: 1.6 }}>
+        We encountered an error synchronizing your event passes with the campus ledger.
+      </p>
+      <button onClick={() => refetch()} className="me-empty-btn">
+        RETRY CONNECTION ↺
+      </button>
+    </div>
+  );
+
+  const renderEmptyState = () => {
+    if (activeTab === 'upcoming') {
+      return (
+        <div className="me-empty-poster">
+          <div className="me-empty-watermark">SCHEDULE</div>
+          <div className="me-micro me-micro-blue" style={{ marginBottom: '12px' }}>
+            SCHEDULE STATUS // 0 UPCOMING
+          </div>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(36px, 5vw, 60px)', fontWeight: 900, textTransform: 'uppercase', lineHeight: 0.95, marginBottom: '16px' }}>
+            NOTHING<br />SCHEDULED.<br />YET.
+          </h2>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '16px', color: '#a0a4b8', marginBottom: '32px', maxWidth: '520px', lineHeight: 1.6 }}>
+            You don&apos;t have anything coming up yet. Explore what&apos;s happening around campus, join upcoming hackathons, and connect with technical workshops.
+          </p>
+          <Link href="/student/campus/discover" className="me-empty-btn">
+            EXPLORE EVENTS ↗
           </Link>
         </div>
+      );
+    }
+
+    return (
+      <div className="me-empty-poster">
+        <div className="me-empty-watermark">ARCHIVE</div>
+        <div className="me-micro" style={{ marginBottom: '12px' }}>
+          ARCHIVE STATUS // 0 HISTORICAL
         </div>
-        
-        <div className="flex flex-col items-start md:items-end gap-3 shrink-0 mt-4 md:mt-0">
-          <div className="flex flex-col gap-2 items-start md:items-end w-full">
-            <span className={clsx("bg-stitch-surface-variant stitch-text-label-mono uppercase px-stitch-sm py-stitch-unit rounded-none inline-block", statusColor)}>
-              {reg.registrationStatus}
-            </span>
-            {reg.team && (
-              <div className="stitch-text-label-mono text-stitch-secondary uppercase flex items-center gap-2">
-                <span>Team &middot; {reg.team.name}</span>
-                <span className="bg-stitch-surface-variant px-2 py-0.5 rounded-none">{reg.team.status}</span>
-              </div>
-            )}
-          </div>
-          
-          <div className="flex items-center gap-4 pt-1">
-            <Link 
-              href={`/student/events/${reg.eventId}`}
-              className="text-[10px] font-mono text-stitch-primary uppercase hover:underline flex items-center gap-1 font-bold tracking-widest"
-            >
-              Event Details <ArrowRight className="w-3 h-3" />
-            </Link>
-            {reg.team && (
-              <Link 
-                href={`/student/events/${reg.eventId}/team`}
-                className="text-[10px] font-mono text-stitch-secondary uppercase hover:text-stitch-on-surface hover:underline flex items-center gap-1 tracking-widest transition-colors"
-              >
-                Team Hub <ArrowRight className="w-3 h-3" />
-              </Link>
-            )}
-          </div>
-        </div>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(36px, 5vw, 60px)', fontWeight: 900, textTransform: 'uppercase', lineHeight: 0.95, marginBottom: '16px' }}>
+          NO HISTORICAL<br />EVENTS RECORDED.
+        </h2>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '16px', color: '#a0a4b8', marginBottom: '32px', maxWidth: '520px', lineHeight: 1.6 }}>
+          You haven&apos;t attended or cancelled any campus events yet.
+        </p>
+        <Link href="/student/campus/discover" className="me-empty-btn">
+          DISCOVER EVENTS ↗
+        </Link>
       </div>
     );
   };
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'WAITLISTED':
+        return <span className="me-status-pill me-status-waitlisted">WAITLISTED</span>;
+      case 'CANCELLED':
+        return <span className="me-status-pill me-status-cancelled">CANCELLED</span>;
+      case 'CONFIRMED':
+      case 'REGISTERED':
+      default:
+        return <span className="me-status-pill me-status-confirmed">PASS CONFIRMED</span>;
+    }
+  };
+
   return (
-    <main className="flex-grow w-full px-stitch-margin-mobile md:px-stitch-margin-desktop pt-12 pb-16 bg-stitch-background min-h-screen">
-      <div className="w-full transition-all">
-        
-        {/* HEADER & VIEW TOGGLE */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-stitch-xl border-b border-stitch-outline-variant pb-6">
-          <div>
-            <h1 className="stitch-text-display-lg text-stitch-on-background tracking-tight uppercase">MY EVENTS</h1>
-            <p className="text-stitch-secondary stitch-text-body-sm mt-1">
-              Your registered commitments and interactive campus schedule.
+    <>
+      <style dangerouslySetInnerHTML={{ __html: myEventsStyles }} />
+      <div className="collage-noise-overlay" />
+
+      <div className="me-page">
+        <div className="me-inner">
+
+          {/* Header Section */}
+          <section className="me-header">
+            <div className="me-watermark">PASSES</div>
+            <div className="me-micro me-micro-blue" style={{ marginBottom: '8px' }}>
+              PERSONAL ARCHIVE // REGISTRATIONS &amp; SCHEDULE
+            </div>
+            <h1 className="me-hero-title">MY EVENTS</h1>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '16px', color: '#a0a4b8', marginTop: '12px', maxWidth: '640px', lineHeight: 1.6 }}>
+              Access your verified event credentials, team collaborations, and personal campus timeline.
             </p>
-          </div>
+          </section>
 
-          {/* View Toggle */}
-          <div className="inline-flex border border-stitch-outline-variant bg-stitch-surface-container-lowest p-1 self-start sm:self-center">
-            <button
-              onClick={() => setViewMode('list')}
-              className={clsx(
-                "flex items-center gap-2 px-4 py-2 stitch-text-label-mono text-xs uppercase tracking-wider transition-colors",
-                viewMode === 'list'
-                  ? "bg-stitch-surface-variant text-stitch-on-background font-bold"
-                  : "text-stitch-secondary hover:text-stitch-on-background"
-              )}
-            >
-              <List className="w-4 h-4" /> List
-            </button>
-            <button
-              onClick={() => setViewMode('calendar')}
-              className={clsx(
-                "flex items-center gap-2 px-4 py-2 stitch-text-label-mono text-xs uppercase tracking-wider transition-colors",
-                viewMode === 'calendar'
-                  ? "bg-stitch-primary text-stitch-on-primary font-bold"
-                  : "text-stitch-secondary hover:text-stitch-on-background"
-              )}
-            >
-              <CalendarIcon className="w-4 h-4" /> Calendar
-            </button>
-          </div>
-        </div>
+          {/* Controls Row: Tabs & View Mode */}
+          <section className="me-controls-row">
+            <div className="me-tabs-group">
+              <button
+                id="tab-myevents-upcoming"
+                onClick={() => setActiveTab('upcoming')}
+                className={`me-tab-btn ${activeTab === 'upcoming' ? 'active' : ''}`}
+              >
+                UPCOMING ({upcoming.length})
+              </button>
+              <button
+                id="tab-myevents-past"
+                onClick={() => setActiveTab('past')}
+                className={`me-tab-btn ${activeTab === 'past' ? 'active' : ''}`}
+              >
+                PAST &amp; CANCELLED ({pastAndCancelled.length})
+              </button>
+            </div>
 
-        {viewMode === 'calendar' ? (
-          <StudentCalendarView />
-        ) : (
-          <>
-            {/* UPCOMING */}
-            <section className="mb-16">
-              <h2 className="stitch-text-label-mono text-stitch-secondary uppercase tracking-widest mb-stitch-md border-b border-stitch-outline-variant pb-2 inline-block w-full">
-                Upcoming
-              </h2>
-              {upcoming.length > 0 ? (
-                <div className="flex flex-col">
-                  {upcoming.map(reg => renderRow(reg, false))}
-                </div>
-              ) : (
-                <div className="py-stitch-xl text-left">
-                  <h3 className="stitch-text-headline-lg text-stitch-on-background mb-stitch-xs">No upcoming events</h3>
-                  <p className="text-stitch-secondary stitch-text-body-lg mb-stitch-md">You don&apos;t have any upcoming event registrations.</p>
-                  <Link 
-                    href="/student/campus"
-                    className="inline-flex items-center gap-2 bg-stitch-primary text-stitch-on-primary stitch-text-label-mono uppercase tracking-widest px-stitch-xl py-stitch-md hover:bg-stitch-surface-tint transition-colors"
-                  >
-                    Explore Events <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
-              )}
-            </section>
+            {/* View Mode Switcher */}
+            <div className="me-view-toggle">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`me-view-btn ${viewMode === 'list' ? 'active' : ''}`}
+                type="button"
+              >
+                <List size={14} /> LIST
+              </button>
+              <button
+                onClick={() => setViewMode('calendar')}
+                className={`me-view-btn ${viewMode === 'calendar' ? 'active' : ''}`}
+                type="button"
+              >
+                <CalendarIcon size={14} /> CALENDAR
+              </button>
+            </div>
+          </section>
 
-            {/* PAST & CANCELLED */}
-            {(pastAndCancelled.length > 0 || (upcoming.length === 0 && registrations && registrations.length === 0)) && (
-              <section className="mb-16">
-                <h2 className="stitch-text-label-mono text-stitch-secondary uppercase tracking-widest mb-stitch-md border-b border-stitch-outline-variant pb-2 mt-stitch-xl inline-block w-full">
-                  Past &amp; Cancelled
-                </h2>
-                {pastAndCancelled.length > 0 ? (
-                  <div className="flex flex-col">
-                    {pastAndCancelled.map(reg => renderRow(reg, true))}
-                  </div>
-                ) : (
-                  <div className="py-stitch-xl text-left">
-                    <h3 className="stitch-text-headline-lg text-stitch-on-background mb-stitch-xs">No historical events</h3>
-                    <p className="text-stitch-secondary stitch-text-body-lg">You haven&apos;t attended or cancelled any events yet.</p>
-                  </div>
-                )}
-              </section>
+          {/* Main Content Area */}
+          <div>
+            {isLoading ? (
+              renderLoadingState()
+            ) : isError ? (
+              renderErrorState()
+            ) : viewMode === 'calendar' ? (
+              <div className="me-calendar-container">
+                <StudentCalendarView />
+              </div>
+            ) : displayedList.length === 0 ? (
+              renderEmptyState()
+            ) : (
+              <div className="me-poster-grid">
+                {displayedList.map((reg) => {
+                  const date = dayjs(reg.event?.startTime);
+                  const dateLabel = date.format('MMM D');
+                  const timeLabel = date.format('h:mm A');
+                  const locationLabel = reg.event?.locationName || 'Campus';
+                  const bannerUrl = (reg.event?.metadata as Record<string, unknown> | null | undefined)?.banner_url as string | undefined;
+                  const isPast = activeTab === 'past';
+
+                  return (
+                    <div
+                      key={reg.id}
+                      className={`me-poster-card ${isPast ? 'is-past' : ''}`}
+                      onClick={() => router.push(`/student/events/${reg.eventId}`)}
+                    >
+                      <div>
+                        <div className="me-card-header">
+                          <span className="me-date-badge">{dateLabel}</span>
+                          {getStatusBadge(reg.registrationStatus)}
+                        </div>
+
+                        <div className="me-photo-frame">
+                          {bannerUrl ? (
+                            <img
+                              src={bannerUrl}
+                              alt={reg.event?.title || 'Event'}
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <div className="me-photo-placeholder">
+                              <span className="me-photo-watermark">NST</span>
+                              <div className="me-micro" style={{ color: 'rgba(255,255,255,0.4)', zIndex: 1, marginTop: '4px' }}>
+                                VERIFIED ENTRY PASS
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <h3 className="me-card-title">
+                          {reg.event?.title || 'Campus Event'}
+                        </h3>
+
+                        <div className="me-card-meta">
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <CalendarIcon size={12} /> {timeLabel}
+                          </span>
+                          <span>&bull;</span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <MapPin size={12} /> {locationLabel}
+                          </span>
+                        </div>
+
+                        {reg.team && (
+                          <div className="me-team-box">
+                            <span>TEAM // {reg.team.name}</span>
+                            <span style={{ color: 'var(--electric-blue)' }}>[{reg.team.status}]</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="me-card-footer">
+                        {reg.team ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/student/events/${reg.eventId}/team`);
+                            }}
+                            className="me-micro"
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: '#000',
+                              cursor: 'pointer',
+                              textDecoration: 'underline'
+                            }}
+                          >
+                            TEAM HUB ↗
+                          </button>
+                        ) : (
+                          <span className="me-micro" style={{ color: '#666' }}>
+                            PASSPORT // NST-NET
+                          </span>
+                        )}
+
+                        <button
+                          type="button"
+                          className="me-pass-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/student/events/${reg.eventId}`);
+                          }}
+                        >
+                          EVENT PASS <ArrowRight size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
-          </>
-        )}
+          </div>
 
+        </div>
       </div>
-    </main>
+    </>
   );
 }

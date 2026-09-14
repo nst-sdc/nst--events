@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { useCurrentUser } from '../../../../hooks/useCurrentUser';
 import { useLogout } from '../../../../hooks/useLogout';
@@ -13,11 +14,165 @@ import {
 } from '../../../../hooks/useNotificationPreferences';
 import { LogOut, ChevronRight } from 'lucide-react';
 import { Modal } from '../../../../components/ui/Modal';
-import { DevClubBadge } from '../../../../components/brand/DevClubBadge';
 import { DevClubCreditsModal } from '../../../../components/brand/DevClubCreditsModal';
 import { DASHBOARD_APP_VERSION, DEV_CLUB_MISSION } from '../../../../lib/brand-config';
 
+const profileStyles = `
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&family=Outfit:wght@400;700;900&family=Syne:wght@700;800;900&display=swap');
+
+  :root {
+    --bg-black: #050505;
+    --bg-paper-white: #F5F5F2;
+    --bg-dark-card: #0d0e12;
+    --electric-blue: #0057FF;
+    --acid-green: #C8FF00;
+    --warm-red: #FF3B30;
+    --font-display: 'Syne', 'Outfit', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  .profile-editorial-page {
+    width: 100%;
+    min-height: 100vh;
+    background-color: var(--bg-black);
+    color: var(--bg-paper-white);
+    font-family: var(--font-body);
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  .collage-noise-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.35;
+    background-image: radial-gradient(rgba(245, 245, 242, 0.08) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  .micro-annotation {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #a0a4b8;
+  }
+
+  .annotation-blue { color: var(--electric-blue); }
+  .annotation-green { color: var(--acid-green); }
+
+  .font-display-hero {
+    font-family: var(--font-display);
+    font-size: clamp(48px, 7vw, 84px);
+    font-weight: 900;
+    line-height: 0.92;
+    letter-spacing: -2px;
+    text-transform: uppercase;
+    color: var(--bg-paper-white);
+  }
+
+  /* Identity Dossier Card */
+  .profile-dossier-card {
+    border: 3px solid #ffffff;
+    background: var(--bg-dark-card);
+    padding: 36px 40px;
+    margin-bottom: 40px;
+    box-shadow: 12px 12px 0px var(--electric-blue);
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Generic Editorial Box */
+  .profile-section-card {
+    border: 3px solid #ffffff;
+    background: var(--bg-dark-card);
+    padding: 36px 40px;
+    margin-bottom: 40px;
+    box-shadow: 12px 12px 0px #000000;
+    position: relative;
+    z-index: 2;
+  }
+
+  .profile-cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--electric-blue);
+    color: #ffffff;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 14px 28px;
+    border: 2px solid var(--bg-paper-white);
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: 4px 4px 0px #ffffff;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .profile-cta-btn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px #ffffff;
+  }
+
+  /* Danger / Session Termination Card */
+  .profile-danger-card {
+    border: 3px solid #ffffff;
+    background: var(--bg-dark-card);
+    padding: 36px 40px;
+    margin-bottom: 40px;
+    box-shadow: 12px 12px 0px var(--warm-red);
+    position: relative;
+    z-index: 2;
+  }
+
+  .profile-danger-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--warm-red);
+    color: #ffffff;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 14px 28px;
+    border: 2px solid #ffffff;
+    cursor: pointer;
+    box-shadow: 4px 4px 0px #ffffff;
+    transition: transform 0.15s, box-shadow 0.15s;
+    white-space: nowrap;
+  }
+
+  .profile-danger-btn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px #ffffff;
+    background: #e02d23;
+  }
+
+  /* Checkbox / Toggle */
+  .editorial-toggle {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    accent-color: var(--electric-blue);
+  }
+
+  @media (max-width: 768px) {
+    .profile-dossier-card, .profile-section-card {
+      padding: 24px 20px;
+    }
+  }
+`;
+
 export default function StudentProfilePage() {
+  const router = useRouter();
   const { data: user, isLoading: isLoadingUser, isError: isErrorUser, error: errorUser, refetch: refetchUser } = useCurrentUser();
   const { mutate: logout, isPending: isLoggingOut } = useLogout();
   const { theme, setTheme } = useTheme();
@@ -38,12 +193,11 @@ export default function StudentProfilePage() {
 
   if (isLoadingUser) {
     return (
-      <div className="w-full max-w-[800px] mx-auto px-6 py-8 animate-pulse space-y-6">
-        <div className="h-8 w-48 bg-stitch-surface-variant rounded-none"></div>
-        <div className="p-6 border border-stitch-outline-variant space-y-4">
-          <div className="w-14 h-14 bg-stitch-surface-variant rounded-none"></div>
-          <div className="h-6 w-1/3 bg-stitch-surface-variant rounded-none"></div>
-          <div className="h-4 w-1/2 bg-stitch-surface-variant rounded-none"></div>
+      <div className="w-full max-w-[1000px] mx-auto px-8 py-16 animate-pulse space-y-8 bg-[#050505] min-h-screen">
+        <div className="h-12 w-64 bg-neutral-900 rounded-none" />
+        <div className="p-8 border-2 border-white/20 bg-[#0d0e12] space-y-6">
+          <div className="h-8 w-1/3 bg-neutral-900 rounded-none" />
+          <div className="h-20 w-full bg-neutral-900 rounded-none" />
         </div>
       </div>
     );
@@ -51,13 +205,13 @@ export default function StudentProfilePage() {
 
   if (isErrorUser || !user) {
     return (
-      <div className="w-full max-w-[800px] mx-auto px-6 py-12 text-center">
-        <p className="text-sm font-mono text-stitch-secondary mb-4">
-          {errorUser?.message || "Failed to load profile."}
+      <div className="w-full max-w-[1000px] mx-auto px-8 py-20 text-center bg-[#050505] min-h-screen">
+        <p className="text-sm font-mono text-[#a0a4b8] mb-6">
+          {errorUser?.message || "Failed to load student profile."}
         </p>
         <button
           onClick={() => refetchUser()}
-          className="px-4 py-2 bg-stitch-on-surface text-stitch-surface-container-lowest font-mono text-xs uppercase tracking-widest hover:opacity-80"
+          className="px-6 py-3 bg-[#0057FF] text-white border-2 border-white font-mono text-xs uppercase tracking-widest hover:opacity-90 shadow-[4px_4px_0px_#ffffff]"
         >
           Retry
         </button>
@@ -65,35 +219,25 @@ export default function StudentProfilePage() {
     );
   }
 
-  // Derive Student ID from local part of institutional email (uppercase)
-  const studentId = user.email ? user.email.split('@')[0].toUpperCase() : null;
+  // Derive Student ID from email (e.g. e25b070597 -> E25B070597)
+  const studentId = user.email ? user.email.split('@')[0].toUpperCase() : 'NST-2026-8942';
 
-  // Safely extract academic metadata
+  // Academic Identity
   const getAcademicIdentityText = () => {
     const batch = user.academic_profile?.batch;
     if (!batch) return null;
-
     const graduationYear = typeof batch.graduation_year === 'number' ? batch.graduation_year : null;
     const batchText = graduationYear ? `Batch of ${graduationYear}` : null;
-
     const program = batch.program;
-    const programName = typeof program?.name === 'string' && program.name.trim() !== '' ? program.name.trim() : null;
-    const programCode = typeof program?.code === 'string' && program.code.trim() !== '' ? program.code.trim() : null;
-    const programText = programName || programCode || null;
+    const programText = program?.name || program?.code || null;
 
-    if (batchText && programText) {
-      return `${batchText} · ${programText}`;
-    }
-    if (batchText) {
-      return batchText;
-    }
-    if (programText) {
-      return programText;
-    }
+    if (batchText && programText) return `${batchText} · ${programText}`;
+    if (batchText) return batchText;
+    if (programText) return programText;
     return null;
   };
 
-  const academicIdentityText = getAcademicIdentityText();
+  const academicIdentityText = getAcademicIdentityText() || 'Newton School of Technology (ADYPU)';
   const clubMemberships = user.club_memberships || [];
 
   const handleTogglePreference = (key: keyof NotificationPreferences, currentValue: boolean) => {
@@ -102,40 +246,41 @@ export default function StudentProfilePage() {
     updatePref(
       { [key]: !currentValue },
       {
-        onSettled: () => {
-          setUpdatingKey(null);
-        },
-        onError: () => {
-          setUpdateError("Couldn't save this setting. Please try again.");
-        },
+        onSettled: () => setUpdatingKey(null),
+        onError: () => setUpdateError("Couldn't save this setting. Please try again."),
       }
     );
   };
 
   return (
-    <div className="w-full max-w-[800px] mx-auto px-6 py-6 md:py-8 font-sans text-stitch-on-surface">
+    <main className="profile-editorial-page">
+      <style dangerouslySetInnerHTML={{ __html: profileStyles }} />
+      
+      {/* Background Noise Overlay */}
+      <div className="collage-noise-overlay" />
+
       {/* SIGN OUT CONFIRMATION MODAL */}
       <Modal
         isOpen={isSignOutModalOpen}
         onClose={() => !isLoggingOut && setIsSignOutModalOpen(false)}
         title="SIGN OUT"
       >
-        <div className="p-6 pt-0">
-          <p className="text-sm text-stitch-on-surface-variant mb-6">
-            Are you sure you want to sign out of your account on this device?
+        <div className="p-6 pt-0 bg-[#0d0e12] text-[#F5F5F2]">
+          <p className="text-sm text-[#a0a4b8] mb-6 font-mono">
+            Are you sure you want to sign out of your institutional account on this device?
           </p>
           <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={() => setIsSignOutModalOpen(false)}
               disabled={isLoggingOut}
-              className="w-full sm:w-auto px-5 py-2.5 border border-stitch-on-surface text-stitch-on-surface font-mono font-bold text-xs tracking-widest uppercase hover:bg-stitch-surface transition-colors disabled:opacity-50"
+              className="w-full sm:w-auto px-5 py-2.5 border-2 border-white text-white font-mono font-bold text-xs tracking-widest uppercase hover:bg-white/10 transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               onClick={() => logout()}
               disabled={isLoggingOut}
-              className="w-full sm:flex-1 px-5 py-2.5 bg-red-600 text-white font-mono font-bold text-xs tracking-widest uppercase hover:bg-red-700 transition-colors disabled:opacity-50"
+              className="w-full sm:flex-1 px-5 py-2.5 bg-red-600 border-2 border-white text-white font-mono font-bold text-xs tracking-widest uppercase hover:bg-red-700 transition-colors disabled:opacity-50 shadow-[3px_3px_0px_#000]"
             >
               {isLoggingOut ? 'Signing out...' : 'Sign Out'}
             </button>
@@ -143,274 +288,478 @@ export default function StudentProfilePage() {
         </div>
       </Modal>
 
-      {/* Page Title */}
-      <div className="mb-6 border-b border-stitch-outline-variant pb-4">
-        <h1
-          className="text-3xl font-black tracking-tight text-stitch-on-surface mb-1"
-          style={{ fontFamily: 'Syne, sans-serif' }}
-        >
-          Profile
-        </h1>
-        <p className="text-xs font-mono text-stitch-secondary uppercase tracking-wider">
-          Manage your account and preferences
-        </p>
-      </div>
+      {/* Main Container */}
+      <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '60px 32px 100px 32px', position: 'relative', zIndex: 1 }}>
+        
+        {/* Page Header */}
+        <div style={{ borderBottom: '3px solid #ffffff', paddingBottom: '24px', marginBottom: '40px' }}>
+          <div className="micro-annotation annotation-blue" style={{ marginBottom: '8px' }}>
+            STUDENT DOSSIER // ACCOUNT IDENTITY
+          </div>
+          <h1 className="font-display-hero">PROFILE</h1>
+          <p style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: '12px',
+            color: '#a0a4b8',
+            marginTop: '8px',
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+          }}>
+            MANAGE YOUR ACCOUNT AND PREFERENCES
+          </p>
+        </div>
 
-      <div className="space-y-6">
-        {/* 1. IDENTITY CARD */}
-        <section className="p-4 md:p-5 border border-stitch-outline-variant bg-stitch-surface-container-lowest">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <div className="w-14 h-14 bg-stitch-on-surface text-stitch-surface-container-lowest flex items-center justify-center font-bold text-xl flex-shrink-0 font-mono">
-              {user.full_name ? user.full_name.charAt(0).toUpperCase() : 'U'}
-            </div>
-            <div className="space-y-1 min-w-0 flex-1">
-              <h2
-                className="text-xl font-bold text-stitch-on-surface tracking-tight leading-tight truncate"
-                style={{ fontFamily: 'Syne, sans-serif' }}
-              >
-                {user.full_name || 'Student'}
+        {/* ==========================================================================
+             1. DOSSIER IDENTITY CARD
+             ========================================================================== */}
+        <div className="profile-dossier-card">
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            borderBottom: '2px solid #ffffff',
+            paddingBottom: '18px',
+            flexWrap: 'wrap',
+            gap: '12px',
+          }}>
+            <div>
+              <span className="micro-annotation annotation-green">
+                IDENTITY VERIFIED &bull; ACTIVE
+              </span>
+              <h2 style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 'clamp(28px, 4vw, 36px)',
+                fontWeight: 900,
+                marginTop: '4px',
+                color: '#ffffff',
+                textTransform: 'uppercase',
+              }}>
+                {user.full_name || 'STUDENT'}
               </h2>
+            </div>
+            <span style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '12px',
+              color: '#ffffff',
+              background: 'var(--electric-blue)',
+              padding: '8px 18px',
+              fontWeight: 700,
+              border: '2px solid #ffffff',
+              boxShadow: '3px 3px 0px #ffffff',
+              textTransform: 'uppercase',
+            }}>
+              {user.global_role === 'STUDENT' ? 'STUDENT' : user.global_role.replace(/_/g, ' ')}
+            </span>
+          </div>
 
-              {/* Student ID & Email */}
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-mono text-stitch-on-surface-variant">
-                {studentId && (
-                  <span className="font-bold text-stitch-on-surface tracking-wider uppercase">
-                    ID: {studentId}
-                  </span>
-                )}
-                {user.email && (
-                  <span className="text-stitch-secondary truncate">
-                    {user.email}
-                  </span>
-                )}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '20px',
+            marginTop: '24px',
+          }}>
+            <div style={{ border: '1px solid rgba(245,245,242,0.2)', padding: '16px', background: '#000' }}>
+              <div className="micro-annotation">STUDENT ID</div>
+              <div style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '15px',
+                fontWeight: 700,
+                color: '#fff',
+                marginTop: '4px',
+              }}>
+                {studentId}
               </div>
+            </div>
 
-              {/* Academic Metadata & Role Badges */}
-              <div className="flex flex-wrap items-center gap-2 pt-2">
-                <span className="px-2 py-0.5 bg-stitch-surface-variant border border-stitch-outline-variant text-[11px] font-mono font-bold uppercase tracking-wider text-stitch-on-surface">
-                  {user.global_role === 'STUDENT' ? 'Student' : user.global_role.replace(/_/g, ' ')}
-                </span>
+            <div style={{ border: '1px solid rgba(245,245,242,0.2)', padding: '16px', background: '#000' }}>
+              <div className="micro-annotation">INSTITUTIONAL EMAIL</div>
+              <div style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '15px',
+                fontWeight: 700,
+                color: '#fff',
+                marginTop: '4px',
+                wordBreak: 'break-all',
+              }}>
+                {user.email}
+              </div>
+            </div>
 
-                {academicIdentityText && (
-                  <span className="px-2 py-0.5 bg-stitch-surface border border-stitch-outline-variant text-[11px] font-mono text-stitch-on-surface-variant tracking-wide">
-                    {academicIdentityText}
-                  </span>
-                )}
+            <div style={{
+              border: '1px solid rgba(245,245,242,0.2)',
+              padding: '16px',
+              background: '#000',
+              gridColumn: '1 / -1',
+            }}>
+              <div className="micro-annotation">YOUR CAMPUS</div>
+              <div style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '15px',
+                fontWeight: 700,
+                color: 'var(--electric-blue)',
+                marginTop: '4px',
+              }}>
+                {academicIdentityText}
               </div>
             </div>
           </div>
-        </section>
+        </div>
 
-        {/* 2. YOUR CAMPUS (Belonging) */}
-        <section className="space-y-2">
-          <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-stitch-secondary uppercase">
-            Your Campus
-          </h2>
-          <div className="border border-stitch-outline-variant bg-stitch-surface-container-lowest divide-y divide-stitch-outline-variant">
-            {clubMemberships.length > 0 ? (
-              clubMemberships.map((m) => (
+        {/* ==========================================================================
+             2. MY CLUBS SECTION
+             ========================================================================== */}
+        <div className="profile-section-card">
+          <div className="micro-annotation annotation-blue" style={{ marginBottom: '12px' }}>
+            COMMUNITY // CLUBS
+          </div>
+          <h3 style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: '26px',
+            fontWeight: 900,
+            marginBottom: '12px',
+            textTransform: 'uppercase',
+          }}>
+            MY CLUBS
+          </h3>
+
+          {clubMemberships.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+              {clubMemberships.map((m) => (
                 <Link
                   key={m.club_id}
                   href={`/student/campus/clubs/${m.club_id}`}
-                  className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-stitch-surface transition-colors group"
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '14px 18px',
+                    border: '2px solid rgba(245,245,242,0.2)',
+                    background: '#000',
+                    textDecoration: 'none',
+                    color: '#fff',
+                  }}
+                  className="hover:border-[#0057FF] transition-colors"
                 >
                   <div>
-                    <div className="text-sm font-semibold text-stitch-on-surface mb-0.5">{m.club_name}</div>
-                    <div className="text-[10px] text-stitch-secondary font-mono uppercase tracking-widest">
-                      {m.role === 'CLUB_ADMIN' ? 'Club Admin' : m.role === 'CORE_MEMBER' ? 'Core Member' : m.role === 'FACULTY_MENTOR' ? 'Faculty Mentor' : 'Member'}
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 800 }}>
+                      {m.club_name}
+                    </div>
+                    <div className="micro-annotation" style={{ fontSize: '9px', marginTop: '2px' }}>
+                      {m.role === 'CLUB_ADMIN' ? 'CLUB ADMIN' : m.role === 'CORE_MEMBER' ? 'CORE MEMBER' : 'MEMBER'}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-widest text-stitch-on-surface group-hover:translate-x-0.5 transition-transform">
-                    <span>{m.role === 'CLUB_ADMIN' ? 'MANAGE' : 'VIEW'}</span>
-                    <ChevronRight className="w-4 h-4" />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--electric-blue)' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700 }}>VIEW</span>
+                    <ChevronRight size={14} />
                   </div>
                 </Link>
-              ))
-            ) : (
-              <div className="p-4 flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-semibold text-stitch-on-surface mb-0.5">My Clubs</div>
-                  <div className="text-xs text-stitch-secondary font-mono">You're not part of any clubs yet.</div>
-                </div>
-              </div>
-            )}
-            <Link
-              href="/student/campus/clubs"
-              className="p-4 flex items-center justify-center gap-2 text-xs font-mono font-bold uppercase tracking-widest text-stitch-primary hover:bg-stitch-surface transition-colors bg-stitch-surface-variant/30"
-            >
-              Explore All Clubs
-            </Link>
-          </div>
-        </section>
+              ))}
+            </div>
+          ) : (
+            <p style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '15px',
+              color: '#a0a4b8',
+              marginBottom: '24px',
+              lineHeight: 1.6,
+            }}>
+              You're not part of any clubs yet. Join student development groups to access private events and workshops.
+            </p>
+          )}
 
-        {/* 3. STAY IN THE LOOP */}
-        <section className="space-y-2">
-          <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-stitch-secondary uppercase">
-            Stay in the Loop
-          </h2>
+          <button
+            onClick={() => router.push('/student/campus/clubs')}
+            className="profile-cta-btn"
+          >
+            EXPLORE ALL CLUBS ↗
+          </button>
+        </div>
+
+        {/* ==========================================================================
+             3. PREFERENCES // STAY IN THE LOOP
+             ========================================================================== */}
+        <div className="profile-section-card">
+          <div className="micro-annotation annotation-blue" style={{ marginBottom: '12px' }}>
+            PREFERENCES // NOTIFICATIONS
+          </div>
+          <h3 style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: '26px',
+            fontWeight: 900,
+            marginBottom: '24px',
+            textTransform: 'uppercase',
+          }}>
+            STAY IN THE LOOP
+          </h3>
+
           {updateError && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-mono mb-2">
+            <div style={{
+              padding: '12px 16px',
+              background: 'rgba(255, 59, 48, 0.1)',
+              border: '2px solid var(--warm-red)',
+              color: 'var(--warm-red)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '12px',
+              marginBottom: '16px',
+            }}>
               {updateError}
             </div>
           )}
-          <div className="border border-stitch-outline-variant bg-stitch-surface-container-lowest divide-y divide-stitch-outline-variant">
-            {isLoadingPrefs ? (
-              <div className="p-4 animate-pulse space-y-3">
-                <div className="h-4 w-1/3 bg-stitch-surface-variant rounded"></div>
-                <div className="h-3 w-1/2 bg-stitch-surface-variant rounded"></div>
-              </div>
-            ) : isErrorPrefs ? (
-              <div className="p-4 text-xs font-mono text-stitch-secondary flex items-center justify-between">
-                <span>Couldn't load notification preferences.</span>
-                <button onClick={() => refetchPrefs()} className="font-bold underline text-stitch-on-surface">
-                  Retry
-                </button>
-              </div>
-            ) : (
-              [
-                {
-                  key: 'pushEnabled' as const,
-                  label: 'Push Notifications',
-                  sub: 'Receive push notifications from NST Events.',
-                },
-                {
-                  key: 'eventReminders' as const,
-                  label: 'Event Reminders',
-                  sub: "Reminders for events you're registered for.",
-                },
-                {
-                  key: 'clubAnnouncements' as const,
-                  label: 'Club Announcements',
-                  sub: "Updates from clubs you're part of.",
-                },
-                {
-                  key: 'attendanceAlerts' as const,
-                  label: 'Attendance Alerts',
-                  sub: 'Check-in windows and dispute updates.',
-                },
-              ].map((item) => {
-                const isChecked = prefData ? !!prefData[item.key] : false;
-                const isBusy = isUpdatingPref && updatingKey === item.key;
-                return (
-                  <div key={item.key} className="p-4 flex items-center justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold text-stitch-on-surface mb-0.5">{item.label}</div>
-                      <div className="text-xs text-stitch-secondary">{item.sub}</div>
-                    </div>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={isChecked}
-                      aria-label={item.label}
-                      disabled={isBusy}
-                      onClick={() => handleTogglePreference(item.key, isChecked)}
-                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-none border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                        isChecked ? 'bg-stitch-on-surface' : 'bg-stitch-surface-variant'
-                      } ${isBusy ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                      <span
-                        aria-hidden="true"
-                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-none bg-stitch-surface-container-lowest shadow ring-0 transition duration-200 ease-in-out ${
-                          isChecked ? 'translate-x-5' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </section>
 
-        {/* 4. APPEARANCE */}
-        <section className="space-y-2">
-          <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-stitch-secondary uppercase">
-            Appearance
-          </h2>
-          <div className="border border-stitch-outline-variant bg-stitch-surface-container-lowest p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <div className="text-sm font-semibold text-stitch-on-surface mb-0.5">Theme</div>
-              <div className="text-xs text-stitch-secondary">Choose how NST Events appears on your device.</div>
+          {isLoadingPrefs ? (
+            <div className="animate-pulse space-y-4 py-4">
+              <div className="h-6 w-1/3 bg-neutral-900" />
+              <div className="h-6 w-1/2 bg-neutral-900" />
             </div>
-            {mounted ? (
-              <div className="inline-flex p-1 bg-stitch-surface-variant border border-stitch-outline-variant font-mono text-xs w-fit">
-                {(['system', 'light', 'dark'] as const).map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setTheme(t)}
-                    className={`px-3 py-1 uppercase transition-colors ${
-                      theme === t
-                        ? 'bg-stitch-on-surface text-stitch-surface-container-lowest font-bold'
-                        : 'text-stitch-on-surface-variant hover:text-stitch-on-surface'
-                    }`}
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="h-7 w-36 bg-stitch-surface-variant animate-pulse border border-stitch-outline-variant"></div>
-            )}
-          </div>
-        </section>
-
-        {/* 5. ACCOUNT */}
-        <section className="space-y-2 pt-2">
-          <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-stitch-secondary uppercase">
-            Account
-          </h2>
-          <div className="border border-stitch-outline-variant bg-stitch-surface-container-lowest p-4 flex items-center justify-between">
-            <button
-              onClick={() => setIsSignOutModalOpen(true)}
-              className="flex items-center gap-2 text-xs font-mono font-bold text-red-600 hover:text-red-800 uppercase tracking-widest transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Sign Out</span>
-            </button>
-          </div>
-        </section>
-
-        {/* 6. ABOUT PLATFORM & DEVELOPERS CLUB */}
-        <section className="space-y-2 pt-2">
-          <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-stitch-secondary uppercase">
-            Platform & Engineering
-          </h2>
-          <div className="border border-stitch-outline-variant bg-stitch-surface-container-lowest p-5 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stitch-outline-variant">
-              <div>
-                <DevClubBadge
-                  variant="signature"
-                  size="md"
-                  onClick={() => setIsCreditsOpen(true)}
-                />
-                <p className="text-xs text-stitch-secondary mt-1 max-w-md">
-                  {DEV_CLUB_MISSION}
-                </p>
-              </div>
-              <span className="font-mono text-xs text-stitch-secondary shrink-0">
-                v{DASHBOARD_APP_VERSION}
-              </span>
-            </div>
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-              <span className="text-xs font-mono text-stitch-secondary">
-                Official Campus Experience System
-              </span>
-              <button
-                type="button"
-                onClick={() => setIsCreditsOpen(true)}
-                className="px-3 py-1.5 border border-stitch-outline-variant bg-stitch-surface-variant hover:bg-stitch-on-surface hover:text-stitch-surface-container-lowest text-stitch-on-surface font-mono text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
-              >
-                [ VIEW CREDITS ]
+          ) : isErrorPrefs ? (
+            <div style={{ padding: '16px 0', fontFamily: 'var(--font-mono)', fontSize: '13px', color: '#a0a4b8' }}>
+              Couldn't load preferences.{' '}
+              <button onClick={() => refetchPrefs()} style={{ color: 'var(--electric-blue)', textDecoration: 'underline' }}>
+                Retry
               </button>
             </div>
+          ) : (
+            <div>
+              {/* Push Notifications */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                borderBottom: '1px solid rgba(245,245,242,0.15)',
+                padding: '18px 0',
+              }}>
+                <div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 700 }}>
+                    Push Notifications
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: '#a0a4b8', marginTop: '2px' }}>
+                    Receive push notifications from NST Events.
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  className="editorial-toggle"
+                  checked={prefData ? !!prefData.pushEnabled : true}
+                  disabled={isUpdatingPref && updatingKey === 'pushEnabled'}
+                  onChange={() => handleTogglePreference('pushEnabled', prefData ? !!prefData.pushEnabled : true)}
+                />
+              </div>
+
+              {/* Event Reminders */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                borderBottom: '1px solid rgba(245,245,242,0.15)',
+                padding: '18px 0',
+              }}>
+                <div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 700 }}>
+                    Event Reminders
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: '#a0a4b8', marginTop: '2px' }}>
+                    Reminders for events you're registered for.
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  className="editorial-toggle"
+                  checked={prefData ? !!prefData.eventReminders : true}
+                  disabled={isUpdatingPref && updatingKey === 'eventReminders'}
+                  onChange={() => handleTogglePreference('eventReminders', prefData ? !!prefData.eventReminders : true)}
+                />
+              </div>
+
+              {/* Club Announcements */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                borderBottom: '1px solid rgba(245,245,242,0.15)',
+                padding: '18px 0',
+              }}>
+                <div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 700 }}>
+                    Club Announcements
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: '#a0a4b8', marginTop: '2px' }}>
+                    Updates from clubs you're part of.
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  className="editorial-toggle"
+                  checked={prefData ? !!prefData.clubAnnouncements : false}
+                  disabled={isUpdatingPref && updatingKey === 'clubAnnouncements'}
+                  onChange={() => handleTogglePreference('clubAnnouncements', prefData ? !!prefData.clubAnnouncements : false)}
+                />
+              </div>
+
+              {/* Attendance Alerts */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '18px 0',
+              }}>
+                <div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 700 }}>
+                    Attendance Alerts
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: '#a0a4b8', marginTop: '2px' }}>
+                    Check-in windows and dispute updates.
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  className="editorial-toggle"
+                  checked={prefData ? !!prefData.attendanceAlerts : true}
+                  disabled={isUpdatingPref && updatingKey === 'attendanceAlerts'}
+                  onChange={() => handleTogglePreference('attendanceAlerts', prefData ? !!prefData.attendanceAlerts : true)}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ==========================================================================
+             4. APPEARANCE & THEME
+             ========================================================================== */}
+        <div className="profile-section-card">
+          <div className="micro-annotation annotation-blue" style={{ marginBottom: '12px' }}>
+            SYSTEM // APPEARANCE
           </div>
-        </section>
+          <h3 style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: '26px',
+            fontWeight: 900,
+            marginBottom: '16px',
+            textTransform: 'uppercase',
+          }}>
+            THEME DISPLAY
+          </h3>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: '#a0a4b8', marginBottom: '20px' }}>
+            Select how the NST Events interface renders across your workstation.
+          </p>
+
+          {mounted ? (
+            <div style={{ display: 'inline-flex', gap: '8px', background: '#000', padding: '6px', border: '2px solid #ffffff' }}>
+              {(['system', 'light', 'dark'] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTheme(t)}
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    padding: '8px 18px',
+                    cursor: 'pointer',
+                    background: theme === t ? 'var(--electric-blue)' : 'transparent',
+                    color: '#ffffff',
+                    border: 'none',
+                  }}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        {/* ==========================================================================
+             5. PLATFORM CREDITS & ENGINEERING
+             ========================================================================== */}
+        <div className="profile-section-card">
+          <div className="micro-annotation annotation-blue" style={{ marginBottom: '12px' }}>
+            ENGINEERING // CREDITS
+          </div>
+          <h3 style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: '26px',
+            fontWeight: 900,
+            marginBottom: '12px',
+            textTransform: 'uppercase',
+          }}>
+            NST SOFTWARE DEVELOPERS CLUB
+          </h3>
+          <p style={{
+            fontFamily: 'var(--font-body)',
+            fontSize: '14px',
+            color: '#a0a4b8',
+            lineHeight: 1.6,
+            marginBottom: '20px',
+            maxWidth: '680px',
+          }}>
+            {DEV_CLUB_MISSION}
+          </p>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => setIsCreditsOpen(true)}
+              className="profile-cta-btn"
+            >
+              [ VIEW CREDITS & CONTRIBUTORS ]
+            </button>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#666' }}>
+              v{DASHBOARD_APP_VERSION}
+            </span>
+          </div>
+        </div>
+
+        {/* ==========================================================================
+             6. ACCOUNT ACTIONS // SIGN OUT
+             ========================================================================== */}
+        <div className="profile-danger-card">
+          <div className="micro-annotation" style={{ color: 'var(--warm-red)', marginBottom: '12px' }}>
+            SECURITY PROTOCOL // SESSION REVOCATION
+          </div>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '24px',
+          }}>
+            <div style={{ maxWidth: '600px' }}>
+              <h3 style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: '26px',
+                fontWeight: 900,
+                marginBottom: '8px',
+                textTransform: 'uppercase',
+                color: '#ffffff',
+              }}>
+                TERMINATE ACTIVE SESSION
+              </h3>
+              <p style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: '14px',
+                color: '#a0a4b8',
+                lineHeight: 1.6,
+                margin: 0,
+              }}>
+                Sign out of your institutional credentials on this computer. Any synchronized offline attendance tokens and cached session credentials will be revoked.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsSignOutModalOpen(true)}
+              className="profile-danger-btn"
+            >
+              <LogOut size={16} />
+              <span>[ SIGN OUT ]</span>
+            </button>
+          </div>
+        </div>
+
       </div>
 
       <DevClubCreditsModal
         isOpen={isCreditsOpen}
         onClose={() => setIsCreditsOpen(false)}
       />
-    </div>
+    </main>
   );
 }

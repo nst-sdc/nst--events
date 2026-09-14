@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
 import { useSubmitAttendanceDispute } from '../../../../../../hooks/useAttendance';
+import { X, AlertCircle } from 'lucide-react';
 
 interface AttendanceDisputeModalProps {
   isOpen: boolean;
@@ -45,38 +46,50 @@ export function AttendanceDisputeModal({ isOpen, onClose, eventId, sessionId }: 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" role="dialog" aria-modal="true">
-      <div className="w-full max-w-md bg-stitch-surface-container-lowest border border-stitch-outline-variant shadow-sm flex flex-col md:relative fixed bottom-0 md:bottom-auto left-0 md:left-auto max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200" role="dialog" aria-modal="true">
+      <div className="w-full max-w-lg bg-[#090a0f] border-3 border-[#F5F5F2] shadow-[12px_12px_0px_#0057FF] flex flex-col max-h-[90vh] overflow-hidden text-[#F5F5F2] animate-in zoom-in-95 duration-150">
         
-        <div className="p-6 pb-4 border-b border-stitch-outline-variant flex justify-between items-center bg-stitch-surface-container-lowest">
-          <h2 className="font-display text-2xl font-bold tracking-tight text-stitch-on-surface uppercase">REPORT ATTENDANCE ISSUE</h2>
-          <button onClick={onClose} className="text-stitch-secondary hover:text-stitch-on-surface transition-colors p-1" aria-label="Close">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
+        {/* Top accent bar */}
+        <div className="h-1.5 w-full bg-gradient-to-r from-[#0057FF] via-[#C8FF00] to-[#0057FF] shrink-0" />
+
+        <div className="p-6 pb-4 border-b-2 border-white/15 flex justify-between items-start bg-[#0e1017] shrink-0">
+          <div>
+            <span className="font-mono text-[10px] text-[#0057FF] uppercase tracking-[2px] font-bold block mb-1">
+              LEDGER DISPUTE
+            </span>
+            <h2 className="text-2xl font-black text-[#F5F5F2] uppercase tracking-tight" style={{ fontFamily: "'Syne', sans-serif" }}>
+              Report Attendance Issue
+            </h2>
+          </div>
+          <button 
+            onClick={onClose} 
+            className="border-2 border-white/20 bg-white/5 hover:bg-[#FF3B30] hover:border-[#FF3B30] text-[#a0a4b8] hover:text-white p-1.5 transition-colors shadow-[2px_2px_0px_#000]" 
+            aria-label="Close"
+          >
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto">
+        <div className="p-6 overflow-y-auto bg-[#07080b]">
           {errorMsg && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 text-sm font-sans dark:bg-red-900/30 dark:border-red-700/50 dark:text-red-300" role="alert">
+            <div className="mb-6 p-4 bg-[#FF3B30]/15 border-2 border-[#FF3B30] text-[#FF3B30] text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-2" role="alert">
+              <AlertCircle className="w-4 h-4 shrink-0" />
               {errorMsg}
             </div>
           )}
 
           <div className="space-y-4">
-            <p className="font-sans text-sm text-stitch-on-surface-variant">
-              If you were present at this event but your attendance was not recorded, please provide the details below. Our team will review your submission.
+            <p className="font-mono text-xs text-[#a0a4b8] leading-relaxed">
+              If you attended this session but your status is not marked, submit an audit request with your verification context.
             </p>
             <div className="space-y-2">
-              <label htmlFor="dispute-reason" className="block font-mono text-xs font-bold tracking-widest text-stitch-on-surface uppercase">
-                Reason *
+              <label htmlFor="dispute-reason" className="block font-mono text-xs font-bold tracking-widest text-[#F5F5F2] uppercase">
+                Explanation & Context *
               </label>
               <textarea
                 id="dispute-reason"
-                className="w-full min-h-[120px] p-3 font-sans text-sm border border-stitch-outline-variant focus:border-stitch-on-surface focus:ring-1 focus:ring-stitch-on-surface outline-none resize-y rounded-none bg-stitch-surface-container-lowest text-stitch-on-surface"
-                placeholder="Explain why your attendance is missing..."
+                className="w-full min-h-[120px] p-3.5 font-mono text-xs border-2 border-white/20 focus:border-[#0057FF] outline-none resize-y bg-[#0e1017] text-[#F5F5F2] transition-colors"
+                placeholder="Detail your check-in time, seat/room coordinates, or coordinator contact..."
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 disabled={isPending}
@@ -85,11 +98,11 @@ export function AttendanceDisputeModal({ isOpen, onClose, eventId, sessionId }: 
           </div>
         </div>
 
-        <div className="p-6 pt-4 border-t border-stitch-outline-variant flex flex-col sm:flex-row justify-end gap-3 bg-stitch-surface mt-auto">
+        <div className="p-5 border-t-2 border-white/15 flex flex-col sm:flex-row justify-end gap-3 bg-[#0e1017] shrink-0">
           <button
             onClick={onClose}
             disabled={isPending}
-            className="px-6 py-3 font-mono text-sm font-bold tracking-widest uppercase text-stitch-on-surface bg-transparent border border-stitch-outline-variant hover:bg-stitch-surface-variant transition-colors rounded-none disabled:opacity-50"
+            className="px-5 py-2.5 font-mono text-xs font-bold tracking-widest uppercase text-[#a0a4b8] hover:text-white bg-transparent border-2 border-white/20 hover:border-white transition-all disabled:opacity-50"
           >
             Cancel
           </button>
@@ -97,19 +110,9 @@ export function AttendanceDisputeModal({ isOpen, onClose, eventId, sessionId }: 
             onClick={handleSubmit}
             disabled={isPending}
             aria-disabled={isPending}
-            className="px-6 py-3 font-mono text-sm font-bold tracking-widest uppercase text-stitch-surface-container-lowest bg-stitch-on-surface hover:opacity-80 transition-colors rounded-none disabled:opacity-50 flex items-center justify-center min-w-[140px]"
+            className="px-6 py-2.5 font-mono text-xs font-bold tracking-widest uppercase text-white bg-[#0057FF] hover:bg-[#0042c7] border-2 border-[#0057FF] shadow-[4px_4px_0px_#000] transition-all disabled:opacity-50 flex items-center justify-center min-w-[140px]"
           >
-            {isPending ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-stitch-surface-container-lowest" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                SUBMITTING...
-              </>
-            ) : (
-              'SUBMIT'
-            )}
+            {isPending ? 'SUBMITTING...' : 'SUBMIT DISPUTE ↗'}
           </button>
         </div>
       </div>

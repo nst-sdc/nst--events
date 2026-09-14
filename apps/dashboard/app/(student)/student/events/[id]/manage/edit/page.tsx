@@ -1,5 +1,5 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect */
 
 import React, { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
@@ -9,7 +9,6 @@ import { useEventDetail } from '../../../../../../../hooks/useEventDetail';
 import { useUpdateEvent } from '../../../../../../../hooks/useUpdateEvent';
 import { useEventLifecycle } from '../../../../../../../hooks/useEventLifecycle';
 import { useClubAdmin } from '../../../../../../../components/layout/ClubAdminProvider';
-import { useCurrentUser } from '../../../../../../../hooks/useCurrentUser';
 import { useAcademicBatches } from '../../../../../../../hooks/useAcademicBatches';
 import { useClubs } from '../../../../../../../hooks/useClubs';
 import { MultiSelect } from '../../../../../components/MultiSelect';
@@ -17,20 +16,15 @@ import { MultiSelect } from '../../../../../components/MultiSelect';
 export default function ManageEventEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: eventId } = use(params);
   const router = useRouter();
-  const { activeClubId, isHydrated } = useClubAdmin();
+  const { isHydrated } = useClubAdmin();
   const { data: event, isLoading: isLoadingEvent } = useEventDetail(eventId);
   const updateEvent = useUpdateEvent(eventId);
   const { submitMutation } = useEventLifecycle();
 
-  const { data: currentUser } = useCurrentUser();
   const { data: batchesData } = useAcademicBatches();
   const { data: clubsData } = useClubs();
 
-  const isGlobalAdmin = currentUser?.global_role === 'PLATFORM_ADMIN' || currentUser?.global_role === 'FACULTY_ADMIN';
-
   const eligibleClubs = clubsData?.data?.map(c => ({ id: c.id, name: c.name })) || [];
-
-  const collaboratingClubsOptions = eligibleClubs.filter(c => c.id !== activeClubId);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -60,102 +54,83 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
         .filter(ec => !ec.isPrimary)
         .map(ec => ec.clubId);
 
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      // Parse start and end times to separate date and time
+      const start = new Date(event.startTime);
+      const end = new Date(event.endTime);
+
+      const startDate = start.toISOString().split('T')[0];
+      const startTime = start.toTimeString().substring(0, 5);
+      const endDate = end.toISOString().split('T')[0];
+      const endTime = end.toTimeString().substring(0, 5);
+
       setFormData({
         title: event.title || '',
         description: event.description || '',
         banner_url: metadata.banner_url || '',
-        startDate: event.startTime ? new Date(event.startTime).toISOString().split('T')[0] : '',
-        startTime: event.startTime ? new Date(event.startTime).toISOString().split('T')[1].slice(0, 5) : '',
-        endDate: event.endTime ? new Date(event.endTime).toISOString().split('T')[0] : '',
-        endTime: event.endTime ? new Date(event.endTime).toISOString().split('T')[1].slice(0, 5) : '',
+        startDate,
+        startTime,
+        endDate,
+        endTime,
         location_name: event.locationName || '',
         event_type: event.eventType || 'WORKSHOP',
         visibility: event.visibility || 'PUBLIC',
         registration_type: event.registrationType || 'INDIVIDUAL',
-        attendance_type: event.attendanceType || 'SINGLE',
-        max_capacity: event.maxCapacity ? event.maxCapacity.toString() : '',
-        minimum_team_size: metadata.minimum_team_size ? metadata.minimum_team_size.toString() : '',
-        maximum_team_size: metadata.maximum_team_size ? metadata.maximum_team_size.toString() : '',
-        audience: event.audience || 'ALL_STUDENTS',
-        audience_batch_ids: event.audienceBatchIds || [],
+        attendance_type: metadata.attendance_type || 'SINGLE',
+        max_capacity: event.maxCapacity ? String(event.maxCapacity) : '',
+        minimum_team_size: metadata.minimum_team_size ? String(metadata.minimum_team_size) : '',
+        maximum_team_size: metadata.maximum_team_size ? String(metadata.maximum_team_size) : '',
+        audience: metadata.audience || 'ALL_STUDENTS',
+        audience_batch_ids: metadata.audience_batch_ids || [],
         collaborating_club_ids: collabs
       });
     }
   }, [event]);
 
-  if (!isHydrated || isLoadingEvent) {
-    return (
-      <div className="w-full h-32 flex items-center justify-center border border-stitch-outline-variant bg-stitch-surface">
-        <div className="animate-pulse flex items-center gap-2">
-          <div className="w-4 h-4 border-2 border-stitch-on-surface border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-[10px] font-mono uppercase tracking-widest text-stitch-secondary">Loading Event...</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (!event) return null;
-
-  if (event.state !== 'DRAFT') {
-    return (
-      <div className="p-8 border border-red-600 bg-red-50 dark:bg-red-900/10 text-center space-y-4">
-        <h3 className="text-sm font-mono font-bold text-red-800 dark:text-red-500 uppercase tracking-widest">Locked</h3>
-        <p className="text-sm text-red-700 dark:text-red-600 font-mono max-w-[400px] mx-auto">
-          This event is no longer a draft and cannot be edited. It is currently in {event.state} state.
-        </p>
-        <Link 
-          href={`/student/events/${eventId}/manage`}
-          className="inline-block px-6 py-3 border border-red-600 text-red-600 font-mono font-bold text-xs tracking-widest uppercase hover:bg-red-600 hover:text-white transition-colors"
-        >
-          Return to Overview
-        </Link>
-      </div>
-    );
-  }
+  // If not draft, or locked, kick out to view/manage
+  useEffect(() => {
+    if (isHydrated && event && event.state !== 'DRAFT') {
+      router.push(`/student/events/${eventId}/manage`);
+    }
+  }, [isHydrated, event, eventId, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleMultiSelectChange = (name: string, values: string[]) => {
     setFormData(prev => ({ ...prev, [name]: values }));
   };
 
-  const handleSaveDraft = (e: React.FormEvent) => {
+  const handleSaveDraft = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const start_time = new Date(`${formData.startDate}T${formData.startTime}`).toISOString();
-    const end_time = new Date(`${formData.endDate}T${formData.endTime}`).toISOString();
 
-    if (!formData.banner_url.trim()) {
-      alert('Event Banner Image URL is mandatory.');
-      return;
-    }
+    const startDateTime = new Date(`${formData.startDate}T${formData.startTime}:00`).toISOString();
+    const endDateTime = new Date(`${formData.endDate}T${formData.endTime}:00`).toISOString();
 
-    updateEvent.mutate({
+    const payload: any = {
       title: formData.title,
-      description: formData.description,
-      start_time,
-      end_time,
-      location_name: formData.location_name,
+      description: formData.description || undefined,
+      start_time: startDateTime,
+      end_time: endDateTime,
+      location_name: formData.location_name || undefined,
       event_type: formData.event_type,
-      visibility: formData.visibility as any,
-      registration_type: formData.registration_type as any,
-      attendance_type: formData.attendance_type as any,
-      max_capacity: formData.max_capacity ? parseInt(formData.max_capacity) : null,
-      audience: formData.audience as any,
-      audience_batch_ids: formData.audience === 'SPECIFIC_BATCHES' ? formData.audience_batch_ids : undefined,
+      visibility: formData.visibility,
+      registration_type: formData.registration_type,
+      max_capacity: formData.max_capacity ? parseInt(formData.max_capacity, 10) : undefined,
       metadata: {
-        banner_url: formData.banner_url.trim(),
-        ...(formData.registration_type === 'TEAM' ? {
-          minimum_team_size: formData.minimum_team_size ? parseInt(formData.minimum_team_size) : undefined,
-          maximum_team_size: formData.maximum_team_size ? parseInt(formData.maximum_team_size) : undefined,
-        } : {}),
-      },
-    }, {
+        banner_url: formData.banner_url || undefined,
+        attendance_type: formData.attendance_type,
+        audience: formData.audience,
+        audience_batch_ids: formData.audience === 'SPECIFIC_BATCHES' ? formData.audience_batch_ids : [],
+        minimum_team_size: formData.registration_type === 'TEAM' && formData.minimum_team_size ? parseInt(formData.minimum_team_size, 10) : undefined,
+        maximum_team_size: formData.registration_type === 'TEAM' && formData.maximum_team_size ? parseInt(formData.maximum_team_size, 10) : undefined
+      }
+    };
+
+    updateEvent.mutate(payload, {
       onSuccess: () => {
-        alert('Draft saved successfully!');
+        router.push(`/student/events/${eventId}/manage`);
       }
     });
   };
@@ -170,32 +145,54 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
     }
   };
 
+  if (isLoadingEvent || !event) {
+    return (
+      <div className="w-full h-32 flex items-center justify-center border-2 border-white/15 bg-[#090a0f]">
+        <div className="flex items-center gap-2.5">
+          <div className="w-4 h-4 border-2 border-[#0057FF] border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-[10px] font-mono uppercase tracking-widest text-[#a0a4b8]">Loading Event Specification...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-sans">
       
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-6 border border-yellow-600 bg-yellow-50 dark:bg-yellow-900/10">
+      {/* Top action bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b-2 border-white/15 pb-4">
         <div>
-          <h3 className="text-sm font-mono font-bold text-yellow-800 dark:text-yellow-500 uppercase tracking-widest mb-1">Draft Mode</h3>
-          <p className="text-sm text-yellow-700 dark:text-yellow-600 font-mono">You can edit these details. Once submitted for approval, the event will be locked.</p>
+          <Link 
+            href={`/student/events/${eventId}/manage`}
+            className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-widest text-[#0057FF] hover:text-white transition-colors mb-1"
+          >
+            <ArrowLeft className="w-4 h-4" /> Discard Edits
+          </Link>
+          <h1 className="text-2xl font-black text-[#F5F5F2] uppercase tracking-tight" style={{ fontFamily: "'Syne', sans-serif" }}>
+            Edit Event Parameters
+          </h1>
         </div>
         <button 
           onClick={handleSubmitForApproval}
           disabled={submitMutation.isPending || updateEvent.isPending}
-          className="px-6 py-3 bg-yellow-600 text-white font-mono font-bold text-xs tracking-widest hover:bg-yellow-700 transition-colors uppercase flex items-center gap-2 whitespace-nowrap disabled:opacity-50"
+          className="px-6 py-3 bg-[#C8FF00] text-black font-mono font-black text-xs tracking-widest hover:bg-white transition-all uppercase flex items-center gap-2 border-2 border-black shadow-[3px_3px_0px_#000] whitespace-nowrap disabled:opacity-50"
         >
           <Send className="w-4 h-4" />
-          {submitMutation.isPending ? 'Submitting...' : 'Submit for Approval'}
+          {submitMutation.isPending ? 'Submitting...' : 'Submit for Approval ↗'}
         </button>
       </div>
 
-      <form onSubmit={handleSaveDraft} className="space-y-8 p-6 border border-stitch-outline-variant bg-stitch-surface-container-lowest">
+      <form onSubmit={handleSaveDraft} className="space-y-8 p-6 md:p-8 border-2 border-white/15 bg-[#090a0f] shadow-[8px_8px_0px_#000]">
         
         {/* Basic Info */}
         <section className="space-y-4">
-          <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-stitch-on-surface uppercase border-b border-stitch-outline-variant pb-1.5 mb-4">Basic Details</h2>
+          <div className="flex items-center gap-2 border-b-2 border-white/10 pb-2 mb-4">
+            <span className="w-2 h-2 bg-[#0057FF] inline-block"></span>
+            <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-[#F5F5F2] uppercase">Core Specification</h2>
+          </div>
           
           <div>
-            <label className="block text-[10px] font-mono font-bold text-stitch-secondary uppercase tracking-widest mb-1.5">Event Title *</label>
+            <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Event Title *</label>
             <input 
               required
               minLength={3}
@@ -204,34 +201,34 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
               name="title"
               value={formData.title}
               onChange={handleChange}
-              className="w-full bg-stitch-surface border border-stitch-outline-variant px-3 py-2 text-sm font-sans text-stitch-on-surface focus:border-stitch-primary focus:outline-none transition-colors"
+              className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-sm font-sans text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
             />
           </div>
 
           <div>
-            <label className="block text-[10px] font-mono font-bold text-stitch-secondary uppercase tracking-widest mb-1.5">Description</label>
+            <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Description</label>
             <textarea 
               name="description"
               value={formData.description}
               onChange={handleChange}
               rows={4}
-              className="w-full bg-stitch-surface border border-stitch-outline-variant px-3 py-2 text-sm font-sans text-stitch-on-surface focus:border-stitch-primary focus:outline-none transition-colors"
+              className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-sm font-sans text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors resize-y"
             />
           </div>
 
           <div>
-            <label className="block text-[10px] font-mono font-bold text-stitch-secondary uppercase tracking-widest mb-1.5">Event Banner Image URL *</label>
+            <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Event Banner URL *</label>
             <input 
               required
               type="url"
               name="banner_url"
               value={formData.banner_url}
               onChange={handleChange}
-              className="w-full bg-stitch-surface border border-stitch-outline-variant px-3 py-2 text-sm font-mono text-stitch-on-surface focus:border-stitch-primary focus:outline-none transition-colors"
+              className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-sm font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
               placeholder="https://images.unsplash.com/... or https://cdn.example.com/banner.jpg"
             />
             {formData.banner_url && (
-              <div className="mt-2 border border-stitch-outline-variant overflow-hidden max-h-48 bg-black">
+              <div className="mt-3 border-2 border-white/15 overflow-hidden max-h-48 bg-black shadow-[4px_4px_0px_#000]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                   src={formData.banner_url} 
@@ -246,54 +243,57 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
 
         {/* Date & Time */}
         <section className="space-y-4">
-          <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-stitch-on-surface uppercase border-b border-stitch-outline-variant pb-1.5 mb-4">Date & Time</h2>
+          <div className="flex items-center gap-2 border-b-2 border-white/10 pb-2 mb-4">
+            <span className="w-2 h-2 bg-[#0057FF] inline-block"></span>
+            <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-[#F5F5F2] uppercase">Schedule & Duration</h2>
+          </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-mono font-bold text-stitch-secondary uppercase tracking-widest mb-1.5">Start Date *</label>
+              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Start Date *</label>
               <input 
                 required
                 type="date"
                 name="startDate"
                 value={formData.startDate}
                 onChange={handleChange}
-                className="w-full bg-stitch-surface border border-stitch-outline-variant px-3 py-2 text-sm font-mono text-stitch-on-surface focus:border-stitch-primary focus:outline-none transition-colors"
+                className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-mono font-bold text-stitch-secondary uppercase tracking-widest mb-1.5">Start Time *</label>
+              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Start Time *</label>
               <input 
                 required
                 type="time"
                 name="startTime"
                 value={formData.startTime}
                 onChange={handleChange}
-                className="w-full bg-stitch-surface border border-stitch-outline-variant px-3 py-2 text-sm font-mono text-stitch-on-surface focus:border-stitch-primary focus:outline-none transition-colors"
+                className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-mono font-bold text-stitch-secondary uppercase tracking-widest mb-1.5">End Date *</label>
+              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">End Date *</label>
               <input 
                 required
                 type="date"
                 name="endDate"
                 value={formData.endDate}
                 onChange={handleChange}
-                className="w-full bg-stitch-surface border border-stitch-outline-variant px-3 py-2 text-sm font-mono text-stitch-on-surface focus:border-stitch-primary focus:outline-none transition-colors"
+                className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-mono font-bold text-stitch-secondary uppercase tracking-widest mb-1.5">End Time *</label>
+              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">End Time *</label>
               <input 
                 required
                 type="time"
                 name="endTime"
                 value={formData.endTime}
                 onChange={handleChange}
-                className="w-full bg-stitch-surface border border-stitch-outline-variant px-3 py-2 text-sm font-mono text-stitch-on-surface focus:border-stitch-primary focus:outline-none transition-colors"
+                className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
               />
             </div>
           </div>
@@ -301,27 +301,30 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
 
         {/* Location & Format */}
         <section className="space-y-4">
-          <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-stitch-on-surface uppercase border-b border-stitch-outline-variant pb-1.5 mb-4">Location & Format</h2>
+          <div className="flex items-center gap-2 border-b-2 border-white/10 pb-2 mb-4">
+            <span className="w-2 h-2 bg-[#0057FF] inline-block"></span>
+            <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-[#F5F5F2] uppercase">Format & Venue</h2>
+          </div>
           
           <div>
-            <label className="block text-[10px] font-mono font-bold text-stitch-secondary uppercase tracking-widest mb-1.5">Location Name</label>
+            <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Campus Venue / Location Name</label>
             <input 
               type="text"
               name="location_name"
               value={formData.location_name}
               onChange={handleChange}
-              className="w-full bg-stitch-surface border border-stitch-outline-variant px-3 py-2 text-sm font-sans text-stitch-on-surface focus:border-stitch-primary focus:outline-none transition-colors"
+              className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-sm font-sans text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-mono font-bold text-stitch-secondary uppercase tracking-widest mb-1.5">Event Type</label>
+              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Event Type</label>
               <select 
                 name="event_type"
                 value={formData.event_type}
                 onChange={handleChange}
-                className="w-full bg-stitch-surface border border-stitch-outline-variant px-3 py-2 text-sm font-mono text-stitch-on-surface focus:border-stitch-primary focus:outline-none transition-colors appearance-none"
+                className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
               >
                 <option value="WORKSHOP">Workshop</option>
                 <option value="HACKATHON">Hackathon</option>
@@ -333,12 +336,12 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
             </div>
             
             <div>
-              <label className="block text-[10px] font-mono font-bold text-stitch-secondary uppercase tracking-widest mb-1.5">Visibility</label>
+              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Visibility</label>
               <select 
                 name="visibility"
                 value={formData.visibility}
                 onChange={handleChange}
-                className="w-full bg-stitch-surface border border-stitch-outline-variant px-3 py-2 text-sm font-mono text-stitch-on-surface focus:border-stitch-primary focus:outline-none transition-colors appearance-none"
+                className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
               >
                 <option value="PUBLIC">Public</option>
                 <option value="PRIVATE">Private</option>
@@ -347,12 +350,12 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
             </div>
 
             <div>
-              <label className="block text-[10px] font-mono font-bold text-stitch-secondary uppercase tracking-widest mb-1.5">Attendance Type</label>
+              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Attendance Ledger</label>
               <select 
                 name="attendance_type"
                 value={formData.attendance_type}
                 onChange={handleChange}
-                className="w-full bg-stitch-surface border border-stitch-outline-variant px-3 py-2 text-sm font-mono text-stitch-on-surface focus:border-stitch-primary focus:outline-none transition-colors appearance-none"
+                className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
               >
                 <option value="SINGLE">Single Session</option>
                 <option value="MULTI_SESSION">Multi Session</option>
@@ -360,17 +363,17 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
             </div>
           </div>
           
-          <div className="mt-6 pt-6 border-t border-stitch-outline-variant">
-            <h3 className="text-xs font-mono font-bold tracking-widest text-stitch-on-surface uppercase mb-4">Audience & Access</h3>
+          <div className="mt-6 pt-6 border-t-2 border-white/10">
+            <h3 className="text-xs font-mono font-bold tracking-widest text-[#F5F5F2] uppercase mb-4">Audience & Access Scope</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] font-mono font-bold text-stitch-secondary uppercase tracking-widest mb-1.5">Audience</label>
+                <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Audience</label>
                 <select 
                   name="audience"
                   value={formData.audience}
                   onChange={handleChange}
-                  className="w-full bg-stitch-surface border border-stitch-outline-variant px-3 py-2 text-sm font-mono text-stitch-on-surface focus:border-stitch-primary focus:outline-none transition-colors appearance-none"
+                  className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
                 >
                   <option value="ALL_STUDENTS">All Students</option>
                   <option value="SPECIFIC_BATCHES">Specific Batches</option>
@@ -379,7 +382,7 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
 
               {formData.audience === 'SPECIFIC_BATCHES' && (
                 <div>
-                  <label className="block text-[10px] font-mono font-bold text-stitch-secondary uppercase tracking-widest mb-1.5">Eligible Batches</label>
+                  <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Eligible Batches</label>
                   <MultiSelect
                     options={batchesData?.map(b => ({ value: b.id, label: b.display_name })) || []}
                     selectedValues={formData.audience_batch_ids}
@@ -390,10 +393,8 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
               )}
             </div>
 
-            {/* Note: PATCH /v1/events/:id does not currently support updating collaborating_club_ids per useUpdateEvent input, but we render it read-only if they exist, or disabled for now.
-                We'll leave the input here, but updating it might require a backend endpoint or be unsupported in useUpdateEvent hook payload. */}
-            <div className="mt-6">
-              <label className="block text-[10px] font-mono font-bold text-stitch-secondary uppercase tracking-widest mb-1.5">Collaborating Clubs</label>
+            <div className="mt-4">
+              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Collaborating Clubs</label>
               <MultiSelect
                 disabled
                 options={eligibleClubs.map(c => ({ value: c.id, label: c.name }))}
@@ -401,23 +402,23 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
                 onChange={(values: string[]) => handleMultiSelectChange('collaborating_club_ids', values)}
                 placeholder="Select clubs..."
               />
-              <p className="text-[10px] font-mono text-stitch-secondary mt-1">
-                Collaborating clubs cannot be changed after creation.
+              <p className="text-[10px] font-mono text-[#a0a4b8] mt-1">
+                Collaborating clubs are locked after initial creation.
               </p>
             </div>
           </div>
 
-          <div className="mt-6 pt-6 border-t border-stitch-outline-variant">
-            <h3 className="text-xs font-mono font-bold tracking-widest text-stitch-on-surface uppercase mb-4">Registration & Capacity</h3>
+          <div className="mt-6 pt-6 border-t-2 border-white/10">
+            <h3 className="text-xs font-mono font-bold tracking-widest text-[#F5F5F2] uppercase mb-4">Registration & Quota</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] font-mono font-bold text-stitch-secondary uppercase tracking-widest mb-1.5">Registration Type</label>
+                <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Registration Type</label>
                 <select 
                   name="registration_type"
                   value={formData.registration_type}
                   onChange={handleChange}
-                  className="w-full bg-stitch-surface border border-stitch-outline-variant px-3 py-2 text-sm font-mono text-stitch-on-surface focus:border-stitch-primary focus:outline-none transition-colors appearance-none"
+                  className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
                 >
                   <option value="INDIVIDUAL">Individual</option>
                   <option value="TEAM">Team</option>
@@ -425,7 +426,7 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
               </div>
 
               <div>
-                <label className="block text-[10px] font-mono font-bold text-stitch-secondary uppercase tracking-widest mb-1.5">
+                <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">
                   {formData.registration_type === 'TEAM' ? "Maximum Teams" : "Maximum Participants"}
                 </label>
                 <input 
@@ -435,14 +436,14 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
                   value={formData.max_capacity}
                   onChange={handleChange}
                   placeholder="Leave empty for unlimited"
-                  className="w-full bg-stitch-surface border border-stitch-outline-variant px-3 py-2 text-sm font-mono text-stitch-on-surface focus:border-stitch-primary focus:outline-none transition-colors"
+                  className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
                 />
               </div>
 
               {formData.registration_type === 'TEAM' && (
                 <>
                   <div>
-                    <label className="block text-[10px] font-mono font-bold text-stitch-secondary uppercase tracking-widest mb-1.5">Minimum Team Size *</label>
+                    <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Minimum Team Size *</label>
                     <input 
                       required
                       type="number"
@@ -451,11 +452,11 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
                       value={formData.minimum_team_size}
                       onChange={handleChange}
                       placeholder="e.g. 2"
-                      className="w-full bg-stitch-surface border border-stitch-outline-variant px-3 py-2 text-sm font-mono text-stitch-on-surface focus:border-stitch-primary focus:outline-none transition-colors"
+                      className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-mono font-bold text-stitch-secondary uppercase tracking-widest mb-1.5">Maximum Team Size *</label>
+                    <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Maximum Team Size *</label>
                     <input 
                       required
                       type="number"
@@ -464,7 +465,7 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
                       value={formData.maximum_team_size}
                       onChange={handleChange}
                       placeholder="e.g. 4"
-                      className="w-full bg-stitch-surface border border-stitch-outline-variant px-3 py-2 text-sm font-mono text-stitch-on-surface focus:border-stitch-primary focus:outline-none transition-colors"
+                      className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
                     />
                   </div>
                 </>
@@ -473,20 +474,20 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
           </div>
         </section>
 
-        <div className="pt-6 border-t border-stitch-outline-variant flex justify-end gap-4">
+        <div className="pt-6 border-t-2 border-white/10 flex justify-end gap-3">
           <Link 
             href={`/student/events/${eventId}/manage`}
-            className="px-6 py-3 border border-stitch-on-surface text-stitch-on-surface font-mono font-bold text-xs tracking-widest hover:bg-stitch-surface transition-colors uppercase"
+            className="px-6 py-3 border-2 border-white/20 text-[#a0a4b8] hover:text-white hover:border-white font-mono font-bold text-xs tracking-widest uppercase transition-all"
           >
             Cancel
           </Link>
           <button 
             type="submit"
             disabled={updateEvent.isPending || submitMutation.isPending}
-            className="px-8 py-3 border border-stitch-primary text-stitch-primary font-mono font-bold text-xs tracking-widest hover:bg-stitch-primary hover:text-stitch-on-primary transition-colors uppercase flex items-center gap-2 disabled:opacity-50"
+            className="px-8 py-3 bg-[#0057FF] text-white hover:bg-[#0042c7] border-2 border-[#0057FF] font-mono font-bold text-xs tracking-widest uppercase flex items-center gap-2 shadow-[3px_3px_0px_#000] disabled:opacity-50 transition-all"
           >
             <Save className="w-4 h-4" />
-            {updateEvent.isPending ? 'Saving...' : 'Save Draft'}
+            {updateEvent.isPending ? 'Saving...' : 'Save Draft Changes'}
           </button>
         </div>
 
