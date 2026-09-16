@@ -120,6 +120,21 @@ export default function AdminHubPage() {
       </div>
       
       <Row gutter={[24, 24]}>
+        {/* Analytics */}
+        <Col xs={24} lg={12}>
+          <Card title="Analytics" style={{ height: '100%' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 16, backgroundColor: token.colorBgLayout, borderRadius: 8 }}>
+                <div>
+                  <Text strong style={{ display: 'block' }}>Platform Analytics</Text>
+                  <Text type="secondary">View insights and metrics for the platform.</Text>
+                </div>
+                <Button type="primary" onClick={() => router.push('/admin/analytics')}>View Analytics</Button>
+              </div>
+            </div>
+          </Card>
+        </Col>
+
         {/* Quick Actions */}
         {isPlatformAdmin && (
           <Col xs={24} lg={12}>

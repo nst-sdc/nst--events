@@ -74,7 +74,7 @@ describe('Phase 8 — iOS Parity & Regression Tests', () => {
   it('1. Configures iOS Google Client ID and URL scheme in app.json and auth screen', () => {
     expect(authIndexContent).toContain('iosClientId:');
     expect(appJsonContent).toContain('iosUrlScheme');
-    expect(appJsonContent).toContain('com.googleusercontent.apps.590987407822-ho2vv2d0994vhqag2i7r08jchnfb201l');
+    expect(appJsonContent).toContain('com.googleusercontent.apps.319324933029-85akm9aa4vt8vnscj69sdlt1lbv5rr0f');
   });
 
   // 2. iOS Info.plist & Permission Usage Descriptions

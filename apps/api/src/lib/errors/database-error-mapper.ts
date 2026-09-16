@@ -88,6 +88,49 @@ function extractSqlstate(err: unknown): string | undefined {
 }
 
 /**
+ * Resolves a database or application error into a semantic failure reason string.
+ * Pure function: does not throw.
+ */
+export function getDatabaseErrorReason(err: unknown): string {
+  if (err instanceof Error && (err as any).statusCode) {
+    return err.message;
+  }
+
+  if (err && typeof err === 'object' && 'code' in err && typeof err.code === 'string') {
+    if (err.code === 'P2002') return 'ALREADY_RECORDED';
+    if (err.code === 'P2025') return 'RESOURCE_NOT_FOUND';
+  }
+
+  let sqlstate = extractSqlstate(err);
+  if (!sqlstate || sqlstate === 'P0001' || sqlstate === 'XX000') {
+    if (err && typeof err === 'object' && 'message' in err && typeof (err as any).message === 'string') {
+      const msg = (err as any).message;
+      const match1 = msg.match(/SQLSTATE\[([A-Z0-9]{5})\]/);
+      if (match1) sqlstate = match1[1];
+      else {
+        const match2 = msg.match(/Code:\s*`([A-Z0-9]{5})`/);
+        if (match2) sqlstate = match2[1];
+        else {
+          const match3 = msg.match(/(U\d{4})/);
+          if (match3) sqlstate = match3[1];
+        }
+      }
+    }
+  }
+
+  if (sqlstate) {
+    if (sqlstate === '42501') return 'RLS_DENIED';
+    if (sqlstate === '23505') return 'ALREADY_RECORDED';
+    if (sqlstate in SQLSTATE_MAP) {
+      return SQLSTATE_MAP[sqlstate].semanticCode;
+    }
+    return sqlstate;
+  }
+
+  return err instanceof Error ? err.message : 'ATTENDANCE_FAILED';
+}
+
+/**
  * Maps a direct database error to the appropriate application error.
  * Handles both RPC SQLSTATE codes and known Prisma P-codes.
  */

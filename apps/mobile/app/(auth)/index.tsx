@@ -6,7 +6,7 @@ import { Button } from '../../src/ui/Button';
 import { NstLogo } from '../../src/ui/NstLogo';
 import { useAuthStore } from '../../src/store/auth';
 import { apiClient } from '../../src/infrastructure/api';
-import { GOOGLE_WEB_CLIENT_ID, GOOGLE_IOS_CLIENT_ID, SUPPORT_EMAIL } from '../../src/infrastructure/config';
+import { GOOGLE_WEB_CLIENT_ID, GOOGLE_IOS_CLIENT_ID, SUPPORT_EMAIL, PRIVACY_POLICY_URL } from '../../src/infrastructure/config';
 import { DevClubBadge } from '../../src/ui/brand/DevClubBadge';
 import { DevClubCreditsModal } from '../../src/ui/brand/DevClubCreditsModal';
 
@@ -498,7 +498,18 @@ export default function LoginGatewayScreen() {
           <View style={styles.noticeBox}>
             <Text style={styles.noticeText}>RESTRICTED TO ENROLLED NST STUDENTS & FACULTY</Text>
             <Text style={styles.noticeSub}>SINGLE DEVICE BOUND // HARDWARE KEY VERIFIED</Text>
-            <View style={{ marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: theme.colors.borderHairline, alignItems: 'center' }}>
+            <TouchableOpacity
+              onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
+              activeOpacity={0.7}
+              style={{ marginTop: 4 }}
+              accessibilityRole="link"
+              accessibilityLabel="Privacy Policy"
+            >
+              <Text style={{ fontFamily: theme.typography.monoMedium, fontSize: 10, color: theme.colors.primary, textDecorationLine: 'underline', letterSpacing: 0.5 }}>
+                [ PRIVACY POLICY ]
+              </Text>
+            </TouchableOpacity>
+            <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: theme.colors.borderHairline, alignItems: 'center' }}>
               <DevClubBadge
                 variant="signature"
                 size="sm"

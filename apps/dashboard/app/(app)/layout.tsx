@@ -59,7 +59,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     // If authenticated and user is loaded, check role
     if (isAuthenticated && user) {
       if (user.global_role === 'STUDENT' && !pathname.startsWith('/student')) {
-        router.replace('/student/profile');
+        router.replace('/student/home');
       }
     }
   }, [isAuthenticated, user, router, pathname]);

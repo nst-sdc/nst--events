@@ -52,10 +52,10 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
   const displayFirstName = rawFirstName.toUpperCase();
 
   return (
-    <div className="min-h-screen flex flex-col font-sans pb-[64px] md:pb-0 bg-[#050505] text-[#F5F5F2] transition-colors">
+    <div className="min-h-screen flex flex-col font-sans pb-[64px] md:pb-0 bg-[#050505] text-[#F5F5F2]">
       
       {/* Global Header (Desktop & Mobile) */}
-      <header className="sticky top-0 z-50 bg-[#050505]/95 border-b border-[#F5F5F2]/15 backdrop-blur-md text-[#F5F5F2] transition-colors">
+      <header className="sticky top-0 z-50 bg-[#050505] border-b border-[#F5F5F2]/15 text-[#F5F5F2] transform-gpu">
         <div className="flex justify-between items-center w-full px-4 md:px-8 py-3 max-w-[1360px] mx-auto">
           
           {/* Brand & Mobile Back Button */}
@@ -181,7 +181,7 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Bottom Navigation (Hidden on Desktop & Deep Routes) */}
       <nav className={clsx(
-        "fixed bottom-0 w-full bg-[#050505]/95 backdrop-blur-md border-t border-[#F5F5F2]/15 z-50 md:hidden",
+        "fixed bottom-0 w-full bg-[#050505] border-t border-[#F5F5F2]/15 z-50 md:hidden",
         isDeepRoute && "hidden"
       )}>
         <div className="flex justify-around items-center h-[64px]">

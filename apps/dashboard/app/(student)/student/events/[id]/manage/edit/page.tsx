@@ -12,6 +12,20 @@ import { useClubAdmin } from '../../../../../../../components/layout/ClubAdminPr
 import { useAcademicBatches } from '../../../../../../../hooks/useAcademicBatches';
 import { useClubs } from '../../../../../../../hooks/useClubs';
 import { MultiSelect } from '../../../../../components/MultiSelect';
+import { Modal } from '../../../../../../../components/ui/Modal';
+
+const formatLocalDate = (d: Date) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const formatLocalTime = (d: Date) => {
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
 
 export default function ManageEventEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: eventId } = use(params);
@@ -47,6 +61,9 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
     collaborating_club_ids: [] as string[]
   });
 
+  const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
   useEffect(() => {
     if (event) {
       const metadata = event.metadata as any || {};
@@ -54,14 +71,14 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
         .filter(ec => !ec.isPrimary)
         .map(ec => ec.clubId);
 
-      // Parse start and end times to separate date and time
+      // Parse start and end times in local timezone
       const start = new Date(event.startTime);
       const end = new Date(event.endTime);
 
-      const startDate = start.toISOString().split('T')[0];
-      const startTime = start.toTimeString().substring(0, 5);
-      const endDate = end.toISOString().split('T')[0];
-      const endTime = end.toTimeString().substring(0, 5);
+      const startDate = formatLocalDate(start);
+      const startTime = formatLocalTime(start);
+      const endDate = formatLocalDate(end);
+      const endTime = formatLocalTime(end);
 
       setFormData({
         title: event.title || '',
@@ -75,12 +92,12 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
         event_type: event.eventType || 'WORKSHOP',
         visibility: event.visibility || 'PUBLIC',
         registration_type: event.registrationType || 'INDIVIDUAL',
-        attendance_type: metadata.attendance_type || 'SINGLE',
+        attendance_type: (event.attendanceType as any) || metadata.attendance_type || 'SINGLE',
         max_capacity: event.maxCapacity ? String(event.maxCapacity) : '',
         minimum_team_size: metadata.minimum_team_size ? String(metadata.minimum_team_size) : '',
         maximum_team_size: metadata.maximum_team_size ? String(metadata.maximum_team_size) : '',
-        audience: metadata.audience || 'ALL_STUDENTS',
-        audience_batch_ids: metadata.audience_batch_ids || [],
+        audience: (event.audience as any) || metadata.audience || 'ALL_STUDENTS',
+        audience_batch_ids: event.audienceBatchIds || metadata.audience_batch_ids || [],
         collaborating_club_ids: collabs
       });
     }
@@ -117,12 +134,12 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
       event_type: formData.event_type,
       visibility: formData.visibility,
       registration_type: formData.registration_type,
+      attendance_type: formData.attendance_type,
+      audience: formData.audience,
+      audience_batch_ids: formData.audience === 'SPECIFIC_BATCHES' ? formData.audience_batch_ids : [],
       max_capacity: formData.max_capacity ? parseInt(formData.max_capacity, 10) : undefined,
       metadata: {
         banner_url: formData.banner_url || undefined,
-        attendance_type: formData.attendance_type,
-        audience: formData.audience,
-        audience_batch_ids: formData.audience === 'SPECIFIC_BATCHES' ? formData.audience_batch_ids : [],
         minimum_team_size: formData.registration_type === 'TEAM' && formData.minimum_team_size ? parseInt(formData.minimum_team_size, 10) : undefined,
         maximum_team_size: formData.registration_type === 'TEAM' && formData.maximum_team_size ? parseInt(formData.maximum_team_size, 10) : undefined
       }
@@ -135,14 +152,17 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
     });
   };
 
-  const handleSubmitForApproval = () => {
-    if (confirm('Are you sure you want to submit this event for approval? You will no longer be able to edit it.')) {
-      submitMutation.mutate(eventId, {
-        onSuccess: () => {
-          router.push(`/student/events/${eventId}/manage`);
-        }
-      });
-    }
+  const handleConfirmSubmit = () => {
+    setSubmitError(null);
+    submitMutation.mutate(eventId, {
+      onSuccess: () => {
+        setIsSubmitModalOpen(false);
+        router.push(`/student/events/${eventId}/manage`);
+      },
+      onError: (err: any) => {
+        setSubmitError(err?.data?.error || err?.message || 'Failed to submit event for approval');
+      }
+    });
   };
 
   if (isLoadingEvent || !event) {
@@ -173,7 +193,7 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
           </h1>
         </div>
         <button 
-          onClick={handleSubmitForApproval}
+          onClick={() => setIsSubmitModalOpen(true)}
           disabled={submitMutation.isPending || updateEvent.isPending}
           className="px-6 py-3 bg-[#C8FF00] text-black font-mono font-black text-xs tracking-widest hover:bg-white transition-all uppercase flex items-center gap-2 border-2 border-black shadow-[3px_3px_0px_#000] whitespace-nowrap disabled:opacity-50"
         >
@@ -492,6 +512,43 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
         </div>
 
       </form>
+
+      <Modal 
+        isOpen={isSubmitModalOpen} 
+        onClose={() => !submitMutation.isPending && setIsSubmitModalOpen(false)} 
+        title="SUBMIT FOR APPROVAL"
+      >
+        <div className="p-6 bg-[#0d0e12] text-[#F5F5F2]">
+          <p className="font-sans text-sm text-[#a0a4b8] mb-6 leading-relaxed">
+            Are you sure you want to submit <strong className="text-white">{event.title}</strong> for approval? Once submitted, the draft specification will be locked from further edits while pending review.
+          </p>
+
+          {submitError && (
+            <div className="mb-4 p-3 bg-red-500/10 border border-[#FF3B30] text-[#FF3B30] font-mono text-xs uppercase tracking-wider">
+              {submitError}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setIsSubmitModalOpen(false)}
+              disabled={submitMutation.isPending}
+              className="px-5 py-2.5 border-2 border-white/20 text-[#a0a4b8] hover:text-white font-mono text-xs font-bold uppercase tracking-wider transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmSubmit}
+              disabled={submitMutation.isPending}
+              className="px-5 py-2.5 bg-[#C8FF00] text-black hover:bg-white border-2 border-black font-mono text-xs font-bold uppercase tracking-wider shadow-[3px_3px_0px_#000] disabled:opacity-50 transition-all flex items-center gap-2"
+            >
+              {submitMutation.isPending ? 'Submitting...' : 'Confirm Submission ↗'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

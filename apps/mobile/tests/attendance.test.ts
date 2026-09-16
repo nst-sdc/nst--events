@@ -389,6 +389,7 @@ describe('Phase 3 — Mobile Attendance Reliability Tests', () => {
     });
 
     it('maps INVALID_QR_FORMAT, MALFORMED_QR, LOCATION_UNRELIABLE, LOCATION_TIMEOUT, and ACADEMIC_PROFILE_MISSING', () => {
+      expect(scanContent).toContain("toast.show(rawMsg, 'error', 'Invalid QR')");
       expect(scanContent).toContain("rawMsg = 'Unrecognized QR code format. Please scan the official NST-Events session QR code.'");
       expect(scanContent).toContain("parsedCode = 'INVALID_QR_FORMAT'");
       expect(scanContent).toContain("parsedCode = 'LOCATION_TIMEOUT'");

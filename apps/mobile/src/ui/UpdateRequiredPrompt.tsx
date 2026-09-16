@@ -13,9 +13,9 @@ export interface UpdateRequiredPromptProps {
 
 // TODO: Update these placeholder store IDs / bundle identifiers once the deferred EAS org migration
 // happens and live Google Play Store and Apple App Store listings exist.
-const PLAY_STORE_URI = "market://details?id=com.sohamdhande.nstevents";
+const PLAY_STORE_URI = "market://details?id=org.nstsdc.events";
 const PLAY_STORE_WEB_URL =
-  "https://play.google.com/store/apps/details?id=com.sohamdhande.nstevents";
+  "https://play.google.com/store/apps/details?id=org.nstsdc.events";
 const APP_STORE_URL = "https://apps.apple.com/app/nst-events/id6740123456";
 
 export async function openAppStore(): Promise<void> {

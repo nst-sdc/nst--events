@@ -10,18 +10,28 @@ import { ArrowLeft, LayoutDashboard, Users, UserCheck, ShieldAlert } from 'lucid
 
 export default function EventManageLayout({ children, params }: { children: React.ReactNode, params: Promise<{ id: string }> }) {
   const { id: eventId } = use(params);
-  const { isClubAdminMode, isHydrated } = useClubAdmin();
+  const { isClubAdminMode, setClubAdminMode, setActiveClubId, managedClubs, isHydrated } = useClubAdmin();
   const router = useRouter();
   const pathname = usePathname();
+  const { data: event, isLoading } = useEventDetail(eventId);
 
   useEffect(() => {
-    // If not in admin mode, kick out
-    if (isHydrated && !isClubAdminMode) {
+    if (!isHydrated || isLoading) return;
+
+    // Check if the current user manages a club associated with this event
+    const eventClubIds = event?.eventClubs?.map(ec => ec.clubId) || [];
+    const matchedClub = managedClubs.find(mc => eventClubIds.includes(mc.id));
+
+    if (matchedClub) {
+      if (!isClubAdminMode) {
+        setClubAdminMode(true);
+      }
+      setActiveClubId(matchedClub.id);
+    } else if (!isClubAdminMode) {
+      // User is neither in admin mode nor manages this event's club
       router.push(`/student/events/${eventId}`);
     }
-  }, [isHydrated, isClubAdminMode, eventId, router]);
-
-  const { data: event, isLoading } = useEventDetail(eventId);
+  }, [isHydrated, isLoading, isClubAdminMode, event, managedClubs, setClubAdminMode, setActiveClubId, eventId, router]);
 
   const tabs = [
     { name: 'Overview', path: `/student/events/${eventId}/manage`, icon: LayoutDashboard },

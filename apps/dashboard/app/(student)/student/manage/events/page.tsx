@@ -248,14 +248,14 @@ const manageEventsStyles = `
 const dateFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
 export default function ClubEventsPage() {
-  const { activeClubId, isHydrated } = useClubAdmin();
+  const { activeClubId, managedClubs, isHydrated } = useClubAdmin();
   const router = useRouter();
 
   useEffect(() => {
-    if (isHydrated && !activeClubId) {
+    if (isHydrated && !activeClubId && managedClubs.length === 0) {
       router.push('/student/home');
     }
-  }, [isHydrated, activeClubId, router]);
+  }, [isHydrated, activeClubId, managedClubs.length, router]);
 
   const { data: eventsData, isLoading } = useEvents({ filter_club_id: activeClubId || undefined, limit: 100 });
 

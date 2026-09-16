@@ -446,6 +446,7 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
       return (
         <button
           onClick={() => setIsRegisterModalOpen(true)}
+          disabled={isRegistering}
           className="ed-cta-btn"
         >
           {isCapacityFull ? 'JOIN WAITLIST QUEUE ↗' : 'CONFIRM REGISTRATION PASS ↗'}

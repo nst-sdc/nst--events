@@ -17,8 +17,6 @@ dayjs.extend(isBetween);
 dayjs.extend(relativeTime);
 
 const homeStyles = `
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&family=Outfit:wght@400;700;900&family=Syne:wght@700;800;900&display=swap');
-
   :root {
     --bg-black: #050505;
     --bg-paper-white: #F5F5F2;
@@ -27,9 +25,9 @@ const homeStyles = `
     --electric-blue-dark: #0042c7;
     --acid-green: #C8FF00;
     --warm-red: #FF3B30;
-    --font-display: 'Syne', 'Outfit', sans-serif;
-    --font-body: 'Inter', sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
+    --font-display: var(--font-syne), 'Syne', sans-serif;
+    --font-body: var(--font-inter), 'Inter', sans-serif;
+    --font-mono: var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
   }
 
   .home-editorial-page {
@@ -39,18 +37,19 @@ const homeStyles = `
     color: var(--bg-paper-white);
     font-family: var(--font-body);
     position: relative;
-    overflow-x: hidden;
+    overflow-x: clip;
   }
 
-  /* Texture & Noise Background Overlays */
+  /* Texture & Noise Background Overlays - Absolute positioned to avoid fixed composite repaint on scroll */
   .collage-noise-overlay {
-    position: fixed;
+    position: absolute;
     inset: 0;
     pointer-events: none;
     z-index: 0;
-    opacity: 0.35;
+    opacity: 0.25;
     background-image: radial-gradient(rgba(245, 245, 242, 0.08) 1px, transparent 1px);
     background-size: 24px 24px;
+    contain: strict;
   }
 
   /* Monospace & Micro Annotations */
@@ -114,6 +113,8 @@ const homeStyles = `
     user-select: none;
     z-index: 0;
     line-height: 0.8;
+    transform: translateZ(0);
+    contain: paint;
   }
 
   .hero-main-composition {
@@ -192,6 +193,9 @@ const homeStyles = `
     margin: -1px 0;
     position: relative;
     z-index: 2;
+    transform: translateZ(0);
+    contain: paint;
+    backface-visibility: hidden;
   }
 
   .torn-section-divider-black {
@@ -202,6 +206,9 @@ const homeStyles = `
     margin: -1px 0;
     position: relative;
     z-index: 2;
+    transform: translateZ(0);
+    contain: paint;
+    backface-visibility: hidden;
   }
 
   /* ==========================================================================
@@ -246,22 +253,27 @@ const homeStyles = `
     box-shadow: 10px 10px 0px #000000;
     display: flex;
     flex-direction: column;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
     cursor: pointer;
     position: relative;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    contain: content;
+    content-visibility: auto;
+    contain-intrinsic-size: 380px 480px;
   }
 
   .poster-card-item:hover {
-    transform: translate(-4px, -4px) rotate(-1deg);
+    transform: translate3d(-4px, -4px, 0) rotate(-1deg);
     box-shadow: 14px 14px 0px #000000;
   }
 
   .poster-card-item:nth-child(even) {
-    transform: rotate(1.5deg);
+    transform: rotate(1.5deg) translateZ(0);
   }
 
   .poster-card-item:nth-child(even):hover {
-    transform: translate(-4px, -4px) rotate(0.5deg);
+    transform: translate3d(-4px, -4px, 0) rotate(0.5deg);
   }
 
   .poster-card-header {
@@ -300,13 +312,23 @@ const homeStyles = `
     margin-bottom: 14px;
     position: relative;
     overflow: hidden;
+    transform: translateZ(0);
+    contain: paint;
   }
 
   .poster-photo-frame img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    filter: contrast(130%) grayscale(80%);
+    filter: contrast(125%) grayscale(80%);
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    will-change: transform, filter;
+    transition: filter 0.3s ease;
+  }
+
+  .poster-card-item:hover .poster-photo-frame img {
+    filter: contrast(100%) grayscale(0%);
   }
 
   .poster-desc-text {
@@ -374,6 +396,8 @@ const homeStyles = `
     color: rgba(245, 245, 242, 0.04);
     pointer-events: none;
     line-height: 0.8;
+    transform: translateZ(0);
+    contain: paint;
   }
 
   .empty-cta-btn {
@@ -541,7 +565,9 @@ export default function StudentHomePage() {
 
   return (
     <main className="home-editorial-page">
-      <style dangerouslySetInnerHTML={{ __html: homeStyles }} />
+      <style href="student-home-styles" precedence="high">
+        {homeStyles}
+      </style>
       
       {/* Background Noise Overlay */}
       <div className="collage-noise-overlay" />
@@ -726,7 +752,7 @@ export default function StudentHomePage() {
 
                 <div className="poster-photo-frame">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={evt.image} alt={evt.title} />
+                  <img src={evt.image} alt={evt.title} loading="lazy" decoding="async" />
                 </div>
 
                 <p className="poster-desc-text">{evt.description}</p>

@@ -2,7 +2,8 @@ import { prisma, withUserContext } from '@nst/database';
 import { generateQrPayload, verifyQrPayload, TOTP_WINDOW_SECONDS } from './totp.utils';
 import { UnprocessableEntityError, ConflictError, ForbiddenError, NotFoundError, BadRequestError } from '../../lib/errors';
 import { sanitizeOfflineError } from './attendance-error-mapper';
-import { mapDatabaseError } from '../../lib/errors/database-error-mapper';
+import { mapDatabaseError, getDatabaseErrorReason } from '../../lib/errors/database-error-mapper';
+import { logger } from '../../lib/logger';
 import { SCORE_RULES } from '../../config/score-rules';
 import { enqueueNotification } from '../notifications/notifications.producer';
 
@@ -57,6 +58,26 @@ export class AttendanceService {
       app_version: string;
     }
   ) {
+    let attemptLogged = false;
+    const logAttempt = async (isSuccess: boolean, failureReason?: string) => {
+      attemptLogged = true;
+      try {
+        await prisma.$executeRaw`
+          INSERT INTO "attendance_attempts" (
+            "session_id", "user_id", "is_success", "failure_reason", 
+            "latitude", "longitude", "gps_accuracy", "device_id", 
+            "device_os", "app_version", "is_offline_sync"
+          ) VALUES (
+            ${payload.session_id}::uuid, ${userId}::uuid, ${isSuccess}, ${failureReason},
+            ${payload.latitude}, ${payload.longitude}, ${payload.gps_accuracy}, ${payload.device_id},
+            ${payload.device_os}, ${payload.app_version}, false
+          )
+        `;
+      } catch (logErr) {
+        logger.error({ err: logErr }, 'Failed to persist attendance attempt telemetry');
+      }
+    };
+
     try {
       return await withUserContext(userId, async (tx) => {
         // 1. Cryptographic Validation (Express level)
@@ -65,6 +86,7 @@ export class AttendanceService {
         `;
 
         if (!sessionContext || sessionContext.length === 0) {
+          await logAttempt(false, 'SESSION_CLOSED');
           throw new UnprocessableEntityError('SESSION_CLOSED');
         }
 
@@ -72,11 +94,13 @@ export class AttendanceService {
 
         const now = new Date();
         if (now < session.open_at || (session.close_at && now > session.close_at)) {
+          await logAttempt(false, 'SESSION_CLOSED');
           throw new UnprocessableEntityError('SESSION_CLOSED');
         }
 
         const isValid = verifyQrPayload(payload.session_id, payload.totp_token, session.qr_secret);
         if (!isValid) {
+          await logAttempt(false, 'QR_EXPIRED');
           throw new UnprocessableEntityError('QR_EXPIRED');
         }
 
@@ -114,8 +138,11 @@ export class AttendanceService {
         const is_new = attendanceRecord.is_new === 'true';
 
         if (!is_new) {
+          await logAttempt(false, 'ALREADY_RECORDED');
           throw new ConflictError('ALREADY_RECORDED');
         }
+
+        await logAttempt(true);
 
         return {
           attendance_id: attendanceRecord.id,
@@ -126,6 +153,10 @@ export class AttendanceService {
         };
       });
     } catch (error: unknown) {
+      if (!attemptLogged) {
+        const mapped = getDatabaseErrorReason(error);
+        await logAttempt(false, mapped);
+      }
       if ((error as any).statusCode) throw error;
       mapDatabaseError(error);
     }
@@ -179,6 +210,17 @@ export class AttendanceService {
       offline_seq: number;
     }> = [];
     const errors: Array<{ user_id: string; error_code: string }> = [];
+    const offlineAttempts: Array<{
+      sessionId: string;
+      userId: string;
+      isSuccess: boolean;
+      failureReason: string;
+      latitude?: number;
+      longitude?: number;
+      gpsAccuracy?: number;
+      deviceId?: string;
+      isOfflineSync: boolean;
+    }> = [];
     let skipped = 0;
 
     for (const record of payload.records) {
@@ -188,6 +230,17 @@ export class AttendanceService {
         errors.push({
           user_id: userId,
           error_code: 'SESSION_CLOSED',
+        });
+        offlineAttempts.push({
+          sessionId: record.session_id,
+          userId,
+          isSuccess: false,
+          failureReason: 'SESSION_CLOSED',
+          latitude: record.gps_lat,
+          longitude: record.gps_lng,
+          gpsAccuracy: record.gps_accuracy,
+          deviceId: record.device_id,
+          isOfflineSync: true,
         });
         continue;
       }
@@ -201,12 +254,30 @@ export class AttendanceService {
           user_id: userId,
           error_code: 'INVALID_SIGNATURE',
         });
+        offlineAttempts.push({
+          sessionId: record.session_id,
+          userId,
+          isSuccess: false,
+          failureReason: 'INVALID_SIGNATURE',
+          latitude: record.gps_lat,
+          longitude: record.gps_lng,
+          gpsAccuracy: record.gps_accuracy,
+          deviceId: record.device_id,
+          isOfflineSync: true,
+        });
       } else {
         validRecords.push(record);
       }
     }
 
     if (validRecords.length === 0) {
+      if (offlineAttempts.length > 0) {
+        await prisma.attendanceAttempt.createMany({
+          data: offlineAttempts,
+        }).catch((logErr) => {
+          logger.error({ err: logErr }, 'Failed to bulk-insert offline attempt telemetry');
+        });
+      }
       return { processed: 0, skipped, errors };
     }
 
@@ -225,6 +296,33 @@ export class AttendanceService {
     const sanitizedDbErrors = (dbResult.errors || []).map(
       (e: { user_id: string; error_code: string }) => sanitizeOfflineError(e)
     );
+
+    // Correlate database errors with validRecords, avoiding fallback misattribution
+    for (const errItem of sanitizedDbErrors) {
+      const matchingRecord = validRecords.find((r) => r.user_id === errItem.user_id);
+      if (matchingRecord) {
+        offlineAttempts.push({
+          sessionId: matchingRecord.session_id,
+          userId: errItem.user_id,
+          isSuccess: false,
+          failureReason: errItem.error_code,
+          latitude: matchingRecord.gps_lat,
+          longitude: matchingRecord.gps_lng,
+          gpsAccuracy: matchingRecord.gps_accuracy,
+          deviceId: matchingRecord.device_id,
+          isOfflineSync: true,
+        });
+      }
+      // If matching record is not found, skip row to prevent misattributing location data
+    }
+
+    if (offlineAttempts.length > 0) {
+      await prisma.attendanceAttempt.createMany({
+        data: offlineAttempts,
+      }).catch((logErr) => {
+        logger.error({ err: logErr }, 'Failed to bulk-insert offline attempt telemetry');
+      });
+    }
 
     return {
       processed: dbResult.processed,

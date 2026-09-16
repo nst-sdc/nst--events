@@ -11,6 +11,7 @@ export default function ManageRegistrationsPage({ params }: { params: Promise<{ 
   const { isLoading: isLoadingEvent } = useEventDetail(eventId);
   
   const [filterStatus, setFilterStatus] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useRegistrationsList(
     eventId, 
@@ -18,6 +19,14 @@ export default function ManageRegistrationsPage({ params }: { params: Promise<{ 
   );
 
   const registrations = data?.pages.flatMap(p => p.data) || [];
+
+  const filteredRegistrations = registrations.filter(reg => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    const name = (reg.user.fullName || '').toLowerCase();
+    const email = (reg.user.email || '').toLowerCase();
+    return name.includes(q) || email.includes(q);
+  });
 
   if (isLoadingEvent || isLoading) {
     return (
@@ -40,6 +49,8 @@ export default function ManageRegistrationsPage({ params }: { params: Promise<{ 
           <Search className="w-4 h-4 text-[#a0a4b8] absolute left-3 top-1/2 transform -translate-y-1/2" />
           <input 
             type="text" 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search roster by student..."
             className="w-full bg-transparent pl-9 pr-3 py-2 text-xs font-mono text-[#F5F5F2] focus:outline-none"
           />
@@ -72,14 +83,14 @@ export default function ManageRegistrationsPage({ params }: { params: Promise<{ 
             </tr>
           </thead>
           <tbody>
-            {registrations.length === 0 ? (
+            {filteredRegistrations.length === 0 ? (
               <tr>
                 <td colSpan={3} className="px-5 py-14 text-center text-[#a0a4b8] text-xs font-mono uppercase tracking-widest">
                   No student registrations found matching query.
                 </td>
               </tr>
             ) : (
-              registrations.map((reg) => (
+              filteredRegistrations.map((reg) => (
                 <tr key={reg.id} className="border-b border-white/10 last:border-b-0 hover:bg-white/5 transition-colors">
                   <td className="px-5 py-4">
                     <div className="text-sm font-bold text-[#F5F5F2]" style={{ fontFamily: "'Syne', sans-serif" }}>
