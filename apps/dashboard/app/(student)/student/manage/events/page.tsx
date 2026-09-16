@@ -287,7 +287,9 @@ export default function ClubEventsPage() {
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: manageEventsStyles }} />
+      <style href="student-manage-events-styles" precedence="high">
+        {manageEventsStyles}
+      </style>
       <div className="me-page">
         <div className="me-inner">
 

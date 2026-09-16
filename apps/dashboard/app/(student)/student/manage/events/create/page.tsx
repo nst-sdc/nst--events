@@ -340,7 +340,9 @@ export default function CreateEventPage() {
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: createEventStyles }} />
+      <style href="student-create-event-styles" precedence="high">
+        {createEventStyles}
+      </style>
       <div className="ce-page">
         <div className="ce-inner">
 

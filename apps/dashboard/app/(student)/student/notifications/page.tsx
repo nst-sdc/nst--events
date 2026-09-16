@@ -261,7 +261,9 @@ export default function StudentNotificationsPage() {
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: notificationsStyles }} />
+      <style href="student-notifications-styles" precedence="high">
+        {notificationsStyles}
+      </style>
       <div className="collage-noise-overlay" />
 
       <div className="nt-page">

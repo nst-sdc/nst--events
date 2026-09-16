@@ -340,7 +340,9 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
   if (isLoadingEvent || isLoadingReg) {
     return (
       <>
-        <style dangerouslySetInnerHTML={{ __html: eventDetailStyles }} />
+        <style href="student-event-detail-styles" precedence="high">
+          {eventDetailStyles}
+        </style>
         <div className="ed-page">
           <div className="ed-inner" style={{ paddingTop: '80px', textAlign: 'center' }}>
             <div className="ed-micro ed-micro-blue" style={{ marginBottom: '16px' }}>
@@ -357,7 +359,9 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
   if (isErrorEvent || !event) {
     return (
       <>
-        <style dangerouslySetInnerHTML={{ __html: eventDetailStyles }} />
+        <style href="student-event-detail-styles" precedence="high">
+          {eventDetailStyles}
+        </style>
         <div className="ed-page">
           <div className="ed-inner" style={{ paddingTop: '100px', textAlign: 'center', maxWidth: '640px' }}>
             <div className="ed-micro" style={{ color: 'var(--warm-red)', marginBottom: '16px' }}>
@@ -569,7 +573,9 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: eventDetailStyles }} />
+      <style href="student-event-detail-styles" precedence="high">
+        {eventDetailStyles}
+      </style>
       <div className="collage-noise-overlay" />
 
       {/* REGISTRATION MODAL */}
