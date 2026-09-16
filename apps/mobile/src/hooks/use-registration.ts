@@ -57,10 +57,10 @@ export const useRegistration = (eventId: string) => {
         toast.show('You are currently offline.', 'error', 'No Connection');
       } else if (error?.status === 401) {
         toast.show('Please log in again.', 'error', 'Session Expired');
-      } else if (error?.detail || error?.message) {
-        toast.show(error.detail || error.message, 'error', 'Registration Failed');
       } else if (error?.status >= 500) {
         toast.show('An unexpected error occurred.', 'error', 'Server Error');
+      } else if (error?.detail || error?.message) {
+        toast.show(error.detail || error.message, 'error', 'Registration Failed');
       } else {
         toast.show('Capacity reached or action invalid.', 'error', 'Action Failed');
       }
@@ -68,23 +68,29 @@ export const useRegistration = (eventId: string) => {
   });
 
   const cancel = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (variables?: { isWaitlist?: boolean } | void) => {
       if (!isOnline) throw { status: 0, message: 'Offline' };
       return apiClient(`/v1/events/${eventId}/register`, { method: 'DELETE' });
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['events', eventId] });
       queryClient.invalidateQueries({ queryKey: ['events', eventId, 'registration'] });
       queryClient.invalidateQueries({ queryKey: ['my-registration', eventId] });
       queryClient.invalidateQueries({ queryKey: ['my-registrations'] });
       queryClient.invalidateQueries({ queryKey: ['events'] });
-      toast.show('Registration cancelled successfully.', 'info', 'Cancelled');
+      if (variables?.isWaitlist) {
+        toast.show('Left waitlist queue successfully.', 'info', 'Waitlist Updated');
+      } else {
+        toast.show('Registration cancelled successfully.', 'info', 'Cancelled');
+      }
     },
     onError: (error: any) => {
       if (error?.status === 0 || !isOnline) {
         toast.show('You are currently offline.', 'error', 'No Connection');
       } else if (error?.status === 401) {
         toast.show('Please log in again.', 'error', 'Session Expired');
+      } else if (error?.status >= 500) {
+        toast.show('An unexpected error occurred.', 'error', 'Server Error');
       } else if (error?.detail || error?.message) {
         toast.show(error.detail || error.message, 'error', 'Cancellation Failed');
       } else {

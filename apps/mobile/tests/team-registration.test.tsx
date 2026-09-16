@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, screen, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import EventScreen from '../app/(app)/events/[id]/index';
 import TeamsScreen from '../app/(app)/events/[id]/teams';
@@ -15,14 +15,13 @@ vi.mock('../src/infrastructure/api', () => ({
 
 vi.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ id: 'event-1' }),
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), back: vi.fn(), canGoBack: () => false, replace: vi.fn() }),
 }));
 
 vi.mock('../src/infrastructure/network', () => ({
   useNetworkStatus: () => ({ isOnline: true }),
 }));
 
-// Basic query client for testing
 const createTestQueryClient = () => new QueryClient({
   defaultOptions: {
     queries: {
@@ -47,7 +46,7 @@ describe('Mobile Team Workflow', () => {
   );
 
   describe('EventScreen (index.tsx)', () => {
-    it('shows Team Registration and Create Team for team events', async () => {
+    it('shows Team Requirements and Squad Details button for team events', async () => {
       vi.mocked(apiClient).mockImplementation(async (url) => {
         if (url === '/v1/events/event-1') {
           return { id: 'event-1', title: 'Hackathon', registration_type: 'TEAM', state: 'PUBLISHED', metadata: { minimum_team_size: 2, maximum_team_size: 4 } };
@@ -55,12 +54,13 @@ describe('Mobile Team Workflow', () => {
         if (url === '/v1/events/event-1/my-registration') {
           return { status: 'UNREGISTERED' };
         }
+        return {};
       });
 
       render(<EventScreen />, { wrapper });
-      await waitFor(() => expect(screen.getByText('Team Registration')).toBeTruthy());
-      expect(screen.getByText('Create Team')).toBeTruthy();
-      expect(screen.queryByText('Register')).toBeNull(); // No individual register
+      await waitFor(() => expect(screen.getByText('TEAM REQUIREMENTS')).toBeTruthy());
+      expect(screen.getByText('[ SQUAD DETAILS & RULES ]')).toBeTruthy();
+      expect(screen.queryByText('[ REGISTER FOR EVENT ]')).toBeNull(); // No solo individual register
     });
 
     it('shows Event Locked if event is locked', async () => {
@@ -71,59 +71,20 @@ describe('Mobile Team Workflow', () => {
         if (url === '/v1/events/event-1/my-registration') {
           return { status: 'UNREGISTERED' };
         }
+        return {};
       });
 
       render(<EventScreen />, { wrapper });
-      await waitFor(() => expect(screen.getByText('Event Locked')).toBeTruthy());
+      await waitFor(() => expect(screen.getByText('EVENT LOCKED')).toBeTruthy());
     });
   });
 
   describe('TeamsScreen', () => {
-    it('renders FORMING state and leader actions', async () => {
-      vi.mocked(apiClient).mockImplementation(async (url) => {
-        if (url === '/v1/events/event-1') return { id: 'event-1', metadata: { minimum_team_size: 3 } };
-        if (url === '/v1/events/event-1/my-registration') return { status: 'FORMING' };
-        if (url === '/v1/events/event-1/teams') return [{
-          id: 'team-1',
-          name: 'Alpha Team',
-          leader_id: 'student-1',
-          member_count: 1,
-          status: 'FORMING',
-          members: [{ user_id: 'student-1', full_name: 'Student One' }]
-        }];
-        if (url.includes('/invitee-search')) return [];
-      });
-
+    it('renders desktop portal notice for team roster and management', async () => {
       render(<TeamsScreen />, { wrapper });
-      await waitFor(() => expect(screen.getByText('Alpha Team')).toBeTruthy());
-      
-      expect(screen.getByText('FORMING')).toBeTruthy();
-      expect(screen.getByText('👑')).toBeTruthy(); // Leader badge
-      expect(screen.getByText('Invite Member')).toBeTruthy();
-      
-      // Below minimum banner should be visible
-      expect(screen.getByText(/Team below minimum size/i)).toBeTruthy();
-    });
-
-    it('hides mutations when locked', async () => {
-      vi.mocked(apiClient).mockImplementation(async (url) => {
-        if (url === '/v1/events/event-1') return { id: 'event-1', is_locked: true };
-        if (url === '/v1/events/event-1/my-registration') return { status: 'REGISTERED' };
-        if (url === '/v1/events/event-1/teams') return [{
-          id: 'team-1',
-          name: 'Alpha Team',
-          leader_id: 'student-1',
-          member_count: 3,
-          members: [{ user_id: 'student-1', full_name: 'Student One' }]
-        }];
-      });
-
-      render(<TeamsScreen />, { wrapper });
-      await waitFor(() => expect(screen.getByText('Alpha Team')).toBeTruthy());
-      
-      expect(screen.getByText(/no longer accepting team changes/i)).toBeTruthy();
-      expect(screen.queryByText('Invite Member')).toBeNull();
-      expect(screen.queryByText('Leave Team')).toBeNull();
+      await waitFor(() => expect(screen.getByText('TEAM FORMATION & ROSTER')).toBeTruthy());
+      expect(screen.getByText(/restricted to the desktop web application/i)).toBeTruthy();
+      expect(screen.getByText('ACCESS VIA WEB DASHBOARD')).toBeTruthy();
     });
   });
 
@@ -154,16 +115,18 @@ describe('Mobile Team Workflow', () => {
             inviter: { full_name: 'Inviter' }
           }
         ];
+        return [];
       });
 
       render(<InvitationsScreen />, { wrapper });
-      await waitFor(() => expect(screen.getByText('Future Team')).toBeTruthy());
+      await waitFor(() => expect(screen.getByText('FUTURE TEAM')).toBeTruthy());
       
-      expect(screen.getByText('Expired Team')).toBeTruthy();
-      expect(screen.getByText('Invitation expired.')).toBeTruthy();
+      expect(screen.getByText('EXPIRED TEAM')).toBeTruthy();
+      expect(screen.getByText('INVITATION EXPIRED')).toBeTruthy();
       
-      // Should only have Accept/Decline for the non-expired one
-      expect(screen.getAllByText('Accept')).toHaveLength(1);
+      // Should have Accept/Decline for the non-expired one
+      expect(screen.getAllByText('ACCEPT')).toHaveLength(1);
+      expect(screen.getAllByText('DECLINE')).toHaveLength(1);
     });
   });
 });
