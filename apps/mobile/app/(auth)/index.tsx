@@ -188,13 +188,22 @@ export default function LoginGatewayScreen() {
     }
   };
 
+  const devToken = process.env.EXPO_PUBLIC_DEV_AUTH_TOKEN;
+  const devUserId = process.env.EXPO_PUBLIC_DEV_USER_ID;
+
   const handleDevStudentLogin = async () => {
+    if (!devToken || !devUserId) {
+      setAuthError({
+        type: 'GENERIC',
+        title: 'DEV LOGIN UNAVAILABLE',
+        message: 'EXPO_PUBLIC_DEV_AUTH_TOKEN and EXPO_PUBLIC_DEV_USER_ID must be configured in local environment.',
+      });
+      return;
+    }
     setLoading(true);
     setAuthError(null);
     try {
-      const devToken =
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0YTUyZDBkOS0yMTgzLTQ5ODUtODcyYy0yMmVjYTI2NDExZWUiLCJzZWNWZXIiOjEsImlhdCI6MTc4OTUzOTQ1OSwiZXhwIjoxNzkwMTQ0MjU5fQ.BpQEEZjvmauaFoAWK-OjL2HHlaV7KSSSbh-WdhG2odQ';
-      await setSession('4a52d0d9-2183-4985-872c-22eca26411ee', devToken, devToken);
+      await setSession(devUserId, devToken, devToken);
       router.replace('/(app)');
     } catch (e: any) {
       setAuthError({
@@ -523,7 +532,7 @@ export default function LoginGatewayScreen() {
             style={styles.ctaButton}
           />
 
-          {Platform.OS === 'web' && typeof __DEV__ !== 'undefined' && __DEV__ && (
+          {Platform.OS === 'web' && typeof __DEV__ !== 'undefined' && __DEV__ && !!devToken && !!devUserId && (
             <Button
               title="[ DEV: TEST AS STUDENT (ARJUN MEHTA) ]"
               onPress={handleDevStudentLogin}

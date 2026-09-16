@@ -23,9 +23,14 @@ function getWebSessionStorage(): Storage | null {
 export const safeSecureStore = {
   getItemAsync: async (key: string): Promise<string | null> => {
     if (Platform.OS === 'web') {
-      const session = getWebSessionStorage();
-      if (session) {
-        return session.getItem(key);
+      try {
+        const session = getWebSessionStorage();
+        if (session) {
+          const val = session.getItem(key);
+          if (val !== null) return val;
+        }
+      } catch {
+        // Restricted storage access or security exception fallback
       }
       return memoryStorage.get(key) ?? null;
     }
@@ -34,10 +39,15 @@ export const safeSecureStore = {
 
   setItemAsync: async (key: string, value: string): Promise<void> => {
     if (Platform.OS === 'web') {
-      const session = getWebSessionStorage();
-      if (session) {
-        session.setItem(key, value);
-        return;
+      try {
+        const session = getWebSessionStorage();
+        if (session) {
+          session.setItem(key, value);
+          memoryStorage.set(key, value);
+          return;
+        }
+      } catch {
+        // QuotaExceededError or restricted storage fallback
       }
       memoryStorage.set(key, value);
       return;
@@ -47,10 +57,13 @@ export const safeSecureStore = {
 
   deleteItemAsync: async (key: string): Promise<void> => {
     if (Platform.OS === 'web') {
-      const session = getWebSessionStorage();
-      if (session) {
-        session.removeItem(key);
-        return;
+      try {
+        const session = getWebSessionStorage();
+        if (session) {
+          session.removeItem(key);
+        }
+      } catch {
+        // Restricted storage access or security exception fallback
       }
       memoryStorage.delete(key);
       return;

@@ -11,11 +11,11 @@ vi.mock('@tanstack/react-query', () => ({
   useMutation: ({ mutationFn, onSuccess, onError }: any) => {
     return {
       mutate: (variables?: any) => {
-        return mutationFn(variables).then((data: any) => onSuccess?.(data)).catch((err: any) => onError?.(err));
+        return mutationFn(variables).then((data: any) => onSuccess?.(data, variables)).catch((err: any) => onError?.(err));
       },
       mutateAsync: (variables?: any) => {
         return mutationFn(variables).then((data: any) => {
-          onSuccess?.(data);
+          onSuccess?.(data, variables);
           return data;
         }).catch((err: any) => {
           onError?.(err);
@@ -109,6 +109,16 @@ describe('In-App Solo Event Registration & Cancellation Tests', () => {
       expect(mockShowToast).toHaveBeenCalledWith('Registration cancelled successfully.', 'info', 'Cancelled');
     });
 
+    it('calls DELETE /v1/events/:id/register and shows waitlist queue copy when cancelling from waitlist', async () => {
+      mockApiClient.mockResolvedValueOnce({ success: true });
+
+      const { cancelAsync } = useRegistration('evt-123');
+      await cancelAsync({ isWaitlist: true });
+
+      expect(mockApiClient).toHaveBeenCalledWith('/v1/events/evt-123/register', { method: 'DELETE' });
+      expect(mockShowToast).toHaveBeenCalledWith('Left waitlist queue successfully.', 'info', 'Waitlist Updated');
+    });
+
     it('rejects with offline error when device is offline', async () => {
       isOnlineMock = false;
 
@@ -118,7 +128,7 @@ describe('In-App Solo Event Registration & Cancellation Tests', () => {
       expect(mockShowToast).toHaveBeenCalledWith('You are currently offline.', 'error', 'No Connection');
     });
 
-    it('extracts RFC 7807 detail/message from API error responses', async () => {
+    it('extracts RFC 7807 detail/message from 4xx API error responses', async () => {
       mockApiClient.mockRejectedValueOnce({
         status: 403,
         detail: 'This event is restricted to Computer Science students.',
@@ -130,6 +140,22 @@ describe('In-App Solo Event Registration & Cancellation Tests', () => {
         'This event is restricted to Computer Science students.',
         'error',
         'Registration Failed'
+      );
+    });
+
+    it('shows generic Server Error toast on 5xx status before checking detail/message', async () => {
+      mockApiClient.mockRejectedValueOnce({
+        status: 500,
+        message: 'Internal server error',
+        detail: 'Database deadlocked',
+      });
+
+      const { registerAsync } = useRegistration('evt-123');
+      await expect(registerAsync()).rejects.toBeDefined();
+      expect(mockShowToast).toHaveBeenCalledWith(
+        'An unexpected error occurred.',
+        'error',
+        'Server Error'
       );
     });
   });
@@ -152,13 +178,20 @@ describe('In-App Solo Event Registration & Cancellation Tests', () => {
       expect(eventDetailContent).toContain('CANCEL ENTRY PASS');
     });
 
-    it('guards against locked events, ended events, and unpublished events', () => {
-      expect(eventDetailContent).toContain("event?.isLocked ? 'EVENT LOCKED' : isEventEnded ? 'EVENT ENDED' : 'REGISTRATION CLOSED'");
-      expect(eventDetailContent).toContain('!event?.isLocked && !isEventEnded');
+    it('provides waitlist-specific copy and title for waitlisted cancellations', () => {
+      expect(eventDetailContent).toContain('LEAVE WAITLIST QUEUE');
+      expect(eventDetailContent).toContain('isWaitlistCancel ? "[LEAVE WAITLIST]" : "[CONFIRM CANCELLATION]"');
+      expect(eventDetailContent).toContain('You will give up your current position in line');
+    });
+
+    it('guards against locked events, grace-period deadlines, and unpublished events', () => {
+      expect(eventDetailContent).toContain("isLocked ? 'EVENT LOCKED' : 'REGISTRATION CLOSED'");
+      expect(eventDetailContent).toContain('!isLocked');
+      expect(eventDetailContent).toContain('isPastLockDeadline');
     });
 
     it('provides squad redirection for team events', () => {
-      expect(eventDetailContent).toContain("event?.registrationType === 'TEAM'");
+      expect(eventDetailContent).toContain("registrationType === 'TEAM'");
       expect(eventDetailContent).toContain('[ SQUAD DETAILS & RULES ]');
       expect(eventDetailContent).toContain('router.push(`/(app)/events/${id}/teams`)');
     });

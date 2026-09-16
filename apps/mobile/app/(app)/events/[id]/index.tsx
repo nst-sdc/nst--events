@@ -63,6 +63,7 @@ export default function EventScreen() {
   const isLoading = isEventLoading || isRegLoading;
   
   const isFull = event?.maxCapacity ? (event.registrationCount || 0) >= event.maxCapacity : false;
+  const isWaitlistCancel = (registration?.status || (registration as any)?.registrationStatus) === 'WAITLISTED';
   
   const primaryClub = event?.eventClubs?.find((ec: any) => ec.isPrimary);
   const isPrimaryClubAdmin = !!(profile?.club_memberships?.some(
@@ -286,8 +287,9 @@ export default function EventScreen() {
   };
 
   const handleConfirmCancel = async () => {
+    const isWaitlist = (registration?.status || (registration as any)?.registrationStatus) === 'WAITLISTED';
     try {
-      await cancelAsync();
+      await cancelAsync({ isWaitlist });
     } catch {
       // Handled in useRegistration toast
     } finally {
@@ -311,19 +313,57 @@ export default function EventScreen() {
         </View>
       );
     }
+
+    const lockDeadline = (event as any)?.lock_deadline
+      ? new Date((event as any).lock_deadline)
+      : event?.endTime
+        ? new Date(new Date(event.endTime).getTime() + 24 * 60 * 60 * 1000)
+        : null;
+    const isPastLockDeadline = lockDeadline ? new Date() > lockDeadline : false;
+    const isLocked = !!event?.isLocked || !!(event as any)?.is_locked || isPastLockDeadline;
+    const registrationType = event?.registrationType || (event as any)?.registration_type;
     
     // Check locked state BEFORE session/registration logic to satisfy audit rule
-    if (event?.isLocked || (isEventEnded && !activeSession) || event?.state !== 'PUBLISHED') {
+    if (isLocked || event?.state !== 'PUBLISHED') {
       return (
         <View style={styles.restrictedTray}>
           <MonoLabel style={styles.restrictedText}>
-            {event?.isLocked ? 'EVENT LOCKED' : isEventEnded ? 'EVENT ENDED' : 'REGISTRATION CLOSED'}
+            {event?.isLocked ? 'EVENT LOCKED' : isLocked ? 'EVENT LOCKED' : 'REGISTRATION CLOSED'}
           </MonoLabel>
         </View>
       );
     }
 
     const status = registration?.status || (registration as any)?.registrationStatus || 'NOT_REGISTERED';
+
+    // TEAM events: Must route to squad management instead of invoking solo register/cancel endpoints
+    if (registrationType === 'TEAM') {
+      if (status === 'REGISTERED' && activeSession) {
+        if (hasAttendanceForActiveSession) {
+          return (
+            <View style={styles.successTray}>
+              <MonoLabel style={styles.successText}>ATTENDANCE MARKED</MonoLabel>
+            </View>
+          );
+        }
+        return (
+          <Button
+            title="[ SCAN QR / MARK ATTENDANCE ]"
+            onPress={() => router.push(`/(app)/events/${id}/scan`)}
+            variant="primary"
+            style={styles.actionBtn}
+          />
+        );
+      }
+      return (
+        <Button
+          title="[ SQUAD DETAILS & RULES ]"
+          onPress={() => router.push(`/(app)/events/${id}/teams`)}
+          variant="secondary"
+          style={styles.actionBtn}
+        />
+      );
+    }
 
     if (status === 'REGISTERED') {
       if (activeSession) {
@@ -349,7 +389,7 @@ export default function EventScreen() {
           <View style={styles.restrictedTray}>
             <MonoLabel style={styles.restrictedText}>REGISTERED — WAITING FOR SESSION</MonoLabel>
           </View>
-          {!event?.isLocked && !isEventEnded && (
+          {!isLocked && (
             <Button
               title="[ CANCEL REGISTRATION ]"
               onPress={() => setShowCancelModal(true)}
@@ -370,7 +410,7 @@ export default function EventScreen() {
               WAITLISTED — POSITION: {registration?.waitlist_position ?? 'QUEUED'}
             </MonoLabel>
           </View>
-          {!event?.isLocked && !isEventEnded && (
+          {!isLocked && (
             <Button
               title="[ LEAVE WAITLIST ]"
               onPress={() => setShowCancelModal(true)}
@@ -383,15 +423,11 @@ export default function EventScreen() {
       );
     }
 
-    // Unregistered State for Team Event
-    if (event?.registrationType === 'TEAM') {
+    if (isEventEnded && !activeSession) {
       return (
-        <Button
-          title="[ SQUAD DETAILS & RULES ]"
-          onPress={() => router.push(`/(app)/events/${id}/teams`)}
-          variant="secondary"
-          style={styles.actionBtn}
-        />
+        <View style={styles.restrictedTray}>
+          <MonoLabel style={styles.restrictedText}>EVENT ENDED</MonoLabel>
+        </View>
       );
     }
 
@@ -507,12 +543,13 @@ export default function EventScreen() {
             </View>
           </View>
 
-          {event?.registrationType === 'TEAM' && (
+          {(event?.registrationType === 'TEAM' || (event as any)?.registration_type === 'TEAM') && (
             <View style={styles.infoBlock}>
               <MonoLabel style={styles.metaLabel}>TEAM REQUIREMENTS</MonoLabel>
               <Body>
-                {event?.metadata?.minimum_team_size ? `Min: ${event.metadata.minimum_team_size} members` : 'No minimum'}
-                {event?.metadata?.maximum_team_size ? `  •  Max: ${event.metadata.maximum_team_size} members` : ''}
+                This is a team-based event. Form or join a squad to participate.
+                {(event?.metadata?.minimum_team_size || (event?.metadata as any)?.minimumTeamSize) ? ` Minimum: ${event?.metadata?.minimum_team_size || (event?.metadata as any)?.minimumTeamSize}` : ''}
+                {(event?.metadata?.maximum_team_size || (event?.metadata as any)?.maximumTeamSize) ? ` • Maximum: ${event?.metadata?.maximum_team_size || (event?.metadata as any)?.maximumTeamSize}` : ''}
               </Body>
             </View>
           )}
@@ -600,25 +637,36 @@ export default function EventScreen() {
         onRequestClose={() => setShowCancelModal(false)}
       >
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalCardError}>
-            <StatusBadge status="[CONFIRM CANCELLATION]" type="error" />
-            <Title style={{ fontSize: 20 }}>CANCEL ENTRY PASS</Title>
+          <View style={isWaitlistCancel ? styles.modalCard : styles.modalCardError}>
+            <StatusBadge 
+              status={isWaitlistCancel ? "[LEAVE WAITLIST]" : "[CONFIRM CANCELLATION]"} 
+              type={isWaitlistCancel ? "warning" : "error"} 
+            />
+            <Title style={{ fontSize: 20 }}>
+              {isWaitlistCancel ? "LEAVE WAITLIST QUEUE" : "CANCEL ENTRY PASS"}
+            </Title>
             
-            <View style={styles.modalWarningBox}>
-              <Body style={styles.modalWarningText}>
-                Are you sure you want to cancel your event registration? If the event reaches capacity, your spot cannot be restored.
+            <View style={isWaitlistCancel ? styles.modalNoticeBox : styles.modalWarningBox}>
+              <Body style={isWaitlistCancel ? styles.modalNoticeText : styles.modalWarningText}>
+                {isWaitlistCancel
+                  ? "Are you sure you want to leave the waitlist queue? You will give up your current position in line."
+                  : "Are you sure you want to cancel your event registration? If the event reaches capacity, your spot cannot be restored."}
               </Body>
             </View>
 
             <View style={{ gap: 8, marginTop: 8 }}>
               <Button
-                title={isCancelling ? "[ CANCELLING PASS... ]" : "[ YES, CANCEL REGISTRATION ]"}
+                title={
+                  isCancelling
+                    ? isWaitlistCancel ? "[ LEAVING WAITLIST... ]" : "[ CANCELLING PASS... ]"
+                    : isWaitlistCancel ? "[ YES, LEAVE WAITLIST ]" : "[ YES, CANCEL REGISTRATION ]"
+                }
                 variant="primary"
                 onPress={handleConfirmCancel}
                 disabled={isCancelling}
               />
               <Button
-                title="[ KEEP REGISTRATION ]"
+                title={isWaitlistCancel ? "[ KEEP WAITLIST POSITION ]" : "[ KEEP REGISTRATION ]"}
                 variant="secondary"
                 onPress={() => setShowCancelModal(false)}
                 disabled={isCancelling}
