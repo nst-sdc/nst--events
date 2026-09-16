@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { DatePicker } from 'antd';
 import dayjs from 'dayjs';
@@ -24,30 +24,20 @@ export default function AnalyticsTabPage() {
   const startParam = searchParams.get('start');
   const endParam = searchParams.get('end');
 
-  const [dateRange, setDateRange] = useState({
+  const dateRange = {
     start: startParam ? dayjs(startParam).toISOString() : dayjs().subtract(30, 'days').startOf('day').toISOString(),
     end: endParam ? dayjs(endParam).toISOString() : dayjs().endOf('day').toISOString()
-  });
+  };
 
-  useEffect(() => {
-    if (startParam && endParam) {
-      setDateRange({
-        start: dayjs(startParam).toISOString(),
-        end: dayjs(endParam).toISOString()
-      });
-    }
-  }, [startParam, endParam]);
-
-  const handleDateChange = (dates: any) => {
-    if (dates && dates.length === 2) {
+  const handleDateChange = (dates: [dayjs.Dayjs | null, dayjs.Dayjs | null] | null) => {
+    if (dates && dates[0] && dates[1]) {
       const newStart = dates[0].startOf('day').toISOString();
       const newEnd = dates[1].endOf('day').toISOString();
-      setDateRange({ start: newStart, end: newEnd });
       
-      const params = new URLSearchParams(searchParams.toString());
-      params.set('start', newStart);
-      params.set('end', newEnd);
-      router.push(`?${params.toString()}`);
+      const paramsToSet = new URLSearchParams(searchParams.toString());
+      paramsToSet.set('start', newStart);
+      paramsToSet.set('end', newEnd);
+      router.push(`?${paramsToSet.toString()}`);
     }
   };
 
