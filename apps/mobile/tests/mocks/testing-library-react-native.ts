@@ -1,62 +1,21 @@
 import React, { act } from 'react';
 // @ts-ignore
 import { createRoot, Root } from 'react-dom/client';
-import { createRequire } from 'module';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-import fs from 'fs';
-
-const __mock_dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
+// @ts-ignore
+import { JSDOM } from 'jsdom';
 
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
-function findJsdom(): any {
-  // 1. Try local require
-  try {
-    const localReq = createRequire(import.meta.url);
-    const mod = localReq('jsdom');
-    if (mod) return mod?.JSDOM || mod;
-  } catch {}
-
-  // 2. Try upward directory traversal to find node_modules/jsdom
-  let dir = __mock_dirname;
-  while (dir && dir !== path.dirname(dir)) {
-    const pkgCandidate = path.join(dir, 'package.json');
-    const jsdomCandidate = path.join(dir, 'node_modules', 'jsdom');
-    if (fs.existsSync(pkgCandidate) && fs.existsSync(jsdomCandidate)) {
-      try {
-        const req = createRequire(pkgCandidate);
-        const mod = req('jsdom');
-        if (mod) return mod?.JSDOM || mod;
-      } catch {}
-    }
-    dir = path.dirname(dir);
-  }
-
-  // 3. Fallback to process.cwd()
-  try {
-    const cwdReq = createRequire(path.resolve(process.cwd(), 'package.json'));
-    const mod = cwdReq('jsdom');
-    if (mod) return mod?.JSDOM || mod;
-  } catch {}
-
-  return null;
-}
-
 if (typeof document === 'undefined') {
-  const JSDOMClass = findJsdom();
-  if (JSDOMClass) {
-    const dom = new JSDOMClass('<!doctype html><html><body><div id="root"></div></body></html>', {
-      url: 'http://localhost:8081',
-    });
-    global.window = dom.window as any;
-    global.document = dom.window.document;
-    global.HTMLElement = dom.window.HTMLElement;
-    (globalThis as any).window = dom.window;
-    (globalThis as any).document = dom.window.document;
-    (globalThis as any).HTMLElement = dom.window.HTMLElement;
-  }
+  const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', {
+    url: 'http://localhost:8081',
+  });
+  global.window = dom.window as any;
+  global.document = dom.window.document;
+  global.HTMLElement = dom.window.HTMLElement;
+  (globalThis as any).window = dom.window;
+  (globalThis as any).document = dom.window.document;
+  (globalThis as any).HTMLElement = dom.window.HTMLElement;
 }
 
 let currentContainer: HTMLElement | null = null;
