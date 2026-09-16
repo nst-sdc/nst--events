@@ -99,20 +99,30 @@ function GoogleIcon({ className = 'w-4 h-4' }: { className?: string }) {
 const loginStyles = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&family=Outfit:wght@400;700;900&family=Syne:wght@700;800;900&display=swap');
 
+  :root {
+    --bg-black: #050505;
+    --bg-paper-white: #F5F5F2;
+    --bg-dark-card: #0d0e12;
+    --electric-blue: #0057FF;
+    --acid-green: #C8FF00;
+    --warm-red: #FF3B30;
+  }
+
   /* ── Card wrapper ── */
   .lp-card-shell {
     width: 100%;
-    max-width: 560px;
+    max-width: 520px;
     position: relative;
+    margin: 0 auto;
   }
 
-  /* Main poster card — blue shadow is the "blue card" */
+  /* Main poster card — dark mode brutalist */
   .lp-card {
-    background: #F5F5F1;
-    color: #000;
-    border: 4px solid #000000;
+    background: var(--bg-dark-card);
+    color: var(--bg-paper-white);
+    border: 3px solid rgba(245,245,242,0.18);
     padding: 44px 40px;
-    box-shadow: 16px 16px 0px #0047FF;
+    box-shadow: 12px 12px 0px var(--electric-blue);
     position: relative;
     z-index: 2;
     width: 100%;
@@ -125,20 +135,21 @@ const loginStyles = `
     font-weight: 700;
     letter-spacing: 0.13em;
     text-transform: uppercase;
-    color: #555;
+    color: #a0a4b8;
   }
 
-  .lp-mono-blue { color: #0047FF; }
+  .lp-mono-blue { color: var(--electric-blue); }
+  .lp-mono-green { color: var(--acid-green); }
 
   /* "ACCESS STUDENT PORTAL" — Syne 900 */
   .lp-headline {
     font-family: 'Syne', sans-serif;
     font-weight: 900;
-    font-size: 36px;
-    line-height: 1.0;
-    letter-spacing: -0.01em;
+    font-size: 38px;
+    line-height: 0.95;
+    letter-spacing: -0.02em;
     text-transform: uppercase;
-    color: #000;
+    color: #ffffff;
     margin: 0;
   }
 
@@ -153,59 +164,23 @@ const loginStyles = `
 
   .lp-body {
     font-family: 'Inter', sans-serif;
-    font-size: 13.5px;
-    color: #333;
-    line-height: 1.65;
+    font-size: 13px;
+    color: #a0a4b8;
+    line-height: 1.6;
   }
-
-  /* ── Session Matrix ── */
-  .lp-matrix {
-    border: 2px solid #000;
-    width: 100%;
-    margin-bottom: 24px;
+  .lp-body strong {
+    color: var(--bg-paper-white);
   }
-
-  .lp-matrix-hd {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 9px 14px;
-    border-bottom: 2px solid #000;
-    background: #e8e8e4;
-  }
-
-  .lp-matrix-row {
-    display: flex;
-    border-bottom: 1px solid #ccc;
-  }
-  .lp-matrix-row:last-child { border-bottom: none; }
-
-  .lp-matrix-cell {
-    padding: 9px 14px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    width: 50%;
-    border-right: 1px solid #ccc;
-    color: #666;
-  }
-  .lp-matrix-cell:last-child {
-    border-right: none;
-    color: #000;
-  }
-  .lp-matrix-cell.val-blue { color: #0047FF; }
 
   /* ── Primary CTA ── */
   .lp-btn-google {
     width: 100%;
-    height: 54px;
-    background: #0047FF;
+    height: 52px;
+    background: var(--electric-blue);
     color: #fff;
-    border: 2.5px solid #000;
+    border: 2px solid #000;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.16em;
     text-transform: uppercase;
@@ -214,123 +189,131 @@ const loginStyles = `
     justify-content: center;
     gap: 12px;
     cursor: pointer;
-    transition: background 0.15s, transform 0.12s;
-    box-shadow: 3px 3px 0px #000;
+    transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+    box-shadow: 4px 4px 0px var(--acid-green);
     margin-bottom: 10px;
   }
   .lp-btn-google:hover:not(:disabled) {
-    background: #003be0;
-    transform: translate(-1px, -1px);
-    box-shadow: 4px 4px 0px #000;
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px var(--acid-green);
+    filter: brightness(1.1);
   }
   .lp-btn-google:active:not(:disabled) {
     transform: translate(1px, 1px);
-    box-shadow: 2px 2px 0px #000;
+    box-shadow: 2px 2px 0px var(--acid-green);
   }
-  .lp-btn-google:disabled { opacity: 0.55; cursor: not-allowed; }
+  .lp-btn-google:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
 
   .lp-google-icon-wrap {
-    width: 24px; height: 24px;
+    width: 22px; height: 22px;
     background: #fff;
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
+    border-radius: 2px;
   }
 
 
   /* ── Error block ── */
   .lp-error {
-    border: 2px solid #c0392b;
-    background: #fff8f8;
-    padding: 14px 16px;
-    margin-bottom: 22px;
+    border: 2px solid var(--warm-red);
+    background: rgba(255, 59, 48, 0.08);
+    padding: 16px;
+    margin-bottom: 24px;
+    position: relative;
   }
   .lp-error-hd {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #f5c6c2;
-    margin-bottom: 10px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 59, 48, 0.3);
+    margin-bottom: 12px;
   }
   .lp-error-badge {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 9px; font-weight: 700;
-    letter-spacing: 0.12em; text-transform: uppercase; color: #c0392b;
-    display: flex; align-items: center; gap: 6px;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--warm-red);
+    display: flex; align-items: center; gap: 8px;
   }
   .lp-error-dismiss {
     font-family: 'JetBrains Mono', monospace;
     font-size: 9px; font-weight: 700;
     letter-spacing: 0.1em; text-transform: uppercase;
-    color: #c0392b; background: transparent;
-    border: 1.5px solid #c0392b; padding: 3px 8px;
+    color: var(--warm-red); background: transparent;
+    border: 1px solid var(--warm-red); padding: 4px 8px;
     cursor: pointer; transition: all 0.15s;
   }
-  .lp-error-dismiss:hover { background: #c0392b; color: #fff; }
+  .lp-error-dismiss:hover { background: var(--warm-red); color: #fff; }
   .lp-error-title {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 10px; font-weight: 700;
+    font-size: 11px; font-weight: 700;
     letter-spacing: 0.1em; text-transform: uppercase;
-    color: #7b1a14; margin-bottom: 4px;
+    color: #ff8a84; margin-bottom: 6px;
   }
-  .lp-error-msg  { font-family: 'Inter', sans-serif; font-size: 12.5px; color: #922b21; line-height: 1.5; margin-bottom: 5px; }
-  .lp-error-detail { font-family: 'Inter', sans-serif; font-size: 11.5px; color: #a93226; opacity: 0.85; line-height: 1.5; }
+  .lp-error-msg  { font-family: 'Inter', sans-serif; font-size: 13px; color: #ffb3af; line-height: 1.5; margin-bottom: 8px; }
+  .lp-error-detail { font-family: 'Inter', sans-serif; font-size: 12px; color: #d67a76; opacity: 0.9; line-height: 1.5; }
+  
   .lp-error-action {
-    width: 100%; padding: 9px 12px; margin-top: 8px;
-    background: #c0392b; color: #fff; border: none;
+    width: 100%; padding: 10px 12px; margin-top: 12px;
+    background: var(--warm-red); color: #fff; border: 2px solid #000;
     font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
     letter-spacing: 0.1em; text-transform: uppercase;
     cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
-    transition: background 0.15s;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 2px 2px 0px #000;
   }
-  .lp-error-action:hover { background: #a93226; }
+  .lp-error-action:hover { 
+    transform: translate(-1px, -1px);
+    box-shadow: 3px 3px 0px #000;
+  }
   .lp-error-outline {
-    width: 100%; padding: 8px 12px; margin-top: 6px;
-    background: transparent; color: #c0392b;
-    border: 1.5px solid #c0392b;
+    width: 100%; padding: 10px 12px; margin-top: 8px;
+    background: transparent; color: var(--warm-red);
+    border: 1.5px solid var(--warm-red);
     font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
     letter-spacing: 0.1em; text-transform: uppercase;
     cursor: pointer; transition: all 0.15s;
   }
-  .lp-error-outline:hover { background: rgba(192,57,43,0.08); }
+  .lp-error-outline:hover { background: rgba(255, 59, 48, 0.1); }
   .lp-error-note {
-    font-family: 'JetBrains Mono', monospace; font-size: 9px; color: #c0392b;
-    opacity: 0.6; letter-spacing: 0.08em; text-transform: uppercase;
-    line-height: 1.5; margin-top: 10px; padding-top: 8px;
-    border-top: 1px dashed #f5c6c2;
+    font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--warm-red);
+    opacity: 0.8; letter-spacing: 0.08em; text-transform: uppercase;
+    line-height: 1.5; margin-top: 12px; padding-top: 10px;
+    border-top: 1px dashed rgba(255, 59, 48, 0.3);
   }
 
   /* ── Footer ── */
   .lp-footer {
-    margin-top: 22px;
-    padding-top: 16px;
-    border-top: 2px dashed #bbb;
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 2px dashed rgba(245,245,242,0.15);
     text-align: center;
   }
   .lp-footer-p {
     font-family: 'JetBrains Mono', monospace;
     font-size: 9px; font-weight: 700;
     letter-spacing: 0.12em; text-transform: uppercase;
-    color: #666; margin-bottom: 3px;
+    color: #888; margin-bottom: 6px;
   }
   .lp-footer-s {
     font-family: 'JetBrains Mono', monospace;
     font-size: 8px; letter-spacing: 0.1em;
-    text-transform: uppercase; color: #aaa; margin-bottom: 10px;
+    text-transform: uppercase; color: #555; margin-bottom: 12px;
   }
   .lp-footer-link {
     font-family: 'Outfit', sans-serif;
-    font-size: 12px; font-weight: 700;
-    color: #0047FF; cursor: pointer;
-    text-decoration: underline; text-underline-offset: 2px;
-    background: none; border: none; padding: 0; letter-spacing: 0.04em;
+    font-size: 11px; font-weight: 700;
+    color: var(--electric-blue); cursor: pointer;
+    text-decoration: none; border-bottom: 1px dashed var(--electric-blue);
+    background: none; border-top: none; border-left: none; border-right: none; padding: 0; letter-spacing: 0.04em;
+    transition: color 0.15s, border-color 0.15s;
   }
-  .lp-footer-link:hover { color: #003be0; }
+  .lp-footer-link:hover { color: var(--acid-green); border-color: var(--acid-green); }
 
   /* ── Spinner ── */
   .lp-spin {
     width: 14px; height: 14px;
-    border: 2px solid rgba(255,255,255,0.35);
+    border: 2px solid rgba(255,255,255,0.25);
     border-top-color: #fff;
     border-radius: 50%;
     animation: lp-rotate 0.7s linear infinite;
@@ -425,19 +408,18 @@ function LoginContent() {
       </style>
 
       <div className="lp-card-shell">
-
-        {/* Main poster card — blue offset is via box-shadow */}
+        {/* Main poster card */}
         <div className="lp-card">
 
           {/* ── Top annotations ── */}
-          <div className="lp-mono" style={{ marginBottom: 3 }}>AUTH GATEWAY // NST-NET</div>
-          <div className="lp-outfit-label lp-mono-blue" style={{ marginBottom: 22 }}>
+          <div className="lp-mono" style={{ marginBottom: 4 }}>AUTH GATEWAY // NST-NET</div>
+          <div className="lp-outfit-label lp-mono-blue" style={{ marginBottom: 24 }}>
             NST EVENTS &bull; NEWTON SCHOOL OF TECHNOLOGY
           </div>
 
           {/* ── Divider + Headline ── */}
-          <div style={{ borderBottom: '3px solid #000', paddingBottom: 18, marginBottom: 22 }}>
-            <div className="lp-mono" style={{ color: '#000', marginBottom: 8 }}>
+          <div style={{ borderBottom: '2px solid rgba(245,245,242,0.18)', paddingBottom: 20, marginBottom: 24 }}>
+            <div className="lp-mono" style={{ color: '#fff', marginBottom: 10 }}>
               IDENTITY VERIFICATION // SEC-02
             </div>
             <h1 className="lp-headline">
@@ -446,39 +428,19 @@ function LoginContent() {
           </div>
 
           {/* ── Body copy ── */}
-          <p className="lp-body" style={{ marginBottom: 22 }}>
+          <p className="lp-body" style={{ marginBottom: 24 }}>
             Sign in with your institutional{' '}
             <strong>@adypu.edu.in</strong> or{' '}
             <strong>@newtonschool.co</strong>{' '}
             account to synchronize: attendance, event registrations, and club management.
           </p>
 
-          {/* ── Session Handshake Matrix ── */}
-          <div className="lp-matrix">
-            <div className="lp-matrix-hd">
-              <span className="lp-mono" style={{ color: '#000' }}>SESSION HANDSHAKE MATRIX</span>
-              <span className="lp-mono lp-mono-blue">READY FOR SSO</span>
-            </div>
-            <div className="lp-matrix-row">
-              <div className="lp-matrix-cell">CLEARANCE</div>
-              <div className="lp-matrix-cell">LEVEL-03</div>
-            </div>
-            <div className="lp-matrix-row">
-              <div className="lp-matrix-cell">CLUSTER</div>
-              <div className="lp-matrix-cell">AI-ENG-01</div>
-            </div>
-            <div className="lp-matrix-row">
-              <div className="lp-matrix-cell">PROTOCOL</div>
-              <div className="lp-matrix-cell val-blue">ACTIVE SSO</div>
-            </div>
-          </div>
-
           {/* ── Auth Error Block ── */}
           {authError && (
             <div className="lp-error">
               <div className="lp-error-hd">
                 <div className="lp-error-badge">
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#c0392b', display: 'inline-block', flexShrink: 0 }} />
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--warm-red)', display: 'inline-block', flexShrink: 0 }} />
                   {authError.badge}
                 </div>
                 <button type="button" className="lp-error-dismiss" onClick={handleDismissError} aria-label="Dismiss error">
@@ -529,7 +491,7 @@ function LoginContent() {
             <div className="lp-footer-p">RESTRICTED TO ENROLLED NST STUDENTS &amp; FACULTY</div>
             <div className="lp-footer-s">SEC-02 IDENTITY GATEWAY // @ADYPU.EDU.IN &amp; @NEWTONSCHOOL.CO</div>
             <button type="button" className="lp-footer-link" onClick={() => setIsCreditsOpen(true)}>
-              Crafted by NST Software Developers Club
+              CRAFTED BY NST SOFTWARE DEVELOPERS CLUB
             </button>
           </div>
         </div>
@@ -549,34 +511,34 @@ export default function LoginPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#000',
+        background: 'var(--bg-black, #050505)',
         padding: '48px 24px',
       }}
     >
       <Suspense
         fallback={
           <div style={{
-            position: 'relative', width: '100%', maxWidth: 620,
+            position: 'relative', width: '100%', maxWidth: 520, margin: '0 auto'
           }}>
             <div style={{
               position: 'absolute', inset: 0,
-              background: '#0047FF', transform: 'translate(10px,10px)', zIndex: 0,
+              background: '#0057FF', transform: 'translate(12px,12px)', zIndex: 0,
             }} />
             <div style={{
               position: 'relative', zIndex: 1,
-              background: '#f5f0e8', border: '2.5px solid #000',
+              background: '#0d0e12', border: '3px solid rgba(245,245,242,0.18)',
               padding: '40px 44px', minHeight: 400,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
                 <div style={{
                   width: 32, height: 32,
-                  border: '3px solid #0047FF', borderTopColor: 'transparent',
+                  border: '3px solid #0057FF', borderTopColor: 'transparent',
                   borderRadius: '50%', animation: 'lp-rotate 0.7s linear infinite',
                 }} />
                 <span style={{
                   fontFamily: 'monospace', fontSize: 10, fontWeight: 700,
-                  letterSpacing: '0.12em', textTransform: 'uppercase', color: '#555',
+                  letterSpacing: '0.12em', textTransform: 'uppercase', color: '#888',
                 }}>
                   INITIALIZING AUTH GATEWAY...
                 </span>
