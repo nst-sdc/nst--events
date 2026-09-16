@@ -1,4 +1,5 @@
-import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
+import { safeSecureStore } from './secure-storage';
 import * as Crypto from 'expo-crypto';
 
 const DEVICE_ID_KEY = 'nst_persistent_device_id';
@@ -10,11 +11,18 @@ const DEVICE_ID_KEY = 'nst_persistent_device_id';
  */
 export async function getPersistentDeviceId(): Promise<string> {
   try {
-    let deviceId = await SecureStore.getItemAsync(DEVICE_ID_KEY);
+    let deviceId = await safeSecureStore.getItemAsync(DEVICE_ID_KEY);
     
     if (!deviceId) {
-      deviceId = Crypto.randomUUID();
-      await SecureStore.setItemAsync(DEVICE_ID_KEY, deviceId);
+      if (Platform.OS === 'web') {
+        deviceId =
+          typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+            ? crypto.randomUUID()
+            : Crypto.randomUUID();
+      } else {
+        deviceId = Crypto.randomUUID();
+      }
+      await safeSecureStore.setItemAsync(DEVICE_ID_KEY, deviceId);
     }
     
     return deviceId;

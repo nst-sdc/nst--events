@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import * as SecureStore from 'expo-secure-store';
+import { safeSecureStore } from '../lib/secure-storage';
 import { API_BASE_URL } from '../infrastructure/config';
 
 interface AuthState {
@@ -29,9 +29,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   initSession: async () => {
     try {
-      const token = await SecureStore.getItemAsync('access_token');
-      const userId = await SecureStore.getItemAsync('user_id');
-      const refreshToken = await SecureStore.getItemAsync('refresh_token');
+      const token = await safeSecureStore.getItemAsync('access_token');
+      const userId = await safeSecureStore.getItemAsync('user_id');
+      const refreshToken = await safeSecureStore.getItemAsync('refresh_token');
       if (token && userId && refreshToken) {
         set({ userId, accessToken: token, refreshToken, isLoggedIn: true, isInitialized: true });
       } else {
@@ -43,16 +43,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   setSession: async (userId, accessToken, refreshToken) => {
-    await SecureStore.setItemAsync('access_token', accessToken);
-    await SecureStore.setItemAsync('user_id', userId);
-    await SecureStore.setItemAsync('refresh_token', refreshToken);
+    await safeSecureStore.setItemAsync('access_token', accessToken);
+    await safeSecureStore.setItemAsync('user_id', userId);
+    await safeSecureStore.setItemAsync('refresh_token', refreshToken);
     set({ userId, accessToken, refreshToken, isLoggedIn: true, isInitialized: true });
   },
 
   clearSession: async () => {
-    await SecureStore.deleteItemAsync('access_token');
-    await SecureStore.deleteItemAsync('user_id');
-    await SecureStore.deleteItemAsync('refresh_token');
+    await safeSecureStore.deleteItemAsync('access_token');
+    await safeSecureStore.deleteItemAsync('user_id');
+    await safeSecureStore.deleteItemAsync('refresh_token');
     set({ userId: null, accessToken: null, refreshToken: null, isLoggedIn: false, isInitialized: true });
   },
 
@@ -83,8 +83,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       const data = await response.json();
       if (data.access_token && data.refresh_token) {
-        await SecureStore.setItemAsync('access_token', data.access_token);
-        await SecureStore.setItemAsync('refresh_token', data.refresh_token);
+        await safeSecureStore.setItemAsync('access_token', data.access_token);
+        await safeSecureStore.setItemAsync('refresh_token', data.refresh_token);
         set({ accessToken: data.access_token, refreshToken: data.refresh_token });
         return { status: 'SUCCESS', token: data.access_token };
       }

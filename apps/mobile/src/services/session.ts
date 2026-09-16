@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
+import { safeSecureStore } from '../lib/secure-storage';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { useAuthStore } from '../store/auth';
 import { queryClient } from '../providers/QueryProvider';
@@ -14,8 +14,8 @@ export async function logout(): Promise<void> {
   // 1. Obtain stored access token and refresh token before local purge
   try {
     const state = useAuthStore.getState();
-    const accessToken = state.accessToken || (await SecureStore.getItemAsync('access_token'));
-    const refreshToken = state.refreshToken || (await SecureStore.getItemAsync('refresh_token'));
+    const accessToken = state.accessToken || (await safeSecureStore.getItemAsync('access_token'));
+    const refreshToken = state.refreshToken || (await safeSecureStore.getItemAsync('refresh_token'));
 
     if (accessToken && refreshToken) {
       // Dispatch server-side revocation to POST /auth/logout
