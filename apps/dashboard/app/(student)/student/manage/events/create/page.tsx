@@ -8,7 +8,6 @@ import { useAcademicBatches } from '../../../../../../hooks/useAcademicBatches';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
-  Calendar,
   Clock,
   MapPin,
   Users,
@@ -23,13 +22,10 @@ import {
   Lock,
   EyeOff,
   CheckCircle2,
-  Image as ImageIcon,
   Plus,
   Minus,
   Check,
   Layers,
-  Info,
-  ExternalLink,
   Eye,
   Sliders,
   AlertCircle,
