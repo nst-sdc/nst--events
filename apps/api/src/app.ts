@@ -19,6 +19,7 @@ import { adminStudentsRouter } from './modules/admin/students.router';
 import { adminTeamsRouter } from './modules/admin/teams.router';
 import { adminAcademicProgramsRouter } from './modules/admin/academic-programs.router';
 import { adminAcademicBatchesRouter } from './modules/admin/academic-batches.router';
+import { adminAnalyticsRouter } from './modules/admin/analytics.router';
 import { teamsRouter } from './modules/teams/teams.router';
 import { registrationsRouter } from './modules/registrations/registrations.router';
 import { dashboardRouter } from './modules/dashboard/dashboard.router';
@@ -94,6 +95,7 @@ export function createApp(): Express {
   app.use('/v1/admin/teams', adminTeamsRouter);
   app.use('/v1/admin/academic-programs', adminAcademicProgramsRouter);
   app.use('/v1/admin/academic-batches', adminAcademicBatchesRouter);
+  app.use('/v1/admin/analytics', adminAnalyticsRouter);
   app.use('/v1/admin', adminQueueRouter);
   app.use('/v1/notifications', notificationsRouter);
   app.use('/v1/academic-batches', academicBatchesRouter);
