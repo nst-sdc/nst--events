@@ -5,24 +5,47 @@ import { createRequire } from 'module';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import fs from 'fs';
+
 const __mock_dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
-if (typeof document === 'undefined') {
-  let JSDOMClass: any;
+function findJsdom(): any {
+  // 1. Try local require
   try {
-    const rootReq = createRequire(path.resolve(__mock_dirname, '../../package.json'));
-    const jsdomMod = rootReq('jsdom');
-    JSDOMClass = jsdomMod?.JSDOM || jsdomMod;
-  } catch {
-    try {
-      const fallbackReq = createRequire(path.resolve(__mock_dirname, '../../../package.json'));
-      const jsdomMod = fallbackReq('jsdom');
-      JSDOMClass = jsdomMod?.JSDOM || jsdomMod;
-    } catch {}
+    const localReq = createRequire(import.meta.url);
+    const mod = localReq('jsdom');
+    if (mod) return mod?.JSDOM || mod;
+  } catch {}
+
+  // 2. Try upward directory traversal to find node_modules/jsdom
+  let dir = __mock_dirname;
+  while (dir && dir !== path.dirname(dir)) {
+    const pkgCandidate = path.join(dir, 'package.json');
+    const jsdomCandidate = path.join(dir, 'node_modules', 'jsdom');
+    if (fs.existsSync(pkgCandidate) && fs.existsSync(jsdomCandidate)) {
+      try {
+        const req = createRequire(pkgCandidate);
+        const mod = req('jsdom');
+        if (mod) return mod?.JSDOM || mod;
+      } catch {}
+    }
+    dir = path.dirname(dir);
   }
 
+  // 3. Fallback to process.cwd()
+  try {
+    const cwdReq = createRequire(path.resolve(process.cwd(), 'package.json'));
+    const mod = cwdReq('jsdom');
+    if (mod) return mod?.JSDOM || mod;
+  } catch {}
+
+  return null;
+}
+
+if (typeof document === 'undefined') {
+  const JSDOMClass = findJsdom();
   if (JSDOMClass) {
     const dom = new JSDOMClass('<!doctype html><html><body><div id="root"></div></body></html>', {
       url: 'http://localhost:8081',
