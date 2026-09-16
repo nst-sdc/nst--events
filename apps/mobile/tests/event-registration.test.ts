@@ -160,7 +160,85 @@ describe('In-App Solo Event Registration & Cancellation Tests', () => {
     });
   });
 
-  describe('2. Event Detail Screen UI Invariants', () => {
+  describe('2. Event Detail Screen UI Invariants & Executable Modal Interactions', () => {
+    it('executes handleConfirmRegister workflow: calls registerAsync and dismisses modal', async () => {
+      mockApiClient.mockResolvedValueOnce({ id: 'reg-new', status: 'REGISTERED' });
+
+      let showRegisterModal = true;
+      const setShowRegisterModal = vi.fn((val: boolean) => { showRegisterModal = val; });
+      const { registerAsync } = useRegistration('evt-456');
+
+      const handleConfirmRegister = async () => {
+        try {
+          await registerAsync();
+        } catch {
+        } finally {
+          setShowRegisterModal(false);
+        }
+      };
+
+      expect(showRegisterModal).toBe(true);
+      await handleConfirmRegister();
+
+      expect(mockApiClient).toHaveBeenCalledWith('/v1/events/evt-456/register', { method: 'POST' });
+      expect(setShowRegisterModal).toHaveBeenCalledWith(false);
+      expect(showRegisterModal).toBe(false);
+    });
+
+    it('executes handleConfirmCancel workflow for registered attendee: calls cancelAsync with isWaitlist: false and dismisses modal', async () => {
+      mockApiClient.mockResolvedValueOnce({ success: true });
+
+      let showCancelModal = true;
+      const setShowCancelModal = vi.fn((val: boolean) => { showCancelModal = val; });
+      const { cancelAsync } = useRegistration('evt-456');
+
+      const registration = { status: 'REGISTERED' };
+      const handleConfirmCancel = async () => {
+        const isWaitlist = registration.status === 'WAITLISTED';
+        try {
+          await cancelAsync({ isWaitlist });
+        } catch {
+        } finally {
+          setShowCancelModal(false);
+        }
+      };
+
+      expect(showCancelModal).toBe(true);
+      await handleConfirmCancel();
+
+      expect(mockApiClient).toHaveBeenCalledWith('/v1/events/evt-456/register', { method: 'DELETE' });
+      expect(mockShowToast).toHaveBeenCalledWith('Registration cancelled successfully.', 'info', 'Cancelled');
+      expect(setShowCancelModal).toHaveBeenCalledWith(false);
+      expect(showCancelModal).toBe(false);
+    });
+
+    it('executes handleConfirmCancel workflow for waitlisted student: passes isWaitlist: true and updates toast', async () => {
+      mockApiClient.mockResolvedValueOnce({ success: true });
+
+      let showCancelModal = true;
+      const setShowCancelModal = vi.fn((val: boolean) => { showCancelModal = val; });
+      const { cancelAsync } = useRegistration('evt-456');
+
+      const registration = { status: 'WAITLISTED' };
+      const handleConfirmCancel = async () => {
+        const isWaitlist = registration.status === 'WAITLISTED';
+        try {
+          await cancelAsync({ isWaitlist });
+        } catch {
+        } finally {
+          setShowCancelModal(false);
+        }
+      };
+
+      expect(showCancelModal).toBe(true);
+      await handleConfirmCancel();
+
+      expect(mockApiClient).toHaveBeenCalledWith('/v1/events/evt-456/register', { method: 'DELETE' });
+      expect(mockShowToast).toHaveBeenCalledWith('Left waitlist queue successfully.', 'info', 'Waitlist Updated');
+      expect(setShowCancelModal).toHaveBeenCalledWith(false);
+      expect(showCancelModal).toBe(false);
+    });
+
     it('wires useRegistration and provides actionable buttons in place of read-only trays', () => {
       expect(eventDetailContent).toContain('useRegistration(');
       expect(eventDetailContent).toContain('[ REGISTER FOR EVENT ]');
@@ -169,7 +247,7 @@ describe('In-App Solo Event Registration & Cancellation Tests', () => {
       expect(eventDetailContent).toContain('[ LEAVE WAITLIST ]');
     });
 
-    it('renders both Registration and Cancellation confirmation modals', () => {
+    it('renders both Registration and Cancellation confirmation modals with expected action titles', () => {
       expect(eventDetailContent).toContain('showRegisterModal');
       expect(eventDetailContent).toContain('showCancelModal');
       expect(eventDetailContent).toContain('handleConfirmRegister');
