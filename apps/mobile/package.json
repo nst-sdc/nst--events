@@ -26,9 +26,11 @@
     "expo-web-browser": "^57.0.2",
     "nativewind": "4.2.6",
     "react": "19.2.3",
+    "react-dom": "19.2.3",
     "react-native": "0.86.3",
     "react-native-safe-area-context": "^5.9.1",
     "react-native-sse": "1.2.1",
+    "react-native-web": "~0.21.0",
     "tailwindcss": "4.3.3",
     "zustand": "5.0.15"
   },
