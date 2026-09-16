@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Modal } from 'react-native';
+import { Modal, Platform } from 'react-native';
 import { Stack, SplashScreen } from 'expo-router';
 import { AppQueryProvider } from '../src/providers/QueryProvider';
 import { useNotifications } from '../src/hooks/use-notifications';
@@ -28,6 +28,16 @@ if (typeof __DEV__ !== 'undefined' && __DEV__) {
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
+
+function NotificationLifecycle() {
+  if (Platform.OS === 'web') return null;
+  return <NativeNotificationLifecycle />;
+}
+
+function NativeNotificationLifecycle() {
+  useNotifications();
+  return null;
+}
 
 // Inner layout safely wrapped in React Query context
 function RootLayoutInner() {
@@ -58,18 +68,18 @@ function RootLayoutInner() {
     }
   }, [fontsLoaded, fontError]);
 
-  // Execute global Push Token synchronization lifecycle in background
-  useNotifications();
-
   if (!fontsLoaded && !fontError) {
     return null;
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(app)" />
-    </Stack>
+    <>
+      <NotificationLifecycle />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(app)" />
+      </Stack>
+    </>
   );
 }
 
