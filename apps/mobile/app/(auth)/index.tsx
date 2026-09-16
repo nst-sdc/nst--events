@@ -48,6 +48,16 @@ export default function LoginGatewayScreen() {
       return;
     }
 
+    if (Platform.OS === 'web') {
+      setAuthError({
+        type: 'GENERIC',
+        title: 'NATIVE GOOGLE SIGN-IN REQUIRED',
+        message: 'Google Sign-In requires native iOS/Android runtime. In Chrome/browser, please use the [ DEV: TEST AS STUDENT ] button below.',
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
       if (Platform.OS === 'android') {
         await GoogleSignin.hasPlayServices();
@@ -175,6 +185,25 @@ export default function LoginGatewayScreen() {
       if (typeof __DEV__ !== 'undefined' && __DEV__) {
         console.error('[Auth] Failed to open mail client:', e);
       }
+    }
+  };
+
+  const handleDevStudentLogin = async () => {
+    setLoading(true);
+    setAuthError(null);
+    try {
+      const devToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0YTUyZDBkOS0yMTgzLTQ5ODUtODcyYy0yMmVjYTI2NDExZWUiLCJzZWNWZXIiOjEsImlhdCI6MTc4OTUzOTQ1OSwiZXhwIjoxNzkwMTQ0MjU5fQ.BpQEEZjvmauaFoAWK-OjL2HHlaV7KSSSbh-WdhG2odQ';
+      await setSession('4a52d0d9-2183-4985-872c-22eca26411ee', devToken, devToken);
+      router.replace('/(app)');
+    } catch (e: any) {
+      setAuthError({
+        type: 'GENERIC',
+        title: 'DEV LOGIN FAILED',
+        message: e?.message || 'Failed to initialize dev student session',
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -493,6 +522,16 @@ export default function LoginGatewayScreen() {
             variant="primary"
             style={styles.ctaButton}
           />
+
+          {Platform.OS === 'web' && typeof __DEV__ !== 'undefined' && __DEV__ && (
+            <Button
+              title="[ DEV: TEST AS STUDENT (ARJUN MEHTA) ]"
+              onPress={handleDevStudentLogin}
+              loading={loading}
+              variant="secondary"
+              style={[styles.ctaButton, { marginTop: 8 }]}
+            />
+          )}
 
 
           <View style={styles.noticeBox}>
