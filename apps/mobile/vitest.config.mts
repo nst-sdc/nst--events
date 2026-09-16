@@ -19,7 +19,6 @@ export default defineConfig({
       'expo-constants': path.resolve(__dirname, 'tests/mocks/expo-constants.ts'),
       'expo-secure-store': path.resolve(__dirname, 'tests/mocks/expo-secure-store.ts'),
       'react-native-safe-area-context': path.resolve(__dirname, 'tests/mocks/react-native-safe-area-context.ts'),
-      'jsdom': path.resolve(__dirname, '../../node_modules/jsdom'),
     },
   },
 });
