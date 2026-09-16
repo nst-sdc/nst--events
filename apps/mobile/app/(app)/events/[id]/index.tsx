@@ -146,16 +146,24 @@ export default function EventScreen() {
       gap: 8,
     },
     actionSection: {
-      marginTop: theme.spacing.lg,
+      marginTop: 28,
+      marginBottom: 40,
+      width: '100%',
     },
     actionBtn: {
-      flex: 1,
+      width: '100%',
+      minHeight: 52,
+      height: 52,
     },
     cancelBtn: {
-      marginRight: theme.spacing.sm,
+      flex: 1,
+      minHeight: 52,
+      height: 52,
     },
     multiActionTray: {
       flexDirection: 'row',
+      gap: theme.spacing.sm,
+      width: '100%',
     },
     restrictedTray: {
       backgroundColor: theme.colors.surfaceContainerHighest,
@@ -347,6 +355,7 @@ export default function EventScreen() {
               onPress={() => setShowCancelModal(true)}
               variant="secondary"
               disabled={isCancelling}
+              style={styles.actionBtn}
             />
           )}
         </View>
@@ -367,6 +376,7 @@ export default function EventScreen() {
               onPress={() => setShowCancelModal(true)}
               variant="secondary"
               disabled={isCancelling}
+              style={styles.actionBtn}
             />
           )}
         </View>
