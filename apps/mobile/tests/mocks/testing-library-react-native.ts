@@ -1,18 +1,39 @@
 import React, { act } from 'react';
 // @ts-ignore
 import { createRoot, Root } from 'react-dom/client';
-// @ts-ignore
-import { JSDOM } from 'jsdom';
+import { createRequire } from 'module';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __mock_dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
 if (typeof document === 'undefined') {
-  const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', {
-    url: 'http://localhost:8081',
-  });
-  global.window = dom.window as any;
-  global.document = dom.window.document;
-  global.HTMLElement = dom.window.HTMLElement;
+  let JSDOMClass: any;
+  try {
+    const rootReq = createRequire(path.resolve(__mock_dirname, '../../package.json'));
+    const jsdomMod = rootReq('jsdom');
+    JSDOMClass = jsdomMod?.JSDOM || jsdomMod;
+  } catch {
+    try {
+      const fallbackReq = createRequire(path.resolve(__mock_dirname, '../../../package.json'));
+      const jsdomMod = fallbackReq('jsdom');
+      JSDOMClass = jsdomMod?.JSDOM || jsdomMod;
+    } catch {}
+  }
+
+  if (JSDOMClass) {
+    const dom = new JSDOMClass('<!doctype html><html><body><div id="root"></div></body></html>', {
+      url: 'http://localhost:8081',
+    });
+    global.window = dom.window as any;
+    global.document = dom.window.document;
+    global.HTMLElement = dom.window.HTMLElement;
+    (globalThis as any).window = dom.window;
+    (globalThis as any).document = dom.window.document;
+    (globalThis as any).HTMLElement = dom.window.HTMLElement;
+  }
 }
 
 let currentContainer: HTMLElement | null = null;
