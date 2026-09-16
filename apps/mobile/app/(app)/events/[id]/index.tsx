@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { View, StyleSheet, Image } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, StyleSheet, Image, Modal, TouchableOpacity } from 'react-native';
 import { ActivityIndicator } from '../../../../src/ui/core/ActivityIndicator';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -8,6 +8,7 @@ import { useEventLive } from '../../../../src/hooks/use-event-live';
 import { useEventSessions } from '../../../../src/hooks/use-events';
 import { useAttendanceHistory } from '../../../../src/hooks/use-attendance-history';
 import { useUserProfile } from '../../../../src/hooks/use-user-profile';
+import { useRegistration } from '../../../../src/hooks/use-registration';
 import { useNetworkStatus } from '../../../../src/infrastructure/network';
 import { useAppTheme } from '../../../../src/store/theme-store';
 import { Button } from '../../../../src/ui/Button';
@@ -25,6 +26,16 @@ export default function EventScreen() {
   const router = useRouter();
   const { isOnline } = useNetworkStatus();
   const theme = useAppTheme();
+
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+
+  const {
+    registerAsync,
+    isRegistering,
+    cancelAsync,
+    isCancelling,
+  } = useRegistration(id as string);
 
   useEventLive(id as string);
 
@@ -191,7 +202,90 @@ export default function EventScreen() {
       textAlign: 'center',
       color: theme.colors.onSurfaceVariant,
     },
+    actionTrayStack: {
+      gap: theme.spacing.sm,
+    },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.82)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: theme.spacing.base,
+    },
+    modalCard: {
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.primary,
+      width: '100%',
+      maxWidth: 420,
+      padding: theme.spacing.lg,
+      gap: theme.spacing.md,
+    },
+    modalCardError: {
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.error,
+      width: '100%',
+      maxWidth: 420,
+      padding: theme.spacing.lg,
+      gap: theme.spacing.md,
+    },
+    modalMetaBox: {
+      backgroundColor: theme.colors.surfaceContainerLow,
+      borderWidth: 1,
+      borderColor: theme.colors.borderHairline,
+      padding: theme.spacing.md,
+      gap: 8,
+    },
+    modalMetaRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    modalNoticeBox: {
+      padding: theme.spacing.sm,
+      backgroundColor: theme.colors.surfaceContainerHighest,
+      borderWidth: 1,
+      borderColor: theme.colors.outlineVariant,
+    },
+    modalWarningBox: {
+      padding: theme.spacing.sm,
+      backgroundColor: theme.colors.errorContainer,
+      borderWidth: 1,
+      borderColor: theme.colors.error,
+    },
+    modalNoticeText: {
+      fontSize: 11,
+      lineHeight: 16,
+      color: theme.colors.onSurfaceVariant,
+    },
+    modalWarningText: {
+      fontSize: 11,
+      lineHeight: 16,
+      color: theme.colors.onErrorContainer,
+      fontFamily: theme.typography.monoMedium,
+    },
   }), [theme]);
+
+  const handleConfirmRegister = async () => {
+    try {
+      await registerAsync();
+    } catch {
+      // Handled in useRegistration toast
+    } finally {
+      setShowRegisterModal(false);
+    }
+  };
+
+  const handleConfirmCancel = async () => {
+    try {
+      await cancelAsync();
+    } catch {
+      // Handled in useRegistration toast
+    } finally {
+      setShowCancelModal(false);
+    }
+  };
   
   const renderActionTray = () => {
     if (!isOnline) {
@@ -243,18 +337,63 @@ export default function EventScreen() {
       }
       
       return (
-        <View style={styles.restrictedTray}>
-          <MonoLabel style={styles.restrictedText}>REGISTERED — WAITING FOR SESSION</MonoLabel>
+        <View style={styles.actionTrayStack}>
+          <View style={styles.restrictedTray}>
+            <MonoLabel style={styles.restrictedText}>REGISTERED — WAITING FOR SESSION</MonoLabel>
+          </View>
+          {!event?.isLocked && !isEventEnded && (
+            <Button
+              title="[ CANCEL REGISTRATION ]"
+              onPress={() => setShowCancelModal(true)}
+              variant="secondary"
+              disabled={isCancelling}
+            />
+          )}
         </View>
       );
     }
 
+    if (status === 'WAITLISTED') {
+      return (
+        <View style={styles.actionTrayStack}>
+          <View style={[styles.restrictedTray, { borderColor: '#d4a200' }]}>
+            <MonoLabel style={[styles.restrictedText, { color: '#d4a200' }]}>
+              WAITLISTED — POSITION: {registration?.waitlist_position ?? 'QUEUED'}
+            </MonoLabel>
+          </View>
+          {!event?.isLocked && !isEventEnded && (
+            <Button
+              title="[ LEAVE WAITLIST ]"
+              onPress={() => setShowCancelModal(true)}
+              variant="secondary"
+              disabled={isCancelling}
+            />
+          )}
+        </View>
+      );
+    }
+
+    // Unregistered State for Team Event
+    if (event?.registrationType === 'TEAM') {
+      return (
+        <Button
+          title="[ SQUAD DETAILS & RULES ]"
+          onPress={() => router.push(`/(app)/events/${id}/teams`)}
+          variant="secondary"
+          style={styles.actionBtn}
+        />
+      );
+    }
+
+    // Individual Event Registration (NOT_REGISTERED or CANCELLED)
     return (
-      <View style={styles.restrictedTray}>
-        <MonoLabel style={styles.restrictedText}>
-          STATUS: {status.replace('_', ' ')}
-        </MonoLabel>
-      </View>
+      <Button
+        title={isFull ? "[ JOIN EVENT WAITLIST ]" : "[ REGISTER FOR EVENT ]"}
+        onPress={() => setShowRegisterModal(true)}
+        variant="primary"
+        disabled={isRegistering}
+        style={styles.actionBtn}
+      />
     );
   };
 
@@ -380,6 +519,104 @@ export default function EventScreen() {
           </View>
         </>
       )}
+
+      {/* Registration Confirmation Modal */}
+      <Modal
+        visible={showRegisterModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowRegisterModal(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <StatusBadge 
+              status={isFull ? '[WAITLIST QUEUE]' : '[CONFIRM REGISTRATION]'} 
+              type={isFull ? 'warning' : 'info'} 
+            />
+            <Title style={{ fontSize: 20 }}>
+              {isFull ? 'JOIN WAITING LIST' : 'CONFIRM REGISTRATION'}
+            </Title>
+            
+            <View style={styles.modalMetaBox}>
+              <View style={styles.modalMetaRow}>
+                <MonoLabel>EVENT</MonoLabel>
+                <Mono numberOfLines={1} style={{ maxWidth: '65%' }}>{event?.title || 'CAMPUS EVENT'}</Mono>
+              </View>
+              <View style={styles.modalMetaRow}>
+                <MonoLabel>DATE</MonoLabel>
+                <Mono>{event?.startTime ? new Date(event.startTime).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'TBA'}</Mono>
+              </View>
+              <View style={styles.modalMetaRow}>
+                <MonoLabel>VENUE</MonoLabel>
+                <Mono numberOfLines={1} style={{ maxWidth: '65%' }}>{event?.locationName || 'CAMPUS VENUE'}</Mono>
+              </View>
+              <View style={styles.modalMetaRow}>
+                <MonoLabel>CAPACITY</MonoLabel>
+                <Mono>{event?.registrationCount || 0} / {event?.maxCapacity || '∞'}</Mono>
+              </View>
+            </View>
+
+            <View style={isFull ? styles.modalWarningBox : styles.modalNoticeBox}>
+              <Body style={isFull ? styles.modalWarningText : styles.modalNoticeText}>
+                {isFull 
+                  ? 'This event is at full capacity. Confirming will add you to the official waitlist. You will be automatically enrolled if an attendee cancels.'
+                  : 'Confirming your entry pass reserves an individual attendance slot. Please verify your schedule before registering.'}
+              </Body>
+            </View>
+
+            <View style={{ gap: 8, marginTop: 8 }}>
+              <Button
+                title={isRegistering ? "[ RESERVING PASS... ]" : isFull ? "[ CONFIRM WAITLIST ENTRY ]" : "[ CONFIRM & SECURE PASS ]"}
+                variant="primary"
+                onPress={handleConfirmRegister}
+                disabled={isRegistering}
+              />
+              <Button
+                title="[ RETURN / CANCEL ]"
+                variant="secondary"
+                onPress={() => setShowRegisterModal(false)}
+                disabled={isRegistering}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Cancellation Confirmation Modal */}
+      <Modal
+        visible={showCancelModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowCancelModal(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCardError}>
+            <StatusBadge status="[CONFIRM CANCELLATION]" type="error" />
+            <Title style={{ fontSize: 20 }}>CANCEL ENTRY PASS</Title>
+            
+            <View style={styles.modalWarningBox}>
+              <Body style={styles.modalWarningText}>
+                Are you sure you want to cancel your event registration? If the event reaches capacity, your spot cannot be restored.
+              </Body>
+            </View>
+
+            <View style={{ gap: 8, marginTop: 8 }}>
+              <Button
+                title={isCancelling ? "[ CANCELLING PASS... ]" : "[ YES, CANCEL REGISTRATION ]"}
+                variant="primary"
+                onPress={handleConfirmCancel}
+                disabled={isCancelling}
+              />
+              <Button
+                title="[ KEEP REGISTRATION ]"
+                variant="secondary"
+                onPress={() => setShowCancelModal(false)}
+                disabled={isCancelling}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </MobileShell>
   );
 }
