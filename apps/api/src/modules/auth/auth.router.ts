@@ -98,10 +98,14 @@ authRouter.get(
       }
     } catch (err: any) {
       console.error('Login Error:', err);
+      const errorCode = ['INSTITUTIONAL_DOMAIN_NOT_ALLOWED', 'STUDENT_ACCESS_NOT_AUTHORIZED', 'Account deactivated'].includes(err.message)
+        ? err.message
+        : 'authentication_failed';
+
       if (platform === 'mobile') {
-        res.redirect(303, 'nst-events://(auth)/callback?error=authentication_failed');
+        res.redirect(303, `nst-events://(auth)/callback?error=${errorCode}`);
       } else {
-        res.redirect(303, `${env.WEB_APP_URL}/login?error=authentication_failed`);
+        res.redirect(303, `${env.WEB_APP_URL}/login?error=${errorCode}`);
       }
     }
   }
