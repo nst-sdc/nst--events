@@ -19,7 +19,8 @@ import {
   MoonOutlined,
   BookOutlined,
   BlockOutlined,
-  InfoCircleOutlined
+  InfoCircleOutlined,
+  BarChartOutlined
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
@@ -50,6 +51,7 @@ function getPageTitle(pathname: string): string {
     '/admin/academic-batches': 'Academic Batches',
     '/admin/audit-logs': 'Audit Logs',
     '/admin/queues': 'Queues',
+    '/admin/analytics': 'Analytics',
   };
 
   // Exact match
@@ -64,6 +66,7 @@ function getPageTitle(pathname: string): string {
   if (/^\/events\/[^/]+$/.test(pathname)) return 'Event Detail';
   if (/^\/clubs\/[^/]+$/.test(pathname)) return '';
   if (/^\/admin\/users\/[^/]+$/.test(pathname)) return 'User Detail';
+  if (/^\/admin\/analytics\/[^/]+$/.test(pathname)) return 'Analytics';
 
   // Fallback: capitalize first segment
   const segment = pathname.split('/').filter(Boolean)[0];
@@ -102,6 +105,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isPlatformAdmin = currentUser?.global_role === 'PLATFORM_ADMIN';
   const isFacultyAdmin = currentUser?.global_role === 'FACULTY_ADMIN';
   const isFacultyMentor = currentUser?.club_memberships?.some(m => m.role === 'FACULTY_MENTOR') ?? false;
+  const isClubAdmin = currentUser?.club_memberships?.some(m => m.role === 'CLUB_ADMIN') ?? false;
   const isAdmin = isPlatformAdmin || isFacultyAdmin;
   const canApprove = isAdmin || isFacultyMentor;
 
@@ -126,9 +130,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   ];
 
   // ADMINISTRATION GROUP
-  if (isAdmin || canApprove) {
+  if (isAdmin || canApprove || isClubAdmin) {
     const adminChildren: { key: string; icon: React.ReactNode; label: string }[] = [];
     
+    if (isAdmin || isClubAdmin) {
+      adminChildren.push({ key: '/admin/analytics', icon: <BarChartOutlined />, label: 'Analytics' });
+    }
+
     if (canApprove) {
       adminChildren.push({ key: '/admin/approvals', icon: <CheckSquareOutlined />, label: 'Approvals' });
     }
@@ -165,6 +173,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (pathname.startsWith('/admin/academic-batches/')) selectedKeys = ['/admin/academic-batches'];
   if (pathname.startsWith('/admin/audit-logs/')) selectedKeys = ['/admin/audit-logs'];
   if (pathname.startsWith('/admin/queues/')) selectedKeys = ['/admin/queues'];
+  if (pathname.startsWith('/admin/analytics/')) selectedKeys = ['/admin/analytics'];
 
   const themeMenu = mounted ? [
     {
@@ -261,6 +270,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               menu={{
                 items: [
                   ...themeMenu,
+                  {
+                    key: 'student-portal',
+                    icon: <UserOutlined />,
+                    label: 'Student Portal',
+                    onClick: () => router.push('/student/home'),
+                  },
                   {
                     key: 'about-dev-club',
                     icon: <InfoCircleOutlined />,

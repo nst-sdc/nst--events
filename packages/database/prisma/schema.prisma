@@ -47,6 +47,7 @@ model User {
   teamLeaderships           Team[]
   assignedAcademicProfiles  UserAcademicProfile[]       @relation("AcademicProfileAssignedBy")
   academicProfile           UserAcademicProfile?
+  attendanceAttempts        AttendanceAttempt[]
 
   @@index([email])
   @@index([googleSub])
@@ -235,6 +236,7 @@ model AttendanceSession {
   createdBy            String                @map("created_by") @db.Uuid
   attendanceDisputes   AttendanceDispute[]
   attendanceRecords    AttendanceRecord[]
+  attendanceAttempts   AttendanceAttempt[]
   creator              User                  @relation("SessionCreatedBy", fields: [createdBy], references: [id])
   event                Event                 @relation(fields: [eventId], references: [id])
 
@@ -580,6 +582,32 @@ model MobileAuthCode {
 
   @@index([expiresAt])
   @@map("mobile_auth_codes")
+}
+
+/// Telemetry log for attendance scan attempts (both rejected and successful)
+model AttendanceAttempt {
+  id             String            @id @default(uuid()) @db.Uuid
+  sessionId      String            @map("session_id") @db.Uuid
+  userId         String            @map("user_id") @db.Uuid
+  attemptedAt    DateTime          @default(now()) @map("attempted_at") @db.Timestamptz(6)
+  isSuccess      Boolean           @map("is_success")
+  failureReason  String?           @map("failure_reason")
+  latitude       Float?
+  longitude      Float?
+  distanceMeters Float?            @map("distance_meters")
+  gpsAccuracy    Float?            @map("gps_accuracy")
+  deviceId       String?           @map("device_id")
+  deviceOs       String?           @map("device_os")
+  appVersion     String?           @map("app_version")
+  isOfflineSync  Boolean           @default(false) @map("is_offline_sync")
+
+  session        AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, isSuccess])
+  @@index([userId, attemptedAt])
+  @@index([failureReason])
+  @@map("attendance_attempts")
 }
 
 /// Access status of a user in the student directory.

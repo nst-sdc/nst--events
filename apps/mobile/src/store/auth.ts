@@ -11,8 +11,14 @@ interface AuthState {
   initSession: () => Promise<void>;
   setSession: (userId: string, accessToken: string, refreshToken: string) => Promise<void>;
   clearSession: () => Promise<void>;
-  refreshAccessToken: () => Promise<string | null>;
+  refreshAccessToken: () => Promise<RefreshResult>;
 }
+
+export type RefreshResult =
+  | { status: 'SUCCESS'; token: string }
+  | { status: 'SESSION_DEAD' }
+  | { status: 'RATE_LIMITED'; retryAfter?: number }
+  | { status: 'TRANSIENT_ERROR' };
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   userId: null,
@@ -56,9 +62,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
    * to prevent recursive 401-retry handling.
    * Returns the new access_token on success, or null on failure.
    */
-  refreshAccessToken: async () => {
+  refreshAccessToken: async (): Promise<RefreshResult> => {
     const currentRefresh = get().refreshToken;
-    if (!currentRefresh) return null;
+    if (!currentRefresh) return { status: 'SESSION_DEAD' };
 
     try {
       const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
@@ -67,18 +73,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         body: JSON.stringify({ refresh_token: currentRefresh }),
       });
 
-      if (!response.ok) return null;
+      if (response.status === 401) return { status: 'SESSION_DEAD' };
+      if (response.status === 429) {
+        const retryHeader = response.headers.get('retry-after');
+        const retryAfter = retryHeader ? parseInt(retryHeader, 10) : undefined;
+        return { status: 'RATE_LIMITED', retryAfter };
+      }
+      if (!response.ok) return { status: 'TRANSIENT_ERROR' };
 
       const data = await response.json();
       if (data.access_token && data.refresh_token) {
         await SecureStore.setItemAsync('access_token', data.access_token);
         await SecureStore.setItemAsync('refresh_token', data.refresh_token);
         set({ accessToken: data.access_token, refreshToken: data.refresh_token });
-        return data.access_token;
+        return { status: 'SUCCESS', token: data.access_token };
       }
-      return null;
+      return { status: 'SESSION_DEAD' };
     } catch {
-      return null;
+      return { status: 'TRANSIENT_ERROR' };
     }
   },
 }));

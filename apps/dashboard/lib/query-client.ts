@@ -1,12 +1,28 @@
 import { QueryClient } from '@tanstack/react-query';
+import { ApiError } from './api';
 
 export function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 5 * 60 * 1000, // 5 minutes
+        staleTime: 30 * 1000, // 30 seconds
         gcTime: 10 * 60 * 1000, // 10 minutes
-        retry: 1,
+        retry: (failureCount, error) => {
+          if (error instanceof ApiError) {
+            // Do not retry auth or missing resource errors, except 429
+            if ([401, 403, 404, 422].includes(error.status)) {
+              return false;
+            }
+          }
+          return failureCount < 3;
+        },
+        retryDelay: (attemptIndex, error) => {
+          if (error instanceof ApiError && error.status === 429 && error.retryAfter) {
+            return error.retryAfter * 1000;
+          }
+          const delay = Math.min(1000 * 2 ** attemptIndex, 30000);
+          return delay + Math.random() * 200;
+        },
         refetchOnWindowFocus: false,
       },
     },

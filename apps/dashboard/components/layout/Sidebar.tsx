@@ -44,6 +44,11 @@ export function Sidebar() {
     links.push({ href: '/admin/approvals', label: 'Approvals' });
   }
 
+  const isClubAdmin = currentUser?.club_memberships?.some(cm => cm.role === 'CLUB_ADMIN');
+  if (adminAccess || isClubAdmin) {
+    links.push({ href: '/admin/analytics', label: 'Analytics' });
+  }
+
   if (platformAdmin) {
     links.push({ href: '/admin/audit-logs', label: 'Audit Logs' });
     links.push({ href: '/admin/queues', label: 'Queue Monitoring' });

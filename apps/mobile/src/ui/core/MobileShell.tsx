@@ -107,7 +107,7 @@ export function MobileShell({
   return (
     <View style={[styles.safeArea, { paddingTop: Math.max(insets.top, 8) }]}>
       <StatusBar 
-        barStyle={theme.colors.surface === '#fbfbfb' ? 'dark-content' : 'light-content'} 
+        barStyle={theme.mode === 'light' ? 'dark-content' : 'light-content'} 
         backgroundColor="transparent" 
         translucent 
       />

@@ -15,7 +15,8 @@ import { Title, Body, MonoLabel, Mono, Display } from '../../src/ui/core/Typogra
 import { StatusBadge } from '../../src/ui/core/StatusBadge';
 import { ActivityIndicator } from '../../src/ui/core/ActivityIndicator';
 import { logout } from '../../src/services/session';
-import { PRIVACY_POLICY_URL } from '../../src/infrastructure/config';
+import { PRIVACY_POLICY_URL, SUPPORT_EMAIL } from '../../src/infrastructure/config';
+import { useUserProfile } from '../../src/hooks/use-user-profile';
 import { DevClubCreditsModal } from '../../src/ui/brand/DevClubCreditsModal';
 import { MOBILE_APP_VERSION } from '../../src/infrastructure/brand-config';
 
@@ -62,6 +63,18 @@ export default function SettingsScreen() {
 
   const handleOpenPrivacyPolicy = async () => {
     await Linking.openURL(PRIVACY_POLICY_URL);
+  };
+
+  const { data: profile } = useUserProfile();
+
+  const handleRequestDeactivation = async () => {
+    const email = profile?.email || '';
+    const subject = encodeURIComponent(email ? `Account Deactivation Request - ${email}` : 'Account Deactivation Request');
+    const body = encodeURIComponent(
+      `Student Email: ${email || '[Your institutional email]'}\n\nI request to deactivate my NST Events account access.\n\n(I understand that historical academic and attendance records are permanently retained per institutional policy.)`
+    );
+    const mailtoUrl = `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
+    await Linking.openURL(mailtoUrl);
   };
 
   const styles = useMemo(() => StyleSheet.create({
@@ -361,6 +374,17 @@ export default function SettingsScreen() {
           activeOpacity={0.8}
         >
           <Title>Privacy Policy</Title>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.optionRow}
+          onPress={handleRequestDeactivation}
+          activeOpacity={0.8}
+        >
+          <View style={styles.optionContent}>
+            <Title>Request Account Deactivation</Title>
+            <Mono>Institutional data retention policy applies</Mono>
+          </View>
+          <MonoLabel>[ EMAIL ]</MonoLabel>
         </TouchableOpacity>
       </View>
 

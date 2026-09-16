@@ -5,6 +5,7 @@ import * as Location from 'expo-location';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { apiClient } from '../../../../src/infrastructure/api';
+import { useToast } from '../../../../src/hooks/use-toast';
 import { queryClient } from '../../../../src/providers/QueryProvider';
 import { getPersistentDeviceId } from '../../../../src/lib/device-id';
 import { useAppTheme } from '../../../../src/store/theme-store';
@@ -28,6 +29,7 @@ export default function ScanAttendanceScreen() {
   const { id: eventId } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const theme = useAppTheme();
+  const toast = useToast();
 
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const [flowState, setFlowState] = useState<ScanFlowState>('CHECKING');
@@ -58,6 +60,7 @@ export default function ScanAttendanceScreen() {
 
   const isProcessingRef = useRef(false);
   const pendingQrDataRef = useRef<string | null>(null);
+  const lastScanTimeRef = useRef<number>(0);
   const locationCacheRef = useRef<Location.LocationObject | null>(null);
   const locationPromiseRef = useRef<Promise<Location.LocationObject> | null>(null);
 
@@ -101,7 +104,11 @@ export default function ScanAttendanceScreen() {
   }, [cameraPermission]);
 
   const handleBarcodeScanned = async ({ data }: { type: string; data: string }) => {
+    const now = Date.now();
+    if (now - lastScanTimeRef.current < 2500) return;
     if (isProcessingRef.current) return;
+    
+    lastScanTimeRef.current = now;
     isProcessingRef.current = true;
     pendingQrDataRef.current = data;
 
@@ -328,6 +335,7 @@ export default function ScanAttendanceScreen() {
       ) {
         parsedCode = 'INVALID_QR_FORMAT';
         rawMsg = 'Unrecognized QR code format. Please scan the official NST-Events session QR code.';
+        toast.show(rawMsg, 'error', 'Invalid QR');
       } else if (rawMsg.includes('QR_EXPIRED') || parsedCode === 'QR_EXPIRED') {
         parsedCode = 'QR_EXPIRED';
       } else if (parsedCode === 'LOCATION_VERIFICATION_FAILED') {

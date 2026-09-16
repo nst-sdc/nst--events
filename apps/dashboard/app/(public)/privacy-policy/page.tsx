@@ -99,17 +99,24 @@ export default function PrivacyPolicyPage() {
             <li><strong>Camera</strong>: required only for QR scanning; you may decline, but attendance scanning will not function.</li>
             <li><strong>Notifications</strong>: optional; you may disable these at any time in your device settings.</li>
             <li><strong>Sign out</strong>: you may sign out of the app at any time, which ends your active session on that device.</li>
-            <li><strong>Account deactivation</strong>: contact us using the details in Section 8 to request that your account be deactivated. This disables future access but does not delete your historical academic/attendance records, as explained in Section 5.</li>
+            <li><strong>Account deactivation</strong>: contact us using the details in Section 9 to request that your account be deactivated. This disables future access but does not delete your historical academic/attendance records, as explained in Section 5.</li>
           </ul>
         </section>
 
         <section className="space-y-4">
-          <h2 className="text-2xl font-semibold mt-8">7. Data Security</h2>
+          <h2 className="text-2xl font-semibold mt-8">7. Children's Privacy</h2>
+          <p>
+            Our Service is intended exclusively for enrolled university students, faculty, and authorized staff of Newton School of Technology (NST), Pune and Ajeenkya DY Patil University (typically ages 17 and above). We do not knowingly collect or solicit personal information from children under the age of 13. If you believe that a child under 13 has provided us with personal information, please contact us immediately at <a href="mailto:events-support@adypu.edu.in" className="text-blue-600 underline">events-support@adypu.edu.in</a> so that we can take appropriate measures.
+          </p>
+        </section>
+
+        <section className="space-y-4">
+          <h2 className="text-2xl font-semibold mt-8">8. Data Security</h2>
           <p>We use industry-standard measures to protect your data, including encrypted network connections (HTTPS) and access controls limiting who can view administrative or personal data. No system is perfectly secure, and we cannot guarantee absolute security.</p>
         </section>
 
         <section className="space-y-4">
-          <h2 className="text-2xl font-semibold mt-8">8. Contact Us</h2>
+          <h2 className="text-2xl font-semibold mt-8">9. Contact Us</h2>
           <p>If you have questions about this policy or wish to exercise your data rights, contact:</p>
           <address className="not-italic bg-gray-50 p-4 rounded-md border">
             <strong>NST Student Developer Club (nst-sdc)</strong><br />
@@ -119,7 +126,7 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section className="space-y-4">
-          <h2 className="text-2xl font-semibold mt-8">9. Changes to This Policy</h2>
+          <h2 className="text-2xl font-semibold mt-8">10. Changes to This Policy</h2>
           <p>We may update this policy from time to time. Material changes will be reflected by updating the "Last updated" date above. Continued use of the Service after changes constitutes acceptance of the updated policy.</p>
         </section>
 

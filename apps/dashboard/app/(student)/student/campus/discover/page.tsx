@@ -160,14 +160,25 @@ const discoverStyles = `
     box-shadow: 10px 10px 0px #000000;
     display: flex;
     flex-direction: column;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
     cursor: pointer;
     position: relative;
     text-decoration: none;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    contain: content;
+    content-visibility: auto;
+    contain-intrinsic-size: 380px 480px;
   }
   .d-poster-card:hover {
-    transform: translate(-4px, -4px) rotate(-0.5deg);
+    transform: translate3d(-4px, -4px, 0) rotate(-1deg);
     box-shadow: 14px 14px 0px #000000;
+  }
+  .d-poster-card:nth-child(even) {
+    transform: rotate(1.5deg) translateZ(0);
+  }
+  .d-poster-card:nth-child(even):hover {
+    transform: translate3d(-4px, -4px, 0) rotate(0.5deg);
   }
 
   .d-poster-card-header {
@@ -183,31 +194,28 @@ const discoverStyles = `
     background: #000;
     color: #fff;
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     padding: 4px 10px;
     text-transform: uppercase;
-    letter-spacing: 1px;
   }
 
   .d-type-badge {
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 700;
-    letter-spacing: 1.5px;
     text-transform: uppercase;
-    color: #555;
+    color: #000;
   }
 
   .d-poster-title {
     font-family: var(--font-display);
-    font-size: 24px;
+    font-size: 26px;
     font-weight: 900;
     line-height: 1.05;
     text-transform: uppercase;
     color: #000;
     margin-bottom: 12px;
-    letter-spacing: -0.5px;
   }
 
   .d-poster-img-frame {
@@ -216,13 +224,23 @@ const discoverStyles = `
     background: #111;
     border: 2px solid #000;
     margin-bottom: 14px;
+    position: relative;
     overflow: hidden;
+    transform: translateZ(0);
+    contain: paint;
   }
   .d-poster-img-frame img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    filter: contrast(130%) grayscale(70%);
+    filter: contrast(125%) grayscale(80%);
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    will-change: transform, filter;
+    transition: filter 0.3s ease;
+  }
+  .d-poster-card:hover .d-poster-img-frame img {
+    filter: contrast(100%) grayscale(0%);
   }
 
   .d-poster-img-placeholder {
@@ -236,6 +254,8 @@ const discoverStyles = `
     justify-content: center;
     position: relative;
     overflow: hidden;
+    transform: translateZ(0);
+    contain: paint;
   }
   .d-poster-img-placeholder::after {
     content: '';
@@ -254,6 +274,18 @@ const discoverStyles = `
     z-index: 1;
   }
 
+  .d-poster-desc {
+    font-family: var(--font-body);
+    font-size: 13.5px;
+    color: #222;
+    line-height: 1.5;
+    margin-bottom: 16px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
   .d-poster-footer {
     margin-top: auto;
     padding-top: 12px;
@@ -261,33 +293,30 @@ const discoverStyles = `
     display: flex;
     justify-content: space-between;
     align-items: center;
-  }
-
-  .d-location-text {
     font-family: var(--font-mono);
     font-size: 11px;
     font-weight: 700;
+  }
+
+  .d-location-text {
     color: #333;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
   }
 
   .d-explore-btn {
     background: var(--electric-blue);
     color: #ffffff;
     border: 2px solid #000;
-    padding: 7px 14px;
+    padding: 8px 16px;
     font-family: var(--font-mono);
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 1px;
     cursor: pointer;
-    transition: all 0.15s;
+    box-shadow: 2px 2px 0px #000;
+    transition: transform 0.1s, box-shadow 0.1s;
     border-radius: 0 !important;
   }
   .d-explore-btn:hover {
-    background: var(--electric-blue-dark);
     transform: translate(-1px, -1px);
     box-shadow: 3px 3px 0px #000;
   }
@@ -600,7 +629,7 @@ export default function DiscoverPage() {
                     {bannerUrl ? (
                       <div className="d-poster-img-frame">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={bannerUrl} alt={event.title} />
+                        <img src={bannerUrl} alt={event.title} loading="lazy" decoding="async" />
                       </div>
                     ) : (
                       <div className="d-poster-img-placeholder">
@@ -610,12 +639,17 @@ export default function DiscoverPage() {
                       </div>
                     )}
 
+                    {/* Description */}
+                    <p className="d-poster-desc">
+                      {(event.metadata as Record<string, unknown> | null | undefined)?.description as string | undefined || 'Join this premium campus event and secure your pass. Register now to participate.'}
+                    </p>
+
                     {/* Footer */}
                     <div className="d-poster-footer">
                       <span className="d-location-text">
                         {locationLabel.length > 22 ? locationLabel.slice(0, 22) + '…' : locationLabel}
                       </span>
-                      <span className="d-explore-btn">EXPLORE ↗</span>
+                      <span className="d-explore-btn">REGISTER ↗</span>
                     </div>
                   </Link>
                 );

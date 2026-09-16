@@ -16,9 +16,9 @@ interface ClubAdminContextType {
 const ClubAdminContext = createContext<ClubAdminContextType | undefined>(undefined);
 
 export function ClubAdminProvider({ children }: { children: ReactNode }) {
-  const { data: user } = useCurrentUser();
+  const { data: user, isLoading: isUserLoading } = useCurrentUser();
   
-  const [isHydrated, setIsHydrated] = useState(false);
+  const [isStorageLoaded, setIsStorageLoaded] = useState(false);
   const [isClubAdminMode, setIsClubAdminMode] = useState(false);
   const [activeClubId, setActiveClubId] = useState<string | null>(null);
 
@@ -40,9 +40,11 @@ export function ClubAdminProvider({ children }: { children: ReactNode }) {
       if (storedClubId) {
         setActiveClubId(storedClubId);
       }
-      setIsHydrated(true);
+      setIsStorageLoaded(true);
     }
   }, []);
+
+  const isHydrated = isStorageLoaded && !isUserLoading;
 
   // Ensure activeClubId is valid when managedClubs change or initially load
   useEffect(() => {

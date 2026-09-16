@@ -187,24 +187,28 @@ const myEventsStyles = `
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
     cursor: pointer;
     position: relative;
     text-decoration: none;
     border-radius: 0 !important;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    contain: content;
+    content-visibility: auto;
   }
 
   .me-poster-card:hover {
-    transform: translate(-4px, -4px) rotate(-0.5deg);
+    transform: translate3d(-4px, -4px, 0) rotate(-1deg);
     box-shadow: 14px 14px 0px #000000;
   }
 
   .me-poster-card:nth-child(even) {
-    transform: rotate(1deg);
+    transform: rotate(1.5deg) translateZ(0);
   }
 
   .me-poster-card:nth-child(even):hover {
-    transform: translate(-4px, -4px) rotate(0.5deg);
+    transform: translate3d(-4px, -4px, 0) rotate(0.5deg);
   }
 
   .me-poster-card.is-past {
@@ -266,18 +270,23 @@ const myEventsStyles = `
     margin-bottom: 14px;
     position: relative;
     overflow: hidden;
+    transform: translateZ(0);
+    contain: paint;
   }
 
   .me-photo-frame img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    filter: contrast(130%) grayscale(70%);
-    transition: filter 0.3s;
+    filter: contrast(125%) grayscale(80%);
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    will-change: transform, filter;
+    transition: filter 0.3s ease;
   }
 
   .me-poster-card:hover .me-photo-frame img {
-    filter: contrast(115%) grayscale(20%);
+    filter: contrast(100%) grayscale(0%);
   }
 
   .me-photo-placeholder {

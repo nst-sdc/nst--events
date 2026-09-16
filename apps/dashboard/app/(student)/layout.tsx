@@ -28,9 +28,9 @@ function StudentLayoutContent({ children }: { children: React.ReactNode }) {
 
     const bootstrap = async () => {
       try {
-        const token = await refreshToken();
-        if (token) {
-          store.setAccessToken(token);
+        const res = await refreshToken();
+        if (res.status === 'SUCCESS') {
+          store.setAccessToken(res.token);
           setIsAuthenticated(true);
         } else {
           setIsAuthenticated(false);

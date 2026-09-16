@@ -1,12 +1,18 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useClubAdmin } from '../../../../../components/layout/ClubAdminProvider';
 import { useClubDetail, useAddClubMember, useUpdateClubMemberRole, useRemoveClubMember, ClubRole, ClubMember } from '../../../../../hooks/useClubDetail';
 import { useUpdateClub } from '../../../../../hooks/useUpdateClub';
 import { useCurrentUser } from '../../../../../hooks/useCurrentUser';
-import { Users, Calendar, Settings, Image as ImageIcon, Plus, ShieldAlert } from 'lucide-react';
+import { useAdminUsers } from '../../../../../hooks/useUserManagement';
+import { useEvents } from '../../../../../hooks/useEvents';
+import { useRegistrationsList } from '../../../../../hooks/useRegistrations';
+import { useDebounce } from '../../../../../hooks/useDebounce';
+import { apiClient } from '../../../../../lib/api';
+import { canViewStudentDirectory } from '../../../../../lib/auth-helpers';
+import { Users, Calendar, Settings, Image as ImageIcon, Plus, ShieldAlert, Search, Check, User as UserIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Modal } from '../../../../../components/ui/Modal';
 
@@ -356,6 +362,40 @@ const manageClubStyles = `
     .mc-inner { padding: 40px 16px 80px 16px; }
   }
 
+  /* ── Suggestions Dropdown & Selected Card ── */
+  .mc-suggestion-box {
+    margin-top: 8px;
+    border: 2px solid rgba(245,245,242,0.2);
+    background: #000000;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+  .mc-suggestion-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(245,245,242,0.08);
+    transition: background 0.15s;
+  }
+  .mc-suggestion-item:last-child {
+    border-bottom: none;
+  }
+  .mc-suggestion-item:hover {
+    background: rgba(0, 87, 255, 0.15);
+  }
+  .mc-selected-card {
+    border: 2px solid var(--electric-blue);
+    background: rgba(0, 87, 255, 0.06);
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
   /* ── Modal inner ── */
   .mc-modal-inner {
     padding: 24px;
@@ -381,10 +421,35 @@ const manageClubStyles = `
 
 // --- Modals ---
 
+interface StudentCandidate {
+  id: string;
+  fullName: string;
+  email: string;
+}
+
 function AddMemberModal({ clubId, isOpen, onClose }: { clubId: string, isOpen: boolean, onClose: () => void }) {
-  const [userId, setUserId] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch] = useDebounce(searchTerm, 250);
+  const [selectedStudent, setSelectedStudent] = useState<StudentCandidate | null>(null);
   const [role, setRole] = useState<ClubRole>('MEMBER');
   const [error, setError] = useState('');
+  const [isResolvingProfile, setIsResolvingProfile] = useState(false);
+
+  const { data: currentUser } = useCurrentUser();
+  const isPrivileged = canViewStudentDirectory(currentUser);
+
+  // Privileged student directory query
+  const { data: adminUsersData, isLoading: isAdminUsersLoading } = useAdminUsers(
+    isPrivileged && debouncedSearch.trim().length >= 2 ? debouncedSearch.trim() : undefined
+  );
+
+  // Club events & registration attendee query for non-privileged club admins
+  const { data: clubEvents } = useEvents({ filter_club_id: clubId, limit: 5 });
+  const firstEventId = clubEvents?.data?.[0]?.id || '';
+  const { data: regData1 } = useRegistrationsList(firstEventId);
+  const secondEventId = clubEvents?.data?.[1]?.id || '';
+  const { data: regData2 } = useRegistrationsList(secondEventId);
+
   const addMemberMutation = useAddClubMember(clubId);
 
   const assignableRoles: { label: string, value: ClubRole }[] = [
@@ -393,12 +458,111 @@ function AddMemberModal({ clubId, isOpen, onClose }: { clubId: string, isOpen: b
     { label: 'Club Admin', value: 'CLUB_ADMIN' },
   ];
 
+  // Aggregate candidate directory
+  const candidates = useMemo(() => {
+    const map = new Map<string, StudentCandidate>();
+
+    if (isPrivileged && adminUsersData?.pages) {
+      for (const page of adminUsersData.pages) {
+        for (const u of page.data) {
+          map.set(u.id, {
+            id: u.id,
+            fullName: u.fullName || 'Student',
+            email: u.email,
+          });
+        }
+      }
+    }
+
+    if (regData1?.pages) {
+      for (const page of regData1.pages) {
+        for (const r of page.data) {
+          if (r.user && !map.has(r.user.id)) {
+            map.set(r.user.id, {
+              id: r.user.id,
+              fullName: r.user.fullName || 'Student',
+              email: r.user.email,
+            });
+          }
+        }
+      }
+    }
+
+    if (regData2?.pages) {
+      for (const page of regData2.pages) {
+        for (const r of page.data) {
+          if (r.user && !map.has(r.user.id)) {
+            map.set(r.user.id, {
+              id: r.user.id,
+              fullName: r.user.fullName || 'Student',
+              email: r.user.email,
+            });
+          }
+        }
+      }
+    }
+
+    return Array.from(map.values());
+  }, [isPrivileged, adminUsersData, regData1, regData2]);
+
+  // Filtered candidate list based on search term
+  const filteredCandidates = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return candidates.slice(0, 8);
+    return candidates.filter(
+      c => c.fullName.toLowerCase().includes(term) || c.email.toLowerCase().includes(term) || c.id.toLowerCase().includes(term)
+    ).slice(0, 10);
+  }, [searchTerm, candidates]);
+
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(searchTerm.trim());
+
+  // Attempt to resolve UUID directly if typed or pasted
+  const handleResolveDirectUUID = async (uuid: string) => {
+    setIsResolvingProfile(true);
+    try {
+      const profile = await apiClient<any>(`/users/${uuid}/profile`);
+      if (profile && profile.id) {
+        setSelectedStudent({
+          id: profile.id,
+          fullName: profile.full_name || 'Student',
+          email: profile.email || uuid,
+        });
+        setSearchTerm('');
+      } else {
+        setSelectedStudent({
+          id: uuid,
+          fullName: 'Student',
+          email: uuid,
+        });
+      }
+    } catch {
+      setSelectedStudent({
+        id: uuid,
+        fullName: 'Student',
+        email: uuid,
+      });
+    } finally {
+      setIsResolvingProfile(false);
+    }
+  };
+
+  const handleSelectCandidate = (candidate: StudentCandidate) => {
+    setSelectedStudent(candidate);
+    setSearchTerm('');
+    setError('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedStudent) {
+      setError('Please search for and select a student candidate first.');
+      return;
+    }
     setError('');
     try {
-      await addMemberMutation.mutateAsync({ user_id: userId, role });
-      setUserId('');
+      await addMemberMutation.mutateAsync({ user_id: selectedStudent.id, role });
+      setSelectedStudent(null);
+      setSearchTerm('');
       setRole('MEMBER');
       onClose();
     } catch (err: any) {
@@ -406,32 +570,134 @@ function AddMemberModal({ clubId, isOpen, onClose }: { clubId: string, isOpen: b
     }
   };
 
+  const handleResetModal = () => {
+    setSelectedStudent(null);
+    setSearchTerm('');
+    setError('');
+    onClose();
+  };
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="ADD MEMBER">
+    <Modal isOpen={isOpen} onClose={handleResetModal} title="ADD CLUB MEMBER">
       <div className="mc-modal-inner">
         <div className="mc-modal-notice">
           <ShieldAlert style={{ width: 18, height: 18, color: '#a0a4b8', flexShrink: 0, marginTop: 2 }} />
           <p className="mc-modal-notice-text">
-            Name and email lookup is not available in V1. Enter the platform user ID provided by the user.
+            Search for a student by their full name or college email address to enroll them as a member of this club.
           </p>
         </div>
 
         {error && <div className="mc-error-banner">{error}</div>}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          {selectedStudent ? (
+            <div>
+              <label className="mc-label">SELECTED STUDENT</label>
+              <div className="mc-selected-card">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                  <div className="mc-avatar" style={{ width: 40, height: 40, background: 'var(--electric-blue)' }}>
+                    <span className="mc-avatar-initials" style={{ fontSize: 14, color: '#fff' }}>
+                      {selectedStudent.fullName.charAt(0) || 'S'}
+                    </span>
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14, color: '#fff' }}>
+                        {selectedStudent.fullName}
+                      </span>
+                      <Check style={{ width: 14, height: 14, color: 'var(--acid-green)' }} />
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#a0a4b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {selectedStudent.email}
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#666', marginTop: 2 }}>
+                      ID: {selectedStudent.id}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedStudent(null)}
+                  className="mc-btn-ghost"
+                  style={{ fontSize: 10 }}
+                >
+                  CHANGE
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ position: 'relative' }}>
+              <label className="mc-label">SEARCH BY NAME OR EMAIL</label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  placeholder="Type student name, email, or user ID..."
+                  className="mc-input"
+                  style={{ paddingLeft: 36 }}
+                  autoFocus
+                />
+                <Search style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: '#666' }} />
+              </div>
+
+              {/* Live Dropdown / Suggestions */}
+              {(searchTerm.trim().length > 0 || candidates.length > 0) && (
+                <div className="mc-suggestion-box">
+                  {isUUID && !candidates.some(c => c.id.toLowerCase() === searchTerm.trim().toLowerCase()) && (
+                    <div
+                      onClick={() => handleResolveDirectUUID(searchTerm.trim())}
+                      className="mc-suggestion-item"
+                      style={{ background: 'rgba(200, 255, 0, 0.08)' }}
+                    >
+                      <div className="mc-avatar">
+                        <UserIcon style={{ width: 14, height: 14, color: 'var(--acid-green)' }} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--acid-green)' }}>
+                          ADD VIA DIRECT USER ID
+                        </div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#aaa' }}>
+                          {searchTerm.trim()}
+                        </div>
+                      </div>
+                      <span className="mc-micro mc-micro-blue">SELECT</span>
+                    </div>
+                  )}
+
+                  {filteredCandidates.map(c => (
+                    <div
+                      key={c.id}
+                      onClick={() => handleSelectCandidate(c)}
+                      className="mc-suggestion-item"
+                    >
+                      <div className="mc-avatar">
+                        <span className="mc-avatar-initials">{c.fullName.charAt(0) || 'S'}</span>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600, color: '#fff' }}>
+                          {c.fullName}
+                        </div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#a0a4b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {c.email}
+                        </div>
+                      </div>
+                      <span className="mc-micro mc-micro-blue">SELECT</span>
+                    </div>
+                  ))}
+
+                  {filteredCandidates.length === 0 && !isUUID && (
+                    <div style={{ padding: '14px 16px', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, color: '#666' }}>
+                      {isAdminUsersLoading ? 'SEARCHING DIRECTORY...' : 'NO MATCHING STUDENTS FOUND. TRY PASTING A USER UUID.'}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           <div>
-            <label className="mc-label">Platform User ID</label>
-            <input
-              type="text"
-              required
-              value={userId}
-              onChange={e => setUserId(e.target.value)}
-              placeholder="e.g. 123e4567-e89b-12d3-a456-426614174000"
-              className="mc-input"
-            />
-          </div>
-          <div>
-            <label className="mc-label">Club Role</label>
+            <label className="mc-label">CLUB ROLE</label>
             <select
               value={role}
               onChange={e => setRole(e.target.value as ClubRole)}
@@ -444,11 +710,15 @@ function AddMemberModal({ clubId, isOpen, onClose }: { clubId: string, isOpen: b
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, paddingTop: 8 }}>
-            <button type="button" onClick={onClose} className="mc-btn-secondary">
+            <button type="button" onClick={handleResetModal} className="mc-btn-secondary">
               CANCEL
             </button>
-            <button type="submit" disabled={addMemberMutation.isPending} className="mc-btn-primary">
-              {addMemberMutation.isPending ? 'ADDING...' : 'ADD MEMBER'}
+            <button
+              type="submit"
+              disabled={!selectedStudent || addMemberMutation.isPending || isResolvingProfile}
+              className="mc-btn-primary"
+            >
+              {addMemberMutation.isPending ? 'ADDING...' : isResolvingProfile ? 'RESOLVING...' : 'CONFIRM & ADD MEMBER'}
             </button>
           </div>
         </form>
@@ -524,14 +794,14 @@ function ChangeRoleModal({ clubId, member, isOpen, onClose }: { clubId: string, 
 
 
 export default function ClubManagePage() {
-  const { activeClubId, isHydrated } = useClubAdmin();
+  const { activeClubId, managedClubs, isHydrated } = useClubAdmin();
   const router = useRouter();
 
   useEffect(() => {
-    if (isHydrated && !activeClubId) {
+    if (isHydrated && !activeClubId && managedClubs.length === 0) {
       router.push('/student/home');
     }
-  }, [isHydrated, activeClubId, router]);
+  }, [isHydrated, activeClubId, managedClubs.length, router]);
 
   const { data: club, isLoading } = useClubDetail(activeClubId || '');
   const updateClub = useUpdateClub();
@@ -549,6 +819,7 @@ export default function ClubManagePage() {
 
   const isCurrentUserClubAdmin = React.useMemo(() => {
     if (!club || !currentUser) return false;
+    if (currentUser.global_role === 'PLATFORM_ADMIN' || currentUser.global_role === 'FACULTY_ADMIN') return true;
     const membership = club.members.find(m => m.user_id === currentUser.id);
     return membership?.role === 'CLUB_ADMIN';
   }, [club, currentUser]);

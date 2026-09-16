@@ -1,5 +1,5 @@
 import Constants from 'expo-constants';
-import { useAuthStore } from '../store/auth';
+import { useAuthStore, type RefreshResult } from '../store/auth';
 import { useAppVersionStore } from '../store/app-version-store';
 import { API_BASE_URL } from './config';
 
@@ -8,7 +8,7 @@ export { API_BASE_URL };
 export const APP_VERSION = Constants.expoConfig?.version || '1.0.0';
 
 let isRefreshing = false;
-let refreshPromise: Promise<string | null> | null = null;
+let refreshPromise: Promise<RefreshResult> | null = null;
 
 export const apiClient = async (endpoint: string, options: RequestInit = {}) => {
   const token = useAuthStore.getState().accessToken;
@@ -38,6 +38,7 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
   }
 
   // Automatic token refresh on 401
+  let refreshResult: RefreshResult | null = null;
   if (response.status === 401 && token) {
     // Deduplicate concurrent refresh attempts
     if (!isRefreshing) {
@@ -45,11 +46,12 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
       refreshPromise = useAuthStore.getState().refreshAccessToken();
     }
 
-    const newToken = await refreshPromise;
+    refreshResult = await refreshPromise;
     isRefreshing = false;
     refreshPromise = null;
 
-    if (newToken) {
+    if (refreshResult?.status === 'SUCCESS') {
+      const newToken = refreshResult.token;
       // Retry the original request with the new token
       headers['Authorization'] = `Bearer ${newToken}`;
       const retryResponse = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -91,9 +93,14 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
       return text ? JSON.parse(text) : {};
     }
 
-    // Refresh failed — session is dead
-    await useAuthStore.getState().clearSession();
-    throw { status: 401, message: 'Session expired' };
+    // Refresh failed — check if session is dead
+    if (refreshResult?.status === 'SESSION_DEAD') {
+      await useAuthStore.getState().clearSession();
+      throw { status: 401, message: 'Session expired' };
+    }
+    
+    // Otherwise it was RATE_LIMITED or TRANSIENT_ERROR, just throw so react query can retry
+    throw { status: response.status, message: 'API Request Failed' };
   }
 
   if (response.status === 426) {
@@ -123,7 +130,11 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
       errorBody.message ||
       errorBody.error ||
       'API Request Failed';
-    throw { status: response.status, message, body: errorBody };
+    const retryHeader = response.headers?.get?.('retry-after');
+    const retryAfter = retryHeader ? parseInt(retryHeader, 10) : errorBody?.retryAfter;
+    const errorObj: any = { status: response.status, message, body: errorBody };
+    if (retryAfter !== undefined) errorObj.retryAfter = retryAfter;
+    throw errorObj;
   }
 
   // Handle empty responses

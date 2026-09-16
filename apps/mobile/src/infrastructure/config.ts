@@ -22,8 +22,11 @@ export const GOOGLE_WEB_CLIENT_ID =
 export const GOOGLE_IOS_CLIENT_ID =
   process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || '';
 
+export const GOOGLE_ANDROID_CLIENT_ID =
+  process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '';
+
 export const SUPPORT_EMAIL =
   process.env.EXPO_PUBLIC_SUPPORT_EMAIL || 'events-support@adypu.edu.in';
 
 export const PRIVACY_POLICY_URL =
-  process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL || 'https://adypu.edu.in/privacy-policy';
+  process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL || 'https://events.nstsdc.org/privacy-policy';

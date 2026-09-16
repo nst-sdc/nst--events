@@ -53,7 +53,7 @@ export const useThemeStore = create<ThemeState>((set) => ({
 
 export function useAppTheme() {
   const mode = useThemeStore((state) => state.mode);
-  const systemScheme = useColorScheme() || 'dark';
+  const systemScheme = useColorScheme() || (Appearance.getColorScheme() as ColorSchemeName) || 'dark';
 
   const resolvedMode = mode === 'system' ? systemScheme : mode;
   const colors = resolvedMode === 'light' ? lightColors : darkColors;

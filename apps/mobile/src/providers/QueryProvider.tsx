@@ -9,10 +9,17 @@ export const queryClient = new QueryClient({
         if (error?.status && noRetryStatuses.includes(error?.status)) {
           return false; // Do not retry auth/business deterministic failures
         }
-        return failureCount < 1; // Retry network/5xx transient failures once
+        return failureCount < 3; // Retry network/5xx and 429 failures up to 3 times
+      },
+      retryDelay: (attemptIndex, error: any) => {
+        if (error?.status === 429 && error?.retryAfter) {
+          return error.retryAfter * 1000;
+        }
+        const delay = Math.min(1000 * 2 ** attemptIndex, 30000);
+        return delay + Math.random() * 200;
       },
       refetchOnWindowFocus: true,
-      staleTime: 5000,
+      staleTime: 30 * 1000, // 30 seconds (prevent rapid-refetch storms from tab navigation)
     },
   },
 });

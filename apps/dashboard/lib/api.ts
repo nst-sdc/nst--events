@@ -18,21 +18,29 @@ export class ApiError extends Error {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any;
   requestId?: string;
+  retryAfter?: number;
 
-  constructor(status: number, message: string, data: any, requestId?: string) {
+  constructor(status: number, message: string, data: any, requestId?: string, retryAfter?: number) {
     super(message);
     Object.setPrototypeOf(this, ApiError.prototype);
     this.status = status;
     this.data = data;
     this.requestId = requestId;
+    this.retryAfter = retryAfter;
     this.name = 'ApiError';
   }
 }
 
-// Module-level promise to prevent duplicate concurrent refresh requests across remounts and queries
-let refreshPromise: Promise<string | null> | null = null;
+export type RefreshResult =
+  | { status: 'SUCCESS'; token: string }
+  | { status: 'SESSION_DEAD' }
+  | { status: 'RATE_LIMITED'; retryAfter?: number }
+  | { status: 'TRANSIENT_ERROR' };
 
-export const refreshToken = async (): Promise<string | null> => {
+// Module-level promise to prevent duplicate concurrent refresh requests across remounts and queries
+let refreshPromise: Promise<RefreshResult> | null = null;
+
+export const refreshToken = async (): Promise<RefreshResult> => {
   if (!refreshPromise) {
     refreshPromise = fetch(`${API_BASE_URL}/auth/refresh`, {
       method: 'POST',
@@ -43,15 +51,28 @@ export const refreshToken = async (): Promise<string | null> => {
       credentials: 'include',
     })
       .then(async (res) => {
-        if (!res.ok) return null;
+        if (res.status === 401) {
+          return { status: 'SESSION_DEAD' as const };
+        }
+        if (res.status === 429) {
+          const retryHeader = res.headers.get('retry-after');
+          const retryAfter = retryHeader ? parseInt(retryHeader, 10) : undefined;
+          return { status: 'RATE_LIMITED' as const, retryAfter };
+        }
+        if (!res.ok) {
+          return { status: 'TRANSIENT_ERROR' as const };
+        }
         try {
           const data = await res.json();
-          return data?.access_token || null;
+          if (data?.access_token) {
+            return { status: 'SUCCESS' as const, token: data.access_token };
+          }
+          return { status: 'SESSION_DEAD' as const };
         } catch {
-          return null;
+          return { status: 'SESSION_DEAD' as const };
         }
       })
-      .catch(() => null)
+      .catch(() => ({ status: 'TRANSIENT_ERROR' as const }))
       .finally(() => {
         refreshPromise = null;
       });
@@ -87,10 +108,12 @@ export const apiClient = async <T = any>(endpoint: string, options: RequestInit 
   let requestId = response.headers.get('x-request-id') || undefined;
 
   // Intercept 401 Unauthorized for transparent refresh & retry (exactly once)
+  let refreshResult: RefreshResult | null = null;
   if (response.status === 401 && endpoint !== '/auth/refresh') {
-    const newToken = await refreshToken();
+    refreshResult = await refreshToken();
     
-    if (newToken) {
+    if (refreshResult.status === 'SUCCESS') {
+      const newToken = refreshResult.token;
       authStore.setAccessToken(newToken);
       // Retry original request with new token
       fetchOptions.headers = {
@@ -111,11 +134,17 @@ export const apiClient = async <T = any>(endpoint: string, options: RequestInit 
       // Body might be empty or plain text
     }
     
-    // Terminal authentication failure (retry failed or refresh failed)
-    if (response.status === 401 && endpoint !== '/auth/refresh') {
+    // Terminal authentication failure: ONLY logout if refresh specifically returned 401 (SESSION_DEAD)
+    // NEVER logout if refresh or original request returned 429 or transient error
+    if (endpoint !== '/auth/refresh' && refreshResult?.status === 'SESSION_DEAD') {
+      authStore.logout();
+    }
+    if (endpoint === '/auth/refresh' && response.status === 401) {
       authStore.logout();
     }
 
+    const retryHeader = response.headers.get('retry-after');
+    const retryAfter = retryHeader ? parseInt(retryHeader, 10) : errorBody?.retryAfter;
     const rawMessage = errorBody?.detail || errorBody?.message;
     const humanMessage = rawMessage
       ? formatErrorMessage(rawMessage || errorBody, rawMessage)
@@ -125,7 +154,8 @@ export const apiClient = async <T = any>(endpoint: string, options: RequestInit 
       response.status,
       humanMessage,
       errorBody,
-      requestId
+      requestId,
+      retryAfter
     );
   }
 

@@ -2,7 +2,7 @@
   "expo": {
     "name": "NST Events",
     "slug": "nst-events",
-    "scheme": "nst-events",
+    "scheme": "nstevents",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,10 +13,14 @@
       "backgroundColor": "#09090b"
     },
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.sohamdhande.nstevents",
+      "supportsTablet": false,
+      "buildNumber": "1",
+      "entitlements": {
+        "aps-environment": "production"
+      },
+      "bundleIdentifier": "org.nstsdc.events",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Required to verify attendance geofence.",
+        "NSLocationWhenInUseUsageDescription": "NST Events uses your location only while scanning an attendance QR code to verify that you are physically present at the event venue.",
         "UIBackgroundModes": [
           "remote-notification"
         ]
@@ -35,7 +39,8 @@
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
       ],
-      "package": "com.sohamdhande.nstevents"
+      "package": "org.nstsdc.events",
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -45,20 +50,20 @@
         "expo-camera",
         {
           "cameraPermission": "Required for scanning attendance QR codes.",
+          "microphonePermission": false,
           "recordAudioAndroid": false
         }
       ],
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Required to verify attendance geofence.",
-          "locationWhenInUsePermission": "Required to verify attendance geofence."
+          "locationWhenInUsePermission": "NST Events uses your location only while scanning an attendance QR code to verify that you are physically present at the event venue."
         }
       ],
       [
         "@react-native-google-signin/google-signin",
         {
-          "iosUrlScheme": "com.googleusercontent.apps.590987407822-ho2vv2d0994vhqag2i7r08jchnfb201l"
+          "iosUrlScheme": "com.googleusercontent.apps.319324933029-85akm9aa4vt8vnscj69sdlt1lbv5rr0f"
         }
       ],
       "expo-notifications",
