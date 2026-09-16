@@ -155,10 +155,13 @@ describe('Phase 4 — Home & Event Attendance Audit & Implementation Tests', () 
     });
   });
 
-  describe('7. Dead Code Removal (useRegistration in EventScreen)', () => {
-    it('no longer instantiates useRegistration in EventScreen', () => {
-      expect(eventDetailContent).not.toContain('useRegistration(');
-      expect(eventDetailContent).not.toContain('const isActionLoading');
+  describe('7. In-App Solo Event Registration & Cancellation in EventScreen', () => {
+    it('instantiates useRegistration and renders registration & cancellation actions', () => {
+      expect(eventDetailContent).toContain('useRegistration(');
+      expect(eventDetailContent).toContain('[ REGISTER FOR EVENT ]');
+      expect(eventDetailContent).toContain('[ CANCEL REGISTRATION ]');
+      expect(eventDetailContent).toContain('showRegisterModal');
+      expect(eventDetailContent).toContain('showCancelModal');
     });
   });
 

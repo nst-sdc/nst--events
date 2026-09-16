@@ -48,6 +48,16 @@ export default function LoginGatewayScreen() {
       return;
     }
 
+    if (Platform.OS === 'web') {
+      setAuthError({
+        type: 'GENERIC',
+        title: 'NATIVE GOOGLE SIGN-IN REQUIRED',
+        message: 'Google Sign-In requires native iOS/Android runtime. In Chrome/browser, please use the [ DEV: TEST AS STUDENT ] button below.',
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
       if (Platform.OS === 'android') {
         await GoogleSignin.hasPlayServices();
@@ -175,6 +185,34 @@ export default function LoginGatewayScreen() {
       if (typeof __DEV__ !== 'undefined' && __DEV__) {
         console.error('[Auth] Failed to open mail client:', e);
       }
+    }
+  };
+
+  const devToken = process.env.EXPO_PUBLIC_DEV_AUTH_TOKEN;
+  const devUserId = process.env.EXPO_PUBLIC_DEV_USER_ID;
+
+  const handleDevStudentLogin = async () => {
+    if (!devToken || !devUserId) {
+      setAuthError({
+        type: 'GENERIC',
+        title: 'DEV LOGIN UNAVAILABLE',
+        message: 'EXPO_PUBLIC_DEV_AUTH_TOKEN and EXPO_PUBLIC_DEV_USER_ID must be configured in local environment.',
+      });
+      return;
+    }
+    setLoading(true);
+    setAuthError(null);
+    try {
+      await setSession(devUserId, devToken, devToken);
+      router.replace('/(app)');
+    } catch (e: any) {
+      setAuthError({
+        type: 'GENERIC',
+        title: 'DEV LOGIN FAILED',
+        message: e?.message || 'Failed to initialize dev student session',
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -493,6 +531,16 @@ export default function LoginGatewayScreen() {
             variant="primary"
             style={styles.ctaButton}
           />
+
+          {Platform.OS === 'web' && typeof __DEV__ !== 'undefined' && __DEV__ && !!devToken && !!devUserId && (
+            <Button
+              title="[ DEV: TEST AS STUDENT (ARJUN MEHTA) ]"
+              onPress={handleDevStudentLogin}
+              loading={loading}
+              variant="secondary"
+              style={[styles.ctaButton, { marginTop: 8 }]}
+            />
+          )}
 
 
           <View style={styles.noticeBox}>

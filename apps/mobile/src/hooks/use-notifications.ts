@@ -17,6 +17,10 @@ const USER_CACHE_KEY = 'last_synced_push_user_id';
 const normalizeRoute = (path?: string | null) => (path || '').replace(/^\/(\(app\)\/)?/, '').replace(/\/$/, '');
 
 export function useNotifications() {
+  if (Platform.OS === 'web') {
+    return;
+  }
+
   const userId = useAuthStore((state) => state.userId);
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const router = useRouter();
