@@ -217,7 +217,13 @@ const createEventStyles = `
     }
     .ce-studio-preview-col {
       order: -1;
+      position: static;
     }
+  }
+
+  .ce-studio-preview-col {
+    position: sticky;
+    top: 24px;
   }
 
   /* ── Section Card ── */
@@ -471,8 +477,6 @@ const createEventStyles = `
 
   /* ── Live Preview Box ── */
   .ce-preview-box {
-    position: sticky;
-    top: 24px;
     border: 3px solid #ffffff;
     background: var(--bg-dark-card);
     box-shadow: 8px 8px 0px #000000;
