@@ -39,21 +39,28 @@ export const useRegistration = (eventId: string) => {
       if (!isOnline) throw { status: 0, message: 'Offline' };
       return apiClient(`/v1/events/${eventId}/register`, { method: 'POST' });
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['events', eventId] });
-      if (data.status === 'WAITLISTED') {
+      queryClient.invalidateQueries({ queryKey: ['events', eventId, 'registration'] });
+      queryClient.invalidateQueries({ queryKey: ['my-registration', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['my-registrations'] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+
+      if (data?.status === 'WAITLISTED') {
         toast.show('The event is full. You are on the waitlist.', 'info', 'Waitlisted');
       } else {
         toast.show('You are confirmed for the event.', 'success', 'Registered!');
       }
     },
     onError: (error: any) => {
-      if (error.status === 0 || !isOnline) {
+      if (error?.status === 0 || !isOnline) {
         toast.show('You are currently offline.', 'error', 'No Connection');
-      } else if (error.status === 401) {
+      } else if (error?.status === 401) {
         toast.show('Please log in again.', 'error', 'Session Expired');
-      } else if (error.status >= 500) {
+      } else if (error?.status >= 500) {
         toast.show('An unexpected error occurred.', 'error', 'Server Error');
+      } else if (error?.detail || error?.message) {
+        toast.show(error.detail || error.message, 'error', 'Registration Failed');
       } else {
         toast.show('Capacity reached or action invalid.', 'error', 'Action Failed');
       }
@@ -61,29 +68,45 @@ export const useRegistration = (eventId: string) => {
   });
 
   const cancel = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (variables?: { isWaitlist?: boolean } | void) => {
       if (!isOnline) throw { status: 0, message: 'Offline' };
       return apiClient(`/v1/events/${eventId}/register`, { method: 'DELETE' });
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['events', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['events', eventId, 'registration'] });
+      queryClient.invalidateQueries({ queryKey: ['my-registration', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['my-registrations'] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      if (variables?.isWaitlist) {
+        toast.show('Left waitlist queue successfully.', 'info', 'Waitlist Updated');
+      } else {
+        toast.show('Registration cancelled successfully.', 'info', 'Cancelled');
+      }
     },
     onError: (error: any) => {
-      if (error.status === 0 || !isOnline) {
+      if (error?.status === 0 || !isOnline) {
         toast.show('You are currently offline.', 'error', 'No Connection');
-      } else if (error.status === 401) {
+      } else if (error?.status === 401) {
         toast.show('Please log in again.', 'error', 'Session Expired');
+      } else if (error?.status >= 500) {
+        toast.show('An unexpected error occurred.', 'error', 'Server Error');
+      } else if (error?.detail || error?.message) {
+        toast.show(error.detail || error.message, 'error', 'Cancellation Failed');
       } else {
-        toast.show('Capacity reached or action invalid.', 'error', 'Action Failed');
+        toast.show('Action could not be completed.', 'error', 'Action Failed');
       }
     }
   });
 
   return {
     register: register.mutate,
+    registerAsync: register.mutateAsync,
     isRegistering: register.isPending,
     error: register.error,
     cancel: cancel.mutate,
+    cancelAsync: cancel.mutateAsync,
     isCancelling: cancel.isPending,
+    cancelError: cancel.error,
   };
 };

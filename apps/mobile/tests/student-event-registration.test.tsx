@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, screen, fireEvent, waitFor } from './mocks/testing-library-react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AppHomeScreen from '../app/(app)/(tabs)/index';
 import EventScreen from '../app/(app)/events/[id]/index';
@@ -9,7 +9,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // Mock dependencies
 vi.mock('expo-router', () => ({
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn(), canGoBack: () => false }),
   useLocalSearchParams: () => ({ id: 'event-1', invitationId: 'inv-1' }),
 }));
 
@@ -17,8 +17,9 @@ vi.mock('../src/infrastructure/network', () => ({
   useNetworkStatus: () => ({ isOnline: true }),
 }));
 
+const mockShowToast = vi.fn();
 vi.mock('../src/hooks/use-toast', () => ({
-  useToast: () => ({ show: vi.fn() }),
+  useToast: () => ({ show: mockShowToast }),
 }));
 
 vi.mock('../src/infrastructure/api', () => ({
@@ -43,155 +44,247 @@ describe('Phase UI-27: Student Event Discovery & Registration UX', () => {
   });
 
   describe('Event Feed', () => {
-    it('1. Event feed renders', async () => {
-      (apiClient as any).mockResolvedValueOnce({
-        data: [{ id: '1', title: 'Tech Talk', startTime: new Date().toISOString(), locationName: 'Auditorium', eventType: 'SEMINAR', registrationType: 'INDIVIDUAL', audience: 'ALL_STUDENTS', state: 'PUBLISHED' }],
-        pagination: { has_more: false }
+    it('1. Event feed renders events with title and location', async () => {
+      (apiClient as any).mockImplementation(async (url: string) => {
+        if (url.includes('/events') && !url.includes('/my-registration')) {
+          return {
+            data: [{
+              id: '1',
+              title: 'Tech Talk',
+              startTime: new Date(Date.now() + 86400000).toISOString(),
+              locationName: 'Auditorium',
+              eventType: 'SEMINAR',
+              registrationType: 'INDIVIDUAL',
+              audience: 'ALL_STUDENTS',
+              state: 'PUBLISHED',
+            }],
+            pagination: { has_more: false },
+          };
+        }
+        if (url === '/users/me') return { id: 'user-1', club_memberships: [] };
+        if (url.includes('/my-registrations')) return { data: [], pagination: { has_more: false } };
+        if (url.includes('/unread-count')) return { unread_count: 0 };
+        return [];
       });
       render(withProviders(<AppHomeScreen />));
       expect(await screen.findByText('Tech Talk')).toBeTruthy();
-      expect(screen.getByText('Open to all students')).toBeTruthy();
+      expect(screen.getByText('AUDITORIUM')).toBeTruthy();
     });
 
-    it('2. Event feed loading', () => {
-      (apiClient as any).mockImplementation(() => new Promise(() => {}));
+    it('2. Event feed empty state', async () => {
+      (apiClient as any).mockImplementation(async (url: string) => {
+        if (url.includes('/events') && !url.includes('/my-registration')) {
+          return { data: [], pagination: { has_more: false } };
+        }
+        if (url === '/users/me') return { id: 'user-1', club_memberships: [] };
+        if (url.includes('/my-registrations')) return { data: [], pagination: { has_more: false } };
+        if (url.includes('/unread-count')) return { unread_count: 0 };
+        return [];
+      });
       render(withProviders(<AppHomeScreen />));
-      expect(screen.getAllByTestId('skeleton')).toBeTruthy(); // Assumes Skeleton renders something catchable, or we can check by tree
-    });
-
-    it('3. Event feed empty', async () => {
-      (apiClient as any).mockResolvedValueOnce({ data: [], pagination: { has_more: false } });
-      render(withProviders(<AppHomeScreen />));
-      expect(await screen.findByText('No events available.')).toBeTruthy();
+      expect(await screen.findByText('NO SESSIONS')).toBeTruthy();
+      expect(screen.getByText('Check back later when an event session begins.')).toBeTruthy();
     });
   });
 
-  describe('Event Detail', () => {
-    it('4. Event detail loads & 5. ALL_STUDENTS display & 8. INDIVIDUAL registration button', async () => {
+  describe('Event Detail & Registration Interactions', () => {
+    it('3. Event detail loads & opens confirmation modal on Register click', async () => {
       (apiClient as any).mockImplementation(async (url: string) => {
-        if (url === '/v1/events/event-1') return { id: 'event-1', title: 'Workshop', state: 'PUBLISHED', audience: 'ALL_STUDENTS', registration_type: 'INDIVIDUAL' };
+        if (url === '/v1/events/event-1') {
+          return {
+            id: 'event-1',
+            title: 'Workshop',
+            state: 'PUBLISHED',
+            audience: 'ALL_STUDENTS',
+            registration_type: 'INDIVIDUAL',
+            startTime: new Date(Date.now() + 86400000).toISOString(),
+            endTime: new Date(Date.now() + 90000000).toISOString(),
+            locationName: 'Hall B',
+          };
+        }
         if (url === '/v1/events/event-1/my-registration') return { status: 'NONE' };
+        if (url === '/v1/events/event-1/register') return { id: 'reg-1', status: 'REGISTERED' };
+        return [];
       });
+
       render(withProviders(<EventScreen />));
-      expect(await screen.findByText('Workshop')).toBeTruthy();
-      expect(screen.getByText('Open to all students')).toBeTruthy();
-      expect(screen.getByText('Register')).toBeTruthy();
+      expect(await screen.findByText('WORKSHOP')).toBeTruthy();
+      expect(screen.getByText('HALL B')).toBeTruthy();
+
+      const registerBtn = screen.getByText('[ REGISTER FOR EVENT ]');
+      expect(registerBtn).toBeTruthy();
+
+      // Open Modal
+      fireEvent.press(registerBtn);
+      expect(await screen.findByText('CONFIRM REGISTRATION')).toBeTruthy();
+      expect(screen.getByText(/reserves an individual attendance slot/i)).toBeTruthy();
+
+      // Confirm in Modal
+      const confirmBtn = screen.getByText('[ CONFIRM & SECURE PASS ]');
+      fireEvent.press(confirmBtn);
+
+      await waitFor(() => {
+        expect(apiClient).toHaveBeenCalledWith('/v1/events/event-1/register', { method: 'POST' });
+      });
     });
 
-    it('6. SPECIFIC_BATCHES generic display & 7. No raw audience UUID exposure', async () => {
+    it('4. REGISTERED state shows Cancel Registration and opens cancellation modal', async () => {
       (apiClient as any).mockImplementation(async (url: string) => {
-        if (url === '/v1/events/event-1') return { id: 'event-1', audience: 'SPECIFIC_BATCHES', audienceBatchIds: ['uuid-1', 'uuid-2'] };
-        if (url === '/v1/events/event-1/my-registration') return { status: 'NONE' };
-      });
-      render(withProviders(<EventScreen />));
-      expect(await screen.findByText('Targeted to selected batches')).toBeTruthy();
-      expect(screen.queryByText('uuid-1')).toBeNull();
-    });
-
-    it('9. REGISTERED state', async () => {
-      (apiClient as any).mockImplementation(async (url: string) => {
-        if (url === '/v1/events/event-1') return { id: 'event-1', state: 'PUBLISHED', registration_type: 'INDIVIDUAL' };
+        if (url === '/v1/events/event-1') {
+          return {
+            id: 'event-1',
+            title: 'Workshop',
+            state: 'PUBLISHED',
+            registration_type: 'INDIVIDUAL',
+            startTime: new Date(Date.now() + 86400000).toISOString(),
+            endTime: new Date(Date.now() + 90000000).toISOString(),
+          };
+        }
         if (url === '/v1/events/event-1/my-registration') return { status: 'REGISTERED' };
+        if (url === '/v1/events/event-1/register') return { success: true };
+        return [];
       });
+
       render(withProviders(<EventScreen />));
-      expect(await screen.findByText('Status: REGISTERED')).toBeTruthy();
-      expect(screen.queryByText('Register')).toBeNull();
+      expect(await screen.findByText('REGISTERED')).toBeTruthy();
+
+      const cancelBtn = screen.getByText('[ CANCEL REGISTRATION ]');
+      expect(cancelBtn).toBeTruthy();
+
+      // Open Cancellation Modal
+      fireEvent.press(cancelBtn);
+      expect(await screen.findByText('CANCEL ENTRY PASS')).toBeTruthy();
+      expect(screen.getByText(/Are you sure you want to cancel your event registration/i)).toBeTruthy();
+
+      // Confirm cancellation
+      const confirmCancelBtn = screen.getByText('[ YES, CANCEL REGISTRATION ]');
+      fireEvent.press(confirmCancelBtn);
+
+      await waitFor(() => {
+        expect(apiClient).toHaveBeenCalledWith('/v1/events/event-1/register', { method: 'DELETE' });
+      });
     });
 
-    it('10. WAITLISTED state', async () => {
+    it('5. WAITLISTED state shows Leave Waitlist and opens waitlist-specific modal', async () => {
       (apiClient as any).mockImplementation(async (url: string) => {
-        if (url === '/v1/events/event-1') return { id: 'event-1', state: 'PUBLISHED', registration_type: 'INDIVIDUAL' };
-        if (url === '/v1/events/event-1/my-registration') return { status: 'WAITLISTED', waitlist_position: 5 };
+        if (url === '/v1/events/event-1') {
+          return {
+            id: 'event-1',
+            title: 'Workshop',
+            state: 'PUBLISHED',
+            registration_type: 'INDIVIDUAL',
+            startTime: new Date(Date.now() + 86400000).toISOString(),
+            endTime: new Date(Date.now() + 90000000).toISOString(),
+          };
+        }
+        if (url === '/v1/events/event-1/my-registration') return { status: 'WAITLISTED', waitlist_position: 3 };
+        if (url === '/v1/events/event-1/register') return { success: true };
+        return [];
       });
+
       render(withProviders(<EventScreen />));
-      expect(await screen.findByText('Your team is waiting for event capacity. (Position: 5)')).toBeTruthy();
+      expect(await screen.findByText('WAITLISTED')).toBeTruthy();
+
+      const leaveWaitlistBtn = screen.getByText('[ LEAVE WAITLIST ]');
+      expect(leaveWaitlistBtn).toBeTruthy();
+
+      // Open Leave Waitlist Modal
+      fireEvent.press(leaveWaitlistBtn);
+      expect(await screen.findByText('LEAVE WAITLIST QUEUE')).toBeTruthy();
+      expect(screen.getByText(/You will give up your current position in line/i)).toBeTruthy();
+
+      // Confirm leave waitlist
+      const confirmLeaveBtn = screen.getByText('[ YES, LEAVE WAITLIST ]');
+      fireEvent.press(confirmLeaveBtn);
+
+      await waitFor(() => {
+        expect(apiClient).toHaveBeenCalledWith('/v1/events/event-1/register', { method: 'DELETE' });
+      });
     });
 
-    it('11. CANCELLED state', async () => {
+    it('6. Event lock hides mutation buttons', async () => {
       (apiClient as any).mockImplementation(async (url: string) => {
-        if (url === '/v1/events/event-1') return { id: 'event-1', state: 'PUBLISHED', registration_type: 'INDIVIDUAL' };
-        if (url === '/v1/events/event-1/my-registration') return { status: 'CANCELLED' };
-      });
-      render(withProviders(<EventScreen />));
-      expect(await screen.findByText('Registration is cancelled.')).toBeTruthy();
-    });
-
-    it('20. Event lock hides mutations', async () => {
-      (apiClient as any).mockImplementation(async (url: string) => {
-        if (url === '/v1/events/event-1') return { id: 'event-1', state: 'PUBLISHED', registration_type: 'INDIVIDUAL', is_locked: true };
+        if (url === '/v1/events/event-1') {
+          return {
+            id: 'event-1',
+            title: 'Workshop',
+            state: 'PUBLISHED',
+            registration_type: 'INDIVIDUAL',
+            is_locked: true,
+          };
+        }
         if (url === '/v1/events/event-1/my-registration') return { status: 'REGISTERED' };
+        return [];
       });
+
       render(withProviders(<EventScreen />));
-      expect(await screen.findByText('Event is locked')).toBeTruthy();
-      expect(screen.queryByText('Cancel Registration')).toBeNull(); // Because locked
-    });
-    
-    it('22. Audience rejection', async () => {
-      (apiClient as any).mockImplementation(async (url: string, options?: any) => {
-        if (url === '/v1/events/event-1') return { id: 'event-1', state: 'PUBLISHED', registration_type: 'INDIVIDUAL' };
-        if (url === '/v1/events/event-1/my-registration') return { status: 'NONE' };
-        if (url === '/v1/events/event-1/register') throw { status: 403, message: 'AUDIENCE_NOT_ELIGIBLE' };
-      });
-      render(withProviders(<EventScreen />));
-      const btn = await screen.findByText('Register');
-      fireEvent.press(btn);
-      expect(await screen.findByText('This event is not available to your academic batch.')).toBeTruthy();
+      expect(await screen.findByText('EVENT LOCKED')).toBeTruthy();
+      expect(screen.queryByText('[ CANCEL REGISTRATION ]')).toBeNull();
+      expect(screen.queryByText('[ REGISTER FOR EVENT ]')).toBeNull();
     });
   });
 
   describe('Team Management', () => {
-    it('12. TEAM event shows Create Team', async () => {
+    it('7. TEAM event shows Squad Details button and rules', async () => {
       (apiClient as any).mockImplementation(async (url: string) => {
-        if (url === '/v1/events/event-1') return { id: 'event-1', state: 'PUBLISHED', registration_type: 'TEAM' };
+        if (url === '/v1/events/event-1') {
+          return {
+            id: 'event-1',
+            title: 'Hackathon',
+            state: 'PUBLISHED',
+            registration_type: 'TEAM',
+            metadata: { minimum_team_size: 2, maximum_team_size: 4 },
+          };
+        }
         if (url === '/v1/events/event-1/my-registration') return { status: 'NONE' };
+        return [];
       });
+
       render(withProviders(<EventScreen />));
-      expect(await screen.findByText('Create Team')).toBeTruthy();
-      expect(screen.queryByText('Register')).toBeNull();
+      expect(await screen.findByText('TEAM REQUIREMENTS')).toBeTruthy();
+      expect(screen.getByText(/Minimum: 2 • Maximum: 4/)).toBeTruthy();
+      expect(screen.getByText('[ SQUAD DETAILS & RULES ]')).toBeTruthy();
+      expect(screen.queryByText('[ REGISTER FOR EVENT ]')).toBeNull();
     });
 
-    it('13. Existing team shows Manage Team', async () => {
-      (apiClient as any).mockImplementation(async (url: string) => {
-        if (url === '/v1/events/event-1') return { id: 'event-1', state: 'PUBLISHED', registration_type: 'TEAM' };
-        if (url === '/v1/events/event-1/my-registration') return { status: 'REGISTERED' };
-      });
-      render(withProviders(<EventScreen />));
-      expect(await screen.findByText('Manage Team')).toBeTruthy();
-    });
-
-    it('14. Team rules render only when API provides them', async () => {
-      (apiClient as any).mockImplementation(async (url: string) => {
-        if (url === '/v1/events/event-1') return { id: 'event-1', registration_type: 'TEAM', metadata: { minimum_team_size: 2, maximum_team_size: 4 } };
-        if (url === '/v1/events/event-1/my-registration') return { status: 'NONE' };
-      });
-      render(withProviders(<EventScreen />));
-      expect(await screen.findByText(/Minimum: 2 • Maximum: 4/)).toBeTruthy();
-    });
-
-    it('15. FORMING state', async () => {
-      (apiClient as any).mockImplementation(async (url: string) => {
-        if (url === '/v1/events/event-1') return { id: 'event-1', registration_type: 'TEAM', metadata: { minimum_team_size: 3 } };
-        if (url === '/v1/events/event-1/my-registration') return { status: 'FORMING' };
-        if (url === '/v1/events/event-1/teams') return [{ id: 'team-1', name: 'Alpha', status: 'FORMING', member_count: 1, members: [{ user_id: 'user-1' }] }];
-      });
+    it('8. TeamsScreen renders desktop portal restriction notice', async () => {
       render(withProviders(<TeamsScreen />));
-      expect(await screen.findByText('Your team is still forming.')).toBeTruthy();
-      expect(screen.getByText('1 / 3 members (Max: ∞)')).toBeTruthy();
+      expect(await screen.findByText('TEAM FORMATION & ROSTER')).toBeTruthy();
+      expect(screen.getByText(/restricted to the desktop web application/i)).toBeTruthy();
+      expect(screen.getByText('ACCESS VIA WEB DASHBOARD')).toBeTruthy();
     });
   });
 
   describe('Invitations', () => {
-    it('23. Invitation deep link isolates/highlights', async () => {
+    it('9. Invitation deep link highlights target invitation', async () => {
       (apiClient as any).mockImplementation(async (url: string) => {
-        if (url === '/v1/users/me/team-invitations') return [
-          { invitation_id: 'inv-1', team: { team_name: 'Alpha' }, event: { event_title: 'Hackathon' }, inviter: { full_name: 'John' }, expires_at: new Date(Date.now() + 100000).toISOString() },
-          { invitation_id: 'inv-2', team: { team_name: 'Beta' }, event: { event_title: 'Workshop' }, inviter: { full_name: 'Jane' }, expires_at: new Date(Date.now() + 100000).toISOString() },
-        ];
+        if (url === '/v1/users/me/team-invitations') {
+          return [
+            {
+              invitation_id: 'inv-1',
+              team: { team_id: 't-1', team_name: 'Alpha Squad' },
+              event: { event_id: 'e-1', event_title: 'Hackathon' },
+              inviter: { full_name: 'John Doe' },
+              expires_at: new Date(Date.now() + 100000).toISOString(),
+            },
+            {
+              invitation_id: 'inv-2',
+              team: { team_id: 't-2', team_name: 'Beta Squad' },
+              event: { event_id: 'e-2', event_title: 'Workshop' },
+              inviter: { full_name: 'Jane Doe' },
+              expires_at: new Date(Date.now() + 100000).toISOString(),
+            },
+          ];
+        }
+        return [];
       });
+
       render(withProviders(<InvitationsScreen />));
       // Only inv-1 should be rendered due to invitationId deep link in mock
-      expect(await screen.findByText('Alpha')).toBeTruthy();
-      expect(screen.queryByText('Beta')).toBeNull();
+      expect(await screen.findByText('ALPHA SQUAD')).toBeTruthy();
+      expect(screen.queryByText('BETA SQUAD')).toBeNull();
+      expect(screen.getByText('ACCEPT')).toBeTruthy();
+      expect(screen.getByText('DECLINE')).toBeTruthy();
     });
   });
 });

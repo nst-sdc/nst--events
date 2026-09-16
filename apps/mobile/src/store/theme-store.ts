@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Appearance, ColorSchemeName, useColorScheme } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
+import { safeSecureStore } from '../lib/secure-storage';
 import { theme, lightColors, darkColors } from '../ui/theme';
 
 export type ThemeMode = 'system' | 'light' | 'dark';
@@ -18,7 +18,7 @@ export const useThemeStore = create<ThemeState>((set) => ({
 
   initTheme: async () => {
     try {
-      const stored = await SecureStore.getItemAsync('app_appearance_mode') as ThemeMode | null;
+      const stored = await safeSecureStore.getItemAsync('app_appearance_mode') as ThemeMode | null;
       if (stored === 'light' || stored === 'dark') {
         try {
           Appearance.setColorScheme(stored);
@@ -39,10 +39,10 @@ export const useThemeStore = create<ThemeState>((set) => ({
     try {
       if (mode === 'system') {
         Appearance.setColorScheme('unspecified');
-        await SecureStore.deleteItemAsync('app_appearance_mode');
+        await safeSecureStore.deleteItemAsync('app_appearance_mode');
       } else {
         Appearance.setColorScheme(mode as ColorSchemeName);
-        await SecureStore.setItemAsync('app_appearance_mode', mode);
+        await safeSecureStore.setItemAsync('app_appearance_mode', mode);
       }
     } catch {
       // Safe fallback if native appearance module fails

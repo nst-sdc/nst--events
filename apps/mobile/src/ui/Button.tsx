@@ -29,12 +29,20 @@ export const Button = ({
 
   const styles = useMemo(() => StyleSheet.create({
     base: {
-      height: 48,
+      minHeight: 52,
+      height: 52,
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
       paddingHorizontal: theme.spacing.base,
+      paddingVertical: 14,
       borderWidth: 1,
+      borderRadius: 0,
+    },
+    label: {
+      fontSize: 13,
+      letterSpacing: 1.2,
+      textAlign: 'center',
     },
     primary: {
       backgroundColor: theme.colors.primary,
@@ -95,7 +103,7 @@ export const Button = ({
       {loading ? (
         <ActivityIndicator color={variant === 'primary' || variant === 'danger' ? theme.colors.surface : theme.colors.primary} />
       ) : (
-        <MonoLabel style={[textStyle, disabled && styles.disabledText]}>{title}</MonoLabel>
+        <MonoLabel style={[styles.label, textStyle, disabled && styles.disabledText]}>{title}</MonoLabel>
       )}
     </TouchableOpacity>
   );
