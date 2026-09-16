@@ -277,7 +277,9 @@ export default function ClubDetailPage() {
   if (isClubLoading) {
     return (
       <>
-        <style dangerouslySetInnerHTML={{ __html: clubDetailStyles }} />
+        <style href="student-club-detail-styles" precedence="high">
+          {clubDetailStyles}
+        </style>
         <div className="cd-page">
           <div className="cd-banner-container" style={{ animation: 'cPulse 1.5s infinite' }} />
           <div className="cd-inner">
@@ -293,7 +295,9 @@ export default function ClubDetailPage() {
   if (isClubError || !club) {
     return (
       <>
-        <style dangerouslySetInnerHTML={{ __html: clubDetailStyles }} />
+        <style href="student-club-detail-styles" precedence="high">
+          {clubDetailStyles}
+        </style>
         <div className="cd-page">
           <div className="cd-inner" style={{ paddingTop: '100px', textAlign: 'center', maxWidth: '640px', margin: '0 auto' }}>
             <div className="cd-micro" style={{ color: 'var(--warm-red)', marginBottom: '16px' }}>
@@ -333,7 +337,9 @@ export default function ClubDetailPage() {
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: clubDetailStyles }} />
+      <style href="student-club-detail-styles" precedence="high">
+        {clubDetailStyles}
+      </style>
       <div className="collage-noise-overlay" />
 
       <div className="cd-page">

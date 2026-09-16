@@ -586,7 +586,9 @@ export default function StudentEventsPage() {
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: myEventsStyles }} />
+      <style href="student-events-styles" precedence="high">
+        {myEventsStyles}
+      </style>
       <div className="collage-noise-overlay" />
 
       <div className="me-page">

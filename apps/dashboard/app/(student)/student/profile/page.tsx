@@ -254,7 +254,9 @@ export default function StudentProfilePage() {
 
   return (
     <main className="profile-editorial-page">
-      <style dangerouslySetInnerHTML={{ __html: profileStyles }} />
+      <style href="student-profile-styles" precedence="high">
+        {profileStyles}
+      </style>
       
       {/* Background Noise Overlay */}
       <div className="collage-noise-overlay" />

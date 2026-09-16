@@ -420,7 +420,9 @@ function LoginContent() {
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: loginStyles }} />
+      <style href="login-styles" precedence="high">
+        {loginStyles}
+      </style>
 
       <div className="lp-card-shell">
 

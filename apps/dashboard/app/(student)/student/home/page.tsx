@@ -153,46 +153,6 @@ const homeStyles = `
     z-index: 12;
   }
 
-  /* Overlapping Tilted Event Photo in Hero */
-  .hero-tilted-photo-card {
-    position: absolute;
-    top: 260px;
-    right: 40px;
-    width: 340px;
-    background: var(--bg-paper-white);
-    border: 3px solid #000000;
-    padding: 12px;
-    transform: rotate(4deg);
-    box-shadow: 12px 12px 0px var(--electric-blue);
-    z-index: 2;
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
-
-  .hero-tilted-photo-card:hover {
-    transform: rotate(2deg) scale(1.02);
-    box-shadow: 16px 16px 0px var(--electric-blue);
-  }
-
-  .hero-tilted-photo-card img {
-    width: 100%;
-    height: 200px;
-    object-fit: cover;
-    filter: grayscale(100%) contrast(120%);
-    border: 1px solid #000;
-  }
-
-  .tape-strip {
-    position: absolute;
-    top: -12px;
-    left: 30%;
-    width: 100px;
-    height: 24px;
-    background: rgba(245, 245, 242, 0.7);
-    transform: rotate(-5deg);
-    border: 1px dashed rgba(0, 0, 0, 0.3);
-    z-index: 5;
-  }
-
   /* Offset Editorial Stats */
   .hero-stats-offset-row {
     display: flex;
@@ -441,16 +401,7 @@ const homeStyles = `
   }
 
   /* Responsive Scaling */
-  @media (max-width: 1250px) {
-    .hero-tilted-photo-card {
-      top: 290px;
-      right: 20px;
-      width: 300px;
-    }
-  }
-
   @media (max-width: 900px) {
-    .hero-tilted-photo-card { display: none; }
     .hero-stats-offset-row { flex-direction: column; gap: 16px; }
     .poster-wall-grid { grid-template-columns: 1fr; }
     .hero-collage-wrapper { padding: 40px 20px 60px 20px; }
@@ -626,33 +577,6 @@ export default function StudentHomePage() {
             Welcome back to campus. Access your event credentials, synchronized attendance passes, and student developer ecosystem.
           </p>
 
-          {/* Overlapping Tilted Event Photo Frame */}
-          <div 
-            className="hero-tilted-photo-card" 
-            onClick={() => router.push(activeEventReg ? `/student/events/${activeEventReg.eventId}` : '/student/campus')}
-            style={{ cursor: 'pointer' }}
-          >
-            <div className="tape-strip" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img 
-              src={
-                (activeEventReg && (activeEventReg.event?.metadata as Record<string, string | undefined>)?.banner_url)
-                  || '/events/hacknst.jpg'
-              } 
-              alt="Campus Featured Event" 
-            />
-            <div style={{
-              marginTop: '8px',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '10px',
-              fontWeight: 700,
-              color: '#000',
-              textTransform: 'uppercase',
-            }}>
-              {activeEventReg ? `LIVE NOW // ${activeEventReg.event?.title}` : 'FEATURED // HACKNST 2026 SPRINT'}
-            </div>
-          </div>
-
           {/* Offset Stats Blocks */}
           <div className="hero-stats-offset-row">
             
@@ -681,6 +605,82 @@ export default function StudentHomePage() {
           </div>
 
         </div>
+      </div>
+
+      {/* ==========================================================================
+           SCHEDULE / PRIORITY SECTION
+           ========================================================================== */}
+      <div style={{ maxWidth: '1320px', margin: '0 auto 80px auto', padding: '0 32px' }}>
+        
+        {/* If user has active or upcoming event */}
+        {activeEventReg || nextEventReg ? (
+          <div className="empty-poster-container">
+            <div className="empty-poster-watermark">SCHEDULE</div>
+            
+            <div className="micro-annotation annotation-blue" style={{ marginBottom: '12px' }}>
+              {activeEventReg ? 'LIVE ATTENDANCE SESSION // CHECK-IN ACTIVE' : 'NEXT UPCOMING EVENT // REGISTERED'}
+            </div>
+
+            <h2 className="font-display-section" style={{ fontSize: 'clamp(32px, 5vw, 54px)', marginBottom: '16px', color: '#fff' }}>
+              {(activeEventReg || nextEventReg)?.event?.title || 'SESSION READY'}
+            </h2>
+
+            <p style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '16px',
+              color: '#a0a4b8',
+              marginBottom: '28px',
+              maxWidth: '620px',
+              lineHeight: 1.6,
+            }}>
+              Location: <strong>{(activeEventReg || nextEventReg)?.event?.locationName || 'Main Campus'}</strong> &bull; Starts:{' '}
+              {dayjs((activeEventReg || nextEventReg)?.event?.startTime).format('MMM D, YYYY · h:mm A')}
+            </p>
+
+            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+              <button 
+                onClick={() => router.push(`/student/events/${(activeEventReg || nextEventReg)?.eventId}`)} 
+                className="empty-cta-btn"
+              >
+                VIEW EVENT PASS & ATTENDANCE ↗
+              </button>
+              <button 
+                onClick={() => router.push('/student/events')} 
+                className="empty-cta-btn" 
+                style={{ background: 'transparent', boxShadow: 'none' }}
+              >
+                ALL REGISTRATIONS &rarr;
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Empty State as shown in Screenshot 4 */
+          <div className="empty-poster-container">
+            <div className="empty-poster-watermark">SCHEDULE</div>
+            <div className="micro-annotation annotation-blue" style={{ marginBottom: '12px' }}>
+              SCHEDULE STATUS // 0 UPCOMING
+            </div>
+            <h2 className="font-display-section" style={{ fontSize: '48px', marginBottom: '16px', color: '#fff' }}>
+              NOTHING<br />
+              SCHEDULED.<br />
+              YET.
+            </h2>
+            <p style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '16px',
+              color: '#a0a4b8',
+              marginBottom: '32px',
+              maxWidth: '520px',
+              lineHeight: 1.6,
+            }}>
+              You don't have anything coming up yet. Explore what's happening around campus, join upcoming hackathons, and connect with technical workshops.
+            </p>
+            <button onClick={() => router.push('/student/campus')} className="empty-cta-btn">
+              EXPLORE EVENTS ↗
+            </button>
+          </div>
+        )}
+
       </div>
 
       {/* Hand-Ripped Torn Paper Transition Edge */}
@@ -753,82 +753,6 @@ export default function StudentHomePage() {
 
       {/* Torn Paper Edge Back to Black */}
       <div className="torn-section-divider-black" />
-
-      {/* ==========================================================================
-           SCHEDULE / PRIORITY SECTION
-           ========================================================================== */}
-      <div style={{ maxWidth: '1320px', margin: '60px auto 100px auto', padding: '0 32px' }}>
-        
-        {/* If user has active or upcoming event */}
-        {activeEventReg || nextEventReg ? (
-          <div className="empty-poster-container">
-            <div className="empty-poster-watermark">SCHEDULE</div>
-            
-            <div className="micro-annotation annotation-blue" style={{ marginBottom: '12px' }}>
-              {activeEventReg ? 'LIVE ATTENDANCE SESSION // CHECK-IN ACTIVE' : 'NEXT UPCOMING EVENT // REGISTERED'}
-            </div>
-
-            <h2 className="font-display-section" style={{ fontSize: 'clamp(32px, 5vw, 54px)', marginBottom: '16px', color: '#fff' }}>
-              {(activeEventReg || nextEventReg)?.event?.title || 'SESSION READY'}
-            </h2>
-
-            <p style={{
-              fontFamily: 'var(--font-body)',
-              fontSize: '16px',
-              color: '#a0a4b8',
-              marginBottom: '28px',
-              maxWidth: '620px',
-              lineHeight: 1.6,
-            }}>
-              Location: <strong>{(activeEventReg || nextEventReg)?.event?.locationName || 'Main Campus'}</strong> &bull; Starts:{' '}
-              {dayjs((activeEventReg || nextEventReg)?.event?.startTime).format('MMM D, YYYY · h:mm A')}
-            </p>
-
-            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-              <button 
-                onClick={() => router.push(`/student/events/${(activeEventReg || nextEventReg)?.eventId}`)} 
-                className="empty-cta-btn"
-              >
-                VIEW EVENT PASS & ATTENDANCE ↗
-              </button>
-              <button 
-                onClick={() => router.push('/student/events')} 
-                className="empty-cta-btn" 
-                style={{ background: 'transparent', boxShadow: 'none' }}
-              >
-                ALL REGISTRATIONS &rarr;
-              </button>
-            </div>
-          </div>
-        ) : (
-          /* Empty State as shown in Screenshot 4 */
-          <div className="empty-poster-container">
-            <div className="empty-poster-watermark">SCHEDULE</div>
-            <div className="micro-annotation annotation-blue" style={{ marginBottom: '12px' }}>
-              SCHEDULE STATUS // 0 UPCOMING
-            </div>
-            <h2 className="font-display-section" style={{ fontSize: '48px', marginBottom: '16px', color: '#fff' }}>
-              NOTHING<br />
-              SCHEDULED.<br />
-              YET.
-            </h2>
-            <p style={{
-              fontFamily: 'var(--font-body)',
-              fontSize: '16px',
-              color: '#a0a4b8',
-              marginBottom: '32px',
-              maxWidth: '520px',
-              lineHeight: 1.6,
-            }}>
-              You don't have anything coming up yet. Explore what's happening around campus, join upcoming hackathons, and connect with technical workshops.
-            </p>
-            <button onClick={() => router.push('/student/campus')} className="empty-cta-btn">
-              EXPLORE EVENTS ↗
-            </button>
-          </div>
-        )}
-
-      </div>
 
     </main>
   );

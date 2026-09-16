@@ -603,7 +603,9 @@ export default function ClubManagePage() {
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: manageClubStyles }} />
+      <style href="student-manage-club-styles" precedence="high">
+        {manageClubStyles}
+      </style>
       <div className="mc-page">
         <div className="mc-inner">
 

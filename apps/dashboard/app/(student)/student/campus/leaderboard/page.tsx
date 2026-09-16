@@ -539,7 +539,9 @@ export default function LeaderboardPage() {
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: leaderboardStyles }} />
+      <style href="student-leaderboard-styles" precedence="high">
+        {leaderboardStyles}
+      </style>
       <div className="collage-noise-overlay" />
 
       <div className="lb-page">

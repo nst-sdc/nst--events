@@ -424,7 +424,9 @@ export default function CampusClubsPage() {
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: clubsStyles }} />
+      <style href="student-clubs-styles" precedence="high">
+        {clubsStyles}
+      </style>
       <div className="collage-noise-overlay" />
 
       <div className="clubs-page">

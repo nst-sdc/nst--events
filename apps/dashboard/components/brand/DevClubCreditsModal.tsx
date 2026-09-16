@@ -248,7 +248,9 @@ export function DevClubCreditsModal({ isOpen, onClose }: DevClubCreditsModalProp
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: modalStyles }} />
+      <style href="dev-club-credits-modal-styles" precedence="high">
+        {modalStyles}
+      </style>
       <div
         role="dialog"
         aria-modal="true"

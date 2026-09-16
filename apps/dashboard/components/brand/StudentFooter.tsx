@@ -157,7 +157,9 @@ export function StudentFooter() {
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: footerStyles }} />
+      <style href="student-footer-styles" precedence="high">
+        {footerStyles}
+      </style>
 
       <footer className="sf-footer">
         <div className="sf-footer-inner">
