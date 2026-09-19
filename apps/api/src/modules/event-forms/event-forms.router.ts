@@ -155,4 +155,23 @@ router.patch(
   }
 );
 
+router.get(
+  '/:eventId/forms/:formId/responses',
+  authenticate,
+  validate(ParamFormIdSchema),
+  canManageEvent((req: Request) => req.params.eventId),
+  async (req, res, next) => {
+    try {
+      const responses = await eventFormsService.getEventFormResponses(
+        req.user!.id,
+        req.params.eventId,
+        req.params.formId
+      );
+      res.json({ data: responses });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 export const eventFormsRouter: Router = router;

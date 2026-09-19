@@ -7,10 +7,12 @@ import { useRouter } from 'next/navigation';
 import { useEventDetail, useMyRegistration } from '../../../../../hooks/useEventDetail';
 import { useRegisterForEvent, useCancelRegistration } from '../../../../../hooks/useRegisterForEvent';
 import { useTeamLookup } from '../../../../../hooks/useTeams';
-import { ArrowLeft, Clock, MapPin, Users, Info, Calendar } from 'lucide-react';
+import { ArrowLeft, Clock, MapPin, Users, Info, Calendar, Lock } from 'lucide-react';
 import { Modal } from '../../../../../components/ui/Modal';
 import { TeamGatewayModal } from './components/TeamGatewayModal';
 import { AttendanceDisputeModal } from './components/AttendanceDisputeModal';
+import { StudentEventFormModal } from '../../../../../components/student/StudentEventFormModal';
+import { useEventForms, EventForm } from '../../../../../hooks/useEventForms';
 import { useAttendanceDisputes, useMyAttendance } from '../../../../../hooks/useAttendance';
 import { useCurrentUser } from '../../../../../hooks/useCurrentUser';
 import { useEventLifecycle } from '../../../../../hooks/useEventLifecycle';
@@ -332,6 +334,9 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
   const [formResponses, setFormResponses] = useState<Record<string, string>>({});
   const [preFilledFields, setPreFilledFields] = useState<Record<string, string>>({});
   const [editableFields, setEditableFields] = useState<string[]>([]);
+
+  const { data: eventForms, refetch: refetchEventForms } = useEventForms(eventId);
+  const [activeFormForModal, setActiveFormForModal] = useState<EventForm | null>(null);
 
   const { data: disputesData, isLoading: isLoadingDisputes } = useAttendanceDisputes(eventId);
   const { data: myAttendanceData, isLoading: isLoadingAttendance } = useMyAttendance(eventId);
@@ -963,6 +968,161 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
                   </div>
                 </div>
               )}
+
+              {/* Event Forms & Submissions Section */}
+              {eventForms && eventForms.length > 0 && (
+                <div className="ed-box">
+                  <div className="ed-box-header">
+                    <span className="ed-box-title">SUBMISSIONS &amp; CHECKPOINTS</span>
+                    <span className="ed-micro ed-micro-blue">{eventForms.length} FORMS</span>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    {eventForms.map(form => {
+                      const now = new Date();
+                      const isReleased = !form.releaseAt || new Date(form.releaseAt) <= now;
+                      const isClosed = form.closeAt && new Date(form.closeAt) <= now;
+                      const isUserRegistered = registration && registration.status === 'REGISTERED';
+
+                      return (
+                        <div
+                          key={form.id}
+                          style={{
+                            padding: '16px',
+                            border: '1px solid rgba(245,245,242,0.15)',
+                            background: 'rgba(255,255,255,0.02)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '12px',
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                <span
+                                  className="ed-micro"
+                                  style={{
+                                    color:
+                                      form.purpose === 'SUBMISSION'
+                                        ? 'var(--electric-blue)'
+                                        : form.purpose === 'FEEDBACK'
+                                        ? 'var(--acid-green)'
+                                        : '#c084fc',
+                                  }}
+                                >
+                                  [{form.purpose}]
+                                </span>
+                                <h4
+                                  style={{
+                                    fontFamily: 'var(--font-display)',
+                                    fontSize: '16px',
+                                    fontWeight: 800,
+                                    color: '#fff',
+                                    margin: 0,
+                                    textTransform: 'uppercase',
+                                  }}
+                                >
+                                  {form.title}
+                                </h4>
+                              </div>
+
+                              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#a0a4b8' }}>
+                                {!isReleased ? (
+                                  <span style={{ color: 'var(--warm-amber)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                    <Lock size={11} /> Unlocks {new Date(form.releaseAt!).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                                  </span>
+                                ) : isClosed ? (
+                                  <span style={{ color: '#888' }}>
+                                    Closed on {new Date(form.closeAt!).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                                  </span>
+                                ) : form.closeAt ? (
+                                  <span>
+                                    Deadline: {new Date(form.closeAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                                  </span>
+                                ) : (
+                                  <span>Available now (no deadline)</span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div>
+                              {!isUserRegistered ? (
+                                <span
+                                  style={{
+                                    display: 'inline-block',
+                                    fontFamily: 'var(--font-mono)',
+                                    fontSize: '10px',
+                                    fontWeight: 700,
+                                    letterSpacing: '1px',
+                                    padding: '4px 8px',
+                                    background: 'rgba(255,255,255,0.05)',
+                                    color: '#a0a4b8',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                  }}
+                                >
+                                  REGISTER TO UNLOCK
+                                </span>
+                              ) : !isReleased ? (
+                                <button
+                                  disabled
+                                  style={{
+                                    fontFamily: 'var(--font-mono)',
+                                    fontSize: '10px',
+                                    fontWeight: 700,
+                                    letterSpacing: '1px',
+                                    padding: '6px 12px',
+                                    background: 'rgba(255, 149, 0, 0.1)',
+                                    color: 'var(--warm-amber)',
+                                    border: '1px solid rgba(255, 149, 0, 0.3)',
+                                    cursor: 'not-allowed',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                  }}
+                                >
+                                  <Lock size={11} /> LOCKED
+                                </button>
+                              ) : isClosed ? (
+                                <span
+                                  style={{
+                                    display: 'inline-block',
+                                    fontFamily: 'var(--font-mono)',
+                                    fontSize: '10px',
+                                    fontWeight: 700,
+                                    letterSpacing: '1px',
+                                    padding: '4px 8px',
+                                    background: 'rgba(255,255,255,0.05)',
+                                    color: '#888',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                  }}
+                                >
+                                  CLOSED
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveFormForModal(form)}
+                                  className="ed-cta-btn"
+                                  style={{
+                                    padding: '6px 14px',
+                                    fontSize: '11px',
+                                    background: 'var(--electric-blue)',
+                                    color: '#fff',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  OPEN FORM ↗
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Right Column: Status & Logistics */}
@@ -1168,6 +1328,17 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
           onClose={() => setDisputeSessionId(null)}
           eventId={eventId}
           sessionId={disputeSessionId}
+        />
+      )}
+
+      {activeFormForModal && (
+        <StudentEventFormModal
+          eventId={eventId}
+          formId={activeFormForModal.id}
+          formTitle={activeFormForModal.title}
+          purpose={activeFormForModal.purpose}
+          onClose={() => setActiveFormForModal(null)}
+          onSubmitted={() => refetchEventForms()}
         />
       )}
     </>

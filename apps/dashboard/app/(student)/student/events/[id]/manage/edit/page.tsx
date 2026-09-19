@@ -12,6 +12,7 @@ import { useClubAdmin } from '../../../../../../../components/layout/ClubAdminPr
 import { useAcademicBatches } from '../../../../../../../hooks/useAcademicBatches';
 import { useClubs } from '../../../../../../../hooks/useClubs';
 import { StudentEventFormFieldsManager } from '../../../../../../../components/student/StudentEventFormFieldsManager';
+import { StudentEventFormsManager } from '../../../../../../../components/student/StudentEventFormsManager';
 import { MultiSelect } from '../../../../../components/MultiSelect';
 import { Modal } from '../../../../../../../components/ui/Modal';
 
@@ -598,6 +599,11 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
       {/* REGISTRATION FORM FIELDS CONFIG */}
       <div className="mt-8">
         <StudentEventFormFieldsManager eventId={eventId} />
+      </div>
+
+      {/* ADDITIONAL SCHEDULED FORMS */}
+      <div className="mt-8">
+        <StudentEventFormsManager eventId={eventId} />
       </div>
 
       <Modal 

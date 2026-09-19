@@ -14,6 +14,7 @@ import { useEventDetail } from '../../../../../hooks/useEventDetail';
 import { useUpdateEvent, UpdateEventInput } from '../../../../../hooks/useUpdateEvent';
 import { useEventLifecycle } from '../../../../../hooks/useEventLifecycle';
 import { EventFormFieldsManager } from '../../../../../components/admin/EventFormFieldsManager';
+import { EventFormsManager } from '../../../../../components/admin/EventFormsManager';
 import { ApiError } from '../../../../../lib/api';
 
 const { Title, Text } = Typography;
@@ -612,6 +613,11 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
       {/* CUSTOM FORM FIELDS */}
       {isAuthorizedToEdit && (
         <EventFormFieldsManager eventId={event.id} />
+      )}
+
+      {/* ADDITIONAL SCHEDULED FORMS */}
+      {isAuthorizedToEdit && (
+        <EventFormsManager eventId={event.id} />
       )}
 
       {/* DANGER ZONE */}
