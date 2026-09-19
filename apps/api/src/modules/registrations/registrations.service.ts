@@ -2,7 +2,8 @@ import { withUserContext } from '@nst/database';
 import { enqueueNotification } from '@nst/shared';
 import { prisma } from '../../lib/prisma';
 
-import { BadRequestError, ForbiddenError, NotFoundError } from '../../lib/errors';
+import { NotFoundError, BadRequestError, ForbiddenError } from '../../lib/errors';
+import { validateFieldValue } from '../../utils/form-validation';
 import { mapDatabaseError } from '../../lib/errors/database-error-mapper';
 
 import { checkAudienceEligibility } from '../events/audience.service';
@@ -49,7 +50,6 @@ export const registerEvent = async (
           const reusableFieldIds = new Set(fieldDefs.filter(f => f.isReusable).map(f => f.id));
 
           for (const response of responses) {
-            // 1. Check if EventRegistrationResponse exists for this field
             const existingResponse = await tx.eventRegistrationResponse.findFirst({
               where: {
                 eventRegistrationId: reg.id,
@@ -57,6 +57,14 @@ export const registerEvent = async (
                 fieldDefinitionId: response.fieldDefinitionId,
               },
             });
+
+            const fieldDef = fieldDefs.find(f => f.id === response.fieldDefinitionId);
+            if (fieldDef) {
+              validateFieldValue(
+                { fieldType: fieldDef.fieldType, options: fieldDef.options, label: fieldDef.label },
+                response.value
+              );
+            }
 
             if (existingResponse) {
               await tx.eventRegistrationResponse.update({
