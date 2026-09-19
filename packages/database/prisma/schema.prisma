@@ -48,6 +48,7 @@ model User {
   assignedAcademicProfiles  UserAcademicProfile[]       @relation("AcademicProfileAssignedBy")
   academicProfile           UserAcademicProfile?
   attendanceAttempts        AttendanceAttempt[]
+  studentProfileValues      StudentProfileValue[]
 
   @@index([email])
   @@index([googleSub])
@@ -90,6 +91,7 @@ model Club {
   eventClubs        EventClub[]
   leaderboardScores LeaderboardScore[]
   handoverRequests  LeadershipHandoverRequest[]
+  createdFieldDefinitions FieldDefinition[]
 
   @@index([name])
   @@map("clubs")
@@ -133,6 +135,8 @@ model Event {
   maxCapacity          Int?                      @map("max_capacity")
   /// Atomically incremented by register_event RPC
   registrationCount    Int                       @default(0) @map("registration_count")
+  registrationStartTime DateTime?                @map("registration_start_time") @db.Timestamptz(6)
+  registrationEndTime   DateTime?                @map("registration_end_time") @db.Timestamptz(6)
   /// Flexible type-specific metadata (see 08-jsonb-governance.md)
   metadata             Json                      @default("{}")
   createdBy            String                    @map("created_by") @db.Uuid
@@ -149,6 +153,7 @@ model Event {
   eventResults         EventResult[]
   creator              User                      @relation("EventCreatedBy", fields: [createdBy], references: [id])
   teams                Team[]
+  eventFormFields      EventFormField[]
 
   @@index([startTime])
   @@index([state])
@@ -203,6 +208,7 @@ model EventRegistration {
 
   eligibilityScopeSnapshot                          EventAudience?     @map("eligibility_scope_snapshot")
   academicBatchIdSnapshot                           String?            @map("academic_batch_id_snapshot") @db.Uuid
+  responses                                         EventRegistrationResponse[]
 
   @@index([eventId, userId])
   @@index([userId])
@@ -586,7 +592,7 @@ model MobileAuthCode {
 
 /// Telemetry log for attendance scan attempts (both rejected and successful)
 model AttendanceAttempt {
-  id             String            @id @default(uuid()) @db.Uuid
+  id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   sessionId      String            @map("session_id") @db.Uuid
   userId         String            @map("user_id") @db.Uuid
   attemptedAt    DateTime          @default(now()) @map("attempted_at") @db.Timestamptz(6)
@@ -764,4 +770,78 @@ enum TeamStatus {
   REGISTERED
   WAITLISTED
   CANCELLED
+}
+
+/// Field types for custom registration forms
+enum FieldType {
+  TEXT
+  URL
+  EMAIL
+  NUMBER
+  PHONE
+  SELECT
+}
+
+/// A shared, cross-club pool of reusable field definitions for event forms.
+model FieldDefinition {
+  id              String   @id @default(uuid()) @db.Uuid
+  key             String   @unique
+  label           String
+  fieldType       FieldType @map("field_type")
+  options         Json?
+  isReusable      Boolean   @default(true) @map("is_reusable")
+  createdByClubId String?   @map("created_by_club_id") @db.Uuid
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  createdInClub             Club?                       @relation(fields: [createdByClubId], references: [id])
+  studentProfileValues      StudentProfileValue[]
+  eventFormFields           EventFormField[]
+  eventRegistrationResponses EventRegistrationResponse[]
+
+  @@map("field_definitions")
+}
+
+/// Current saved value per student per reusable field.
+model StudentProfileValue {
+  id                String          @id @default(uuid()) @db.Uuid
+  userId            String          @map("user_id") @db.Uuid
+  fieldDefinitionId String          @map("field_definition_id") @db.Uuid
+  value             String
+  updatedAt         DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user              User            @relation(fields: [userId], references: [id])
+  fieldDefinition   FieldDefinition @relation(fields: [fieldDefinitionId], references: [id])
+
+  @@unique([userId, fieldDefinitionId])
+  @@map("student_profile_values")
+}
+
+/// Which fields a given event's registration form asks for.
+model EventFormField {
+  id                String          @id @default(uuid()) @db.Uuid
+  eventId           String          @map("event_id") @db.Uuid
+  fieldDefinitionId String          @map("field_definition_id") @db.Uuid
+  isRequired        Boolean         @default(true) @map("is_required")
+  order             Int
+
+  event             Event           @relation(fields: [eventId], references: [id])
+  fieldDefinition   FieldDefinition @relation(fields: [fieldDefinitionId], references: [id])
+
+  @@unique([eventId, fieldDefinitionId])
+  @@map("event_form_fields")
+}
+
+/// The actual submitted answer, frozen per registration.
+model EventRegistrationResponse {
+  id                    String            @id @default(uuid()) @db.Uuid
+  eventRegistrationId   String            @map("event_registration_id") @db.Uuid
+  fieldDefinitionId     String            @map("field_definition_id") @db.Uuid
+  value                 String
+  createdAt             DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  eventRegistration     EventRegistration @relation(fields: [eventRegistrationId], references: [id], onDelete: Cascade)
+  fieldDefinition       FieldDefinition   @relation(fields: [fieldDefinitionId], references: [id])
+
+  @@unique([eventRegistrationId, fieldDefinitionId])
+  @@map("event_registration_responses")
 }
