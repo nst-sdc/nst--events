@@ -16,7 +16,7 @@ export const registerEvent = async (
     try {
       // Validate required custom fields
       const requiredFields = await tx.eventFormField.findMany({
-        where: { eventId, isRequired: true },
+        where: { eventId, formId: null, isRequired: true },
       });
 
       if (requiredFields.length > 0) {
