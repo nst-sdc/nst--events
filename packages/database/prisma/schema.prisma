@@ -5,9 +5,8 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url= env("DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
-
 
 model User {
   id                        String                      @id @default(uuid()) @db.Uuid
@@ -77,20 +76,20 @@ model RefreshToken {
 }
 
 model Club {
-  id                String                      @id @default(uuid()) @db.Uuid
-  name              String                      @unique
-  description       String?
+  id                      String                      @id @default(uuid()) @db.Uuid
+  name                    String                      @unique
+  description             String?
   /// NULL in V1 — file uploads deferred (see database-freeze-v1.md)
-  bannerUrl         String?                     @map("banner_url")
-  status            ClubStatus                  @default(ACTIVE)
-  createdAt         DateTime                    @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt         DateTime?                   @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt         DateTime?                   @map("deleted_at") @db.Timestamptz(6)
-  announcements     Announcement[]
-  memberships       ClubMembership[]
-  eventClubs        EventClub[]
-  leaderboardScores LeaderboardScore[]
-  handoverRequests  LeadershipHandoverRequest[]
+  bannerUrl               String?                     @map("banner_url")
+  status                  ClubStatus                  @default(ACTIVE)
+  createdAt               DateTime                    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime?                   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt               DateTime?                   @map("deleted_at") @db.Timestamptz(6)
+  announcements           Announcement[]
+  memberships             ClubMembership[]
+  eventClubs              EventClub[]
+  leaderboardScores       LeaderboardScore[]
+  handoverRequests        LeadershipHandoverRequest[]
   createdFieldDefinitions FieldDefinition[]
 
   @@index([name])
@@ -115,45 +114,46 @@ model ClubMembership {
 }
 
 model Event {
-  id                   String                    @id @default(uuid()) @db.Uuid
-  title                String
-  description          String?
-  startTime            DateTime                  @map("start_time") @db.Timestamptz(6)
-  endTime              DateTime                  @map("end_time") @db.Timestamptz(6)
-  locationName         String?                   @map("location_name")
+  id                    String                    @id @default(uuid()) @db.Uuid
+  title                 String
+  description           String?
+  startTime             DateTime                  @map("start_time") @db.Timestamptz(6)
+  endTime               DateTime                  @map("end_time") @db.Timestamptz(6)
+  locationName          String?                   @map("location_name")
   /// PostGIS geography point for geofence validation.
   /// PostGIS extension is enabled via docker/init-pgmq.sql on container init.
   /// Access via $queryRaw / $executeRaw with ST_ functions (not via Prisma Client).
-  locationGeofence     Unsupported("geography")? @map("location_geofence")
-  eventType            EventType                 @map("event_type")
-  state                EventState                @default(DRAFT)
-  visibility           EventVisibility           @default(PUBLIC)
-  registrationType     RegistrationType          @default(INDIVIDUAL) @map("registration_type")
-  attendanceType       AttendanceType            @default(SINGLE) @map("attendance_type")
-  isLocked             Boolean                   @default(false) @map("is_locked")
+  locationGeofence      Unsupported("geography")? @map("location_geofence")
+  eventType             EventType                 @map("event_type")
+  state                 EventState                @default(DRAFT)
+  visibility            EventVisibility           @default(PUBLIC)
+  registrationType      RegistrationType          @default(INDIVIDUAL) @map("registration_type")
+  attendanceType        AttendanceType            @default(SINGLE) @map("attendance_type")
+  isLocked              Boolean                   @default(false) @map("is_locked")
   /// NULL means unlimited capacity
-  maxCapacity          Int?                      @map("max_capacity")
+  maxCapacity           Int?                      @map("max_capacity")
   /// Atomically incremented by register_event RPC
-  registrationCount    Int                       @default(0) @map("registration_count")
-  registrationStartTime DateTime?                @map("registration_start_time") @db.Timestamptz(6)
-  registrationEndTime   DateTime?                @map("registration_end_time") @db.Timestamptz(6)
+  registrationCount     Int                       @default(0) @map("registration_count")
+  registrationStartTime DateTime?                 @map("registration_start_time") @db.Timestamptz(6)
+  registrationEndTime   DateTime?                 @map("registration_end_time") @db.Timestamptz(6)
   /// Flexible type-specific metadata (see 08-jsonb-governance.md)
-  metadata             Json                      @default("{}")
-  createdBy            String                    @map("created_by") @db.Uuid
-  createdAt            DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt            DateTime?                 @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt            DateTime?                 @map("deleted_at") @db.Timestamptz(6)
-  searchVector         Unsupported("tsvector")?  @default(dbgenerated("to_tsvector('english'::regconfig, ((COALESCE(title, ''::text) || ' '::text) || COALESCE(description, ''::text)))")) @map("search_vector")
-  audience             EventAudience             @default(ALL_STUDENTS)
-  attendanceDisputes   AttendanceDispute[]
-  attendanceSessions   AttendanceSession[]
-  eventAudienceBatches EventAudienceBatch[]
-  eventClubs           EventClub[]
-  eventRegistrations   EventRegistration[]
-  eventResults         EventResult[]
-  creator              User                      @relation("EventCreatedBy", fields: [createdBy], references: [id])
-  teams                Team[]
-  eventFormFields      EventFormField[]
+  metadata              Json                      @default("{}")
+  createdBy             String                    @map("created_by") @db.Uuid
+  createdAt             DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime?                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt             DateTime?                 @map("deleted_at") @db.Timestamptz(6)
+  searchVector          Unsupported("tsvector")?  @default(dbgenerated("to_tsvector('english'::regconfig, ((COALESCE(title, ''::text) || ' '::text) || COALESCE(description, ''::text)))")) @map("search_vector")
+  audience              EventAudience             @default(ALL_STUDENTS)
+  attendanceDisputes    AttendanceDispute[]
+  attendanceSessions    AttendanceSession[]
+  eventAudienceBatches  EventAudienceBatch[]
+  eventClubs            EventClub[]
+  eventRegistrations    EventRegistration[]
+  eventResults          EventResult[]
+  creator               User                      @relation("EventCreatedBy", fields: [createdBy], references: [id])
+  teams                 Team[]
+  eventFormFields       EventFormField[]
+  EventForm             EventForm[]
 
   @@index([startTime])
   @@index([state])
@@ -206,9 +206,9 @@ model EventRegistration {
   user                                              User               @relation(fields: [userId], references: [id])
   teams_event_registrations_team_id_event_idToteams Team?              @relation("event_registrations_team_id_event_idToteams", fields: [teamId, eventId], references: [id, eventId], onDelete: NoAction, onUpdate: NoAction, map: "fk_team_event")
 
-  eligibilityScopeSnapshot                          EventAudience?     @map("eligibility_scope_snapshot")
-  academicBatchIdSnapshot                           String?            @map("academic_batch_id_snapshot") @db.Uuid
-  responses                                         EventRegistrationResponse[]
+  eligibilityScopeSnapshot EventAudience?              @map("eligibility_scope_snapshot")
+  academicBatchIdSnapshot  String?                     @map("academic_batch_id_snapshot") @db.Uuid
+  responses                EventRegistrationResponse[]
 
   @@index([eventId, userId])
   @@index([userId])
@@ -217,35 +217,34 @@ model EventRegistration {
 }
 
 model AttendanceSession {
-  id                   String                @id @default(uuid()) @db.Uuid
-  eventId              String                @map("event_id") @db.Uuid
-  title                String
-  startTime            DateTime              @map("start_time") @db.Timestamptz(6)
-  endTime              DateTime              @map("end_time") @db.Timestamptz(6)
+  id                 String              @id @default(uuid()) @db.Uuid
+  eventId            String              @map("event_id") @db.Uuid
+  title              String
+  startTime          DateTime            @map("start_time") @db.Timestamptz(6)
+  endTime            DateTime            @map("end_time") @db.Timestamptz(6)
   /// Scan window opens at this time
-  openAt               DateTime              @map("open_at") @db.Timestamptz(6)
+  openAt             DateTime            @map("open_at") @db.Timestamptz(6)
   /// Scan window closes at this time
-  closeAt              DateTime              @map("close_at") @db.Timestamptz(6)
+  closeAt            DateTime            @map("close_at") @db.Timestamptz(6)
   /// Geofence radius in metres (default 50m)
-  geofenceRadius       Float                 @default(50) @map("geofence_radius")
+  geofenceRadius     Float               @default(50) @map("geofence_radius")
   /// Latitude of the venue when session was created (immutable)
-  venueLatitude        Float?                @map("venue_latitude")
+  venueLatitude      Float?              @map("venue_latitude")
   /// Longitude of the venue when session was created (immutable)
-  venueLongitude       Float?                @map("venue_longitude")
+  venueLongitude     Float?              @map("venue_longitude")
   /// Location accuracy of the captured venue in meters
-  locationAccuracy     Float?                @map("location_accuracy")
-  createdAt            DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt            DateTime?             @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt            DateTime?             @map("deleted_at") @db.Timestamptz(6)
+  locationAccuracy   Float?              @map("location_accuracy")
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime?           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt          DateTime?           @map("deleted_at") @db.Timestamptz(6)
   /// Cryptographic secret used to generate TOTP QR codes for this session
-  qrSecret             String                @map("qr_secret")
-  createdBy            String                @map("created_by") @db.Uuid
-  attendanceDisputes   AttendanceDispute[]
-  attendanceRecords    AttendanceRecord[]
-  attendanceAttempts   AttendanceAttempt[]
-  creator              User                  @relation("SessionCreatedBy", fields: [createdBy], references: [id])
-  event                Event                 @relation(fields: [eventId], references: [id])
-
+  qrSecret           String              @map("qr_secret")
+  createdBy          String              @map("created_by") @db.Uuid
+  attendanceDisputes AttendanceDispute[]
+  attendanceRecords  AttendanceRecord[]
+  attendanceAttempts AttendanceAttempt[]
+  creator            User                @relation("SessionCreatedBy", fields: [createdBy], references: [id])
+  event              Event               @relation(fields: [eventId], references: [id])
 
   @@index([eventId])
   @@map("attendance_sessions")
@@ -297,7 +296,6 @@ model AttendanceDispute {
   @@unique([sessionId, userId])
   @@map("attendance_disputes")
 }
-
 
 model EventResult {
   id         String            @id @default(uuid()) @db.Uuid
@@ -592,23 +590,23 @@ model MobileAuthCode {
 
 /// Telemetry log for attendance scan attempts (both rejected and successful)
 model AttendanceAttempt {
-  id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  sessionId      String            @map("session_id") @db.Uuid
-  userId         String            @map("user_id") @db.Uuid
-  attemptedAt    DateTime          @default(now()) @map("attempted_at") @db.Timestamptz(6)
-  isSuccess      Boolean           @map("is_success")
-  failureReason  String?           @map("failure_reason")
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionId      String   @map("session_id") @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  attemptedAt    DateTime @default(now()) @map("attempted_at") @db.Timestamptz(6)
+  isSuccess      Boolean  @map("is_success")
+  failureReason  String?  @map("failure_reason")
   latitude       Float?
   longitude      Float?
-  distanceMeters Float?            @map("distance_meters")
-  gpsAccuracy    Float?            @map("gps_accuracy")
-  deviceId       String?           @map("device_id")
-  deviceOs       String?           @map("device_os")
-  appVersion     String?           @map("app_version")
-  isOfflineSync  Boolean           @default(false) @map("is_offline_sync")
+  distanceMeters Float?   @map("distance_meters")
+  gpsAccuracy    Float?   @map("gps_accuracy")
+  deviceId       String?  @map("device_id")
+  deviceOs       String?  @map("device_os")
+  appVersion     String?  @map("app_version")
+  isOfflineSync  Boolean  @default(false) @map("is_offline_sync")
 
-  session        AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([sessionId, isSuccess])
   @@index([userId, attemptedAt])
@@ -780,12 +778,38 @@ enum FieldType {
   NUMBER
   PHONE
   SELECT
+  MULTI_SELECT
+  RADIO
+}
+
+enum FormPurpose {
+  REGISTRATION
+  SUBMISSION
+  FEEDBACK
+  CUSTOM
+}
+
+model EventForm {
+  id         String      @id @default(uuid()) @db.Uuid
+  eventId    String      @map("event_id") @db.Uuid
+  purpose    FormPurpose
+  title      String
+  releaseAt  DateTime?   @map("release_at") @db.Timestamptz(6)
+  closeAt    DateTime?   @map("close_at") @db.Timestamptz(6)
+  notifiedAt DateTime?   @map("notified_at") @db.Timestamptz(6)
+  createdAt  DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  event     Event                       @relation(fields: [eventId], references: [id])
+  fields    EventFormField[]
+  responses EventRegistrationResponse[]
+
+  @@map("event_forms")
 }
 
 /// A shared, cross-club pool of reusable field definitions for event forms.
 model FieldDefinition {
-  id              String   @id @default(uuid()) @db.Uuid
-  key             String   @unique
+  id              String    @id @default(uuid()) @db.Uuid
+  key             String    @unique
   label           String
   fieldType       FieldType @map("field_type")
   options         Json?
@@ -793,9 +817,9 @@ model FieldDefinition {
   createdByClubId String?   @map("created_by_club_id") @db.Uuid
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  createdInClub             Club?                       @relation(fields: [createdByClubId], references: [id])
-  studentProfileValues      StudentProfileValue[]
-  eventFormFields           EventFormField[]
+  createdInClub              Club?                       @relation(fields: [createdByClubId], references: [id])
+  studentProfileValues       StudentProfileValue[]
+  eventFormFields            EventFormField[]
   eventRegistrationResponses EventRegistrationResponse[]
 
   @@map("field_definitions")
@@ -803,14 +827,14 @@ model FieldDefinition {
 
 /// Current saved value per student per reusable field.
 model StudentProfileValue {
-  id                String          @id @default(uuid()) @db.Uuid
-  userId            String          @map("user_id") @db.Uuid
-  fieldDefinitionId String          @map("field_definition_id") @db.Uuid
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  fieldDefinitionId String   @map("field_definition_id") @db.Uuid
   value             String
-  updatedAt         DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  user              User            @relation(fields: [userId], references: [id])
-  fieldDefinition   FieldDefinition @relation(fields: [fieldDefinitionId], references: [id])
+  user            User            @relation(fields: [userId], references: [id])
+  fieldDefinition FieldDefinition @relation(fields: [fieldDefinitionId], references: [id])
 
   @@unique([userId, fieldDefinitionId])
   @@map("student_profile_values")
@@ -818,30 +842,36 @@ model StudentProfileValue {
 
 /// Which fields a given event's registration form asks for.
 model EventFormField {
-  id                String          @id @default(uuid()) @db.Uuid
-  eventId           String          @map("event_id") @db.Uuid
-  fieldDefinitionId String          @map("field_definition_id") @db.Uuid
-  isRequired        Boolean         @default(true) @map("is_required")
+  id                String  @id @default(uuid()) @db.Uuid
+  eventId           String  @map("event_id") @db.Uuid
+  formId            String? @map("form_id") @db.Uuid
+  fieldDefinitionId String  @map("field_definition_id") @db.Uuid
+  isRequired        Boolean @default(true) @map("is_required")
   order             Int
 
-  event             Event           @relation(fields: [eventId], references: [id])
-  fieldDefinition   FieldDefinition @relation(fields: [fieldDefinitionId], references: [id])
+  event           Event           @relation(fields: [eventId], references: [id])
+  eventForm       EventForm?      @relation(fields: [formId], references: [id])
+  fieldDefinition FieldDefinition @relation(fields: [fieldDefinitionId], references: [id])
 
-  @@unique([eventId, fieldDefinitionId])
+  // Legacy forms will use a raw SQL partial index: @@unique([eventId, fieldDefinitionId]) WHERE form_id IS NULL
+  @@unique([eventId, formId, fieldDefinitionId])
   @@map("event_form_fields")
 }
 
 /// The actual submitted answer, frozen per registration.
 model EventRegistrationResponse {
-  id                    String            @id @default(uuid()) @db.Uuid
-  eventRegistrationId   String            @map("event_registration_id") @db.Uuid
-  fieldDefinitionId     String            @map("field_definition_id") @db.Uuid
-  value                 String
-  createdAt             DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  id                  String   @id @default(uuid()) @db.Uuid
+  eventRegistrationId String   @map("event_registration_id") @db.Uuid
+  formId              String?  @map("form_id") @db.Uuid
+  fieldDefinitionId   String   @map("field_definition_id") @db.Uuid
+  value               String
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  eventRegistration     EventRegistration @relation(fields: [eventRegistrationId], references: [id], onDelete: Cascade)
-  fieldDefinition       FieldDefinition   @relation(fields: [fieldDefinitionId], references: [id])
+  eventRegistration EventRegistration @relation(fields: [eventRegistrationId], references: [id], onDelete: Cascade)
+  eventForm         EventForm?        @relation(fields: [formId], references: [id])
+  fieldDefinition   FieldDefinition   @relation(fields: [fieldDefinitionId], references: [id])
 
-  @@unique([eventRegistrationId, fieldDefinitionId])
+  // Legacy forms will use a raw SQL partial index: @@unique([eventRegistrationId, fieldDefinitionId]) WHERE form_id IS NULL
+  @@unique([eventRegistrationId, formId, fieldDefinitionId])
   @@map("event_registration_responses")
 }
