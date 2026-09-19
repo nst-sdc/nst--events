@@ -140,12 +140,25 @@ export async function updateEventForm(userId: string, eventId: string, formId: s
     const existing = await tx.eventForm.findFirst({ where: { id: formId, eventId } });
     if (!existing) throw new NotFoundError('Form not found');
 
+    let newNotifiedAt: Date | null | undefined = undefined;
+    const newReleaseAt = data.releaseAt !== undefined ? (data.releaseAt ? new Date(data.releaseAt) : null) : undefined;
+    
+    // If releaseAt is explicitly being changed, reset notifiedAt so the sweep job can fire again
+    if (newReleaseAt !== undefined) {
+      const existingReleaseAtTime = existing.releaseAt?.getTime() || null;
+      const newReleaseAtTime = newReleaseAt?.getTime() || null;
+      if (existingReleaseAtTime !== newReleaseAtTime) {
+        newNotifiedAt = null;
+      }
+    }
+
     return tx.eventForm.update({
       where: { id: formId },
       data: {
         title: data.title,
-        releaseAt: data.releaseAt !== undefined ? (data.releaseAt ? new Date(data.releaseAt) : null) : undefined,
+        releaseAt: newReleaseAt,
         closeAt: data.closeAt !== undefined ? (data.closeAt ? new Date(data.closeAt) : null) : undefined,
+        ...(newNotifiedAt !== undefined && { notifiedAt: newNotifiedAt }),
       },
     });
   });
@@ -222,6 +235,24 @@ export async function submitEventFormResponses(
     });
     if (!registration) {
       throw new ForbiddenError('Only actively registered students can submit this form.');
+    }
+
+    // Validate required form fields
+    const requiredFields = form.fields.filter(f => f.isRequired);
+    if (requiredFields.length > 0) {
+      const providedFieldIds = new Set(responses?.map(r => r.fieldDefinitionId) || []);
+      const missingFields = requiredFields.filter(f => {
+        const response = responses?.find(r => r.fieldDefinitionId === f.fieldDefinitionId);
+        // Ensure the value exists, is not null/undefined, and is not an empty string or empty array string '[]'
+        return !providedFieldIds.has(f.fieldDefinitionId) || 
+               !response || 
+               !response.value?.trim() || 
+               response.value === '[]';
+      });
+      
+      if (missingFields.length > 0) {
+        throw new BadRequestError(`Missing required form fields: ${missingFields.map(f => f.fieldDefinitionId).join(', ')}`);
+      }
     }
 
     const savedResponses = [];
