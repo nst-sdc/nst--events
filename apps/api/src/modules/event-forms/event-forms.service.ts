@@ -3,10 +3,19 @@ import { withUserContext } from '@nst/database';
 import { NotFoundError, ForbiddenError, BadRequestError } from '../../lib/errors';
 
 /**
- * Helper to check if a user is an admin/core member of the primary club for the given event.
+ * Helper to check if a user is an admin/core member of the primary club for the given event,
+ * or a Platform / Faculty Admin.
  */
-async function isEventAdmin(userId: string, eventId: string): Promise<boolean> {
-  const hasRole = await prisma.eventClub.findFirst({
+async function isEventAdmin(tx: any, userId: string, eventId: string): Promise<boolean> {
+  const user = await tx.user.findUnique({
+    where: { id: userId },
+    select: { globalRole: true },
+  });
+  if (user && ['PLATFORM_ADMIN', 'FACULTY_ADMIN'].includes(user.globalRole)) {
+    return true;
+  }
+
+  const hasRole = await tx.eventClub.findFirst({
     where: {
       eventId,
       isPrimary: true,
@@ -25,86 +34,91 @@ async function isEventAdmin(userId: string, eventId: string): Promise<boolean> {
 }
 
 export async function listEventForms(userId: string, eventId: string) {
-  const isAdmin = await isEventAdmin(userId, eventId);
+  return withUserContext(userId, async (tx) => {
+    const isAdmin = await isEventAdmin(tx, userId, eventId);
 
-  let allowedToViewForms = isAdmin;
-  
-  // If not admin, check if student is registered
-  if (!isAdmin) {
-    const registration = await prisma.eventRegistration.findFirst({
-      where: {
-        eventId,
-        userId,
-        registrationStatus: 'REGISTERED',
-        deletedAt: null,
-      },
-    });
-    if (registration) {
-      allowedToViewForms = true;
+    let allowedToViewForms = isAdmin;
+    
+    // If not admin, check if student is registered
+    if (!isAdmin) {
+      const registration = await tx.eventRegistration.findFirst({
+        where: {
+          eventId,
+          userId,
+          registrationStatus: 'REGISTERED',
+          deletedAt: null,
+        },
+      });
+      if (registration) {
+        allowedToViewForms = true;
+      }
     }
-  }
 
-  if (!allowedToViewForms) {
-    throw new ForbiddenError('You do not have access to view forms for this event.');
-  }
+    if (!allowedToViewForms) {
+      throw new ForbiddenError('You do not have access to view forms for this event.');
+    }
 
-  const whereClause: any = { eventId };
-  if (!isAdmin) {
-    // Students only see released forms
-    whereClause.releaseAt = { lte: new Date() };
-  }
+    const whereClause: any = { eventId };
+    if (!isAdmin) {
+      // Students only see released forms (null releaseAt means immediate)
+      whereClause.OR = [
+        { releaseAt: null },
+        { releaseAt: { lte: new Date() } },
+      ];
+    }
 
-  return prisma.eventForm.findMany({
-    where: whereClause,
-    orderBy: { createdAt: 'asc' },
+    return tx.eventForm.findMany({
+      where: whereClause,
+      orderBy: { createdAt: 'asc' },
+    });
   });
 }
 
 export async function getEventForm(userId: string, eventId: string, formId: string) {
-  const isAdmin = await isEventAdmin(userId, eventId);
+  return withUserContext(userId, async (tx) => {
+    const isAdmin = await isEventAdmin(tx, userId, eventId);
 
-  let allowedToViewForm = isAdmin;
-  let isRegistered = false;
-  
-  if (!isAdmin) {
-    const registration = await prisma.eventRegistration.findFirst({
+    let allowedToViewForm = isAdmin;
+    
+    if (!isAdmin) {
+      const registration = await tx.eventRegistration.findFirst({
+        where: {
+          eventId,
+          userId,
+          registrationStatus: 'REGISTERED',
+          deletedAt: null,
+        },
+      });
+      if (registration) {
+        allowedToViewForm = true;
+      }
+    }
+
+    if (!allowedToViewForm) {
+      throw new ForbiddenError('You do not have access to view this form.');
+    }
+
+    const form = await tx.eventForm.findFirst({
       where: {
+        id: formId,
         eventId,
-        userId,
-        registrationStatus: 'REGISTERED',
-        deletedAt: null,
+      },
+      include: {
+        fields: {
+          orderBy: { order: 'asc' },
+          include: { fieldDefinition: true },
+        },
       },
     });
-    if (registration) {
-      isRegistered = true;
-      allowedToViewForm = true;
+
+    if (!form) throw new NotFoundError('Form not found');
+
+    if (!isAdmin && form.releaseAt && form.releaseAt > new Date()) {
+      throw new ForbiddenError('This form is not yet available.');
     }
-  }
 
-  if (!allowedToViewForm) {
-    throw new ForbiddenError('You do not have access to view this form.');
-  }
-
-  const form = await prisma.eventForm.findFirst({
-    where: {
-      id: formId,
-      eventId,
-    },
-    include: {
-      fields: {
-        orderBy: { order: 'asc' },
-        include: { fieldDefinition: true },
-      },
-    },
+    return form;
   });
-
-  if (!form) throw new NotFoundError('Form not found');
-
-  if (!isAdmin && form.releaseAt && form.releaseAt > new Date()) {
-    throw new ForbiddenError('This form is not yet available.');
-  }
-
-  return form;
 }
 
 export async function createEventForm(userId: string, eventId: string, data: { title: string, purpose: any, releaseAt?: string | null, closeAt?: string | null }) {
@@ -257,5 +271,30 @@ export async function submitEventFormResponses(
     }
 
     return savedResponses;
+  });
+}
+
+export async function getEventFormResponses(userId: string, eventId: string, formId: string) {
+  return withUserContext(userId, async (tx) => {
+    const form = await tx.eventForm.findFirst({ where: { id: formId, eventId } });
+    if (!form) throw new NotFoundError('Form not found');
+
+    return tx.eventRegistrationResponse.findMany({
+      where: { formId },
+      include: {
+        eventRegistration: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+              }
+            }
+          }
+        },
+        fieldDefinition: true,
+      },
+    });
   });
 }
