@@ -456,6 +456,9 @@ importers:
 
   packages/shared:
     dependencies:
+      '@nst/database':
+        specifier: workspace:*
+        version: link:../database
       zod:
         specifier: 4.4.3
         version: 4.4.3
