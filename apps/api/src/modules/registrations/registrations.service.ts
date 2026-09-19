@@ -7,13 +7,90 @@ import { mapDatabaseError } from '../../lib/errors/database-error-mapper';
 
 import { checkAudienceEligibility } from '../events/audience.service';
 
-export const registerEvent = async (userId: string, eventId: string) => {
+export const registerEvent = async (
+  userId: string, 
+  eventId: string,
+  responses?: { fieldDefinitionId: string, value: string }[]
+) => {
   return withUserContext(userId, async (tx) => {
     try {
+      // Validate required custom fields
+      const requiredFields = await tx.eventFormField.findMany({
+        where: { eventId, isRequired: true },
+      });
+
+      if (requiredFields.length > 0) {
+        const providedFieldIds = new Set(responses?.map(r => r.fieldDefinitionId) || []);
+        const missingFields = requiredFields.filter(f => !providedFieldIds.has(f.fieldDefinitionId) || !responses?.find(r => r.fieldDefinitionId === f.fieldDefinitionId)?.value?.trim());
+        
+        if (missingFields.length > 0) {
+          throw new BadRequestError(`Missing required registration fields: ${missingFields.map(f => f.fieldDefinitionId).join(', ')}`);
+        }
+      }
+
       const result = await tx.$queryRaw<{ register_event: any }[]>`
         SELECT register_event(${eventId}::uuid);
       `;
-      return result[0].register_event;
+      
+      const res = result[0].register_event;
+
+      // Handle custom form responses
+      if (responses && responses.length > 0) {
+        // Find the registration that was just created
+        const reg = await tx.eventRegistration.findFirst({
+          where: { eventId, userId, deletedAt: null },
+        });
+
+        if (reg) {
+          // Fetch field definitions to know which ones are reusable
+          const fieldDefs = await tx.fieldDefinition.findMany({
+            where: { id: { in: responses.map(r => r.fieldDefinitionId) } },
+          });
+          const reusableFieldIds = new Set(fieldDefs.filter(f => f.isReusable).map(f => f.id));
+
+          for (const response of responses) {
+            // 1. Create EventRegistrationResponse
+            await tx.eventRegistrationResponse.upsert({
+              where: {
+                eventRegistrationId_fieldDefinitionId: {
+                  eventRegistrationId: reg.id,
+                  fieldDefinitionId: response.fieldDefinitionId,
+                }
+              },
+              create: {
+                eventRegistrationId: reg.id,
+                fieldDefinitionId: response.fieldDefinitionId,
+                value: response.value,
+              },
+              update: {
+                value: response.value,
+              }
+            });
+
+            // 2. Upsert StudentProfileValue if reusable
+            if (reusableFieldIds.has(response.fieldDefinitionId)) {
+              await tx.studentProfileValue.upsert({
+                where: {
+                  userId_fieldDefinitionId: {
+                    userId,
+                    fieldDefinitionId: response.fieldDefinitionId,
+                  }
+                },
+                create: {
+                  userId,
+                  fieldDefinitionId: response.fieldDefinitionId,
+                  value: response.value,
+                },
+                update: {
+                  value: response.value,
+                }
+              });
+            }
+          }
+        }
+      }
+
+      return res;
     } catch (err: any) {
       mapDatabaseError(err);
     }
@@ -172,3 +249,15 @@ export const getMyRegistrationStatus = async (userId: string, eventId: string) =
   });
 };
 
+export const getRegistrationResponses = async (
+  userId: string,
+  eventId: string,
+  registrationId: string
+) => {
+  return withUserContext(userId, async (tx) => {
+    return tx.eventRegistrationResponse.findMany({
+      where: { eventRegistrationId: registrationId },
+      include: { fieldDefinition: true },
+    });
+  });
+};

@@ -12,6 +12,7 @@ import {
   RejectEventSchema,
   CreateSessionSchema,
   UpdateSessionSchema,
+  UpdateEventFormFieldsSchema,
 } from './events.schema';
 import { CreateTeamSchema } from '../teams/teams.schema';
 import * as teamsService from '../teams/teams.service';
@@ -100,6 +101,43 @@ router.delete(
     try {
       await eventsService.deleteEvent(req.user!.id, req.params.id);
       res.status(204).send();
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ==========================================
+// Form Fields
+// ==========================================
+
+router.get(
+  '/:id/form-fields',
+  validate(ParamIdSchema),
+  async (req, res, next) => {
+    try {
+      const result = await eventsService.getEventFormFields(req.params.id);
+      res.json({ data: result });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.put(
+  '/:id/form-fields',
+  authenticate,
+  validate(ParamIdSchema),
+  canManageEvent((req: Request) => req.params.id),
+  validate(UpdateEventFormFieldsSchema),
+  async (req, res, next) => {
+    try {
+      const result = await eventsService.updateEventFormFields(
+        req.user!.id,
+        req.params.id,
+        req.body
+      );
+      res.json({ data: result });
     } catch (err) {
       next(err);
     }

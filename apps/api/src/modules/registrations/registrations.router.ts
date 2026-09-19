@@ -4,17 +4,40 @@ import { canManageEvent } from '../../middleware/authorize';
 import { validate } from '../../middleware/validate';
 import * as registrationsService from './registrations.service';
 import * as teamsService from '../teams/teams.service';
-import { ParamEventIdSchema, CreateTeamSchema, ListRegistrationsQuerySchema, ListTeamsQuerySchema } from './registrations.schema';
+import { ParamEventIdSchema, CreateTeamSchema, ListRegistrationsQuerySchema, ListTeamsQuerySchema, RegisterEventSchema } from './registrations.schema';
 
 const router = Router();
 
 router.post('/events/:id/register',
   authenticate,
   validate(ParamEventIdSchema),
+  validate(RegisterEventSchema),
   async (req, res, next) => {
     try {
-      const result = await registrationsService.registerEvent(req.user!.id, req.params.id);
+      const result = await registrationsService.registerEvent(
+        req.user!.id, 
+        req.params.id, 
+        req.body.responses
+      );
       res.status(201).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.get('/events/:id/registrations/:registrationId/responses',
+  authenticate,
+  validate(ParamEventIdSchema), // And add validation for registrationId if needed, but it's passed as param
+  canManageEvent((req: Request) => req.params.id),
+  async (req, res, next) => {
+    try {
+      const result = await registrationsService.getRegistrationResponses(
+        req.user!.id,
+        req.params.id,
+        req.params.registrationId
+      );
+      res.json({ data: result });
     } catch (err) {
       next(err);
     }

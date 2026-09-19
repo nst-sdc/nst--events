@@ -31,7 +31,7 @@ import { sseRouter } from './modules/sse/sse.router';
 import { pgListener } from './modules/sse/pg-listener';
 import { academicBatchesRouter } from './modules/academic-batches/academic-batches.router';
 import { academicProgramsRouter } from './modules/academic-programs/academic-programs.router';
-
+import fieldDefinitionsRouter from './modules/field-definitions/field-definitions.router';
 
 export function createApp(): Express {
   const app = express();
@@ -100,6 +100,7 @@ export function createApp(): Express {
   app.use('/v1/notifications', notificationsRouter);
   app.use('/v1/academic-batches', academicBatchesRouter);
   app.use('/v1/academic-programs', academicProgramsRouter);
+  app.use('/v1/field-definitions', fieldDefinitionsRouter);
 
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok' });

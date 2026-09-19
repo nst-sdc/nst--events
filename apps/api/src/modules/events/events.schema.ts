@@ -13,6 +13,8 @@ const EventBodySchema = z.object({
   description: z.string().max(5000).optional(),
   start_time: z.string().datetime(),
   end_time: z.string().datetime(),
+  registration_start_time: z.string().datetime().optional(),
+  registration_end_time: z.string().datetime().optional(),
   location_name: z.string().max(255).optional(),
   location_lat: z.number().min(-90).max(90).optional(),
   location_lng: z.number().min(-180).max(180).optional(),
@@ -37,6 +39,40 @@ const EventBodySchema = z.object({
 });
 
 const validateEventBody = (data: z.infer<typeof EventBodySchema> | Partial<z.infer<typeof EventBodySchema>>, ctx: z.RefinementCtx) => {
+  if (data.registration_start_time && data.registration_end_time) {
+    const regStart = new Date(data.registration_start_time).getTime();
+    const regEnd = new Date(data.registration_end_time).getTime();
+    if (regStart >= regEnd) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'registration_start_time must be before registration_end_time',
+        path: ['registration_start_time']
+      });
+    }
+    
+    if (data.start_time) {
+      const eventStart = new Date(data.start_time).getTime();
+      if (regStart < eventStart) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'registration_start_time must be greater than or equal to event start_time',
+          path: ['registration_start_time']
+        });
+      }
+    }
+    
+    if (data.end_time) {
+      const eventEnd = new Date(data.end_time).getTime();
+      if (regEnd > eventEnd) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'registration_end_time must be less than or equal to event end_time',
+          path: ['registration_end_time']
+        });
+      }
+    }
+  }
+
   if (data.audience === 'SPECIFIC_BATCHES' && (!data.audience_batch_ids || data.audience_batch_ids.length === 0)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -127,5 +163,19 @@ export type ListEventsQuery = z.infer<typeof ListEventsQuerySchema>['query'];
 export type RejectEventInput = z.infer<typeof RejectEventSchema>['body'];
 export type CreateSessionInput = z.infer<typeof CreateSessionSchema>['body'];
 export type UpdateSessionInput = z.infer<typeof UpdateSessionSchema>['body'];
+
+export const UpdateEventFormFieldsSchema = z.object({
+  body: z.object({
+    fields: z.array(
+      z.object({
+        fieldDefinitionId: z.string().uuid(),
+        isRequired: z.boolean().default(true),
+        order: z.number().int().min(0),
+      })
+    ),
+  }),
+});
+
+export type UpdateEventFormFieldsInput = z.infer<typeof UpdateEventFormFieldsSchema>['body'];
 
 export type EventLockState = 'UNLOCKED' | 'MANUALLY_LOCKED' | 'PERMANENTLY_LOCKED';
