@@ -1,6 +1,8 @@
 import { prisma } from '../../lib/prisma';
 import { withUserContext } from '@nst/database';
 import { NotFoundError, ForbiddenError, BadRequestError } from '../../lib/errors';
+import { validateFieldValue } from '../../utils/form-validation';
+
 
 /**
  * Helper to check if a user is an admin/core member of the primary club for the given event,
@@ -214,7 +216,11 @@ export async function submitEventFormResponses(
   return withUserContext(userId, async (tx) => {
     const form = await tx.eventForm.findFirst({
       where: { id: formId, eventId },
-      include: { fields: true },
+      include: { 
+        fields: {
+          include: { fieldDefinition: true }
+        }
+      },
     });
     if (!form) throw new NotFoundError('Form not found');
 
@@ -257,10 +263,19 @@ export async function submitEventFormResponses(
 
     const savedResponses = [];
     for (const r of responses) {
-      const fieldDef = form.fields.find(f => f.fieldDefinitionId === r.fieldDefinitionId);
-      if (!fieldDef) {
+      const field = form.fields.find(f => f.fieldDefinitionId === r.fieldDefinitionId);
+      if (!field) {
         throw new BadRequestError(`Field ${r.fieldDefinitionId} is not part of this form`);
       }
+      
+      validateFieldValue(
+        { 
+          fieldType: field.fieldDefinition.fieldType, 
+          options: field.fieldDefinition.options, 
+          label: field.fieldDefinition.label 
+        }, 
+        r.value
+      );
       
       const response = await tx.eventRegistrationResponse.upsert({
         where: {
