@@ -842,6 +842,10 @@ export default function CreateEventPage() {
     startTime: '10:00',
     endDate: getTomorrowDateString(1),
     endTime: '13:00',
+    registrationStartDate: '',
+    registrationStartTime: '',
+    registrationEndDate: '',
+    registrationEndTime: '',
     location_name: '',
     event_type: 'WORKSHOP',
     visibility: 'PUBLIC',
@@ -986,10 +990,22 @@ export default function CreateEventPage() {
       return;
     }
 
+    let registration_start_time;
+    let registration_end_time;
+    
+    if (formData.registrationStartDate && formData.registrationStartTime) {
+      registration_start_time = new Date(`${formData.registrationStartDate}T${formData.registrationStartTime}`).toISOString();
+    }
+    if (formData.registrationEndDate && formData.registrationEndTime) {
+      registration_end_time = new Date(`${formData.registrationEndDate}T${formData.registrationEndTime}`).toISOString();
+    }
+
     const payload: any = {
       title: formData.title.trim(),
       start_time,
       end_time,
+      registration_start_time,
+      registration_end_time,
       event_type: formData.event_type,
       visibility: formData.visibility,
       registration_type: formData.registration_type,
@@ -1055,8 +1071,8 @@ export default function CreateEventPage() {
               <div className="ce-micro ce-micro-blue" style={{ marginBottom: 8 }}>
                 EVENT CREATION STUDIO // {activeClub?.name || 'CLUB MANAGEMENT'}
               </div>
-              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(36px, 5.5vw, 64px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: -1, lineHeight: 0.92, color: '#fff' }}>
-                NEW EVENT
+              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(36px, 5.5vw, 64px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: -1, lineHeight: 0.92, color: '#fff', wordBreak: 'break-word' }}>
+                {formData.title || 'NEW EVENT'}
               </h1>
             </div>
 
@@ -1210,6 +1226,28 @@ export default function CreateEventPage() {
                     <div>
                       <label className="ce-label">END TIME *</label>
                       <input required type="time" name="endTime" value={formData.endTime} onChange={handleChange} className="ce-input" />
+                    </div>
+                  </div>
+
+                  <div className="ce-form-row" style={{ marginBottom: 16 }}>
+                    <div>
+                      <label className="ce-label">REGISTRATION START DATE (OPTIONAL)</label>
+                      <input type="date" name="registrationStartDate" value={formData.registrationStartDate} onChange={handleChange} className="ce-input" />
+                    </div>
+                    <div>
+                      <label className="ce-label">REGISTRATION START TIME</label>
+                      <input type="time" name="registrationStartTime" value={formData.registrationStartTime} onChange={handleChange} className="ce-input" />
+                    </div>
+                  </div>
+
+                  <div className="ce-form-row" style={{ marginBottom: 16 }}>
+                    <div>
+                      <label className="ce-label">REGISTRATION END DATE (OPTIONAL)</label>
+                      <input type="date" name="registrationEndDate" value={formData.registrationEndDate} onChange={handleChange} className="ce-input" />
+                    </div>
+                    <div>
+                      <label className="ce-label">REGISTRATION END TIME</label>
+                      <input type="time" name="registrationEndTime" value={formData.registrationEndTime} onChange={handleChange} className="ce-input" />
                     </div>
                   </div>
 

@@ -6,6 +6,7 @@ import { Card, Button, Alert, Typography, Table, Tag, Breadcrumb, Space, Select,
 import { useEventDetail } from '../../../../../hooks/useEventDetail';
 import { useRegistrationsList, Registration } from '../../../../../hooks/useRegistrations';
 import { resolveEventLockState } from '../../../../../lib/event-utils';
+import { RegistrationResponsesModal } from '../../../../../components/admin/RegistrationResponsesModal';
 
 const { Title, Text } = Typography;
 const { useBreakpoint } = Grid;
@@ -21,6 +22,7 @@ export default function RegistrationsManagementPage({ params }: { params: Promis
   const { data: event, isLoading: isEventLoading, isError: isEventError } = useEventDetail(eventId);
   
   const [filterStatus, setFilterStatus] = useState<string | undefined>(undefined);
+  const [selectedRegistrationId, setSelectedRegistrationId] = useState<string | null>(null);
   
   const { 
     data, 
@@ -84,6 +86,19 @@ export default function RegistrationsManagementPage({ params }: { params: Promis
       render: (dateStr: string) => new Date(dateStr).toLocaleString(undefined, {
         month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
       })
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_: unknown, record: Registration) => (
+        <Button 
+          type="link" 
+          size="small" 
+          onClick={() => setSelectedRegistrationId(record.id)}
+        >
+          View Responses
+        </Button>
+      )
     }
   ];
 
@@ -210,6 +225,12 @@ export default function RegistrationsManagementPage({ params }: { params: Promis
         </>
       )}
       </Card>
+      
+      <RegistrationResponsesModal 
+        eventId={eventId}
+        registrationId={selectedRegistrationId}
+        onClose={() => setSelectedRegistrationId(null)}
+      />
     </div>
   );
 }

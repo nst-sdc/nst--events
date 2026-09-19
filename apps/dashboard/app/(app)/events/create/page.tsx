@@ -44,6 +44,8 @@ export default function CreateEventPage() {
     banner_url: string;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     dateRange: [any, any];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    registrationDateRange?: [any, any];
     location_name?: string;
     event_type: string;
     visibility: string;
@@ -69,11 +71,18 @@ export default function CreateEventPage() {
     try {
       if (!eventId) {
         const [start, end] = values.dateRange;
+        let regStart, regEnd;
+        if (values.registrationDateRange) {
+          [regStart, regEnd] = values.registrationDateRange;
+        }
+
         const payload: CreateEventPayload = {
           title: values.title,
           description: values.description,
           start_time: start.toISOString(),
           end_time: end.toISOString(),
+          registration_start_time: regStart ? regStart.toISOString() : undefined,
+          registration_end_time: regEnd ? regEnd.toISOString() : undefined,
           location_name: values.location_name,
           event_type: values.event_type,
           visibility: values.visibility,
@@ -474,6 +483,13 @@ export default function CreateEventPage() {
                       </Form.Item>
                     );
                   }}
+                </Form.Item>
+                <Form.Item
+                  name="registrationDateRange"
+                  label="Registration Window"
+                  extra="Optional. Defines when students can register. If left empty, registrations are permanently closed by default until explicitly scheduled."
+                >
+                  <RangePicker showTime format="YYYY-MM-DD HH:mm" style={{ width: '100%' }} />
                 </Form.Item>
               </Col>
             </Row>

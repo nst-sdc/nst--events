@@ -8,6 +8,9 @@ export interface Event {
   title: string;
   startTime: string;
   endTime: string;
+  registrationStartTime: string | null;
+  registrationEndTime: string | null;
+  registrationStatus: 'UPCOMING' | 'OPEN' | 'CLOSED';
   locationName: string | null;
   state: string;
   maxCapacity: number | null;

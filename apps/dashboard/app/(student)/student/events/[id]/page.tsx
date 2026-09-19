@@ -15,6 +15,8 @@ import { useAttendanceDisputes, useMyAttendance } from '../../../../../hooks/use
 import { useCurrentUser } from '../../../../../hooks/useCurrentUser';
 import { useEventLifecycle } from '../../../../../hooks/useEventLifecycle';
 import { useClubAdmin } from '../../../../../components/layout/ClubAdminProvider';
+import { useEventFormFields } from '../../../../../hooks/useEventFormFields';
+import { useProfileValues } from '../../../../../hooks/useProfileValues';
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 const timeFormatter = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
@@ -325,6 +327,12 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
   const [isTeamGatewayOpen, setIsTeamGatewayOpen] = useState(false);
   const [disputeSessionId, setDisputeSessionId] = useState<string | null>(null);
 
+  const { data: eventFormFields } = useEventFormFields(eventId);
+  const { data: profileValues } = useProfileValues();
+  const [formResponses, setFormResponses] = useState<Record<string, string>>({});
+  const [preFilledFields, setPreFilledFields] = useState<Record<string, string>>({});
+  const [editableFields, setEditableFields] = useState<string[]>([]);
+
   const { data: disputesData, isLoading: isLoadingDisputes } = useAttendanceDisputes(eventId);
   const { data: myAttendanceData, isLoading: isLoadingAttendance } = useMyAttendance(eventId);
   const myAttendanceRecords = myAttendanceData?.pages.flatMap(p => p.data) || [];
@@ -391,8 +399,42 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
   const registrationCount = (event as any).registrationCount ?? (event as any).registration_count;
   const isCapacityFull = event.maxCapacity !== null && typeof registrationCount === 'number' && registrationCount >= event.maxCapacity;
 
+  const handleOpenRegisterModal = () => {
+    const initial: Record<string, string> = {};
+    const preFilled: Record<string, string> = {};
+    if (eventFormFields && profileValues) {
+      eventFormFields.forEach(f => {
+        const profileMatch = profileValues.find(p => p.fieldDefinitionId === f.fieldDefinitionId);
+        if (profileMatch) {
+          initial[f.fieldDefinitionId] = profileMatch.value;
+          preFilled[f.fieldDefinitionId] = profileMatch.value;
+        }
+      });
+    }
+    setFormResponses(initial);
+    setPreFilledFields(preFilled);
+    setEditableFields([]);
+    setIsRegisterModalOpen(true);
+  };
+
   const handleRegisterConfirm = () => {
-    register(undefined, {
+    // Validate required fields
+    if (eventFormFields) {
+      const missingRequired = eventFormFields.find(f => f.isRequired && !formResponses[f.fieldDefinitionId]);
+      if (missingRequired) {
+        alert(`Please fill in required field: ${missingRequired.fieldDefinition.label}`);
+        return;
+      }
+    }
+
+    const payload = {
+      responses: Object.entries(formResponses).map(([fieldDefinitionId, value]) => ({
+        fieldDefinitionId,
+        value,
+      }))
+    };
+
+    register(payload, {
       onSuccess: () => {
         setIsRegisterModalOpen(false);
       }
@@ -424,6 +466,29 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
       );
     }
 
+    const isUnregistered = !registration || registration.status === 'NOT_REGISTERED' || registration.status === 'CANCELLED';
+    
+    if (isUnregistered) {
+      if (event.registrationStatus === 'UPCOMING') {
+        const openTime = event.registrationStartTime 
+          ? new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(event.registrationStartTime)) 
+          : 'SOON';
+        return (
+          <div className="ed-status-badge">
+            SYSTEM NOTICE // REGISTRATION OPENS {openTime.toUpperCase()}
+          </div>
+        );
+      }
+
+      if (event.registrationStatus === 'CLOSED') {
+        return (
+          <div className="ed-status-badge">
+            SYSTEM NOTICE // REGISTRATION CLOSED
+          </div>
+        );
+      }
+    }
+
     // Unregistered State for Team Event
     if (event.registrationType === 'TEAM' && (!registration || (!registration.team_id && registration.status !== 'REGISTERED' && registration.status !== 'WAITLISTED'))) {
       return (
@@ -445,7 +510,7 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
     if (!registration || registration.status === 'NOT_REGISTERED') {
       return (
         <button
-          onClick={() => setIsRegisterModalOpen(true)}
+          onClick={handleOpenRegisterModal}
           disabled={isRegistering}
           className="ed-cta-btn"
         >
@@ -610,6 +675,77 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
               </div>
             </div>
           </div>
+
+          {/* DYNAMIC FORM FIELDS */}
+          {eventFormFields && eventFormFields.length > 0 && (
+            <div style={{ marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="ed-micro" style={{ borderBottom: '1px dashed rgba(255,255,255,0.2)', paddingBottom: '8px' }}>
+                REQUIRED REGISTRATION DETAILS
+              </div>
+              {eventFormFields.map((field) => {
+                const isPreFilled = !!preFilledFields[field.fieldDefinitionId];
+                const isEditable = !isPreFilled || editableFields.includes(field.fieldDefinitionId);
+
+                return (
+                <div key={field.fieldDefinitionId} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label 
+                    style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700, color: '#a0a4b8', textTransform: 'uppercase', letterSpacing: '1px' }}
+                  >
+                    {field.fieldDefinition.label} {field.isRequired && <span style={{ color: 'var(--electric-blue)' }}>*</span>}
+                  </label>
+                  
+                  {isEditable ? (
+                    <>
+                      {field.fieldDefinition.fieldType === 'SELECT' ? (
+                        <select
+                          value={formResponses[field.fieldDefinitionId] || ''}
+                          onChange={(e) => setFormResponses(prev => ({ ...prev, [field.fieldDefinitionId]: e.target.value }))}
+                          className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+                          required={field.isRequired}
+                          style={{ appearance: 'none' }}
+                        >
+                          <option value="">Select an option</option>
+                          {field.fieldDefinition.options?.map((opt: string) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type={field.fieldDefinition.fieldType === 'NUMBER' ? 'number' : field.fieldDefinition.fieldType === 'EMAIL' ? 'email' : 'text'}
+                          value={formResponses[field.fieldDefinitionId] || ''}
+                          onChange={(e) => setFormResponses(prev => ({ ...prev, [field.fieldDefinitionId]: e.target.value }))}
+                          className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+                          required={field.isRequired}
+                          placeholder={field.fieldDefinition.fieldType === 'URL' ? 'https://...' : ''}
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.3)' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: '#fff', wordBreak: 'break-all' }}>
+                        {formResponses[field.fieldDefinitionId] || '-'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setEditableFields(prev => [...prev, field.fieldDefinitionId])}
+                        style={{ background: 'none', border: 'none', color: '#00E5FF', fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700, cursor: 'pointer', letterSpacing: '1px' }}
+                      >
+                        EDIT
+                      </button>
+                    </div>
+                  )}
+
+                  {field.fieldDefinition.isReusable && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '9px', fontFamily: 'var(--font-mono)', color: '#00E5FF', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        {isPreFilled && !isEditable ? '✓ Confirm this saved value is correct' : '(Saved to profile)'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )})}
+            </div>
+          )}
 
           {isCapacityFull && (
             <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: '#a0a4b8', marginBottom: '24px', lineHeight: 1.5 }}>

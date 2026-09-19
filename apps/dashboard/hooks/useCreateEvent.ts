@@ -7,6 +7,8 @@ export interface CreateEventPayload {
   description?: string;
   start_time: string;
   end_time: string;
+  registration_start_time?: string;
+  registration_end_time?: string;
   location_name?: string;
   location_lat?: number;
   location_lng?: number;

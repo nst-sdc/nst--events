@@ -3,6 +3,7 @@
 import React, { use, useState } from 'react';
 import { useRegistrationsList } from '../../../../../../../hooks/useRegistrations';
 import { useEventDetail } from '../../../../../../../hooks/useEventDetail';
+import { StudentRegistrationResponsesModal } from '../../../../../../../components/student/StudentRegistrationResponsesModal';
 import clsx from 'clsx';
 import { Search } from 'lucide-react';
 
@@ -12,6 +13,7 @@ export default function ManageRegistrationsPage({ params }: { params: Promise<{ 
   
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedRegistrationId, setSelectedRegistrationId] = useState<string | null>(null);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useRegistrationsList(
     eventId, 
@@ -80,6 +82,7 @@ export default function ManageRegistrationsPage({ params }: { params: Promise<{ 
               <th className="px-5 py-3.5 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#a0a4b8]">Student Operative</th>
               <th className="px-5 py-3.5 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#a0a4b8]">Pass State</th>
               <th className="px-5 py-3.5 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#a0a4b8]">Timestamp</th>
+              <th className="px-5 py-3.5 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#a0a4b8]">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -113,6 +116,14 @@ export default function ManageRegistrationsPage({ params }: { params: Promise<{ 
                   <td className="px-5 py-4 text-xs font-mono text-[#a0a4b8] tabular-nums">
                     {new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(reg.registeredAt))}
                   </td>
+                  <td className="px-5 py-4">
+                    <button
+                      onClick={() => setSelectedRegistrationId(reg.id)}
+                      className="px-4 py-2 border-2 border-white/20 text-[#a0a4b8] font-mono text-[10px] uppercase tracking-widest hover:text-[#00E5FF] hover:border-[#00E5FF] transition-all"
+                    >
+                      VIEW RESPONSES
+                    </button>
+                  </td>
                 </tr>
               ))
             )}
@@ -132,6 +143,11 @@ export default function ManageRegistrationsPage({ params }: { params: Promise<{ 
         </div>
       )}
       
+      <StudentRegistrationResponsesModal 
+        eventId={eventId}
+        registrationId={selectedRegistrationId}
+        onClose={() => setSelectedRegistrationId(null)}
+      />
     </div>
   );
 }

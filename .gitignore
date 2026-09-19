@@ -65,3 +65,5 @@ apps/api/start-test-server.ts
 *.apk
 test-*.js
 db-check*.ts
+.aider*
+.claude/
