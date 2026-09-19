@@ -14,7 +14,7 @@ import {
   EventLockState,
   UpdateEventFormFieldsInput,
 } from './events.schema';
-import { enqueueNotification } from '../notifications/notifications.producer';
+import { enqueueNotification } from '@nst/shared';
 
 export const calculateLockState = (isLocked: boolean, endTime: Date, dbNow: Date): EventLockState => {
   const finalDeadline = endTime.getTime() + 24 * 60 * 60 * 1000;

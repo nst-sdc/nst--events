@@ -5,7 +5,7 @@ import { sanitizeOfflineError } from './attendance-error-mapper';
 import { mapDatabaseError, getDatabaseErrorReason } from '../../lib/errors/database-error-mapper';
 import { logger } from '../../lib/logger';
 import { SCORE_RULES } from '../../config/score-rules';
-import { enqueueNotification } from '../notifications/notifications.producer';
+import { enqueueNotification } from '@nst/shared';
 
 export class AttendanceService {
   /**
