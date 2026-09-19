@@ -1,7 +1,7 @@
 import { ClubRole, ClubStatus, withUserContext, Prisma, prisma } from '@nst/database';
 import { ConflictError } from '../../lib/errors';
 import { mapDatabaseError } from '../../lib/errors/database-error-mapper';
-import { enqueueNotification } from '../notifications/notifications.producer';
+import { enqueueNotification } from '@nst/shared';
 
 export const createClub = async (
   callerId: string,

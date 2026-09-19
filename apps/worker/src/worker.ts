@@ -10,6 +10,8 @@ let consecutiveDbFailures = 0;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+import { processFormReleaseSweep } from './jobs/form-release-sweep';
+
 export async function startWorkerLoop() {
   logger.info('🔄 Worker polling loop started.');
 
@@ -17,6 +19,13 @@ export async function startWorkerLoop() {
     activeBatchPromise = processBatch();
     await activeBatchPromise;
     activeBatchPromise = null;
+
+    // Run the form release sweep job during the polling loop
+    try {
+      await processFormReleaseSweep();
+    } catch (e: any) {
+      logger.error('Failed to run form release sweep', e);
+    }
 
     if (!isShuttingDown) {
       await sleep(config.WORKER_POLL_INTERVAL_MS);

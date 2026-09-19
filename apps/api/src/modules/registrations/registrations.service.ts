@@ -1,5 +1,5 @@
 import { withUserContext } from '@nst/database';
-import { enqueueNotification } from '../notifications/notifications.producer';
+import { enqueueNotification } from '@nst/shared';
 import { prisma } from '../../lib/prisma';
 
 import { BadRequestError, ForbiddenError, NotFoundError } from '../../lib/errors';
@@ -49,23 +49,30 @@ export const registerEvent = async (
           const reusableFieldIds = new Set(fieldDefs.filter(f => f.isReusable).map(f => f.id));
 
           for (const response of responses) {
-            // 1. Create EventRegistrationResponse
-            await tx.eventRegistrationResponse.upsert({
+            // 1. Check if EventRegistrationResponse exists for this field
+            const existingResponse = await tx.eventRegistrationResponse.findFirst({
               where: {
-                eventRegistrationId_fieldDefinitionId: {
-                  eventRegistrationId: reg.id,
-                  fieldDefinitionId: response.fieldDefinitionId,
-                }
-              },
-              create: {
                 eventRegistrationId: reg.id,
+                formId: null,
                 fieldDefinitionId: response.fieldDefinitionId,
-                value: response.value,
               },
-              update: {
-                value: response.value,
-              }
             });
+
+            if (existingResponse) {
+              await tx.eventRegistrationResponse.update({
+                where: { id: existingResponse.id },
+                data: { value: response.value },
+              });
+            } else {
+              await tx.eventRegistrationResponse.create({
+                data: {
+                  eventRegistrationId: reg.id,
+                  formId: null,
+                  fieldDefinitionId: response.fieldDefinitionId,
+                  value: response.value,
+                },
+              });
+            }
 
             // 2. Upsert StudentProfileValue if reusable
             if (reusableFieldIds.has(response.fieldDefinitionId)) {

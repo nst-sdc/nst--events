@@ -1,5 +1,5 @@
 import { withUserContext } from '@nst/database';
-import { enqueueNotification } from '../notifications/notifications.producer';
+import { enqueueNotification } from '@nst/shared';
 import { prisma } from '../../lib/prisma';
 import { NotFoundError, BadRequestError } from '../../lib/errors';
 import { checkAudienceEligibility } from '../events/audience.service';
