@@ -35,3 +35,16 @@ export const ListTeamsQuerySchema = z.object({
     limit: z.coerce.number().min(1).max(100).default(20),
   }).passthrough(),
 });
+
+export const RegisterEventSchema = z.object({
+  body: z.object({
+    responses: z.array(
+      z.object({
+        fieldDefinitionId: z.string().uuid(),
+        value: z.string(),
+      })
+    ).optional(),
+  }),
+});
+
+export type RegisterEventInput = z.infer<typeof RegisterEventSchema>['body'];

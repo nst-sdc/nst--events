@@ -12,6 +12,7 @@ import {
   CreateSessionInput,
   UpdateSessionInput,
   EventLockState,
+  UpdateEventFormFieldsInput,
 } from './events.schema';
 import { enqueueNotification } from '../notifications/notifications.producer';
 
@@ -21,6 +22,13 @@ export const calculateLockState = (isLocked: boolean, endTime: Date, dbNow: Date
     return 'PERMANENTLY_LOCKED';
   }
   return isLocked ? 'MANUALLY_LOCKED' : 'UNLOCKED';
+};
+
+export const calculateRegistrationStatus = (dbNow: Date, start: Date | null, end: Date | null): 'UPCOMING' | 'OPEN' | 'CLOSED' => {
+  if (!start || !end) return 'CLOSED';
+  if (dbNow < start) return 'UPCOMING';
+  if (dbNow > end) return 'CLOSED';
+  return 'OPEN';
 };
 
 export const createEvent = async (callerId: string, data: CreateEventInput): Promise<any> => {
@@ -188,6 +196,7 @@ export const listEvents = async (callerId: string, query: ListEventsQuery): Prom
           location_geofence: geoMap.get(item.id) || null,
           lock_deadline: new Date(item.endTime.getTime() + 24 * 60 * 60 * 1000).toISOString(),
           lock_state: calculateLockState(item.isLocked, item.endTime, dbNow),
+          registrationStatus: calculateRegistrationStatus(dbNow, item.registrationStartTime, item.registrationEndTime),
           below_minimum_team_count: attentionMap.get(item.id) || 0,
         };
       });
@@ -207,6 +216,7 @@ type GetEventByIdResponse = Prisma.EventGetPayload<{
   location_geofence: any;
   lock_deadline: string;
   lock_state: EventLockState;
+  registrationStatus: 'UPCOMING' | 'OPEN' | 'CLOSED';
   audienceBatchIds?: string[];
   below_minimum_team_count: number;
 };
@@ -260,6 +270,7 @@ export const getEventById = async (callerId: string, eventId: string): Promise<G
       location_geofence: geo[0]?.geojson ? JSON.parse(geo[0].geojson) : null,
       lock_deadline: new Date(event.endTime.getTime() + 24 * 60 * 60 * 1000).toISOString(),
       lock_state: calculateLockState(event.isLocked, event.endTime, dbNow),
+      registrationStatus: calculateRegistrationStatus(dbNow, event.registrationStartTime, event.registrationEndTime),
       below_minimum_team_count: attentionResult[0]?.below_minimum_team_count || 0,
     };
   });
@@ -286,15 +297,21 @@ export const updateEvent = async (callerId: string, eventId: string, data: Updat
   return withUserContext(callerId, async (tx) => {
     const existing = await tx.event.findUnique({
       where: { id: eventId },
-      select: { state: true, deletedAt: true },
+      select: { state: true, deletedAt: true, endTime: true },
     });
 
     if (!existing || existing.deletedAt) {
       throw new NotFoundError('Event not found');
     }
 
-    if (existing.state !== 'DRAFT') {
-      throw new UnprocessableEntityError('Event can only be updated in DRAFT state');
+    if (existing.state !== 'DRAFT' && existing.state !== 'PUBLISHED') {
+      throw new UnprocessableEntityError('Event can only be updated in DRAFT or PUBLISHED state');
+    }
+
+    if (existing.state === 'PUBLISHED' && data.end_time) {
+      if (new Date(data.end_time).getTime() < existing.endTime.getTime()) {
+        throw new UnprocessableEntityError('Event end time can only be extended once published');
+      }
     }
 
     const event = await tx.event.update({
@@ -304,6 +321,8 @@ export const updateEvent = async (callerId: string, eventId: string, data: Updat
         description: data.description,
         startTime: data.start_time,
         endTime: data.end_time,
+        registrationStartTime: data.registration_start_time,
+        registrationEndTime: data.registration_end_time,
         locationName: data.location_name,
         eventType: data.event_type,
         visibility: data.visibility,
@@ -654,6 +673,54 @@ export const updateSession = async (
         closeAt: data.close_at,
         geofenceRadius: data.geofence_radius,
       },
+    });
+  });
+};
+
+export const getEventFormFields = async (eventId: string) => {
+  return prisma.eventFormField.findMany({
+    where: { eventId },
+    include: { fieldDefinition: true },
+    orderBy: { order: 'asc' },
+  });
+};
+
+export const updateEventFormFields = async (
+  callerId: string,
+  eventId: string,
+  data: UpdateEventFormFieldsInput
+) => {
+  return withUserContext(callerId, async (tx) => {
+    const event = await tx.event.findUnique({
+      where: { id: eventId },
+      select: { deletedAt: true },
+    });
+
+    if (!event || event.deletedAt) {
+      throw new NotFoundError('Event not found');
+    }
+
+    // Delete existing form fields
+    await tx.eventFormField.deleteMany({
+      where: { eventId },
+    });
+
+    // Create new form fields
+    if (data.fields.length > 0) {
+      await tx.eventFormField.createMany({
+        data: data.fields.map((f: { fieldDefinitionId: string; isRequired: boolean; order: number }) => ({
+          eventId,
+          fieldDefinitionId: f.fieldDefinitionId,
+          isRequired: f.isRequired,
+          order: f.order,
+        })),
+      });
+    }
+
+    return tx.eventFormField.findMany({
+      where: { eventId },
+      include: { fieldDefinition: true },
+      orderBy: { order: 'asc' },
     });
   });
 };

@@ -18,6 +18,14 @@ router.get('/me', authenticate, async (req, res, next) => {
   }
 });
 
+router.get('/me/profile-values', authenticate, async (req, res, next) => {
+  try {
+    const profileValues = await usersService.getProfileValues(req.user!.id);
+    res.json({ data: profileValues });
+  } catch (err) {
+    next(err);
+  }
+});
 
 router.patch(
   '/me',

@@ -169,4 +169,11 @@ export const registerPushToken = async (
   });
 };
 
-
+export const getProfileValues = async (userId: string) => {
+  return withUserContext(userId, async (tx) => {
+    return tx.studentProfileValue.findMany({
+      where: { userId },
+      include: { fieldDefinition: true },
+    });
+  });
+};
