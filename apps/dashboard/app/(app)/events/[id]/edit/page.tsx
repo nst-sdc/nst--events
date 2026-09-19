@@ -13,6 +13,7 @@ import { useAcademicBatches } from '../../../../../hooks/useAcademicBatches';
 import { useEventDetail } from '../../../../../hooks/useEventDetail';
 import { useUpdateEvent, UpdateEventInput } from '../../../../../hooks/useUpdateEvent';
 import { useEventLifecycle } from '../../../../../hooks/useEventLifecycle';
+import { EventFormFieldsManager } from '../../../../../components/admin/EventFormFieldsManager';
 import { ApiError } from '../../../../../lib/api';
 
 const { Title, Text } = Typography;
@@ -41,6 +42,7 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
         title: event.title,
         description: event.description,
         dateRange: [dayjs(event.startTime), dayjs(event.endTime)],
+        registrationDateRange: event.registrationStartTime && event.registrationEndTime ? [dayjs(event.registrationStartTime), dayjs(event.registrationEndTime)] : undefined,
         location_name: event.locationName,
         event_type: event.eventType,
         visibility: event.visibility,
@@ -82,12 +84,12 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
     );
   }
 
-  if (!event || event.state !== 'DRAFT') {
+  if (!event || (event.state !== 'DRAFT' && event.state !== 'PUBLISHED')) {
     return (
       <Result
         status="warning"
         title="Not Editable"
-        subTitle="This event is no longer in DRAFT state and cannot be edited."
+        subTitle="This event is no longer in DRAFT or PUBLISHED state and cannot be edited."
         extra={<Button type="primary" onClick={() => router.push(`/events/${eventId}`)}>Back to Event</Button>}
       />
     );
@@ -126,6 +128,8 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
     banner_url: string;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     dateRange: [any, any];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    registrationDateRange?: [any, any];
     location_name?: string;
     event_type: string;
     visibility: 'PUBLIC' | 'PRIVATE';
@@ -143,11 +147,18 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
 
     try {
       const [start, end] = values.dateRange;
+      let regStart, regEnd;
+      if (values.registrationDateRange) {
+        [regStart, regEnd] = values.registrationDateRange;
+      }
+
       const payload: UpdateEventInput = {
         title: values.title,
         description: values.description,
         start_time: start.toISOString(),
         end_time: end.toISOString(),
+        registration_start_time: regStart ? regStart.toISOString() : undefined,
+        registration_end_time: regEnd ? regEnd.toISOString() : undefined,
         location_name: values.location_name,
         event_type: values.event_type,
         visibility: values.visibility,
@@ -455,6 +466,13 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
                     );
                   }}
                 </Form.Item>
+                <Form.Item
+                  name="registrationDateRange"
+                  label="Registration Window"
+                  extra="Optional. Defines when students can register. If left empty, registrations are permanently closed by default until explicitly scheduled."
+                >
+                  <RangePicker showTime format="YYYY-MM-DD HH:mm" style={{ width: '100%' }} />
+                </Form.Item>
               </Col>
 
             </Row>
@@ -590,6 +608,11 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
           </Row>
         </Space>
       </Form>
+
+      {/* CUSTOM FORM FIELDS */}
+      {isAuthorizedToEdit && (
+        <EventFormFieldsManager eventId={event.id} />
+      )}
 
       {/* DANGER ZONE */}
       {isAuthorizedToEdit && (

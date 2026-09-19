@@ -11,6 +11,7 @@ import { useEventLifecycle } from '../../../../../../../hooks/useEventLifecycle'
 import { useClubAdmin } from '../../../../../../../components/layout/ClubAdminProvider';
 import { useAcademicBatches } from '../../../../../../../hooks/useAcademicBatches';
 import { useClubs } from '../../../../../../../hooks/useClubs';
+import { StudentEventFormFieldsManager } from '../../../../../../../components/student/StudentEventFormFieldsManager';
 import { MultiSelect } from '../../../../../components/MultiSelect';
 import { Modal } from '../../../../../../../components/ui/Modal';
 
@@ -48,6 +49,10 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
     startTime: '',
     endDate: '',
     endTime: '',
+    registrationStartDate: '',
+    registrationStartTime: '',
+    registrationEndDate: '',
+    registrationEndTime: '',
     location_name: '',
     event_type: 'WORKSHOP',
     visibility: 'PUBLIC',
@@ -80,6 +85,22 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
       const endDate = formatLocalDate(end);
       const endTime = formatLocalTime(end);
 
+      let registrationStartDate = '';
+      let registrationStartTime = '';
+      if (event.registrationStartTime) {
+        const regStart = new Date(event.registrationStartTime);
+        registrationStartDate = formatLocalDate(regStart);
+        registrationStartTime = formatLocalTime(regStart);
+      }
+
+      let registrationEndDate = '';
+      let registrationEndTime = '';
+      if (event.registrationEndTime) {
+        const regEnd = new Date(event.registrationEndTime);
+        registrationEndDate = formatLocalDate(regEnd);
+        registrationEndTime = formatLocalTime(regEnd);
+      }
+
       setFormData({
         title: event.title || '',
         description: event.description || '',
@@ -88,6 +109,10 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
         startTime,
         endDate,
         endTime,
+        registrationStartDate,
+        registrationStartTime,
+        registrationEndDate,
+        registrationEndTime,
         location_name: event.locationName || '',
         event_type: event.eventType || 'WORKSHOP',
         visibility: event.visibility || 'PUBLIC',
@@ -103,9 +128,9 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
     }
   }, [event]);
 
-  // If not draft, or locked, kick out to view/manage
+  // If not draft or published, or locked, kick out to view/manage
   useEffect(() => {
-    if (isHydrated && event && event.state !== 'DRAFT') {
+    if (isHydrated && event && event.state !== 'DRAFT' && event.state !== 'PUBLISHED') {
       router.push(`/student/events/${eventId}/manage`);
     }
   }, [isHydrated, event, eventId, router]);
@@ -125,11 +150,22 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
     const startDateTime = new Date(`${formData.startDate}T${formData.startTime}:00`).toISOString();
     const endDateTime = new Date(`${formData.endDate}T${formData.endTime}:00`).toISOString();
 
+    let registration_start_time;
+    let registration_end_time;
+    if (formData.registrationStartDate && formData.registrationStartTime) {
+      registration_start_time = new Date(`${formData.registrationStartDate}T${formData.registrationStartTime}:00`).toISOString();
+    }
+    if (formData.registrationEndDate && formData.registrationEndTime) {
+      registration_end_time = new Date(`${formData.registrationEndDate}T${formData.registrationEndTime}:00`).toISOString();
+    }
+
     const payload: any = {
       title: formData.title,
       description: formData.description || undefined,
       start_time: startDateTime,
       end_time: endDateTime,
+      registration_start_time,
+      registration_end_time,
       location_name: formData.location_name || undefined,
       event_type: formData.event_type,
       visibility: formData.visibility,
@@ -312,6 +348,52 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
                 type="time"
                 name="endTime"
                 value={formData.endTime}
+                onChange={handleChange}
+                className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Registration Start Date (Optional)</label>
+              <input 
+                type="date"
+                name="registrationStartDate"
+                value={formData.registrationStartDate}
+                onChange={handleChange}
+                className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Registration Start Time</label>
+              <input 
+                type="time"
+                name="registrationStartTime"
+                value={formData.registrationStartTime}
+                onChange={handleChange}
+                className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Registration End Date (Optional)</label>
+              <input 
+                type="date"
+                name="registrationEndDate"
+                value={formData.registrationEndDate}
+                onChange={handleChange}
+                className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Registration End Time</label>
+              <input 
+                type="time"
+                name="registrationEndTime"
+                value={formData.registrationEndTime}
                 onChange={handleChange}
                 className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
               />
@@ -512,6 +594,11 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
         </div>
 
       </form>
+
+      {/* REGISTRATION FORM FIELDS CONFIG */}
+      <div className="mt-8">
+        <StudentEventFormFieldsManager eventId={eventId} />
+      </div>
 
       <Modal 
         isOpen={isSubmitModalOpen} 

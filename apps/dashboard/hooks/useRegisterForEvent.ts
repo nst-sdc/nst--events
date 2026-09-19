@@ -6,7 +6,11 @@ export function useRegisterForEvent(eventId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => apiClient(`/v1/events/${eventId}/register`, { method: 'POST' }),
+    mutationFn: (data?: { responses: { fieldDefinitionId: string, value: string }[] }) => 
+      apiClient(`/v1/events/${eventId}/register`, { 
+        method: 'POST',
+        body: data ? JSON.stringify(data) : undefined,
+      }),
     onSuccess: () => {
       // The API dependency matrix requires invalidating the registration query
       queryClient.invalidateQueries({ queryKey: ['event-my-registration', eventId] });
