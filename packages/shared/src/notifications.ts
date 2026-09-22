@@ -2,6 +2,11 @@ import { Prisma } from '@nst/database';
 import { createHash } from 'crypto';
 import { z } from 'zod';
 
+const uuidSchema = z.string().regex(
+  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
+  { message: 'Invalid UUID' }
+);
+
 export const NotificationMetadataSchema = z.object({
   schema_version: z.literal(1),
   routing: z.object({
@@ -10,12 +15,12 @@ export const NotificationMetadataSchema = z.object({
     params: z.record(z.string(), z.string()),
   }),
   entity_ids: z.object({
-    event_id: z.string().uuid().optional(),
-    club_id: z.string().uuid().optional(),
-    dispute_id: z.string().uuid().optional(),
-    attendance_id: z.string().uuid().optional(),
-    announcement_id: z.string().uuid().optional(),
-    team_id: z.string().uuid().optional(),
+    event_id: uuidSchema.optional(),
+    club_id: uuidSchema.optional(),
+    dispute_id: uuidSchema.optional(),
+    attendance_id: uuidSchema.optional(),
+    announcement_id: uuidSchema.optional(),
+    team_id: uuidSchema.optional(),
   }),
   action_payload: z.object({
     role: z.string().optional(),
