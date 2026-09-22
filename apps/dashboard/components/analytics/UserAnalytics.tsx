@@ -6,12 +6,12 @@ import { useAnalyticsUsers } from '../../hooks/useAnalyticsUsers';
 export default function UserAnalytics() {
   const { data, isLoading, error } = useAnalyticsUsers();
 
-  if (isLoading) return <Card title="Platform Users by Role" bordered={false}><Skeleton.Button active style={{ width: '100%', height: 384 }} shape="square" /></Card>;
+  if (isLoading) return <Card title="Platform Users by Role" variant="borderless"><Skeleton.Button active style={{ width: '100%', height: 384 }} shape="square" /></Card>;
   if ((error as any)?.status === 403) return <Result status="403" title="Access Denied" subTitle="This analytics tab is restricted to platform administrators." />;
   if (error || !data) return <Result status="error" title="Failed to load users data" />;
 
   return (
-    <Card title="Platform Users by Role" bordered={false}>
+    <Card title="Platform Users by Role" variant="borderless">
       <div style={{ height: 384, width: '100%' }}>
         {data.role_breakdown.length === 0 ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><Empty description="No users found" /></div>

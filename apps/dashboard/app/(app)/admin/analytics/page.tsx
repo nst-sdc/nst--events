@@ -37,7 +37,7 @@ export default function AnalyticsOverviewPage() {
       <h3 style={{ fontSize: 20, fontWeight: 600, marginBottom: 16 }}>Platform Overview</h3>
       <Row gutter={[24, 24]}>
         <Col xs={24} sm={12} lg={6}>
-          <Card bordered={false}>
+          <Card variant="borderless">
             <Statistic 
               title="Total Events" 
               value={data.total_events} 
@@ -46,7 +46,7 @@ export default function AnalyticsOverviewPage() {
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card bordered={false}>
+          <Card variant="borderless">
             <Statistic 
               title="Total Registrations" 
               value={data.total_registrations} 
@@ -55,7 +55,7 @@ export default function AnalyticsOverviewPage() {
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card bordered={false}>
+          <Card variant="borderless">
             <Statistic 
               title="Attendance Rate" 
               value={data.attendance_rate} 
@@ -65,7 +65,7 @@ export default function AnalyticsOverviewPage() {
           </Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card bordered={false}>
+          <Card variant="borderless">
             <Statistic 
               title="Active Clubs" 
               value={data.active_clubs} 

@@ -15,8 +15,8 @@ export default function EventAnalytics() {
 
   if (isLoading) return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <Card title="Events by Status" bordered={false}><Skeleton.Button active style={{ width: '100%', height: 320 }} shape="square" /></Card>
-      <Card title="Recent Events" bordered={false}><Skeleton active paragraph={{ rows: 4 }} /></Card>
+      <Card title="Events by Status" variant="borderless"><Skeleton.Button active style={{ width: '100%', height: 320 }} shape="square" /></Card>
+      <Card title="Recent Events" variant="borderless"><Skeleton active paragraph={{ rows: 4 }} /></Card>
     </div>
   );
   if (error || !data) return <Result status="error" title="Failed to load events data" />;
@@ -27,7 +27,7 @@ export default function EventAnalytics() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <Card title="Events by Status" bordered={false}>
+      <Card title="Events by Status" variant="borderless">
         <div style={{ height: 320, width: '100%' }}>
           {chartData.length === 0 ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><Empty description="No events recorded" /></div>
@@ -50,7 +50,7 @@ export default function EventAnalytics() {
         </div>
       </Card>
 
-      <Card title="Recent Events" bordered={false}>
+      <Card title="Recent Events" variant="borderless">
         <Table 
           dataSource={data.recent_events} 
           rowKey="id" 

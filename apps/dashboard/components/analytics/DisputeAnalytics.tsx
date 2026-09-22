@@ -12,11 +12,11 @@ const STATUS_COLORS: Record<string, string> = {
 export default function DisputeAnalytics() {
   const { data, isLoading, error } = useAnalyticsDisputes();
 
-  if (isLoading) return <Card title="Attendance Disputes Status" bordered={false}><Skeleton.Button active style={{ width: '100%', height: 384 }} shape="square" /></Card>;
+  if (isLoading) return <Card title="Attendance Disputes Status" variant="borderless"><Skeleton.Button active style={{ width: '100%', height: 384 }} shape="square" /></Card>;
   if (error || !data) return <Result status="error" title="Failed to load disputes data" />;
 
   return (
-    <Card title="Attendance Disputes Status" bordered={false}>
+    <Card title="Attendance Disputes Status" variant="borderless">
       <div style={{ height: 384, width: '100%' }}>
         {data.breakdown.length === 0 ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><Empty description="No disputes recorded" /></div>

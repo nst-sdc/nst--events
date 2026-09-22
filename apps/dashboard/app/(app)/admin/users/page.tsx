@@ -131,6 +131,10 @@ export default function UserManagementPage() {
     errors: string[];
   } | null>(null);
 
+  // Pagination state
+  const [studentPageSize, setStudentPageSize] = useState(25);
+  const [studentCurrentPage, setStudentCurrentPage] = useState(1);
+
   // Queries
   const isStudentsTab = activeTab === "students";
   const isAdminRolesTab = activeTab === "admin-roles";
@@ -750,7 +754,7 @@ export default function UserManagementPage() {
 
           <div
             style={{ borderColor: "var(--ant-color-border-secondary)" }}
-            className="p-4 border-b flex gap-4"
+            className="p-4 border-b flex gap-4 flex-wrap"
           >
             <Input
               placeholder="Search students..."
@@ -766,9 +770,25 @@ export default function UserManagementPage() {
               value={statusFilter}
               onChange={(val) => setParam("status", val)}
               style={{ width: 150 }}
+              showSearch={false}
               options={[
                 { label: "Active", value: "ACTIVE" },
                 { label: "Revoked", value: "REVOKED" },
+              ]}
+            />
+            <Select
+              value={studentPageSize}
+              showSearch={false}
+              onChange={(size) => {
+                setStudentPageSize(size);
+                setStudentCurrentPage(1);
+              }}
+              style={{ width: 120 }}
+              options={[
+                { label: "10 / page", value: 10 },
+                { label: "25 / page", value: 25 },
+                { label: "50 / page", value: 50 },
+                { label: "100 / page", value: 100 },
               ]}
             />
           </div>
@@ -801,7 +821,16 @@ export default function UserManagementPage() {
                   : studentColumns.filter((c) => c.key !== "actions")
               }
               rowKey="id"
-              pagination={{ pageSize: 50, showSizeChanger: true }}
+              pagination={{
+                current: studentCurrentPage,
+                pageSize: studentPageSize,
+                showSizeChanger: false,
+                showTotal: (total, range) => `${range[0]}–${range[1]} of ${total} students`,
+                onChange: (page) => {
+                  setStudentCurrentPage(page);
+                  document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
+                },
+              }}
               scroll={{ x: 800 }}
               className="border-t-0"
               size="middle"
