@@ -318,7 +318,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Dropdown>
           </Space>
         </Header>
-        <Content style={{ padding: '16px', overflow: 'auto' }}>
+        <Content id="main-content" style={{ padding: '16px', overflow: 'auto' }}>
           {children}
         </Content>
       </Layout>
