@@ -6,11 +6,11 @@ import { useAnalyticsRegistrations } from '../../hooks/useAnalyticsRegistrations
 export default function RegistrationAnalytics({ dateRange }: { dateRange: { start: string; end: string } }) {
   const { data, isLoading, error } = useAnalyticsRegistrations(dateRange);
 
-  if (isLoading) return <Card title="Registrations Over Time" bordered={false}><Skeleton.Button active style={{ width: '100%', height: 384 }} shape="square" /></Card>;
+  if (isLoading) return <Card title="Registrations Over Time" variant="borderless"><Skeleton.Button active style={{ width: '100%', height: 384 }} shape="square" /></Card>;
   if (error || !data) return <Result status="error" title="Failed to load registrations data" />;
 
   return (
-    <Card title="Registrations Over Time" bordered={false}>
+    <Card title="Registrations Over Time" variant="borderless">
       <div style={{ height: 384, width: '100%' }}>
         {data.time_series.length === 0 ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><Empty description="No registrations in this period" /></div>

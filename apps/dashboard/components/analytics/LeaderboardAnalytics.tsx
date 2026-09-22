@@ -5,12 +5,12 @@ import { useAnalyticsLeaderboard } from '../../hooks/useAnalyticsLeaderboard';
 export default function LeaderboardAnalytics() {
   const { data, isLoading, error } = useAnalyticsLeaderboard();
 
-  if (isLoading) return <Card title="Leaderboard Points Distribution by Reason" bordered={false}><Skeleton active paragraph={{ rows: 4 }} /></Card>;
+  if (isLoading) return <Card title="Leaderboard Points Distribution by Reason" variant="borderless"><Skeleton active paragraph={{ rows: 4 }} /></Card>;
   if ((error as any)?.status === 403) return <Result status="403" title="Access Denied" subTitle="This analytics tab is restricted to platform administrators." />;
   if (error || !data) return <Result status="error" title="Failed to load leaderboard data" />;
 
   return (
-    <Card title="Leaderboard Points Distribution by Reason" bordered={false}>
+    <Card title="Leaderboard Points Distribution by Reason" variant="borderless">
       <Table 
         dataSource={data.reason_breakdown} 
         rowKey="reason" 

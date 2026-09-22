@@ -8,15 +8,15 @@ export default function ClubAnalytics() {
 
   if (isLoading) return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <Card title="Top Clubs by Events Hosted" bordered={false}><Skeleton.Button active style={{ width: '100%', height: 320 }} shape="square" /></Card>
-      <Card title="Clubs Activity Overview" bordered={false}><Skeleton active paragraph={{ rows: 4 }} /></Card>
+      <Card title="Top Clubs by Events Hosted" variant="borderless"><Skeleton.Button active style={{ width: '100%', height: 320 }} shape="square" /></Card>
+      <Card title="Clubs Activity Overview" variant="borderless"><Skeleton active paragraph={{ rows: 4 }} /></Card>
     </div>
   );
   if (error || !data) return <Result status="error" title="Failed to load clubs data" />;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <Card title="Top Clubs by Events Hosted" bordered={false}>
+      <Card title="Top Clubs by Events Hosted" variant="borderless">
         <div style={{ height: 320, width: '100%' }}>
           {data.clubs.length === 0 ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><Empty description="No clubs found" /></div>
@@ -35,7 +35,7 @@ export default function ClubAnalytics() {
         </div>
       </Card>
       
-      <Card title="Clubs Activity Overview" bordered={false}>
+      <Card title="Clubs Activity Overview" variant="borderless">
         <Table 
           dataSource={data.clubs} 
           rowKey="id" 

@@ -2,32 +2,32 @@
 
 @layer base {
   :root {
-    --m3-primary: #0061A4;
-    --m3-on-primary: #FFFFFF;
-    --m3-primary-container: #D1E4FF;
-    --m3-on-primary-container: #001D36;
-    
-    --m3-secondary: #535F70;
-    --m3-on-secondary: #FFFFFF;
-    --m3-secondary-container: #D7E3F7;
-    --m3-on-secondary-container: #101C2B;
-    
-    --m3-tertiary: #6B5778;
-    --m3-on-tertiary: #FFFFFF;
-    --m3-tertiary-container: #F2DAFF;
+    --m3-primary: #0061a4;
+    --m3-on-primary: #ffffff;
+    --m3-primary-container: #d1e4ff;
+    --m3-on-primary-container: #001d36;
+
+    --m3-secondary: #535f70;
+    --m3-on-secondary: #ffffff;
+    --m3-secondary-container: #d7e3f7;
+    --m3-on-secondary-container: #101c2b;
+
+    --m3-tertiary: #6b5778;
+    --m3-on-tertiary: #ffffff;
+    --m3-tertiary-container: #f2daff;
     --m3-on-tertiary-container: #251431;
-    
-    --m3-error: #BA1A1A;
-    --m3-on-error: #FFFFFF;
-    --m3-error-container: #FFDAD6;
+
+    --m3-error: #ba1a1a;
+    --m3-on-error: #ffffff;
+    --m3-error-container: #ffdad6;
     --m3-on-error-container: #410002;
-    
-    --m3-surface: #FDFBFF;
-    --m3-on-surface: #1A1C1E;
-    --m3-surface-variant: #DFE2E6;
-    --m3-on-surface-variant: #43474E;
-    --m3-outline: #73777F;
-    --m3-outline-variant: #C3C7CF;
+
+    --m3-surface: #fdfbff;
+    --m3-on-surface: #1a1c1e;
+    --m3-surface-variant: #dfe2e6;
+    --m3-on-surface-variant: #43474e;
+    --m3-outline: #73777f;
+    --m3-outline-variant: #c3c7cf;
 
     /* Kinetic Noir Editorial Light Theme Tokens */
     --stitch-background: #f7f9fb;
@@ -46,80 +46,80 @@
   }
 
   .dark {
-    --m3-primary: #9ECAFE;
+    --m3-primary: #9ecafe;
     --m3-on-primary: #003258;
-    --m3-primary-container: #00497D;
-    --m3-on-primary-container: #D1E4FF;
-    
-    --m3-secondary: #BBC7DB;
+    --m3-primary-container: #00497d;
+    --m3-on-primary-container: #d1e4ff;
+
+    --m3-secondary: #bbc7db;
     --m3-on-secondary: #253140;
-    --m3-secondary-container: #3B4858;
-    --m3-on-secondary-container: #D7E3F7;
-    
-    --m3-tertiary: #D6BEE4;
-    --m3-on-tertiary: #3B2948;
-    --m3-tertiary-container: #523F5F;
-    --m3-on-tertiary-container: #F2DAFF;
-    
-    --m3-error: #FFB4AB;
+    --m3-secondary-container: #3b4858;
+    --m3-on-secondary-container: #d7e3f7;
+
+    --m3-tertiary: #d6bee4;
+    --m3-on-tertiary: #3b2948;
+    --m3-tertiary-container: #523f5f;
+    --m3-on-tertiary-container: #f2daff;
+
+    --m3-error: #ffb4ab;
     --m3-on-error: #690005;
-    --m3-error-container: #93000A;
-    --m3-on-error-container: #FFDAD6;
-    
-    --m3-surface: #1A1C1E;
-    --m3-on-surface: #E3E2E6;
-    --m3-surface-variant: #43474E;
-    --m3-on-surface-variant: #C3C7CF;
-    --m3-outline: #8D9199;
-    --m3-outline-variant: #43474E;
-    
+    --m3-error-container: #93000a;
+    --m3-on-error-container: #ffdad6;
+
+    --m3-surface: #1a1c1e;
+    --m3-on-surface: #e3e2e6;
+    --m3-surface-variant: #43474e;
+    --m3-on-surface-variant: #c3c7cf;
+    --m3-outline: #8d9199;
+    --m3-outline-variant: #43474e;
+
     /* Kinetic Noir Editorial Dark Theme Tokens */
-    --stitch-background: #0A0A0A;
-    --stitch-on-background: #FFFFFF;
-    --stitch-primary: #0047FF;
-    --stitch-on-primary: #FFFFFF;
-    --stitch-secondary: #A0A0A0;
-    --stitch-surface: #1A1A1A;
-    --stitch-surface-container-lowest: #0A0A0A;
+    --stitch-background: #0a0a0a;
+    --stitch-on-background: #ffffff;
+    --stitch-primary: #0047ff;
+    --stitch-on-primary: #ffffff;
+    --stitch-secondary: #a0a0a0;
+    --stitch-surface: #1a1a1a;
+    --stitch-surface-container-lowest: #0a0a0a;
     --stitch-surface-variant: #222222;
-    --stitch-on-surface: #FFFFFF;
-    --stitch-on-surface-variant: #A0A0A0;
+    --stitch-on-surface: #ffffff;
+    --stitch-on-surface-variant: #a0a0a0;
     --stitch-outline: #333333;
     --stitch-outline-variant: #222222;
-    --stitch-surface-tint: #0047FF;
+    --stitch-surface-tint: #0047ff;
   }
 }
 
 @theme inline {
-  --color-primary-base: #2563EB;
-  --color-primary-hover: #1D4ED8;
-  --color-primary-surface: #EFF6FF;
+  --color-primary-base: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-surface: #eff6ff;
 
-  --color-secondary-base: #4B5563;
+  --color-secondary-base: #4b5563;
   --color-secondary-hover: #374151;
-  --color-accent-base: #8B5CF6;
+  --color-accent-base: #8b5cf6;
 
-  --color-success-base: #16A34A;
-  --color-success-surface: #DCFCE7;
-  
-  --color-warning-base: #D97706;
-  --color-warning-surface: #FEF3C7;
-  
-  --color-error-base: #DC2626;
-  --color-error-surface: #FEE2E2;
-  
-  --color-info-base: #0284C7;
-  --color-info-surface: #E0F2FE;
+  --color-success-base: #16a34a;
+  --color-success-surface: #dcfce7;
 
-  --color-gray-50: #F9FAFB;
-  --color-gray-100: #F3F4F6;
-  --color-gray-200: #E5E7EB;
-  --color-gray-300: #D1D5DB;
-  --color-gray-400: #9CA3AF;
-  --color-gray-500: #6B7280;
-  --color-gray-600: #4B5563;
+  --color-warning-base: #d97706;
+  --color-warning-surface: #fef3c7;
+
+  --color-error-base: #dc2626;
+  --color-error-surface: #fee2e2;
+
+  --color-info-base: #0284c7;
+  --color-info-surface: #e0f2fe;
+
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
   --color-gray-700: #374151;
-  --color-gray-800: #1F2937;
+  --color-gray-800: #1f2937;
   --color-gray-900: #111827;
 
   --font-sans: var(--font-geist-sans);
@@ -130,27 +130,27 @@
   --color-m3-on-primary: var(--m3-on-primary);
   --color-m3-primary-container: var(--m3-primary-container);
   --color-m3-on-primary-container: var(--m3-on-primary-container);
-  
+
   --color-m3-secondary: var(--m3-secondary);
   --color-m3-on-secondary: var(--m3-on-secondary);
   --color-m3-secondary-container: var(--m3-secondary-container);
   --color-m3-on-secondary-container: var(--m3-on-secondary-container);
-  
+
   --color-m3-tertiary: var(--m3-tertiary);
   --color-m3-on-tertiary: var(--m3-on-tertiary);
   --color-m3-tertiary-container: var(--m3-tertiary-container);
   --color-m3-on-tertiary-container: var(--m3-on-tertiary-container);
-  
+
   --color-m3-error: var(--m3-error);
   --color-m3-on-error: var(--m3-on-error);
   --color-m3-error-container: var(--m3-error-container);
   --color-m3-on-error-container: var(--m3-on-error-container);
-  
+
   --color-m3-surface: var(--m3-surface);
   --color-m3-on-surface: var(--m3-on-surface);
   --color-m3-surface-variant: var(--m3-surface-variant);
   --color-m3-on-surface-variant: var(--m3-on-surface-variant);
-  
+
   --color-m3-outline: var(--m3-outline);
   /* Stitch / Kinetic Editorial Tokens */
   --color-stitch-background: var(--stitch-background);
@@ -159,7 +159,9 @@
   --color-stitch-on-primary: var(--stitch-on-primary);
   --color-stitch-secondary: var(--stitch-secondary);
   --color-stitch-surface: var(--stitch-surface);
-  --color-stitch-surface-container-lowest: var(--stitch-surface-container-lowest);
+  --color-stitch-surface-container-lowest: var(
+    --stitch-surface-container-lowest
+  );
   --color-stitch-surface-variant: var(--stitch-surface-variant);
   --color-stitch-on-surface: var(--stitch-on-surface);
   --color-stitch-on-surface-variant: var(--stitch-on-surface-variant);
@@ -244,3 +246,5 @@
 body {
   font-family: var(--font-sans);
 }
+
+
