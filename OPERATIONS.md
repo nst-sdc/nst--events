@@ -79,6 +79,27 @@ Automated deployments via `.github/workflows/deploy.yml` run on the self-hosted 
   - **No cluster-admin**: The token cannot access or list resources in `kube-system`, `default`, or other cluster namespaces.
   - **No secret reading**: The deployer cannot read generic secrets (such as database credentials or API secrets) in `nst-events`.
 
+### Migration Job RBAC Bootstrap
+
+Prisma migrations run as a short-lived Kubernetes Job before the API rollout.
+The deployer does not modify its own main Role. Instead, a cluster administrator
+must apply the separate least-privilege Role and RoleBinding once:
+
+```bash
+kubectl apply -f infrastructure/kubernetes/github-actions-migration-rbac.yaml
+```
+
+This grants only the `batch/jobs` and pod-log permissions needed to create,
+observe, retry, and read logs from migration Jobs in the `nst-events` namespace.
+It does not grant secret access, deployment administration, or cross-namespace
+access. Verify the bootstrap with:
+
+```bash
+kubectl auth can-i get jobs.batch \
+  --as=system:serviceaccount:nst-events:github-actions-deployer \
+  --namespace=nst-events
+```
+
 ### Revocation & Rotation Procedure
 If `nst-n6` is decommissioned, compromised, or the token requires periodic rotation:
 1. **Immediate Revocation**: Delete the static token secret from the cluster:
