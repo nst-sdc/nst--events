@@ -10,15 +10,15 @@ export default function AttendanceAnalytics({ dateRange }: { dateRange: { start:
 
   if (isLoading) return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <Card title="Attendance Over Time" bordered={false}><Skeleton.Button active style={{ width: '100%', height: 320 }} shape="square" /></Card>
-      <Card title="Failure Reasons" bordered={false}><Skeleton.Button active style={{ width: '100%', height: 320 }} shape="square" /></Card>
+      <Card title="Attendance Over Time" variant="borderless"><Skeleton.Button active style={{ width: '100%', height: 320 }} shape="square" /></Card>
+      <Card title="Failure Reasons" variant="borderless"><Skeleton.Button active style={{ width: '100%', height: 320 }} shape="square" /></Card>
     </div>
   );
   if (error || !data) return <Result status="error" title="Failed to load attendance data" />;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <Card title="Attendance Over Time" bordered={false}>
+      <Card title="Attendance Over Time" variant="borderless">
         <div style={{ height: 320, width: '100%' }}>
           {data.time_series.length === 0 ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><Empty description="No attendance records in this period" /></div>
@@ -38,7 +38,7 @@ export default function AttendanceAnalytics({ dateRange }: { dateRange: { start:
         </div>
       </Card>
 
-      <Card title="Failure Reasons" bordered={false}>
+      <Card title="Failure Reasons" variant="borderless">
         <div style={{ height: 320, width: '100%' }}>
           {data.failure_breakdown.length === 0 ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><Empty description="No failures recorded" /></div>

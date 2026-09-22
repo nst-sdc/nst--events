@@ -204,6 +204,8 @@ const loginStyles = `
   }
   .lp-btn-google:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
 
+
+
   .lp-google-icon-wrap {
     width: 22px; height: 22px;
     background: #fff;
@@ -384,6 +386,7 @@ function LoginContent() {
     window.location.href = `${authBase}/auth/google`;
   };
 
+
   const handleDismissError = () => {
     setIsDismissed(true);
     const params = new URLSearchParams(searchParams.toString());
@@ -485,6 +488,7 @@ function LoginContent() {
               </>
             )}
           </button>
+
 
           {/* ── Footer ── */}
           <div className="lp-footer">
