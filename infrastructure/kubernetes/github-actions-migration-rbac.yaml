@@ -1,0 +1,32 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: github-actions-migration-job-runner
+  namespace: nst-events
+rules:
+  # The CI deployer creates a uniquely named Prisma migration Job, waits for
+  # completion, and reads its logs. These permissions deliberately exclude
+  # secrets, deployments, and resources outside the nst-events namespace.
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "delete", "get", "list", "patch", "watch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: github-actions-migration-job-runner
+  namespace: nst-events
+subjects:
+  - kind: ServiceAccount
+    name: github-actions-deployer
+    namespace: nst-events
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: github-actions-migration-job-runner
