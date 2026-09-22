@@ -1,36 +1,47 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../lib/api';
-import { AcademicBatch } from './useAcademicBatches';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiClient } from "../lib/api";
+import { AcademicBatch } from "./useAcademicBatches";
 
-export function useAdminAcademicBatches() {
+export function useAdminAcademicBatches(enabled = true) {
   const queryClient = useQueryClient();
 
   const query = useQuery<AcademicBatch[]>({
-    queryKey: ['admin-academic-batches'],
-    queryFn: () => apiClient<AcademicBatch[]>('/v1/academic-batches'),
+    queryKey: ["admin-academic-batches"],
+    queryFn: () => apiClient<AcademicBatch[]>("/v1/academic-batches"),
+    enabled,
   });
 
   const createBatch = useMutation({
-    mutationFn: (data: { program_id: string; admission_year: number; graduation_year: number }) => 
-      apiClient<AcademicBatch>('/v1/admin/academic-batches', {
-        method: 'POST',
+    mutationFn: (data: {
+      program_id: string;
+      admission_year: number;
+      graduation_year: number;
+    }) =>
+      apiClient<AcademicBatch>("/v1/admin/academic-batches", {
+        method: "POST",
         body: JSON.stringify(data),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-academic-batches'] });
-      queryClient.invalidateQueries({ queryKey: ['academic-batches'] });
+      queryClient.invalidateQueries({ queryKey: ["admin-academic-batches"] });
+      queryClient.invalidateQueries({ queryKey: ["academic-batches"] });
     },
   });
 
   const updateBatch = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: { admission_year?: number; graduation_year?: number } }) => 
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: { admission_year?: number; graduation_year?: number };
+    }) =>
       apiClient<AcademicBatch>(`/v1/admin/academic-batches/${id}`, {
-        method: 'PATCH',
+        method: "PATCH",
         body: JSON.stringify(data),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-academic-batches'] });
-      queryClient.invalidateQueries({ queryKey: ['academic-batches'] });
+      queryClient.invalidateQueries({ queryKey: ["admin-academic-batches"] });
+      queryClient.invalidateQueries({ queryKey: ["academic-batches"] });
     },
   });
 
