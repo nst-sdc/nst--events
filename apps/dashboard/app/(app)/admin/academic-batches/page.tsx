@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Table, Button, Modal, Form, InputNumber, Select, message, Tag } from 'antd';
+import { Table, Button, Modal, Form, InputNumber, Select, Tag, App } from 'antd';
 import { EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useAdminAcademicBatches } from '../../../../hooks/useAdminAcademicBatches';
 import { useAdminAcademicPrograms } from '../../../../hooks/useAdminAcademicPrograms';
@@ -11,6 +11,7 @@ import { canManageAcademicCatalog } from '../../../../lib/auth-helpers';
 import { AdminPageHeader } from '../../../../components/admin/AdminPageHeader';
 
 export default function AcademicBatchesPage() {
+  const { message } = App.useApp();
   const { data: currentUser } = useCurrentUser();
   const { data, isLoading, isError, createBatch, updateBatch } = useAdminAcademicBatches();
   const { data: programsData, isLoading: isProgramsLoading } = useAdminAcademicPrograms();

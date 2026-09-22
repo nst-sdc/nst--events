@@ -541,7 +541,7 @@ export default function UserManagementPage() {
               dataSource={students} 
               columns={isPlatformAdmin || students.some(row => row.user) ? studentColumns : studentColumns.filter(c => c.key !== 'actions')} 
               rowKey="id" 
-              pagination={{ pageSize: 50 }} 
+              pagination={{ pageSize: 50, showSizeChanger: true }} 
               scroll={{ x: 800 }} 
               className="border-t-0"
               size="middle"

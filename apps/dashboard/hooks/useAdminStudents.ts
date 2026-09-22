@@ -23,10 +23,11 @@ export interface AuthorizedStudent {
 }
 
 export function useAdminStudents(q?: string, status?: string) {
-  return useQuery({
+  return useQuery<{ data: AuthorizedStudent[]; pagination: any }>({
     queryKey: ['adminStudents', q, status],
     queryFn: async () => {
       const params = new URLSearchParams();
+      params.set('limit', '100');
       if (q) params.set('q', q);
       if (status) params.set('status', status);
       

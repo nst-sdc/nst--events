@@ -6,7 +6,7 @@ import { useCurrentUser } from '../../../hooks/useCurrentUser';
 import { useAuditLogs } from '../../../hooks/useAuditLogs';
 import { useRecalculateLeaderboard } from '../../../hooks/useLeaderboard';
 import { canRecalculateLeaderboard } from '../../../lib/auth-helpers';
-import { Card, Button, Skeleton, Alert, Typography, Row, Col, Table, theme, Modal, message } from 'antd';
+import { Card, Button, Skeleton, Alert, Typography, Row, Col, Table, theme, App } from 'antd';
 
 const { Title, Text } = Typography;
 
@@ -28,6 +28,7 @@ function formatRelativeTime(dateString: string) {
 }
 
 export default function AdminHubPage() {
+  const { message, modal } = App.useApp();
   const router = useRouter();
   const { token } = theme.useToken();
   const { data: currentUser, isLoading: isUserLoading } = useCurrentUser();
@@ -42,7 +43,7 @@ export default function AdminHubPage() {
   const recalculateLeaderboard = useRecalculateLeaderboard();
 
   const handleRecalculateLeaderboard = () => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Recalculate Leaderboard?',
       content: 'Are you sure you want to trigger a full leaderboard recalculation? This may take some time depending on the amount of data.',
       okText: 'Recalculate Now',
