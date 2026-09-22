@@ -85,11 +85,18 @@ export const apiClient = async <T = any>(endpoint: string, options: RequestInit 
   // Web Authentication Integration Boundary
   // Expects cookies (httpOnly) or localStorage fallback depending on future auth implementation.
   // Currently backend relies on `Authorization: Bearer` or cookies. Dashboard will use cookies.
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(!isFormData ? { 'Content-Type': 'application/json' } : {}),
     'X-Client-Platform': 'web',
     ...(options.headers as Record<string, string> || {}),
   };
+
+  if (isFormData) {
+    delete headers['Content-Type'];
+    delete headers['content-type'];
+  }
 
   const authStore = getWebAuthStore();
 
