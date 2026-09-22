@@ -1,11 +1,11 @@
-import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '../lib/api';
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "../lib/api";
 
 export interface ClubListItem {
   id: string;
   name: string;
   description: string;
-  status: 'ACTIVE' | 'INACTIVE' | 'DISSOLVED';
+  status: "ACTIVE" | "INACTIVE" | "DISSOLVED";
   banner_url: string | null;
   event_count: number;
   member_count: number;
@@ -19,15 +19,18 @@ export interface ClubsResponse {
   };
 }
 
-export const useClubs = (query: string = '') => {
+export const useClubs = (query: string = "", enabled = true) => {
   return useQuery<ClubsResponse>({
-    queryKey: query ? ['clubs', 'search', query] : ['clubs', 'list'],
+    queryKey: query ? ["clubs", "search", query] : ["clubs", "list"],
     queryFn: () => {
       if (query) {
-        return apiClient<ClubsResponse>(`/clubs/search?q=${encodeURIComponent(query)}`);
+        return apiClient<ClubsResponse>(
+          `/clubs/search?q=${encodeURIComponent(query)}`,
+        );
       }
-      return apiClient<ClubsResponse>('/clubs');
+      return apiClient<ClubsResponse>("/clubs");
     },
     staleTime: 10 * 60 * 1000, // 10 minutes from clubs.md
+    enabled,
   });
 };

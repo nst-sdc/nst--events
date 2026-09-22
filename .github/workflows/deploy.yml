@@ -90,7 +90,9 @@ jobs:
                 BUILD_DASHBOARD=true
               fi
 
-              if echo "$DIFF" | grep -qE '^(apps/api/|docker/Dockerfile\.api)'; then
+              # The API image is also the migration runner. Rebuild it whenever
+              # database migrations or this deploy workflow change.
+              if echo "$DIFF" | grep -qE '^(apps/api/|packages/database/|docker/Dockerfile\.api|\.github/workflows/deploy\.yml)'; then
                 BUILD_API=true
               fi
 
@@ -137,6 +139,31 @@ jobs:
           echo "Applying PodDisruptionBudgets & Ingress in nst-events..."
           kubectl apply -f infrastructure/kubernetes/pod-disruption-budgets.yaml
           kubectl apply -f infrastructure/kubernetes/ingress.yaml
+
+      - name: Run database migrations
+        if: steps.filter.outputs.build_api == 'true'
+        run: |
+          JOB_NAME="nst-db-migrate-${{ steps.vars.outputs.short_sha }}"
+          API_IMAGE="ghcr.io/nst-sdc/nst-api:${{ steps.vars.outputs.target_sha }}"
+
+          echo "Running Prisma migrations with ${API_IMAGE}..."
+          kubectl create job "${JOB_NAME}" \
+            --image="${API_IMAGE}" \
+            --dry-run=client \
+            --output=json -- \
+            /app/node_modules/.bin/prisma migrate deploy --schema=packages/database/prisma/schema.prisma | \
+            jq \
+              '.spec.backoffLimit = 1
+              | .spec.template.metadata.labels.app = "nst-migration"
+              | .spec.template.spec.containers[0].envFrom = [{"secretRef": {"name": "nst-api-secrets"}}]' | \
+            kubectl apply --namespace=nst-events --filename=-
+
+          if ! kubectl wait --for=condition=complete "job/${JOB_NAME}" --namespace=nst-events --timeout=300s; then
+            kubectl logs "job/${JOB_NAME}" --namespace=nst-events || true
+            exit 1
+          fi
+
+          kubectl logs "job/${JOB_NAME}" --namespace=nst-events
 
       - name: Deploy & Rollout Gate - API
         if: steps.filter.outputs.build_api == 'true'
