@@ -1,0 +1,22 @@
+# Snapshot the Postgres volume every 6 hours, keeping the last 4 snapshots.
+#
+# This job only exists in the cluster; it has to be attached to the Postgres
+# volume by labelling that volume (PVC volume names are cluster-specific):
+#
+#   kubectl label volumes.longhorn.io <postgres-pvc-volume> -n longhorn-system \
+#     recurring-job.longhorn.io/nst-postgres-snapshot=enabled --overwrite
+#
+# Longhorn backups (off-site) additionally require an S3-compatible backup
+# target to be configured; only local snapshots are taken without one.
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: nst-postgres-snapshot
+  namespace: longhorn-system
+spec:
+  name: nst-postgres-snapshot
+  cron: "0 */6 * * *"
+  task: snapshot
+  retain: 4
+  concurrency: 1
+  labels: {}
