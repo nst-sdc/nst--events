@@ -41,7 +41,7 @@ export async function loginWithIdToken(
   const normalizedEmail = email.trim().toLowerCase();
   const domain = normalizedEmail.split('@')[1];
 
-  const ALLOWED_DOMAINS = env.ALLOWED_EMAIL_DOMAINS.split(',').map((d) => d.trim());
+  const ALLOWED_DOMAINS = env.ALLOWED_EMAIL_DOMAINS.split(',').map((d) => d.trim().toLowerCase());
   if (!ALLOWED_DOMAINS.includes(domain)) {
     throw new ForbiddenError('INSTITUTIONAL_DOMAIN_NOT_ALLOWED');
   }
