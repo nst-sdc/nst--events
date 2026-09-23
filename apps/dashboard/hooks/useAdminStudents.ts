@@ -27,7 +27,7 @@ export function useAdminStudents(q?: string, status?: string, enabled = true) {
     queryKey: ["adminStudents", q, status],
     queryFn: async () => {
       const params = new URLSearchParams();
-      params.set("limit", "100");
+      params.set("limit", "10000");
       if (q) params.set("q", q);
       if (status) params.set("status", status);
 
