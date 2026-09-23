@@ -59,8 +59,15 @@ export function createApp(): Express {
 
 
   const globalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 1000, // Limit each IP to 1000 requests per `window` (here, per 15 minutes)
+    keyGenerator: (req) => {
+      const cfIp = req.headers['cf-connecting-ip'] as string;
+      if (cfIp) return cfIp;
+      const xForwardedFor = req.headers['x-forwarded-for'] as string;
+      if (xForwardedFor) return xForwardedFor.split(',')[0].trim();
+      return req.ip || 'unknown_ip';
+    },
     message: { error: 'Too many requests, please try again later.' },
     standardHeaders: true,
     legacyHeaders: false,
@@ -81,6 +88,7 @@ export function createApp(): Express {
 
   app.use('/auth', authRouter);
   app.use('/users', usersRouter);
+  app.use('/v1/users', usersRouter);
   app.use('/clubs', clubsRouter);
   app.use('/v1', sseRouter); // Mounted at /v1 (handles /events/:id/live and /notifications/live)
   app.use('/v1/events', eventsRouter);
