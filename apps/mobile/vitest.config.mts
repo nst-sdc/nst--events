@@ -11,6 +11,11 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    // Pin NODE_ENV so an ambient `production` value can't force React's
+    // production build, which omits `act()` and breaks the test renderer.
+    env: {
+      NODE_ENV: 'test',
+    },
   },
   resolve: {
     alias: {
