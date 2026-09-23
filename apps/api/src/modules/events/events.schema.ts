@@ -39,38 +39,30 @@ const EventBodySchema = z.object({
 });
 
 const validateEventBody = (data: z.infer<typeof EventBodySchema> | Partial<z.infer<typeof EventBodySchema>>, ctx: z.RefinementCtx) => {
-  if (data.registration_start_time && data.registration_end_time) {
-    const regStart = new Date(data.registration_start_time).getTime();
-    const regEnd = new Date(data.registration_end_time).getTime();
-    if (regStart >= regEnd) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'registration_start_time must be before registration_end_time',
-        path: ['registration_start_time']
-      });
-    }
-    
-    if (data.start_time) {
-      const eventStart = new Date(data.start_time).getTime();
-      if (regStart < eventStart) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'registration_start_time must be greater than or equal to event start_time',
-          path: ['registration_start_time']
-        });
-      }
-    }
-    
-    if (data.end_time) {
-      const eventEnd = new Date(data.end_time).getTime();
-      if (regEnd > eventEnd) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'registration_end_time must be less than or equal to event end_time',
-          path: ['registration_end_time']
-        });
-      }
-    }
+  let eventStart: number | undefined;
+  let eventEnd: number | undefined;
+  let regStart: number | undefined;
+  let regEnd: number | undefined;
+
+  if (data.start_time) eventStart = new Date(data.start_time).getTime();
+  if (data.end_time) eventEnd = new Date(data.end_time).getTime();
+  if (data.registration_start_time) regStart = new Date(data.registration_start_time).getTime();
+  if (data.registration_end_time) regEnd = new Date(data.registration_end_time).getTime();
+
+  if (eventStart !== undefined && eventEnd !== undefined && eventStart >= eventEnd) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'start_time must be before end_time', path: ['end_time'] });
+  }
+
+  if (regStart !== undefined && regEnd !== undefined && regStart >= regEnd) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'registration_start_time must be before registration_end_time', path: ['registration_start_time'] });
+  }
+
+  if (regStart !== undefined && eventEnd !== undefined && regStart >= eventEnd) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'registration_start_time must be before event end_time', path: ['registration_start_time'] });
+  }
+
+  if (regEnd !== undefined && eventEnd !== undefined && regEnd > eventEnd) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'registration_end_time must be less than or equal to event end_time', path: ['registration_end_time'] });
   }
 
   if (data.audience === 'SPECIFIC_BATCHES' && (!data.audience_batch_ids || data.audience_batch_ids.length === 0)) {
@@ -112,11 +104,28 @@ const validateEventBody = (data: z.infer<typeof EventBodySchema> | Partial<z.inf
 };
 
 export const CreateEventSchema = z.object({
-  body: EventBodySchema.superRefine(validateEventBody),
+  body: EventBodySchema.superRefine(validateEventBody).superRefine((data, ctx) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (new Date(data.start_time).getTime() < today.getTime()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'start_time cannot be in the past (before today)',
+        path: ['start_time']
+      });
+    }
+    if (data.registration_start_time && new Date(data.registration_start_time).getTime() < today.getTime()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'registration_start_time cannot be in the past (before today)',
+        path: ['registration_start_time']
+      });
+    }
+  }),
 });
 
 export const UpdateEventSchema = z.object({
-  body: EventBodySchema.omit({ club_ids: true }).partial().superRefine(validateEventBody),
+  body: EventBodySchema.omit({ club_ids: true }).partial(),
 });
 
 export const ListEventsQuerySchema = z.object({
@@ -139,22 +148,36 @@ export const RejectEventSchema = z.object({
   }),
 });
 
+const SessionBodySchema = z.object({
+  title: z.string().min(3).max(255),
+  start_time: z.string().datetime(),
+  end_time: z.string().datetime(),
+  open_at: z.string().datetime(),
+  close_at: z.string().datetime(),
+  geofence_radius: z.number().positive().default(50),
+  venue_latitude: z.number().min(-90).max(90).optional(),
+  venue_longitude: z.number().min(-180).max(180).optional(),
+  location_accuracy: z.number().min(0).optional(),
+});
+
 export const CreateSessionSchema = z.object({
-  body: z.object({
-    title: z.string().min(3).max(255),
-    start_time: z.string().datetime(),
-    end_time: z.string().datetime(),
-    open_at: z.string().datetime(),
-    close_at: z.string().datetime(),
-    geofence_radius: z.number().positive().default(50),
-    venue_latitude: z.number().min(-90).max(90).optional(),
-    venue_longitude: z.number().min(-180).max(180).optional(),
-    location_accuracy: z.number().min(0).optional(),
+  body: SessionBodySchema.superRefine((data, ctx) => {
+    const start = new Date(data.start_time).getTime();
+    const end = new Date(data.end_time).getTime();
+    const open = new Date(data.open_at).getTime();
+    const close = new Date(data.close_at).getTime();
+
+    if (start >= end) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'start_time must be before end_time', path: ['end_time'] });
+    }
+    if (open >= close) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'open_at must be before close_at', path: ['close_at'] });
+    }
   }),
 });
 
 export const UpdateSessionSchema = z.object({
-  body: CreateSessionSchema.shape.body.partial(),
+  body: SessionBodySchema.partial(),
 });
 
 export type CreateEventInput = z.infer<typeof CreateEventSchema>['body'];

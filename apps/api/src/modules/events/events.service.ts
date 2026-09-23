@@ -63,6 +63,8 @@ export const createEvent = async (callerId: string, data: CreateEventInput): Pro
         description: data.description,
         startTime: data.start_time,
         endTime: data.end_time,
+        registrationStartTime: data.registration_start_time,
+        registrationEndTime: data.registration_end_time,
         locationName: data.location_name,
         eventType: data.event_type,
         visibility: data.visibility,
@@ -297,7 +299,7 @@ export const updateEvent = async (callerId: string, eventId: string, data: Updat
   return withUserContext(callerId, async (tx) => {
     const existing = await tx.event.findUnique({
       where: { id: eventId },
-      select: { state: true, deletedAt: true, endTime: true },
+      select: { state: true, deletedAt: true, startTime: true, endTime: true, registrationStartTime: true, registrationEndTime: true },
     });
 
     if (!existing || existing.deletedAt) {
@@ -312,6 +314,35 @@ export const updateEvent = async (callerId: string, eventId: string, data: Updat
       if (new Date(data.end_time).getTime() < existing.endTime.getTime()) {
         throw new UnprocessableEntityError('Event end time can only be extended once published');
       }
+    }
+
+    const mergedStart = data.start_time !== undefined ? new Date(data.start_time).getTime() : existing.startTime.getTime();
+    const mergedEnd = data.end_time !== undefined ? new Date(data.end_time).getTime() : existing.endTime.getTime();
+    
+    // Explicit undefined check because null is a valid value for registration times
+    let mergedRegStart: number | undefined;
+    if (data.registration_start_time !== undefined) {
+      mergedRegStart = data.registration_start_time ? new Date(data.registration_start_time).getTime() : undefined;
+    } else {
+      mergedRegStart = existing.registrationStartTime ? existing.registrationStartTime.getTime() : undefined;
+    }
+
+    let mergedRegEnd: number | undefined;
+    if (data.registration_end_time !== undefined) {
+      mergedRegEnd = data.registration_end_time ? new Date(data.registration_end_time).getTime() : undefined;
+    } else {
+      mergedRegEnd = existing.registrationEndTime ? existing.registrationEndTime.getTime() : undefined;
+    }
+
+    if (mergedStart >= mergedEnd) throw new UnprocessableEntityError('start_time must be before end_time');
+    if (mergedRegStart !== undefined && mergedRegEnd !== undefined && mergedRegStart >= mergedRegEnd) {
+      throw new UnprocessableEntityError('registration_start_time must be before registration_end_time');
+    }
+    if (mergedRegStart !== undefined && mergedRegStart >= mergedEnd) {
+      throw new UnprocessableEntityError('registration_start_time must be before event end_time');
+    }
+    if (mergedRegEnd !== undefined && mergedRegEnd > mergedEnd) {
+      throw new UnprocessableEntityError('registration_end_time must be less than or equal to event end_time');
     }
 
     const event = await tx.event.update({
@@ -641,7 +672,7 @@ export const updateSession = async (
   return withUserContext(callerId, async (tx) => {
     const session = await tx.attendanceSession.findUnique({
       where: { id: sessionId },
-      select: { eventId: true, deletedAt: true },
+      select: { eventId: true, deletedAt: true, startTime: true, endTime: true, openAt: true, closeAt: true },
     });
 
     if (!session || session.deletedAt || session.eventId !== eventId) {
@@ -662,6 +693,14 @@ export const updateSession = async (
         throw new UnprocessableEntityError('EVENT_LOCKED');
       }
     }
+
+    const mergedStart = data.start_time !== undefined ? new Date(data.start_time).getTime() : session.startTime.getTime();
+    const mergedEnd = data.end_time !== undefined ? new Date(data.end_time).getTime() : session.endTime.getTime();
+    const mergedOpen = data.open_at !== undefined ? new Date(data.open_at).getTime() : session.openAt.getTime();
+    const mergedClose = data.close_at !== undefined ? new Date(data.close_at).getTime() : session.closeAt.getTime();
+
+    if (mergedStart >= mergedEnd) throw new UnprocessableEntityError('start_time must be before end_time');
+    if (mergedOpen >= mergedClose) throw new UnprocessableEntityError('open_at must be before close_at');
 
     return tx.attendanceSession.update({
       where: { id: sessionId },
