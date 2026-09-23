@@ -557,7 +557,7 @@ export default function StudentHomePage() {
           category: evt.eventType || fallbacks.category,
           title: evt.title || fallbacks.title,
           image: meta.banner_url || fallbacks.image,
-          description: meta.description || fallbacks.description,
+          description: evt.description || meta.description || fallbacks.description,
           venue: evt.locationName || fallbacks.venue,
         };
       })

@@ -6,6 +6,7 @@ export type EventLockState = 'UNLOCKED' | 'MANUALLY_LOCKED' | 'PERMANENTLY_LOCKE
 export interface Event {
   id: string;
   title: string;
+  description?: string | null;
   startTime: string;
   endTime: string;
   registrationStartTime: string | null;
