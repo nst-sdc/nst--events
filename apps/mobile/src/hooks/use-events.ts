@@ -16,6 +16,8 @@ export interface EventResponse {
   maxCapacity: number | null;
   registrationCount: number;
   audience: string;
+  registrationStartTime?: string | null;
+  registrationEndTime?: string | null;
   metadata: any;
   isLocked?: boolean;
   lockDeadline?: string;

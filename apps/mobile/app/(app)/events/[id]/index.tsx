@@ -9,6 +9,8 @@ import { useEventSessions } from '../../../../src/hooks/use-events';
 import { useAttendanceHistory } from '../../../../src/hooks/use-attendance-history';
 import { useUserProfile } from '../../../../src/hooks/use-user-profile';
 import { useRegistration } from '../../../../src/hooks/use-registration';
+import { useEventFormFields } from '../../../../src/hooks/useEventFormFields';
+import { useEventForms } from '../../../../src/hooks/useEventForms';
 import { useNetworkStatus } from '../../../../src/infrastructure/network';
 import { useAppTheme } from '../../../../src/store/theme-store';
 import { Button } from '../../../../src/ui/Button';
@@ -52,6 +54,8 @@ export default function EventScreen() {
     queryFn: () => apiClient(`/v1/events/${id}`),
   });
 
+  const { data: eventFormFields } = useEventFormFields(id as string);
+
   const { data: registration, isLoading: isRegLoading } = useQuery({
     queryKey: ['events', id, 'registration'],
     queryFn: () => apiClient(`/v1/events/${id}/my-registration`),
@@ -64,11 +68,24 @@ export default function EventScreen() {
   
   const isFull = event?.maxCapacity ? (event.registrationCount || 0) >= event.maxCapacity : false;
   const isWaitlistCancel = (registration?.status || (registration as any)?.registrationStatus) === 'WAITLISTED';
+  const isRegistered = (registration?.status || (registration as any)?.registrationStatus) === 'REGISTERED';
+  const { data: standaloneForms, isLoading: isFormsLoading } = useEventForms(id as string, isRegistered);
   
   const primaryClub = event?.eventClubs?.find((ec: any) => ec.isPrimary);
   const isPrimaryClubAdmin = !!(profile?.club_memberships?.some(
     (m: any) => m.club_id === primaryClub?.clubId && (m.role === 'CLUB_ADMIN' || m.role === 'CORE_MEMBER')
   ));
+
+  const eventAudience = (event as any)?.audience;
+  const audienceBatchIds: string[] = (event as any)?.audienceBatchIds || [];
+  const studentBatchId = profile?.academic_profile?.batch?.id ?? null;
+  const isBatchIneligible =
+    eventAudience === 'SPECIFIC_BATCHES' &&
+    !!studentBatchId &&
+    !audienceBatchIds.includes(studentBatchId);
+
+  const registrationOpensAt = (event as any)?.registrationStartTime || (event as any)?.registration_start_time;
+  const registrationClosesAt = (event as any)?.registrationEndTime || (event as any)?.registration_end_time;
 
   const now = new Date();
   const activeSession = findActiveAttendanceSession(
@@ -145,10 +162,9 @@ export default function EventScreen() {
     },
     descriptionBlock: {
       gap: 8,
+      marginBottom: 32,
     },
     actionSection: {
-      marginTop: 28,
-      marginBottom: 40,
       width: '100%',
     },
     actionBtn: {
@@ -278,7 +294,7 @@ export default function EventScreen() {
 
   const handleConfirmRegister = async () => {
     try {
-      await registerAsync();
+      await registerAsync(undefined);
     } catch {
       // Handled in useRegistration toast
     } finally {
@@ -335,6 +351,19 @@ export default function EventScreen() {
     }
 
     const status = registration?.status || (registration as any)?.registrationStatus || 'NOT_REGISTERED';
+
+    if (isBatchIneligible && (status === 'NOT_REGISTERED' || status === 'CANCELLED')) {
+      return (
+        <View style={[styles.restrictedTray, { borderColor: theme.colors.error, gap: 6 }]}>
+          <MonoLabel style={[styles.restrictedText, { color: theme.colors.error }]}>
+            YOUR BATCH CANNOT REGISTER FOR THIS EVENT
+          </MonoLabel>
+          <MonoLabel style={styles.restrictedText}>
+            RESTRICTED TO SELECTED BATCHES
+          </MonoLabel>
+        </View>
+      );
+    }
 
     // TEAM events: Must route to squad management instead of invoking solo register/cancel endpoints
     if (registrationType === 'TEAM') {
@@ -435,7 +464,13 @@ export default function EventScreen() {
     return (
       <Button
         title={isFull ? "[ JOIN EVENT WAITLIST ]" : "[ REGISTER FOR EVENT ]"}
-        onPress={() => setShowRegisterModal(true)}
+        onPress={() => {
+          if (eventFormFields && eventFormFields.length > 0) {
+            router.push(`/(app)/events/${id}/register`);
+          } else {
+            setShowRegisterModal(true);
+          }
+        }}
         variant="primary"
         disabled={isRegistering}
         style={styles.actionBtn}
@@ -527,7 +562,7 @@ export default function EventScreen() {
                 </Mono>
               </View>
             </View>
-            <View style={styles.gridRowLast}>
+            <View style={styles.gridRow}>
               <View style={styles.gridCol}>
                 <MonoLabel style={styles.metaLabel}>REGISTRATION</MonoLabel>
                 <Mono style={registration?.status === 'REGISTERED' ? styles.successColor : {}}>
@@ -541,7 +576,84 @@ export default function EventScreen() {
                 </Mono>
               </View>
             </View>
+            <View style={styles.gridRowLast}>
+              <View style={styles.gridCol}>
+                <MonoLabel style={styles.metaLabel}>REGS OPEN</MonoLabel>
+                <Mono>
+                  {registrationOpensAt
+                    ? new Date(registrationOpensAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                    : 'TBA'}
+                </Mono>
+              </View>
+              <View style={[styles.gridCol, styles.gridColRight]}>
+                <MonoLabel style={styles.metaLabel}>REGS CLOSE</MonoLabel>
+                <Mono>
+                  {registrationClosesAt
+                    ? new Date(registrationClosesAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                    : 'NO DEADLINE'}
+                </Mono>
+              </View>
+            </View>
           </View>
+
+          <View style={styles.actionSection}>
+            {renderActionTray()}
+          </View>
+
+          {isRegistered && (
+            <View style={styles.infoBlock} testID="event-forms-section">
+              <MonoLabel style={styles.metaLabel}>EVENT FORMS</MonoLabel>
+              {isFormsLoading ? (
+                <View style={{ paddingVertical: 12, alignItems: 'center' }}>
+                  <ActivityIndicator size="small" color={theme.colors.primary} />
+                </View>
+              ) : standaloneForms && standaloneForms.length > 0 ? (
+                <View style={{ gap: 12, marginTop: 8 }}>
+                  {standaloneForms.map((f: any) => {
+                    const formClosed = f.closeAt && new Date(f.closeAt) < new Date();
+                    return (
+                      <View
+                        key={f.id}
+                        style={{
+                          backgroundColor: theme.colors.surfaceContainerLow,
+                          padding: 12,
+                          borderWidth: 1,
+                          borderColor: theme.colors.outlineVariant,
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                        testID={`event-form-item-${f.id}`}
+                      >
+                        <View style={{ flex: 1, marginRight: 12 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                            <MonoLabel style={{ color: theme.colors.primary, fontSize: 10 }}>[{f.purpose}]</MonoLabel>
+                            {formClosed && (
+                              <MonoLabel style={{ color: '#FF5252', fontSize: 10 }}>[CLOSED]</MonoLabel>
+                            )}
+                          </View>
+                          <Body style={{ color: theme.colors.onSurface, fontWeight: 'bold' }} numberOfLines={1}>
+                            {f.title}
+                          </Body>
+                        </View>
+                        <Button
+                          title={formClosed ? '[ VIEW ]' : '[ OPEN FORM ]'}
+                          variant="secondary"
+                          style={{ minHeight: 36, height: 36, paddingHorizontal: 12 }}
+                          onPress={() => router.push(`/(app)/events/${id}/forms/${f.id}`)}
+                          testID={`open-form-btn-${f.id}`}
+                        />
+                      </View>
+                    );
+                  })}
+                </View>
+              ) : (
+                <Body style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}>
+                  No additional forms released for this event.
+                </Body>
+              )}
+            </View>
+          )}
 
           {(event?.registrationType === 'TEAM' || (event as any)?.registration_type === 'TEAM') && (
             <View style={styles.infoBlock}>
@@ -559,10 +671,6 @@ export default function EventScreen() {
             <Body>
               {event?.description || 'No additional details provided.'}
             </Body>
-          </View>
-
-          <View style={styles.actionSection}>
-            {renderActionTray()}
           </View>
         </>
       )}

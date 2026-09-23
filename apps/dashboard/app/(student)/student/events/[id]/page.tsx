@@ -22,6 +22,7 @@ import { useProfileValues } from '../../../../../hooks/useProfileValues';
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 const timeFormatter = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+const dateTimeFormatter = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' });
 
 const eventDetailStyles = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&family=Outfit:wght@400;700;900&family=Syne:wght@700;800;900&display=swap');
@@ -311,8 +312,8 @@ const eventDetailStyles = `
   }
 `;
 
-export default function StudentEventDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id: eventId } = use(params);
+export default function StudentEventDetailPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
+  const { id: eventId } = 'then' in params ? use(params as Promise<{ id: string }>) : params;
   const router = useRouter();
   const { setClubAdminMode, setActiveClubId } = useClubAdmin();
 
@@ -404,6 +405,13 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
   const registrationCount = (event as any).registrationCount ?? (event as any).registration_count;
   const isCapacityFull = event.maxCapacity !== null && typeof registrationCount === 'number' && registrationCount >= event.maxCapacity;
 
+  const studentBatchId = currentUser?.academic_profile?.batch?.id ?? null;
+  const isBatchRestricted = event.audience === 'SPECIFIC_BATCHES';
+  const isBatchIneligible =
+    isBatchRestricted &&
+    !!studentBatchId &&
+    !(event.audienceBatchIds ?? []).includes(studentBatchId);
+
   const handleOpenRegisterModal = () => {
     const initial: Record<string, string> = {};
     const preFilled: Record<string, string> = {};
@@ -425,7 +433,12 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
   const handleRegisterConfirm = () => {
     // Validate required fields
     if (eventFormFields) {
-      const missingRequired = eventFormFields.find(f => f.isRequired && !formResponses[f.fieldDefinitionId]);
+      const missingRequired = eventFormFields.find(f => {
+        if (!f.isRequired) return false;
+        const val = formResponses[f.fieldDefinitionId];
+        if (!val || val.trim() === '' || val === '[]') return true;
+        return false;
+      });
       if (missingRequired) {
         alert(`Please fill in required field: ${missingRequired.fieldDefinition.label}`);
         return;
@@ -433,10 +446,12 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
     }
 
     const payload = {
-      responses: Object.entries(formResponses).map(([fieldDefinitionId, value]) => ({
-        fieldDefinitionId,
-        value,
-      }))
+      responses: Object.entries(formResponses)
+        .filter(([_, value]) => value !== undefined && value !== '')
+        .map(([fieldDefinitionId, value]) => ({
+          fieldDefinitionId,
+          value,
+        }))
     };
 
     register(payload, {
@@ -467,6 +482,19 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
       return (
         <div className="ed-status-badge">
           SYSTEM NOTICE // REGISTRATION LOCKED
+        </div>
+      );
+    }
+
+    if (isBatchIneligible) {
+      return (
+        <div>
+          <div className="ed-status-badge" style={{ color: 'var(--warm-red)', borderColor: 'var(--warm-red)' }}>
+            ACADEMIC ELIGIBILITY // RESTRICTED
+          </div>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: '#a0a4b8', margin: '14px 0 0 0', lineHeight: 1.5 }}>
+            Your batch cannot register for this event. It is limited to selected batches only.
+          </p>
         </div>
       );
     }
@@ -701,7 +729,104 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
                   
                   {isEditable ? (
                     <>
-                      {field.fieldDefinition.fieldType === 'SELECT' ? (
+                      {field.fieldDefinition.fieldType === 'RADIO' ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '4px' }}>
+                          {(field.fieldDefinition.options || []).map((opt: string, i: number) => {
+                            const isSelected = formResponses[field.fieldDefinitionId] === opt;
+                            return (
+                              <label
+                                key={i}
+                                onClick={() => setFormResponses(prev => ({ ...prev, [field.fieldDefinitionId]: opt }))}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '10px',
+                                  padding: '8px 12px',
+                                  border: isSelected ? '1px solid var(--electric-blue)' : '1px solid rgba(255,255,255,0.1)',
+                                  background: isSelected ? 'rgba(0,229,255,0.1)' : '#0e1017',
+                                  cursor: 'pointer',
+                                  fontFamily: 'var(--font-mono)',
+                                  fontSize: '12px',
+                                  color: isSelected ? '#fff' : '#a0a4b8',
+                                  transition: 'all 0.15s ease',
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    width: '14px',
+                                    height: '14px',
+                                    borderRadius: '50%',
+                                    border: isSelected ? '2px solid var(--electric-blue)' : '1px solid rgba(255,255,255,0.3)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                  }}
+                                >
+                                  {isSelected && (
+                                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--electric-blue)' }} />
+                                  )}
+                                </div>
+                                <span>{opt}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      ) : field.fieldDefinition.fieldType === 'MULTI_SELECT' ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '4px' }}>
+                          {(() => {
+                            let selectedList: string[] = [];
+                            try {
+                              const val = formResponses[field.fieldDefinitionId];
+                              if (val) selectedList = JSON.parse(val);
+                            } catch {
+                              selectedList = [];
+                            }
+                            return (field.fieldDefinition.options || []).map((opt: string, i: number) => {
+                              const isChecked = selectedList.includes(opt);
+                              return (
+                                <label
+                                  key={i}
+                                  onClick={() => {
+                                    const next = isChecked ? selectedList.filter(item => item !== opt) : [...selectedList, opt];
+                                    setFormResponses(prev => ({ ...prev, [field.fieldDefinitionId]: JSON.stringify(next) }));
+                                  }}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '10px',
+                                    padding: '8px 12px',
+                                    border: isChecked ? '1px solid var(--electric-blue)' : '1px solid rgba(255,255,255,0.1)',
+                                    background: isChecked ? 'rgba(0,229,255,0.1)' : '#0e1017',
+                                    cursor: 'pointer',
+                                    fontFamily: 'var(--font-mono)',
+                                    fontSize: '12px',
+                                    color: isChecked ? '#fff' : '#a0a4b8',
+                                    transition: 'all 0.15s ease',
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      width: '14px',
+                                      height: '14px',
+                                      border: isChecked ? '2px solid var(--electric-blue)' : '1px solid rgba(255,255,255,0.3)',
+                                      background: isChecked ? 'var(--electric-blue)' : 'transparent',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      color: '#000',
+                                      fontSize: '10px',
+                                      fontWeight: 900,
+                                    }}
+                                  >
+                                    {isChecked && '✓'}
+                                  </div>
+                                  <span>{opt}</span>
+                                </label>
+                              );
+                            });
+                          })()}
+                        </div>
+                      ) : field.fieldDefinition.fieldType === 'SELECT' ? (
                         <select
                           value={formResponses[field.fieldDefinitionId] || ''}
                           onChange={(e) => setFormResponses(prev => ({ ...prev, [field.fieldDefinitionId]: e.target.value }))}
@@ -716,19 +841,31 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
                         </select>
                       ) : (
                         <input
-                          type={field.fieldDefinition.fieldType === 'NUMBER' ? 'number' : field.fieldDefinition.fieldType === 'EMAIL' ? 'email' : 'text'}
+                          type={
+                            field.fieldDefinition.fieldType === 'NUMBER' ? 'number' 
+                            : field.fieldDefinition.fieldType === 'EMAIL' ? 'email' 
+                            : field.fieldDefinition.fieldType === 'PHONE' ? 'tel' 
+                            : 'text'
+                          }
                           value={formResponses[field.fieldDefinitionId] || ''}
                           onChange={(e) => setFormResponses(prev => ({ ...prev, [field.fieldDefinitionId]: e.target.value }))}
                           className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
                           required={field.isRequired}
-                          placeholder={field.fieldDefinition.fieldType === 'URL' ? 'https://...' : ''}
+                          placeholder={field.fieldDefinition.fieldType === 'URL' ? 'https://...' : field.fieldDefinition.fieldType === 'PHONE' ? '+1 (555) 000-0000' : ''}
                         />
                       )}
                     </>
                   ) : (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.3)' }}>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: '#fff', wordBreak: 'break-all' }}>
-                        {formResponses[field.fieldDefinitionId] || '-'}
+                        {(() => {
+                          const raw = formResponses[field.fieldDefinitionId];
+                          try {
+                            const parsed = JSON.parse(raw);
+                            if (Array.isArray(parsed)) return parsed.join(', ');
+                          } catch {}
+                          return raw || '-';
+                        })()}
                       </span>
                       <button
                         type="button"
@@ -1255,6 +1392,25 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
                       <div className="ed-micro">TIME WINDOW</div>
                       <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 700, color: '#fff', marginTop: '2px' }}>
                         {timeFormatter.format(new Date(event.startTime))} — {timeFormatter.format(new Date(event.endTime))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Registration Window */}
+                  <div className="ed-spec-item">
+                    <Clock size={18} style={{ color: 'var(--electric-blue)', flexShrink: 0, marginTop: '2px' }} />
+                    <div>
+                      <div className="ed-micro">REGISTRATION WINDOW</div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 700, color: '#fff', marginTop: '2px' }}>
+                        {event.registrationStartTime ? dateTimeFormatter.format(new Date(event.registrationStartTime)) : 'OPEN NOW'}
+                        {' '}&rarr;{' '}
+                        {event.registrationEndTime ? dateTimeFormatter.format(new Date(event.registrationEndTime)) : 'NO DEADLINE'}
+                      </div>
+                      <div
+                        className="ed-micro"
+                        style={{ marginTop: '4px', color: event.registrationStatus === 'CLOSED' ? 'var(--warm-red)' : event.registrationStatus === 'OPEN' ? 'var(--acid-green)' : 'var(--warm-amber)' }}
+                      >
+                        {event.registrationStatus === 'CLOSED' ? 'REGISTRATION CLOSED' : event.registrationStatus === 'UPCOMING' ? 'OPENS SOON' : 'OPEN'}
                       </div>
                     </div>
                   </div>
