@@ -3,7 +3,13 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 COPY . .
-RUN pnpm install --frozen-lockfile
+# Lower network concurrency + retries: Alpine/musl's resolver intermittently
+# times out (EAI_AGAIN) under pnpm's default parallel fetches.
+RUN pnpm install --frozen-lockfile \
+      --network-concurrency=4 \
+      --fetch-retries=5 \
+      --fetch-retry-mintimeout=20000 \
+      --fetch-retry-maxtimeout=120000
 ARG NEXT_PUBLIC_API_URL=""
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN pnpm --filter @nst/dashboard... build
