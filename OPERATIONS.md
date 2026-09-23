@@ -121,3 +121,73 @@ If `nst-n6` is decommissioned, compromised, or the token requires periodic rotat
    EOF
    ```
 3. **Re-install Scoped Kubeconfig**: Extract the newly generated token from the secret (`kubectl get secret github-actions-deployer-token -n nst-events -o jsonpath="{.data.token}" | base64 --decode`) and update `/home/github-runner/.kube/config` on `nst-n6`.
+
+---
+
+## 3. Database Backup & Restore
+
+### Overview
+Production PostgreSQL runs as `nst-postgres-0` in namespace `nst-events` (pinned to node `nst-n6`). Two independent protections are in place:
+
+1. **Logical backup every 6 hours** — CronJob `nst-postgres-backup` runs `pg_dump -Fc` into the `nst-postgres-backups` PVC (10Gi, Longhorn). Every dump is verified with `pg_restore -l` before the job is allowed to succeed, and dumps older than 14 days are pruned.
+2. **Volume snapshots every 6 hours** — Longhorn `RecurringJob` `nst-postgres-snapshot` snapshots the Postgres volume and retains 4 snapshots.
+
+> **Both live inside the cluster.** They protect against *logical* damage (`DROP SCHEMA`, a bad migration, an accidental `prisma migrate reset`) but **not** against losing the cluster or its disks. An off-site S3/R2 backup target still needs to be configured for disaster recovery.
+
+The backup pod is pinned to `nst-n6` and retries its dump up to 8 times because connections from a freshly started pod to `nst-postgres-service` can be refused for a short window on this cluster.
+
+### What a backup does and does not give you
+- **Recovery point:** up to 6 hours. Anything written since the last dump or snapshot is gone.
+- **Recovery time:** tens of minutes. Restoring is a manual procedure, not an automatic one — nothing watches for a wipe and repairs it.
+- **Nothing detects a wipe.** `prisma migrate reset` drops the schema and then re-applies every migration, so the API comes back up *healthy* against an empty database and logs no errors (this is exactly what happened on 2026-09-23). After any suspicious database action, verify row counts rather than trusting error rates:
+  ```bash
+  kubectl exec -n nst-events nst-postgres-0 -- psql -U postgres -d nst_events \
+    -c "select (select count(*) from users) as users, (select count(*) from events) as events, (select count(*) from event_registrations) as registrations"
+  ```
+
+
+### Running a backup on demand
+```bash
+kubectl create job --from=cronjob/nst-postgres-backup nst-postgres-backup-manual -n nst-events
+kubectl logs job/nst-postgres-backup-manual -n nst-events
+```
+
+### Listing the stored dumps
+The backup volume is not mounted in the database pod, so use a helper pod:
+```bash
+kubectl run backup-helper -n nst-events --image=postgis/postgis:16-3.4 --restart=Never \
+  --overrides='{"spec":{"containers":[{"name":"backup-helper","image":"postgis/postgis:16-3.4","command":["sleep","3600"],"volumeMounts":[{"name":"b","mountPath":"/backups"}]}],"volumes":[{"name":"b","persistentVolumeClaim":{"claimName":"nst-postgres-backups"}}]}}'
+kubectl exec -n nst-events backup-helper -- ls -lh /backups
+kubectl cp nst-events/backup-helper:/backups/<dump-file> ./<dump-file>
+kubectl delete pod -n nst-events backup-helper
+```
+
+### Restoring
+Always restore into a scratch database first and verify it before promoting:
+
+```bash
+# 1. Port-forward the database
+kubectl port-forward -n nst-events svc/nst-postgres-service 5432:5432
+
+# 2. Restore into a scratch database
+createdb -h localhost -U postgres nst_events_restore_check
+pg_restore --no-owner --no-acl -h localhost -U postgres \
+  -d nst_events_restore_check nst_events_<ts>.dump
+
+# 3. Verify row counts and schema
+psql -h localhost -U postgres -d nst_events_restore_check \
+  -c "select count(*) from users" \
+  -c "select count(*) from _prisma_migrations" \
+  -c "select count(*) from information_schema.tables where table_name='event_forms'"
+```
+
+For a real recovery, stop the writers first (the period between a backup and the incident is lost either way):
+```bash
+kubectl scale deployment/nst-api deployment/nst-worker deployment/nst-dashboard -n nst-events --replicas=0
+# restore into nst_events, then:
+kubectl scale deployment/nst-api deployment/nst-worker deployment/nst-dashboard -n nst-events --replicas=1
+kubectl rollout restart deployment/nst-api deployment/nst-worker deployment/nst-dashboard -n nst-events
+```
+
+### Never point a destructive Prisma command at production
+`prisma migrate deploy` (what CI runs) is additive and safe. **Never run `prisma migrate reset` or `prisma db push --accept-data-loss` against the production `DATABASE_URL`.** That is what emptied this database on 2026-09-23: a `prisma migrate reset` was executed from an out-of-date checkout, which dropped the schema and left the database five migrations behind the deployed code.

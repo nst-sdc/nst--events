@@ -20,6 +20,9 @@ spec:
         - podSelector:
             matchLabels:
               app: nst-migration
+        - podSelector:
+            matchLabels:
+              app: nst-postgres-backup
       ports:
         - protocol: TCP
           port: 5432
