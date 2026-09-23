@@ -20,7 +20,7 @@ adminStudentsRouter.get(
       query: z.object({
         q: z.string().optional(),
         cursor: z.string().optional(),
-        limit: z.coerce.number().min(1).max(100).default(50),
+        limit: z.coerce.number().min(1).max(10000).default(50),
         status: z.enum(['ACTIVE', 'REVOKED']).optional(),
       })
     })
