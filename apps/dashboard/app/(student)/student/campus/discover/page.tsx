@@ -641,7 +641,7 @@ export default function DiscoverPage() {
 
                     {/* Description */}
                     <p className="d-poster-desc">
-                      {(event.metadata as Record<string, unknown> | null | undefined)?.description as string | undefined || 'Join this premium campus event and secure your pass. Register now to participate.'}
+                      {event.description || (event.metadata as Record<string, unknown> | null | undefined)?.description as string | undefined || 'Join this premium campus event and secure your pass. Register now to participate.'}
                     </p>
 
                     {/* Footer */}
