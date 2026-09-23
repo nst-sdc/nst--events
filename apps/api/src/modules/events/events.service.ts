@@ -15,6 +15,7 @@ import {
   UpdateEventFormFieldsInput,
 } from './events.schema';
 import { enqueueNotification } from '@nst/shared';
+import { checkAudienceEligibility } from './audience.service';
 
 export const calculateLockState = (isLocked: boolean, endTime: Date, dbNow: Date): EventLockState => {
   const finalDeadline = endTime.getTime() + 24 * 60 * 60 * 1000;
@@ -306,9 +307,6 @@ export const updateEvent = async (callerId: string, eventId: string, data: Updat
       throw new NotFoundError('Event not found');
     }
 
-    if (existing.state !== 'DRAFT' && existing.state !== 'PUBLISHED') {
-      throw new UnprocessableEntityError('Event can only be updated in DRAFT or PUBLISHED state');
-    }
 
     if (existing.state === 'PUBLISHED' && data.end_time) {
       if (new Date(data.end_time).getTime() < existing.endTime.getTime()) {
@@ -716,9 +714,67 @@ export const updateSession = async (
   });
 };
 
-export const getEventFormFields = async (eventId: string) => {
+export const getEventFormFields = async (eventId: string, callerId?: string) => {
+  if (callerId) {
+    return withUserContext(callerId, async (tx) => {
+      const event = await tx.event.findUnique({
+        where: { id: eventId },
+        select: {
+          id: true,
+          state: true,
+          visibility: true,
+          audience: true,
+          deletedAt: true,
+          createdBy: true,
+          eventClubs: { select: { clubId: true } },
+        },
+      });
+
+      if (!event || event.deletedAt) {
+        throw new NotFoundError('Event not found');
+      }
+
+      // Check if caller is admin or club organizer of the event
+      const user = await tx.user.findUnique({
+        where: { id: callerId },
+        select: { globalRole: true },
+      });
+      const isGlobalAdmin = user && ['PLATFORM_ADMIN', 'FACULTY_ADMIN'].includes(user.globalRole);
+      let isOrganizer = isGlobalAdmin || event.createdBy === callerId;
+      if (!isOrganizer) {
+        const clubIds = event.eventClubs.map(ec => ec.clubId);
+        if (clubIds.length > 0) {
+          const membership = await tx.clubMembership.findFirst({
+            where: {
+              clubId: { in: clubIds },
+              userId: callerId,
+              role: { in: ['CLUB_ADMIN', 'CORE_MEMBER', 'FACULTY_MENTOR'] },
+              deletedAt: null,
+            },
+          });
+          if (membership) isOrganizer = true;
+        }
+      }
+
+      if (!isOrganizer) {
+        if (event.state !== 'PUBLISHED' || event.visibility !== 'PUBLIC') {
+          throw new NotFoundError('Event not found');
+        }
+        await checkAudienceEligibility(eventId, callerId, tx);
+      }
+
+      return tx.eventFormField.findMany({
+        where: { eventId, formId: null },
+        include: { fieldDefinition: true },
+        orderBy: { order: 'asc' },
+      });
+    });
+  }
+
+  // Anonymous caller: query eventFormField directly; database RLS policy enforces
+  // that form_id IS NULL and event is PUBLISHED, PUBLIC, and ALL_STUDENTS.
   return prisma.eventFormField.findMany({
-    where: { eventId },
+    where: { eventId, formId: null },
     include: { fieldDefinition: true },
     orderBy: { order: 'asc' },
   });
@@ -732,16 +788,39 @@ export const updateEventFormFields = async (
   return withUserContext(callerId, async (tx) => {
     const event = await tx.event.findUnique({
       where: { id: eventId },
-      select: { deletedAt: true },
+      select: {
+        deletedAt: true,
+        eventClubs: { select: { clubId: true } },
+      },
     });
 
     if (!event || event.deletedAt) {
       throw new NotFoundError('Event not found');
     }
 
-    // Delete existing form fields
+    // Validate field definition ownership
+    if (data.fields.length > 0) {
+      const fieldDefIds = data.fields.map((f: { fieldDefinitionId: string }) => f.fieldDefinitionId);
+      const fieldDefs = await tx.fieldDefinition.findMany({
+        where: { id: { in: fieldDefIds } },
+        select: { id: true, createdByClubId: true },
+      });
+
+      if (fieldDefs.length !== fieldDefIds.length) {
+        throw new BadRequestError('One or more field definitions not found');
+      }
+
+      const eventClubIds = new Set(event.eventClubs.map(ec => ec.clubId));
+      for (const fd of fieldDefs) {
+        if (fd.createdByClubId !== null && !eventClubIds.has(fd.createdByClubId)) {
+          throw new ForbiddenError('Cannot attach field definitions owned by other clubs');
+        }
+      }
+    }
+
+    // Delete existing registration form fields only (preserve standalone event form fields)
     await tx.eventFormField.deleteMany({
-      where: { eventId },
+      where: { eventId, formId: null },
     });
 
     // Create new form fields
@@ -757,7 +836,7 @@ export const updateEventFormFields = async (
     }
 
     return tx.eventFormField.findMany({
-      where: { eventId },
+      where: { eventId, formId: null },
       include: { fieldDefinition: true },
       orderBy: { order: 'asc' },
     });

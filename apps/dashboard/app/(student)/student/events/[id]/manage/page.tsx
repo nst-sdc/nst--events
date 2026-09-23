@@ -42,6 +42,17 @@ export default function EventManageOverviewPage({ params }: { params: Promise<{ 
   return (
     <div className="space-y-6 font-sans">
       
+      {isClubAdmin && (
+        <div className="flex justify-end -mb-2">
+          <Link
+            href={`/student/events/${eventId}/manage/edit`}
+            className="px-5 py-2.5 bg-white text-black font-mono font-bold text-xs tracking-widest hover:bg-gray-200 transition-colors uppercase whitespace-nowrap text-center flex items-center justify-center gap-2 border-2 border-black shadow-[2px_2px_0px_#000]"
+          >
+            <Edit2 className="w-4 h-4" /> Edit Event
+          </Link>
+        </div>
+      )}
+
       {/* State Call to Actions */}
       {event.state === 'DRAFT' && (
         <div className="p-6 border-2 border-[#FF9500] bg-[#FF9500]/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-[4px_4px_0px_#000]">
@@ -52,12 +63,7 @@ export default function EventManageOverviewPage({ params }: { params: Promise<{ 
             <p className="text-xs text-[#a0a4b8] font-mono">Review all parameters and logistics before submitting for institutional approval.</p>
           </div>
           <div className="flex gap-3 w-full sm:w-auto">
-            <Link 
-              href={`/student/events/${eventId}/manage/edit`}
-              className="flex-1 sm:flex-none px-5 py-2.5 border-2 border-[#FF9500] text-[#FF9500] font-mono font-bold text-xs tracking-widest hover:bg-[#FF9500] hover:text-black transition-colors uppercase whitespace-nowrap text-center flex items-center justify-center gap-2"
-            >
-              <Edit2 className="w-4 h-4" /> Edit Draft
-            </Link>
+
             <button 
               onClick={handleSubmitForApproval}
               disabled={submitMutation.isPending}

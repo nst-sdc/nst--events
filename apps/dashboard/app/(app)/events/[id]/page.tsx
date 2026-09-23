@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { Card, Skeleton, Alert, Typography, Row, Col, Tag, Space, Button, Breadcrumb, theme, Popconfirm, Modal, Input, App } from 'antd';
-import { LockOutlined, UnlockOutlined, CheckCircleOutlined, CloseCircleOutlined, SendOutlined, EditOutlined, IdcardOutlined, QrcodeOutlined, RightOutlined, TeamOutlined } from '@ant-design/icons';
+import { LockOutlined, UnlockOutlined, CheckCircleOutlined, CloseCircleOutlined, SendOutlined, EditOutlined, IdcardOutlined, QrcodeOutlined, RightOutlined, TeamOutlined, FileTextOutlined } from '@ant-design/icons';
 import { useEventDetail, EventDetail } from '../../../../hooks/useEventDetail';
 import { resolveEventLockState } from '../../../../lib/event-utils';
 import { useEventLiveUpdates } from '../../../../hooks/useEventLiveUpdates';
@@ -71,7 +71,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     const canManageRegistrations = isGlobalAdmin || isClubAdmin || isCoreMember || isMentor;
     const canManageTeams = canManageRegistrations && event?.registrationType === 'TEAM';
     const canManageAttendance = isGlobalAdmin || isClubAdmin || isCoreMember || isMentor;
-    const canEdit = canManageEvent(currentUser, eventParam) && event?.state === 'DRAFT';
+    const canEdit = canManageEvent(currentUser, eventParam);
     const canSubmit = canManageEvent(currentUser, eventParam) && event?.state === 'DRAFT';
     const canApprove = canApproveEvent(currentUser, eventParam) && event?.state === 'PENDING_APPROVAL';
     const canReject = canApproveEvent(currentUser, eventParam) && event?.state === 'PENDING_APPROVAL';
@@ -317,7 +317,13 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                 <Text strong>Event Lifecycle</Text>
                 <Text type="secondary">{subtitleText}</Text>
               </Space>
-              {showUnlock && (
+              <Space>
+                {auth.isEventEditor && lockState === 'UNLOCKED' && (
+                  <Link href={`/events/${eventId}/edit`}>
+                    <Button icon={<EditOutlined />}>Edit Event Details</Button>
+                  </Link>
+                )}
+                {showUnlock && (
                 <Button 
                   type="primary"
                   icon={<UnlockOutlined />} 
@@ -346,6 +352,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                   Lock Event
                 </Button>
               )}
+              </Space>
             </Space>
           </Card>
         );
@@ -377,6 +384,14 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         description: 'Manage participants and registration status',
         icon: <IdcardOutlined style={{ fontSize: 24, color: token.colorPrimary }} />,
         link: `/events/${eventId}/registrations`
+      });
+    }
+    if (auth.isEventEditor || auth.canManageRegistrations) {
+      data.push({
+        title: 'Forms & Surveys',
+        description: 'Manage registration questions and scheduled event forms',
+        icon: <FileTextOutlined style={{ fontSize: 24, color: token.colorPrimary }} />,
+        link: `/events/${eventId}/forms`
       });
     }
     if (auth.canManageTeams) {
@@ -481,6 +496,17 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
             )}
           </div>
         </Col>
+        <Col xs={12} md={6} lg={4}>
+          <Text type="secondary" style={{ fontSize: 12 }}>REGISTRATION WINDOW</Text>
+          <div style={{ marginTop: 4 }}>
+            <Text strong style={{ display: 'block' }}>
+              {event.registrationStartTime ? new Date(event.registrationStartTime).toLocaleDateString() : 'Immediate'}
+            </Text>
+            <Text type="secondary">
+              to {event.registrationEndTime ? new Date(event.registrationEndTime).toLocaleDateString() : 'Event End'}
+            </Text>
+          </div>
+        </Col>
       </Row>
       <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${token.colorBorderSecondary}` }}>
         <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>LOCK STATUS</Text>
@@ -567,6 +593,14 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                   <div style={{ marginTop: 4 }}>
                     <Text strong>{new Date(event.startTime).toLocaleString()} - {new Date(event.endTime).toLocaleString()}</Text>
                     <div><Text type="secondary">{event.locationName || 'TBA'}</Text></div>
+                  </div>
+                </Col>
+                <Col span={24}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>REGISTRATION WINDOW</Text>
+                  <div style={{ marginTop: 4 }}>
+                    <Text strong>
+                      {event.registrationStartTime ? new Date(event.registrationStartTime).toLocaleString() : 'Immediate'} - {event.registrationEndTime ? new Date(event.registrationEndTime).toLocaleString() : 'Event End'}
+                    </Text>
                   </div>
                 </Col>
                 <Col span={12}>
