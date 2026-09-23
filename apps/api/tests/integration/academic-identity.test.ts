@@ -115,7 +115,9 @@ test('Phase UI-14D Academic Identity Integration', async (t) => {
     const program = await adminPrisma.academicProgram.create({
       data: {
         name: 'B.Tech Computer Science',
-        code: 'e',
+        // Real directory codes are descriptive (e.g. "BTECH-CSE"), not the
+        // single-letter email prefix — inference must not depend on this.
+        code: 'BTECH-CSE',
       },
     });
     programId = program.id;
