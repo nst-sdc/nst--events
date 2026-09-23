@@ -128,10 +128,14 @@ export async function loginWithIdToken(
       if (!existingProfile) {
         const inference = parseAdypuEmail(mappedUser.email);
         if (inference) {
+          // The academic signal is the cohort (admission) year encoded in the
+          // institutional email (e.g. e25b070639 -> 2025). Program codes in the
+          // directory do not necessarily equal the single-letter email prefix
+          // (e.g. "BTECH-CSE"), so resolve by admission year and only
+          // auto-assign when the mapping is unambiguous.
           const candidateBatches = await tx.academicBatch.findMany({
             where: {
               admissionYear: inference.admissionYear,
-              program: { code: inference.prefix },
             },
           });
 

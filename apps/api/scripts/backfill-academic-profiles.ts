@@ -37,9 +37,6 @@ async function main() {
     const candidateBatches = await prisma.academicBatch.findMany({
       where: {
         admissionYear: inference.admissionYear,
-        program: {
-          code: inference.prefix,
-        },
       },
     });
 
@@ -50,7 +47,7 @@ async function main() {
           data: {
             userId: user.id,
             batchId: resolvedBatch.id,
-            assignmentSource: 'EMAIL_INFERENCE',
+            assignmentSource: 'INSTITUTIONAL_EMAIL_INFERENCE',
           },
         });
         successCount++;
@@ -64,7 +61,7 @@ async function main() {
       }
     } else if (candidateBatches.length === 0) {
       unparseableCount++;
-      console.log(`[NO_BATCH] ${user.email} matched prefix '${inference.prefix}' and year '${inference.admissionYear}', but no batch found.`);
+      console.log(`[NO_BATCH] ${user.email} resolves to admission year '${inference.admissionYear}', but no batch was found.`);
     } else {
       ambiguousCount++;
       console.log(`[AMBIGUOUS] ${user.email} matched ${candidateBatches.length} possible batches. Auto-assignment skipped.`);
