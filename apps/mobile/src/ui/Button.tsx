@@ -13,6 +13,7 @@ export interface ButtonProps {
   accessibilityLabel?: string;
   accessibilityRole?: 'button' | 'link';
   style?: StyleProp<ViewStyle>;
+  testID?: string;
 }
 
 export const Button = ({ 
@@ -23,7 +24,8 @@ export const Button = ({
   variant = 'primary', 
   accessibilityLabel, 
   accessibilityRole = 'button',
-  style
+  style,
+  testID,
 }: ButtonProps) => {
   const theme = useAppTheme();
 
@@ -92,6 +94,7 @@ export const Button = ({
       accessibilityLabel={accessibilityLabel || title}
       accessibilityRole={accessibilityRole}
       accessibilityState={{ disabled: disabled || loading, busy: loading }}
+      testID={testID}
       style={[
         styles.base, 
         containerStyle, 
