@@ -18,10 +18,10 @@ describe('Phase 16A: Rate-Limit Security (Proxy Trust)', () => {
       .set('X-Forwarded-For', '203.0.113.2')
       .set('X-Real-IP', '203.0.113.2');
 
-    assert.strictEqual(res1.headers['ratelimit-limit'], '100');
-    assert.strictEqual(res2.headers['ratelimit-limit'], '100');
-    assert.strictEqual(res1.headers['ratelimit-remaining'], '99');
-    assert.strictEqual(res2.headers['ratelimit-remaining'], '99');
+    assert.strictEqual(res1.headers['ratelimit-limit'], '1000');
+    assert.strictEqual(res2.headers['ratelimit-limit'], '1000');
+    assert.strictEqual(res1.headers['ratelimit-remaining'], '999');
+    assert.strictEqual(res2.headers['ratelimit-remaining'], '999');
   });
 
   it('Requests from same client -> same bucket', async () => {
