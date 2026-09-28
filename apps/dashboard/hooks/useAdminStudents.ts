@@ -24,11 +24,14 @@ export interface AuthorizedStudent {
 
 export function useAdminStudents(q?: string, status?: string, enabled = true) {
   return useQuery<{ data: AuthorizedStudent[]; pagination: any }>({
-    queryKey: ["adminStudents", q, status],
+    queryKey: ["adminStudents", status],
     queryFn: async () => {
       const params = new URLSearchParams();
       params.set("limit", "10000");
-      if (q) params.set("q", q);
+      // Note: Backend /v1/admin/students only queries normalizedEmail when q is provided,
+      // which misses registered students whose names are stored in User.fullName.
+      // By fetching the directory records for the status, we enable comprehensive,
+      // instant client-side search across fullName, normalizedEmail, program, and batch.
       if (status) params.set("status", status);
 
       const response = await apiClient<{
@@ -38,6 +41,7 @@ export function useAdminStudents(q?: string, status?: string, enabled = true) {
       return response;
     },
     enabled,
+    staleTime: 30 * 1000,
   });
 }
 

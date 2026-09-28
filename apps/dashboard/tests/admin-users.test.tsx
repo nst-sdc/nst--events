@@ -614,3 +614,91 @@ test("does not render a user twice when adjacent cursor pages overlap", async ()
 
   expect(screen.getAllByText("Newton Admin")).toHaveLength(1);
 });
+
+test("students search filters registered student by full name instantly", async () => {
+  mockSearchParams.set("tab", "students");
+  await renderWithProviders(<UserManagementPage />);
+
+  await waitFor(() => {
+    expect(screen.getByText("Student One")).toBeInTheDocument();
+    expect(screen.getByText("Injora Kumar")).toBeInTheDocument();
+  });
+
+  const searchInput = screen.getByPlaceholderText("Search students...");
+  fireEvent.change(searchInput, { target: { value: "Injora" } });
+
+  await waitFor(() => {
+    expect(screen.getByText("Injora Kumar")).toBeInTheDocument();
+    expect(screen.queryByText("Student One")).not.toBeInTheDocument();
+  });
+});
+
+test("students search filters by email / roll number", async () => {
+  mockSearchParams.set("tab", "students");
+  await renderWithProviders(<UserManagementPage />);
+
+  const searchInput = screen.getByPlaceholderText("Search students...");
+  fireEvent.change(searchInput, { target: { value: "s1@adypu" } });
+
+  await waitFor(() => {
+    expect(screen.getByText("s1@adypu.edu.in")).toBeInTheDocument();
+    expect(screen.queryByText("revoked@adypu.edu.in")).not.toBeInTheDocument();
+  });
+});
+
+test("students search shows empty state and clear search action on non-matching query", async () => {
+  mockSearchParams.set("tab", "students");
+  await renderWithProviders(<UserManagementPage />);
+
+  const searchInput = screen.getByPlaceholderText("Search students...");
+  fireEvent.change(searchInput, { target: { value: "NonExistentName123" } });
+
+  await waitFor(() => {
+    expect(screen.getByText(/No students match/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Clear search" })).toBeInTheDocument();
+  });
+
+  fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
+
+  await waitFor(() => {
+    expect(screen.getByText("Student One")).toBeInTheDocument();
+    expect(screen.getByText("Injora Kumar")).toBeInTheDocument();
+  });
+});
+
+test("students filters work with program, batch, and registration status", async () => {
+  mockSearchParams.set("tab", "students");
+  mockSearchParams.set("registration", "REGISTERED");
+  mockSearchParams.set("program", "BTECH");
+  mockSearchParams.set("batch", "2024-2028");
+
+  await renderWithProviders(<UserManagementPage />);
+
+  await waitFor(() => {
+    expect(screen.getByText("Student One")).toBeInTheDocument();
+    expect(screen.getByText("Injora Kumar")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reset Filters" })).toBeInTheDocument();
+  });
+
+  // Clicking Reset Filters clears filters
+  fireEvent.click(screen.getByRole("button", { name: "Reset Filters" }));
+
+  await waitFor(() => {
+    expect(screen.getByText("Student One")).toBeInTheDocument();
+  });
+});
+
+test("students filter by registration hides registered users when directory only selected", async () => {
+  mockSearchParams.set("tab", "students");
+  mockSearchParams.set("registration", "DIRECTORY_ONLY");
+
+  await renderWithProviders(<UserManagementPage />);
+
+  await waitFor(() => {
+    // Both mock students have a registered user, so directory only should yield 0
+    expect(screen.getByText(/No students match your current filters/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reset all filters" })).toBeInTheDocument();
+  });
+});
+
+
