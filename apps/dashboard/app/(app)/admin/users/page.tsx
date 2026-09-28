@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useCurrentUser } from "../../../../hooks/useCurrentUser";
 import {
@@ -94,12 +94,14 @@ export default function UserManagementPage() {
 
   const { data: currentUser, isLoading: isUserLoading } = useCurrentUser();
 
-  // URL State Sync
   const activeTab =
     searchParams.get("tab") === "admin-roles" ? "admin-roles" : "students";
   const searchQuery = searchParams.get("q") || "";
   const statusFilter = searchParams.get("status") || undefined;
   const roleFilter = searchParams.get("role") || "ALL";
+  const registrationFilter = searchParams.get("registration") || undefined;
+  const programFilter = searchParams.get("program") || undefined;
+  const batchFilter = searchParams.get("batch") || undefined;
 
   // Modals state
   const [roleModalUser, setRoleModalUser] = useState<AdminUser | null>(null);
@@ -134,6 +136,44 @@ export default function UserManagementPage() {
   // Pagination state
   const [studentPageSize, setStudentPageSize] = useState(25);
   const [studentCurrentPage, setStudentCurrentPage] = useState(1);
+
+  // Search input state with debouncing for fluid 60fps typing and zero network spam
+  const [prevSearchQuery, setPrevSearchQuery] = useState(searchQuery);
+  const [searchInputValue, setSearchInputValue] = useState(searchQuery);
+
+  if (prevSearchQuery !== searchQuery) {
+    setPrevSearchQuery(searchQuery);
+    setSearchInputValue(searchQuery);
+  }
+
+  // Navigation Helper
+  const setParam = useCallback(
+    (
+      key: string,
+      value: string | undefined,
+      action: "push" | "replace" = "push",
+    ) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (value) params.set(key, value);
+      else params.delete(key);
+      const url = `${pathname}?${params.toString()}`;
+      if (action === "replace") {
+        router.replace(url);
+      } else {
+        router.push(url);
+      }
+    },
+    [searchParams, pathname, router],
+  );
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInputValue !== searchQuery) {
+        setParam("q", searchInputValue || undefined, "replace");
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInputValue, searchQuery, setParam]);
 
   // Queries
   const isStudentsTab = activeTab === "students";
@@ -171,18 +211,162 @@ export default function UserManagementPage() {
   const provisionUser = useProvisionUser();
   const revokeSessions = useRevokeUserSessions();
 
-  // Navigation Helper
-  const setParam = (key: string, value: string) => {
-    const params = new URLSearchParams(searchParams);
-    if (value) params.set(key, value);
-    else params.delete(key);
-    router.push(`${pathname}?${params.toString()}`);
-  };
-
   const setActiveTab = (nextTab: string) => {
     const params = new URLSearchParams();
     params.set("tab", nextTab === "admin-roles" ? "admin-roles" : "students");
     router.push(`${pathname}?${params.toString()}`);
+  };
+
+  const isPlatformAdmin = canManageStudentDirectory(currentUser);
+
+  const rawUsers = useMemo(
+    () => usersData?.pages.flatMap((page) => page.data) || [],
+    [usersData?.pages],
+  );
+  const uniqueUsers = useMemo(
+    () => Array.from(new Map(rawUsers.map((user) => [user.id, user])).values()),
+    [rawUsers],
+  );
+
+  // Client-side role filtering for Admin Roles tab
+  const users = useMemo(() => {
+    return uniqueUsers.filter((user) => {
+      if (roleFilter === "ALL") return true;
+      if (roleFilter === "CLUB_ADMIN")
+        return user.clubMemberships && user.clubMemberships.length > 0;
+      return user.globalRole === roleFilter;
+    });
+  }, [uniqueUsers, roleFilter]);
+
+  const platformAdminCount = usersData?.pages?.[0]?.platform_admin_count ?? 0;
+
+  const rawStudents = useMemo(
+    () => studentsData?.data || [],
+    [studentsData?.data],
+  );
+
+  // Dynamically derive Program options from loaded students
+  const programOptions = useMemo(() => {
+    const codes = new Set<string>();
+    rawStudents.forEach((s) => {
+      const code = s.user?.academicProfile?.batch?.program?.code;
+      if (code) codes.add(code);
+    });
+    return Array.from(codes)
+      .sort()
+      .map((code) => ({ label: code, value: code }));
+  }, [rawStudents]);
+
+  // Dynamically derive Batch options from loaded students
+  const batchOptions = useMemo(() => {
+    const batches = new Set<string>();
+    rawStudents.forEach((s) => {
+      const b = s.user?.academicProfile?.batch;
+      if (b?.admissionYear && b?.graduationYear) {
+        batches.add(`${b.admissionYear}-${b.graduationYear}`);
+      }
+    });
+    return Array.from(batches)
+      .sort((a, b) => b.localeCompare(a))
+      .map((range) => {
+        const [start, end] = range.split("-");
+        return { label: `${start}–${end}`, value: range };
+      });
+  }, [rawStudents]);
+
+  // Instant, tokenized multi-field client-side search and filtering across fullName, normalizedEmail, program, batch, registration, and status
+  const students = useMemo(() => {
+    let result = rawStudents;
+
+    // Filter by registration status
+    if (registrationFilter === "REGISTERED") {
+      result = result.filter((row) => !!row.user);
+    } else if (registrationFilter === "DIRECTORY_ONLY") {
+      result = result.filter((row) => !row.user);
+    }
+
+    // Filter by Program
+    if (programFilter) {
+      result = result.filter(
+        (row) =>
+          row.user?.academicProfile?.batch?.program?.code === programFilter,
+      );
+    }
+
+    // Filter by Batch
+    if (batchFilter) {
+      result = result.filter((row) => {
+        const b = row.user?.academicProfile?.batch;
+        if (!b) return false;
+        return `${b.admissionYear}-${b.graduationYear}` === batchFilter;
+      });
+    }
+
+    const query = searchInputValue.trim().toLowerCase();
+    if (!query) return result;
+
+    const tokens = query.split(/\s+/).filter(Boolean);
+    if (tokens.length === 0) return result;
+
+    return result.filter((row) => {
+      const fullName = row.user?.fullName?.toLowerCase() || "";
+      const email = row.normalizedEmail?.toLowerCase() || "";
+      const programCode =
+        row.user?.academicProfile?.batch?.program?.code?.toLowerCase() || "";
+      const programName =
+        row.user?.academicProfile?.batch?.program?.name?.toLowerCase() || "";
+      const admissionYear =
+        row.user?.academicProfile?.batch?.admissionYear?.toString() || "";
+      const graduationYear =
+        row.user?.academicProfile?.batch?.graduationYear?.toString() || "";
+      const batchRange =
+        admissionYear && graduationYear
+          ? `${admissionYear}-${graduationYear}`
+          : "";
+      const status = row.status?.toLowerCase() || "";
+      const notRegistered = !row.user
+        ? "not yet registered directory only unregistered"
+        : "";
+
+      return tokens.every(
+        (token) =>
+          fullName.includes(token) ||
+          email.includes(token) ||
+          programCode.includes(token) ||
+          programName.includes(token) ||
+          admissionYear.includes(token) ||
+          graduationYear.includes(token) ||
+          batchRange.includes(token) ||
+          status.includes(token) ||
+          notRegistered.includes(token),
+      );
+    });
+  }, [
+    rawStudents,
+    searchInputValue,
+    registrationFilter,
+    programFilter,
+    batchFilter,
+  ]);
+
+  const hasActiveStudentFilters = Boolean(
+    searchInputValue ||
+      statusFilter ||
+      registrationFilter ||
+      programFilter ||
+      batchFilter,
+  );
+
+  const handleResetStudentFilters = () => {
+    setSearchInputValue("");
+    setStudentCurrentPage(1);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("q");
+    params.delete("status");
+    params.delete("registration");
+    params.delete("program");
+    params.delete("batch");
+    router.replace(`${pathname}?${params.toString()}`);
   };
 
   // Auth Gate
@@ -197,25 +381,6 @@ export default function UserManagementPage() {
       </div>
     );
   }
-
-  const isPlatformAdmin = canManageStudentDirectory(currentUser);
-
-  const rawUsers = usersData?.pages.flatMap((page) => page.data) || [];
-  const uniqueUsers = Array.from(
-    new Map(rawUsers.map((user) => [user.id, user])).values(),
-  );
-
-  // Client-side role filtering for Admin Roles tab
-  const users = uniqueUsers.filter((user) => {
-    if (roleFilter === "ALL") return true;
-    if (roleFilter === "CLUB_ADMIN")
-      return user.clubMemberships && user.clubMemberships.length > 0;
-    return user.globalRole === roleFilter;
-  });
-
-  const platformAdminCount = usersData?.pages?.[0]?.platform_admin_count ?? 0;
-
-  const students = studentsData?.data || [];
 
   const handleRoleChangeSubmit = () => {
     if (!roleModalUser) return;
@@ -754,13 +919,16 @@ export default function UserManagementPage() {
 
           <div
             style={{ borderColor: "var(--ant-color-border-secondary)" }}
-            className="p-4 border-b flex gap-4 flex-wrap"
+            className="p-4 border-b flex gap-3 flex-wrap items-center"
           >
             <Input
               placeholder="Search students..."
               prefix={<SearchOutlined style={{ opacity: 0.45 }} />}
-              value={searchQuery}
-              onChange={(e) => setParam("q", e.target.value)}
+              value={searchInputValue}
+              onChange={(e) => {
+                setSearchInputValue(e.target.value);
+                setStudentCurrentPage(1);
+              }}
               className="max-w-xs"
               allowClear
             />
@@ -768,8 +936,11 @@ export default function UserManagementPage() {
               placeholder="Status"
               allowClear
               value={statusFilter}
-              onChange={(val) => setParam("status", val)}
-              style={{ width: 150 }}
+              onChange={(val) => {
+                setParam("status", val);
+                setStudentCurrentPage(1);
+              }}
+              style={{ width: 120 }}
               showSearch={false}
               options={[
                 { label: "Active", value: "ACTIVE" },
@@ -777,20 +948,74 @@ export default function UserManagementPage() {
               ]}
             />
             <Select
-              value={studentPageSize}
-              showSearch={false}
-              onChange={(size) => {
-                setStudentPageSize(size);
+              placeholder="Registration"
+              allowClear
+              value={registrationFilter}
+              onChange={(val) => {
+                setParam("registration", val);
                 setStudentCurrentPage(1);
               }}
-              style={{ width: 120 }}
+              style={{ width: 150 }}
+              showSearch={false}
               options={[
-                { label: "10 / page", value: 10 },
-                { label: "25 / page", value: 25 },
-                { label: "50 / page", value: 50 },
-                { label: "100 / page", value: 100 },
+                { label: "Registered", value: "REGISTERED" },
+                { label: "Directory Only", value: "DIRECTORY_ONLY" },
               ]}
             />
+            {programOptions.length > 0 && (
+              <Select
+                placeholder="Program"
+                allowClear
+                value={programFilter}
+                onChange={(val) => {
+                  setParam("program", val);
+                  setStudentCurrentPage(1);
+                }}
+                style={{ width: 130 }}
+                showSearch
+                options={programOptions}
+              />
+            )}
+            {batchOptions.length > 0 && (
+              <Select
+                placeholder="Batch"
+                allowClear
+                value={batchFilter}
+                onChange={(val) => {
+                  setParam("batch", val);
+                  setStudentCurrentPage(1);
+                }}
+                style={{ width: 140 }}
+                showSearch
+                options={batchOptions}
+              />
+            )}
+            {hasActiveStudentFilters && (
+              <Button
+                type="dashed"
+                onClick={handleResetStudentFilters}
+                size="middle"
+              >
+                Reset Filters
+              </Button>
+            )}
+            <div className="ml-auto">
+              <Select
+                value={studentPageSize}
+                showSearch={false}
+                onChange={(size) => {
+                  setStudentPageSize(size);
+                  setStudentCurrentPage(1);
+                }}
+                style={{ width: 120 }}
+                options={[
+                  { label: "10 / page", value: 10 },
+                  { label: "25 / page", value: 25 },
+                  { label: "50 / page", value: 50 },
+                  { label: "100 / page", value: 100 },
+                ]}
+              />
+            </div>
           </div>
 
           {isStudentsLoading ? (
@@ -803,10 +1028,21 @@ export default function UserManagementPage() {
             </div>
           ) : students.length === 0 ? (
             <div className="p-16 text-center" style={{ opacity: 0.65 }}>
-              <div className="text-lg mb-2">
-                No students match your current filters.
-              </div>
-              {!searchQuery && !statusFilter && (
+              {hasActiveStudentFilters ? (
+                <>
+                  <div className="text-lg mb-2">
+                    {searchInputValue
+                      ? `No students match "${searchInputValue}".`
+                      : "No students match your current filters."}
+                  </div>
+                  <Button
+                    type="link"
+                    onClick={handleResetStudentFilters}
+                  >
+                    {searchInputValue ? "Clear search" : "Reset all filters"}
+                  </Button>
+                </>
+              ) : (
                 <div className="text-sm">
                   No students are currently in the NST Student Directory.
                 </div>
@@ -871,13 +1107,13 @@ export default function UserManagementPage() {
           </div>
           <div
             style={{ borderColor: "var(--ant-color-border-secondary)" }}
-            className="p-4 border-b flex gap-4"
+            className="p-4 border-b flex gap-4 items-center flex-wrap"
           >
             <Input
               placeholder="Search users..."
               prefix={<SearchOutlined style={{ opacity: 0.45 }} />}
-              value={searchQuery}
-              onChange={(e) => setParam("q", e.target.value)}
+              value={searchInputValue}
+              onChange={(e) => setSearchInputValue(e.target.value)}
               className="max-w-xs"
               allowClear
             />
@@ -894,6 +1130,20 @@ export default function UserManagementPage() {
                 { label: "Club Admin", value: "CLUB_ADMIN" },
               ]}
             />
+            {(searchInputValue || roleFilter !== "ALL") && (
+              <Button
+                type="dashed"
+                onClick={() => {
+                  setSearchInputValue("");
+                  const params = new URLSearchParams(searchParams.toString());
+                  params.delete("q");
+                  params.delete("role");
+                  router.replace(`${pathname}?${params.toString()}`);
+                }}
+              >
+                Reset Filters
+              </Button>
+            )}
           </div>
 
           <div className="px-4 py-2 text-xs text-gray-500 flex justify-end items-center gap-2">
