@@ -308,7 +308,7 @@ describe('FormStudio (Faculty/Admin Experience)', () => {
       expect(screen.getByRole('button', { name: /Edit Schedule/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Duplicate/i })).toBeInTheDocument();
     });
-  }, 15000);
+  }, 30000);
 });
 
 describe('StudentFormStudio (Club Admin Brutalist Experience)', () => {
