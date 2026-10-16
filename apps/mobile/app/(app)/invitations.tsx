@@ -172,8 +172,8 @@ export default function InvitationsScreen() {
           </View>
         ) : filteredInvitations.length === 0 ? (
           <View style={styles.emptyCard}>
-            <StatusBadge status="NO PENDING" type="default" />
-            <Title style={styles.emptyTitle}>No Team Invitations</Title>
+            <StatusBadge status="[ NO PENDING ]" type="default" />
+            <Title style={styles.emptyTitle}>NO TEAM INVITATIONS</Title>
             <Body style={styles.emptyDesc}>
               You currently have no pending team invitations to join or review.
             </Body>
@@ -235,7 +235,7 @@ export default function InvitationsScreen() {
                           { teamId: inv.team.team_id, invitationId: inv.invitation_id },
                           {
                             onSuccess: () => {
-                              router.push(`/events/${inv.event.event_id}/teams`);
+                              router.push(`/(app)/events/${inv.event.event_id}/teams`);
                             },
                           }
                         )

@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { Modal, Table, Typography, Input, Button, Space, Tag, Empty, Tooltip } from 'antd';
+import { Modal, Table, Typography, Input, Button, Space, Tag, Empty, Tooltip, message } from 'antd';
 import { DownloadOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useEventFormResponses } from '../../hooks/useEventForms';
+import { exportSubmissionsToCSV } from '../../lib/form-studio-utils';
 
 const { Title, Text } = Typography;
 
@@ -83,38 +84,59 @@ export function FormResponsesModal({
     );
   }, [submissions, searchText]);
 
+  // Aggregate choice-field answers so organizers can read results at a glance.
+  const choiceSummaries = useMemo(() => {
+    const summaries: Array<{
+      fieldId: string;
+      label: string;
+      fieldType: string;
+      counts: Array<{ option: string; count: number }>;
+    }> = [];
+
+    for (const field of fieldColumns) {
+      if (!['SELECT', 'RADIO', 'MULTI_SELECT'].includes(field.fieldType)) continue;
+
+      const counts = new Map<string, number>();
+      for (const sub of submissions) {
+        const raw = sub.answers[field.id]?.value;
+        if (!raw) continue;
+
+        let values: string[] = [raw];
+        if (field.fieldType === 'MULTI_SELECT') {
+          try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) values = parsed;
+          } catch {
+            values = [raw];
+          }
+        }
+        for (const v of values) {
+          counts.set(v, (counts.get(v) || 0) + 1);
+        }
+      }
+
+      summaries.push({
+        fieldId: field.id,
+        label: field.label,
+        fieldType: field.fieldType,
+        counts: Array.from(counts.entries())
+          .map(([option, count]) => ({ option, count }))
+          .sort((a, b) => b.count - a.count),
+      });
+    }
+
+    return summaries;
+  }, [fieldColumns, submissions]);
+
   // CSV Export handler
   const handleExportCSV = () => {
     if (submissions.length === 0) return;
-
-    const headers = ['Student Name', 'Student Email', 'Submitted At', ...fieldColumns.map(f => `"${f.label.replace(/"/g, '""')}"`)];
-    const rows = submissions.map(sub => {
-      const answersPart = fieldColumns.map(f => {
-        let val = sub.answers[f.id]?.value || '';
-        try {
-          const parsed = JSON.parse(val);
-          if (Array.isArray(parsed)) {
-            val = parsed.join(', ');
-          }
-        } catch {}
-        return `"${String(val).replace(/"/g, '""')}"`;
-      });
-      return [
-        `"${sub.user.fullName.replace(/"/g, '""')}"`,
-        `"${sub.user.email.replace(/"/g, '""')}"`,
-        `"${new Date(sub.submittedAt).toLocaleString()}"`,
-        ...answersPart,
-      ].join(',');
-    });
-
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `${formTitle.replace(/[^a-zA-Z0-9_-]/g, '_')}_responses.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      exportSubmissionsToCSV(formTitle, fieldColumns, submissions);
+      message.success(`Successfully exported ${submissions.length} submission${submissions.length === 1 ? '' : 's'} to CSV`);
+    } catch (err: any) {
+      message.error(err.message || 'Failed to export submissions to CSV');
+    }
   };
 
   const columns = [
@@ -237,6 +259,42 @@ export function FormResponsesModal({
           </Button>
         </Space>
       </div>
+
+      {choiceSummaries.length > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 20,
+            marginBottom: 16,
+            padding: '12px 16px',
+            background: '#fafafa',
+            border: '1px solid #f0f0f0',
+            borderRadius: 6,
+          }}
+        >
+          {choiceSummaries.map((summary) => (
+            <div key={summary.fieldId} style={{ minWidth: 180 }}>
+              <Text strong style={{ fontSize: 12 }}>
+                {summary.label}
+              </Text>
+              <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                {summary.counts.length === 0 ? (
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    No answers
+                  </Text>
+                ) : (
+                  summary.counts.map((c) => (
+                    <Tag key={c.option} color={summary.fieldType === 'MULTI_SELECT' ? 'geekblue' : 'blue'}>
+                      {c.option}: {c.count}
+                    </Tag>
+                  ))
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <Table
         dataSource={filteredSubmissions}

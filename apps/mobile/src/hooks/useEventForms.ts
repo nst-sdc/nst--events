@@ -6,13 +6,11 @@ export interface EventForm {
   id: string;
   eventId: string;
   title: string;
-  description: string | null;
-  purpose: 'REGISTRATION' | 'FEEDBACK' | 'QUIZ' | 'CHECKIN' | 'CUSTOM';
+  purpose: 'REGISTRATION' | 'SUBMISSION' | 'FEEDBACK' | 'CUSTOM';
   releaseAt: string | null;
   closeAt: string | null;
   notifiedAt: string | null;
   createdAt: string;
-  updatedAt: string;
 }
 
 export interface EventFormField {

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar, TouchableOpacity, Platform, Linking } from 'react-native';
+import { View, Text, StyleSheet, StatusBar, TouchableOpacity, Platform, Linking } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAppTheme } from '../../src/store/theme-store';
 import { Button } from '../../src/ui/Button';
@@ -27,6 +28,9 @@ interface AuthError {
 export default function LoginGatewayScreen() {
   const router = useRouter();
   const theme = useAppTheme();
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0, 12);
+  const bottomInset = Math.max(insets.bottom, 16);
   const setSession = useAuthStore((state) => state.setSession);
   const [authError, setAuthError] = useState<AuthError | null>(null);
   const [attemptedEmail, setAttemptedEmail] = useState<string>('');
@@ -110,7 +114,13 @@ export default function LoginGatewayScreen() {
         }
         await setSession(userProfile.id, exchangeRes.access_token, exchangeRes.refresh_token);
 
-        router.replace('/(app)');
+        const pendingDeepLink = useAuthStore.getState().pendingDeepLink;
+        if (pendingDeepLink) {
+          useAuthStore.getState().setPendingDeepLink(null);
+          router.replace(pendingDeepLink as any);
+        } else {
+          router.replace('/(app)');
+        }
         return;
       } else {
         setAuthError({
@@ -204,7 +214,13 @@ export default function LoginGatewayScreen() {
     setAuthError(null);
     try {
       await setSession(devUserId, devToken, devToken);
-      router.replace('/(app)');
+      const pendingDeepLink = useAuthStore.getState().pendingDeepLink;
+      if (pendingDeepLink) {
+        useAuthStore.getState().setPendingDeepLink(null);
+        router.replace(pendingDeepLink as any);
+      } else {
+        router.replace('/(app)');
+      }
     } catch (e: any) {
       setAuthError({
         type: 'GENERIC',
@@ -225,7 +241,7 @@ export default function LoginGatewayScreen() {
       flex: 1,
       paddingHorizontal: theme.spacing.base,
       justifyContent: 'space-between',
-      paddingVertical: theme.spacing.md,
+      paddingVertical: theme.spacing.xs,
     },
     header: {
       flexDirection: 'row',
@@ -257,7 +273,7 @@ export default function LoginGatewayScreen() {
       backgroundColor: theme.colors.surfaceContainerHigh,
       paddingHorizontal: 8,
       paddingVertical: 2,
-      borderRadius: 2,
+      borderRadius: 0,
     },
     statusPillText: {
       fontFamily: theme.typography.monoBold,
@@ -425,8 +441,12 @@ export default function LoginGatewayScreen() {
   }), [theme]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle={theme.mode === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.surface} />
+    <View style={[styles.safeArea, { paddingTop: topInset, paddingBottom: bottomInset }]}>
+      <StatusBar 
+        barStyle={theme.mode === 'dark' ? 'light-content' : 'dark-content'} 
+        backgroundColor="transparent"
+        translucent={Platform.OS === 'android'}
+      />
       <View style={styles.container}>
         {/* Header Metadata */}
         <View style={styles.header}>
@@ -571,6 +591,6 @@ export default function LoginGatewayScreen() {
         visible={isCreditsOpen}
         onClose={() => setIsCreditsOpen(false)}
       />
-    </SafeAreaView>
+    </View>
   );
 }

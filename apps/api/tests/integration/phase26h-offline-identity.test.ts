@@ -21,6 +21,10 @@ describe('ATTENDANCE-06: Offline Identity Binding BOLA Protection', () => {
 
   before(async () => {
     // Clear out
+    await adminPrisma.eventRegistrationResponse.deleteMany({});
+    await adminPrisma.eventFormField.deleteMany({});
+    await adminPrisma.eventForm.deleteMany({});
+    await adminPrisma.attendanceDispute.deleteMany({});
     await adminPrisma.team.deleteMany({});
     await adminPrisma.attendanceRecord.deleteMany({});
     await adminPrisma.attendanceSession.deleteMany({});

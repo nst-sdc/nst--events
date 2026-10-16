@@ -15,7 +15,9 @@ export interface Event {
   locationName: string | null;
   state: string;
   maxCapacity: number | null;
+  maxParticipants?: number | null;
   registrationCount: number;
+  participantCount?: number;
   isLocked: boolean;
   attendanceType: 'SINGLE' | 'MULTI_SESSION';
   eventType: 'HACKATHON' | 'WORKSHOP' | 'SEMINAR' | 'SOCIAL' | 'COMPETITION' | 'OTHER';

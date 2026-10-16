@@ -38,7 +38,7 @@ describe('Phase 18: Private Event QR Attendance Regression', () => {
         maxCapacity: 100,
         eventType: 'WORKSHOP',
         state: 'PUBLISHED',
-        visibility: 'PRIVATE' // <-- Crucial: Must be PRIVATE
+        visibility: 'RESTRICTED' // <-- Crucial: Must be non-public
       }
     });
 

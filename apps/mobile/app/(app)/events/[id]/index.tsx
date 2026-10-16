@@ -13,10 +13,12 @@ import { useEventFormFields } from '../../../../src/hooks/useEventFormFields';
 import { useEventForms } from '../../../../src/hooks/useEventForms';
 import { useNetworkStatus } from '../../../../src/infrastructure/network';
 import { useAppTheme } from '../../../../src/store/theme-store';
+import { useEventResults } from '../../../../src/hooks/use-event-results';
 import { Button } from '../../../../src/ui/Button';
 import { MobileShell } from '../../../../src/ui/core/MobileShell';
 import { Title, Display, Body, MonoLabel, Mono } from '../../../../src/ui/core/Typography';
 import { StatusBadge } from '../../../../src/ui/core/StatusBadge';
+import { TeamGatewayModal } from '../../../../src/ui/TeamGatewayModal';
 import { 
   findActiveAttendanceSession, 
   isSessionAttendancePresent, 
@@ -31,6 +33,7 @@ export default function EventScreen() {
 
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showTeamGatewayModal, setShowTeamGatewayModal] = useState(false);
 
   const {
     registerAsync,
@@ -55,6 +58,7 @@ export default function EventScreen() {
   });
 
   const { data: eventFormFields } = useEventFormFields(id as string);
+  const { data: resultsResponse } = useEventResults(event?.slug || (id as string), !!event);
 
   const { data: registration, isLoading: isRegLoading } = useQuery({
     queryKey: ['events', id, 'registration'],
@@ -66,7 +70,21 @@ export default function EventScreen() {
 
   const isLoading = isEventLoading || isRegLoading;
   
+  const registrationType = event?.registrationType || (event as any)?.registration_type;
+  const isTeamEvent = registrationType === 'TEAM';
   const isFull = event?.maxCapacity ? (event.registrationCount || 0) >= event.maxCapacity : false;
+  const isTeamCapacityFull = isFull;
+  const maxParticipants = typeof (event as any)?.maxParticipants === 'number'
+    ? (event as any).maxParticipants
+    : typeof (event as any)?.max_participants === 'number'
+      ? (event as any).max_participants
+      : null;
+  const participantCount = typeof (event as any)?.participantCount === 'number'
+    ? (event as any).participantCount
+    : typeof (event as any)?.participant_count === 'number'
+      ? (event as any).participant_count
+      : 0;
+  const isParticipantCapacityFull = maxParticipants !== null ? participantCount >= maxParticipants : false;
   const isWaitlistCancel = (registration?.status || (registration as any)?.registrationStatus) === 'WAITLISTED';
   const isRegistered = (registration?.status || (registration as any)?.registrationStatus) === 'REGISTERED';
   const { data: standaloneForms, isLoading: isFormsLoading } = useEventForms(id as string, isRegistered);
@@ -367,28 +385,46 @@ export default function EventScreen() {
 
     // TEAM events: Must route to squad management instead of invoking solo register/cancel endpoints
     if (registrationType === 'TEAM') {
-      if (status === 'REGISTERED' && activeSession) {
-        if (hasAttendanceForActiveSession) {
+      if (status === 'REGISTERED' || status === 'WAITLISTED') {
+        if (status === 'REGISTERED' && activeSession) {
+          if (hasAttendanceForActiveSession) {
+            return (
+              <View style={styles.successTray}>
+                <MonoLabel style={styles.successText}>ATTENDANCE MARKED</MonoLabel>
+              </View>
+            );
+          }
           return (
-            <View style={styles.successTray}>
-              <MonoLabel style={styles.successText}>ATTENDANCE MARKED</MonoLabel>
-            </View>
+            <Button
+              title="[ SCAN QR / MARK ATTENDANCE ]"
+              onPress={() => router.push(`/(app)/events/${id}/scan`)}
+              variant="primary"
+              style={styles.actionBtn}
+            />
           );
         }
         return (
           <Button
-            title="[ SCAN QR / MARK ATTENDANCE ]"
-            onPress={() => router.push(`/(app)/events/${id}/scan`)}
-            variant="primary"
+            title="[ SQUAD COMMAND / HUB ]"
+            onPress={() => router.push(`/(app)/events/${id}/teams`)}
+            variant="secondary"
             style={styles.actionBtn}
           />
         );
       }
+
       return (
         <Button
-          title="[ SQUAD DETAILS & RULES ]"
-          onPress={() => router.push(`/(app)/events/${id}/teams`)}
-          variant="secondary"
+          title={
+            isParticipantCapacityFull
+              ? '[ PARTICIPANT CAPACITY FULL ]'
+              : isTeamCapacityFull
+              ? '[ JOIN SQUAD (TEAMS FULL) ]'
+              : '[ CREATE OR JOIN SQUAD ]'
+          }
+          onPress={() => setShowTeamGatewayModal(true)}
+          variant="primary"
+          disabled={isParticipantCapacityFull}
           style={styles.actionBtn}
         />
       );
@@ -434,8 +470,8 @@ export default function EventScreen() {
     if (status === 'WAITLISTED') {
       return (
         <View style={styles.actionTrayStack}>
-          <View style={[styles.restrictedTray, { borderColor: '#d4a200' }]}>
-            <MonoLabel style={[styles.restrictedText, { color: '#d4a200' }]}>
+          <View style={[styles.restrictedTray, { borderColor: theme.colors.warning }]}>
+            <MonoLabel style={[styles.restrictedText, { color: theme.colors.warning }]}>
               WAITLISTED — POSITION: {registration?.waitlist_position ?? 'QUEUED'}
             </MonoLabel>
           </View>
@@ -562,39 +598,126 @@ export default function EventScreen() {
                 </Mono>
               </View>
             </View>
-            <View style={styles.gridRow}>
-              <View style={styles.gridCol}>
-                <MonoLabel style={styles.metaLabel}>REGISTRATION</MonoLabel>
-                <Mono style={registration?.status === 'REGISTERED' ? styles.successColor : {}}>
-                  {registration?.status || 'NOT_REGISTERED'}
-                </Mono>
-              </View>
-              <View style={[styles.gridCol, styles.gridColRight]}>
-                <MonoLabel style={styles.metaLabel}>CAPACITY</MonoLabel>
-                <Mono>
-                  {event?.registrationCount || 0} / {event?.maxCapacity || '∞'}
-                </Mono>
-              </View>
-            </View>
-            <View style={styles.gridRowLast}>
-              <View style={styles.gridCol}>
-                <MonoLabel style={styles.metaLabel}>REGS OPEN</MonoLabel>
-                <Mono>
-                  {registrationOpensAt
-                    ? new Date(registrationOpensAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-                    : 'TBA'}
-                </Mono>
-              </View>
-              <View style={[styles.gridCol, styles.gridColRight]}>
-                <MonoLabel style={styles.metaLabel}>REGS CLOSE</MonoLabel>
-                <Mono>
-                  {registrationClosesAt
-                    ? new Date(registrationClosesAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-                    : 'NO DEADLINE'}
-                </Mono>
-              </View>
-            </View>
+            {isTeamEvent ? (
+              <>
+                <View style={styles.gridRow}>
+                  <View style={styles.gridCol}>
+                    <MonoLabel style={styles.metaLabel}>REGISTRATION</MonoLabel>
+                    <Mono style={registration?.status === 'REGISTERED' ? styles.successColor : {}}>
+                      {registration?.status || 'NOT_REGISTERED'}
+                    </Mono>
+                  </View>
+                  <View style={[styles.gridCol, styles.gridColRight]}>
+                    <MonoLabel style={styles.metaLabel}>TEAM LIMIT</MonoLabel>
+                    <Mono>
+                      {event?.registrationCount || 0} / {event?.maxCapacity || '∞'}
+                    </Mono>
+                  </View>
+                </View>
+                <View style={styles.gridRowLast}>
+                  <View style={styles.gridCol}>
+                    <MonoLabel style={styles.metaLabel}>PARTICIPANTS</MonoLabel>
+                    <Mono>
+                      {participantCount} / {maxParticipants !== null ? maxParticipants : '∞'}
+                    </Mono>
+                  </View>
+                  <View style={[styles.gridCol, styles.gridColRight]}>
+                    <MonoLabel style={styles.metaLabel}>REGS CLOSE</MonoLabel>
+                    <Mono>
+                      {registrationClosesAt
+                        ? new Date(registrationClosesAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                        : 'NO DEADLINE'}
+                    </Mono>
+                  </View>
+                </View>
+              </>
+            ) : (
+              <>
+                <View style={styles.gridRow}>
+                  <View style={styles.gridCol}>
+                    <MonoLabel style={styles.metaLabel}>REGISTRATION</MonoLabel>
+                    <Mono style={registration?.status === 'REGISTERED' ? styles.successColor : {}}>
+                      {registration?.status || 'NOT_REGISTERED'}
+                    </Mono>
+                  </View>
+                  <View style={[styles.gridCol, styles.gridColRight]}>
+                    <MonoLabel style={styles.metaLabel}>CAPACITY</MonoLabel>
+                    <Mono>
+                      {event?.registrationCount || 0} / {event?.maxCapacity || '∞'}
+                    </Mono>
+                  </View>
+                </View>
+                <View style={styles.gridRowLast}>
+                  <View style={styles.gridCol}>
+                    <MonoLabel style={styles.metaLabel}>REGS OPEN</MonoLabel>
+                    <Mono>
+                      {registrationOpensAt
+                        ? new Date(registrationOpensAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                        : 'TBA'}
+                    </Mono>
+                  </View>
+                  <View style={[styles.gridCol, styles.gridColRight]}>
+                    <MonoLabel style={styles.metaLabel}>REGS CLOSE</MonoLabel>
+                    <Mono>
+                      {registrationClosesAt
+                        ? new Date(registrationClosesAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                        : 'NO DEADLINE'}
+                    </Mono>
+                  </View>
+                </View>
+              </>
+            )}
           </View>
+
+          {resultsResponse?.status === 'PUBLISHED' && resultsResponse?.results && (
+            <View
+              style={{
+                backgroundColor: theme.colors.surfaceContainerLow,
+                borderWidth: 2,
+                borderColor: theme.colors.podiumGold,
+                padding: theme.spacing.base,
+                gap: 8,
+              }}
+              testID="event-results-published-banner"
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <MonoLabel style={{ color: theme.colors.podiumGold, fontSize: 11 }}>🏆 OFFICIAL RESULTS & WINNERS</MonoLabel>
+                <Mono style={{ fontSize: 10, color: theme.colors.outline }}>
+                  REV #{resultsResponse.results.revision_number}
+                </Mono>
+              </View>
+
+              <Body style={{ fontSize: 12, color: theme.colors.onSurfaceVariant }}>
+                Official podium placements, awards, and verified student achievements are published for this event.
+              </Body>
+
+              <Button
+                title="[ VIEW OFFICIAL RESULTS & PODIUM ]"
+                variant="primary"
+                onPress={() => router.push(`/(app)/events/${id}/results`)}
+                style={{ height: 44, minHeight: 44, marginTop: 4 }}
+                testID="view-results-btn"
+              />
+            </View>
+          )}
+
+          {isEventEnded && resultsResponse?.status !== 'PUBLISHED' && (
+            <View
+              style={{
+                backgroundColor: theme.colors.surfaceContainerLow,
+                borderWidth: 1,
+                borderColor: theme.colors.borderHairline,
+                padding: theme.spacing.base,
+                gap: 6,
+              }}
+              testID="event-results-pending-banner"
+            >
+              <MonoLabel style={{ color: theme.colors.outline, fontSize: 10 }}>RESULTS STATUS</MonoLabel>
+              <Body style={{ fontSize: 12, color: theme.colors.onSurfaceVariant }}>
+                Official results for this event have not been released yet. Evaluations will be certified once judging concludes.
+              </Body>
+            </View>
+          )}
 
           <View style={styles.actionSection}>
             {renderActionTray()}
@@ -629,7 +752,7 @@ export default function EventScreen() {
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                             <MonoLabel style={{ color: theme.colors.primary, fontSize: 10 }}>[{f.purpose}]</MonoLabel>
                             {formClosed && (
-                              <MonoLabel style={{ color: '#FF5252', fontSize: 10 }}>[CLOSED]</MonoLabel>
+                              <MonoLabel style={{ color: theme.colors.error, fontSize: 10 }}>[CLOSED]</MonoLabel>
                             )}
                           </View>
                           <Body style={{ color: theme.colors.onSurface, fontWeight: 'bold' }} numberOfLines={1}>
@@ -663,6 +786,12 @@ export default function EventScreen() {
                 {(event?.metadata?.minimum_team_size || (event?.metadata as any)?.minimumTeamSize) ? ` Minimum: ${event?.metadata?.minimum_team_size || (event?.metadata as any)?.minimumTeamSize}` : ''}
                 {(event?.metadata?.maximum_team_size || (event?.metadata as any)?.maximumTeamSize) ? ` • Maximum: ${event?.metadata?.maximum_team_size || (event?.metadata as any)?.maximumTeamSize}` : ''}
               </Body>
+              <Button
+                title="[ SQUAD DETAILS & RULES ]"
+                onPress={() => router.push(`/(app)/events/${id}/teams`)}
+                variant="secondary"
+                style={{ height: 40, minHeight: 40, marginTop: 8 }}
+              />
             </View>
           )}
 
@@ -783,6 +912,15 @@ export default function EventScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Team Gateway Modal */}
+      <TeamGatewayModal
+        eventId={id as string}
+        isOpen={showTeamGatewayModal}
+        onClose={() => setShowTeamGatewayModal(false)}
+        isTeamCapacityFull={isTeamCapacityFull}
+        isParticipantCapacityFull={isParticipantCapacityFull}
+      />
     </MobileShell>
   );
 }

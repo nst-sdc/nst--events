@@ -6,8 +6,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useNotifications, useReadNotification, useUnreadCount, Notification } from '../../hooks/useNotifications';
 import { resolveStudentNotificationTarget } from '../../lib/student-notification-utils';
+import { getWebAuthStore } from '../../lib/auth-store';
 
 export function StudentNotificationPopover() {
+  const isAuth = typeof window !== 'undefined' ? !!getWebAuthStore().accessToken : false;
   const [isOpen, setIsOpen] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -74,6 +76,10 @@ export function StudentNotificationPopover() {
     if (diffHrs < 24) return `${diffHrs}H AGO`;
     return `${Math.floor(diffHrs / 24)}D AGO`;
   };
+
+  if (!isAuth) {
+    return null;
+  }
 
   return (
     <div className="relative" ref={popoverRef}>

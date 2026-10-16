@@ -28,10 +28,23 @@ test('Phase UI-14D Academic Identity Integration', async (t) => {
     await adminPrisma.eventAudienceBatch.deleteMany({});
     await adminPrisma.academicBatch.deleteMany({});
     await adminPrisma.academicProgram.deleteMany({});
+    const targetEmails = ['faculty@newtonschool.co', 'e25b070564@adypu.edu.in', 'e25c999@adypu.edu.in'];
+    const usersToDelete = await adminPrisma.user.findMany({ where: { email: { in: targetEmails } } });
+    const userIdsToDelete = usersToDelete.map(u => u.id);
+    if (userIdsToDelete.length > 0) {
+      await adminPrisma.eventRegistrationResponse.deleteMany({ where: { eventRegistration: { userId: { in: userIdsToDelete } } } });
+      await adminPrisma.eventRegistration.deleteMany({ where: { userId: { in: userIdsToDelete } } });
+      await adminPrisma.eventClub.deleteMany({ where: { event: { createdBy: { in: userIdsToDelete } } } });
+      await adminPrisma.eventFormField.deleteMany({ where: { event: { createdBy: { in: userIdsToDelete } } } });
+      await adminPrisma.attendanceRecord.deleteMany({ where: { userId: { in: userIdsToDelete } } });
+      await adminPrisma.clubMembership.deleteMany({ where: { userId: { in: userIdsToDelete } } });
+      await adminPrisma.team.deleteMany({ where: { leaderId: { in: userIdsToDelete } } });
+      await adminPrisma.event.deleteMany({ where: { createdBy: { in: userIdsToDelete } } });
+    }
     await adminPrisma.user.deleteMany({
       where: {
         email: {
-          in: ['faculty@newtonschool.co', 'e25b070564@adypu.edu.in', 'e25c999@adypu.edu.in']
+          in: targetEmails
         }
       }
     });

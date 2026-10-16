@@ -32,26 +32,32 @@ export interface NotificationPayloadForRouting {
   } | null;
 }
 
-export function resolveNotificationRoute(notification: NotificationPayloadForRouting | null | undefined): string | null {
+export function resolveNotificationRoute(notification: any): string | null {
   if (!notification) return null;
 
   const entityIds = notification.metadata?.entity_ids;
+  const eventId = entityIds?.event_id || notification.metadata?.event_id;
 
   // 1. entity_ids.dispute_id exists → /(app)/disputes/[id]
   if (entityIds?.dispute_id) {
     return `/(app)/disputes/${entityIds.dispute_id}`;
   }
 
-  // 2. Otherwise, entity_ids.event_id exists → /(app)/events/[id]
-  if (entityIds?.event_id) {
-    return `/(app)/events/${entityIds.event_id}`;
+  // 2. Event Results notification → /(app)/events/[id]/results
+  if (eventId && notification.metadata?.screen === 'EventResults') {
+    return `/(app)/events/${eventId}/results`;
   }
 
-  // 3. Otherwise, notification type === 'ROLE_CHANGED' → /(app)/profile
+  // 3. Otherwise, event_id exists → /(app)/events/[id]
+  if (eventId) {
+    return `/(app)/events/${eventId}`;
+  }
+
+  // 4. Otherwise, notification type === 'ROLE_CHANGED' → /(app)/profile
   if (notification.type === 'ROLE_CHANGED') {
     return '/(app)/profile';
   }
 
-  // 4. Otherwise → do not navigate
+  // 5. Otherwise → do not navigate
   return null;
 }

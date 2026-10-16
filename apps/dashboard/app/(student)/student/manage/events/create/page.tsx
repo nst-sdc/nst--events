@@ -852,6 +852,7 @@ export default function CreateEventPage() {
     registration_type: 'INDIVIDUAL',
     attendance_type: 'SINGLE',
     max_capacity: '',
+    max_participants: '',
     minimum_team_size: '2',
     maximum_team_size: '4',
     audience: 'ALL_STUDENTS',
@@ -1034,6 +1035,9 @@ export default function CreateEventPage() {
     }
     if (formData.max_capacity && parseInt(formData.max_capacity, 10) > 0) {
       payload.max_capacity = parseInt(formData.max_capacity, 10);
+    }
+    if (formData.registration_type === 'TEAM' && formData.max_participants && parseInt(formData.max_participants, 10) > 0) {
+      payload.max_participants = parseInt(formData.max_participants, 10);
     }
     if (formData.audience === 'SPECIFIC_BATCHES' && formData.audience_batch_ids.length > 0) {
       payload.audience_batch_ids = formData.audience_batch_ids;
@@ -1456,6 +1460,17 @@ export default function CreateEventPage() {
                       className="ce-input"
                     />
                   </div>
+
+                  {formData.registration_type === 'TEAM' && (
+                    <div className="ce-field">
+                      <label className="ce-label">MAXIMUM PARTICIPANTS</label>
+                      <input
+                        type="number" min="1" name="max_participants" value={formData.max_participants}
+                        onChange={handleChange} placeholder="Leave empty for unlimited participants across all teams"
+                        className="ce-input"
+                      />
+                    </div>
+                  )}
 
                   {/* Audience Targeting */}
                   <div className="ce-field">

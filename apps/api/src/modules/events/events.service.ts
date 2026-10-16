@@ -1,7 +1,7 @@
 import { withUserContext } from '@nst/database';
 import { mapDatabaseError } from '../../lib/errors/database-error-mapper';
 import { prisma } from '../../lib/prisma';
-import { NotFoundError, UnprocessableEntityError, ForbiddenError, BadRequestError } from '../../lib/errors';
+import { NotFoundError, UnprocessableEntityError, ForbiddenError, BadRequestError, UnauthorizedError } from '../../lib/errors';
 // Removed GLOBAL_ADMIN_ROLES
 import { Prisma, Event, AttendanceSession } from '@nst/database';
 import crypto from 'crypto';
@@ -13,8 +13,167 @@ import {
   UpdateSessionInput,
   EventLockState,
   UpdateEventFormFieldsInput,
+  PublicEventsQuery,
 } from './events.schema';
 import { enqueueNotification } from '@nst/shared';
+import { checkAudienceEligibility } from './audience.service';
+import { generateSlug, isValidSlug, isReservedSlug } from '../../utils/slug-utils';
+
+export interface UserForEligibilityCheck {
+  id?: string;
+  email?: string | null;
+  googleSub?: string | null;
+  deletedAt?: Date | null;
+}
+
+export function isInstitutionalEmail(email?: string | null): boolean {
+  if (!email || typeof email !== 'string') return false;
+  const parts = email.trim().toLowerCase().split('@');
+  if (parts.length !== 2 || !parts[0] || !parts[1]) return false;
+  const domain = parts[1];
+  if (domain === 'adypu.edu.in' || domain === 'newtonschool.co') return true;
+  if (process.env.NODE_ENV !== 'production' && process.env.ALLOW_TEST_EMAIL_DOMAINS === 'true') {
+    if (['example.com', 'test.local', 'test.com', 'nst.com'].includes(domain)) return true;
+  }
+  return false;
+}
+
+export function validateRegistrationEligibility(user?: UserForEligibilityCheck | null): void {
+  if (!user) {
+    throw new ForbiddenError('User not found');
+  }
+  if (user.deletedAt) {
+    throw new ForbiddenError('Account deactivated');
+  }
+  if (!user.email || !isInstitutionalEmail(user.email)) {
+    throw new ForbiddenError('Registration requires an institutional email account (@adypu.edu.in or @newtonschool.co)');
+  }
+  if (!user.googleSub || user.googleSub.trim() === '' || user.googleSub.startsWith('unverified')) {
+    throw new ForbiddenError('Registration requires a verified institutional email account');
+  }
+}
+
+export async function generateUniqueSlug(
+  tx: any,
+  title: string,
+  eventId?: string
+): Promise<string> {
+  let baseSlug = generateSlug(title);
+  if (!baseSlug || isReservedSlug(baseSlug)) {
+    baseSlug = `event-${crypto.randomBytes(3).toString('hex')}`;
+  }
+
+  let candidate = baseSlug;
+  let counter = 2;
+
+  while (true) {
+    const existingEvent = await tx.event.findFirst({
+      where: {
+        slug: candidate,
+        ...(eventId ? { id: { not: eventId } } : {}),
+      },
+      select: { id: true },
+    });
+
+    const existingHistory = await tx.eventSlugHistory.findFirst({
+      where: {
+        slug: candidate,
+        ...(eventId ? { eventId: { not: eventId } } : {}),
+      },
+      select: { id: true },
+    });
+
+    if (!existingEvent && !existingHistory) {
+      return candidate;
+    }
+
+    candidate = `${baseSlug}-${counter}`;
+    counter++;
+  }
+}
+
+export async function validateAndNormalizeSlug(
+  tx: any,
+  desiredSlug: string,
+  eventId?: string
+): Promise<{ valid: boolean; available: boolean; normalizedSlug: string; reason?: string }> {
+  const normalized = generateSlug(desiredSlug);
+
+  if (!isValidSlug(desiredSlug)) {
+    return {
+      valid: false,
+      available: false,
+      normalizedSlug: normalized,
+      reason: 'Slug must be between 3 and 100 characters and contain only lowercase alphanumeric characters and hyphens without spaces.',
+    };
+  }
+
+  if (isReservedSlug(normalized)) {
+    return {
+      valid: false,
+      available: false,
+      normalizedSlug: normalized,
+      reason: 'This URL slug is a reserved system path and cannot be used.',
+    };
+  }
+
+  const existingEvent = await tx.event.findFirst({
+    where: {
+      slug: normalized,
+      ...(eventId ? { id: { not: eventId } } : {}),
+    },
+    select: { id: true },
+  });
+
+  if (existingEvent) {
+    return {
+      valid: true,
+      available: false,
+      normalizedSlug: normalized,
+      reason: 'This URL slug is already in use by another event.',
+    };
+  }
+
+  const existingHistory = await tx.eventSlugHistory.findFirst({
+    where: {
+      slug: normalized,
+      ...(eventId ? { eventId: { not: eventId } } : {}),
+    },
+    select: { id: true },
+  });
+
+  if (existingHistory) {
+    return {
+      valid: true,
+      available: false,
+      normalizedSlug: normalized,
+      reason: 'This URL slug is reserved as a historical redirect for another event.',
+    };
+  }
+
+  return {
+    valid: true,
+    available: true,
+    normalizedSlug: normalized,
+  };
+}
+
+export const validateSlugAvailability = async (slug: string, eventId?: string) => {
+  return withUserContext(null, async (tx) => {
+    const res = await validateAndNormalizeSlug(tx, slug, eventId);
+    let suggestedSlug: string | undefined;
+    if (!res.available) {
+      suggestedSlug = await generateUniqueSlug(tx, slug, eventId);
+    }
+    return {
+      valid: res.valid,
+      available: res.available,
+      reason: res.reason,
+      normalized_slug: res.normalizedSlug,
+      suggested_slug: suggestedSlug,
+    };
+  });
+};
 
 export const calculateLockState = (isLocked: boolean, endTime: Date, dbNow: Date): EventLockState => {
   const finalDeadline = endTime.getTime() + 24 * 60 * 60 * 1000;
@@ -25,9 +184,9 @@ export const calculateLockState = (isLocked: boolean, endTime: Date, dbNow: Date
 };
 
 export const calculateRegistrationStatus = (dbNow: Date, start: Date | null, end: Date | null): 'UPCOMING' | 'OPEN' | 'CLOSED' => {
-  if (!start || !end) return 'CLOSED';
+  if (!start || !end || start >= end) return 'CLOSED';
   if (dbNow < start) return 'UPCOMING';
-  if (dbNow > end) return 'CLOSED';
+  if (dbNow >= end) return 'CLOSED';
   return 'OPEN';
 };
 
@@ -57,9 +216,21 @@ export const createEvent = async (callerId: string, data: CreateEventInput): Pro
       }
     }
 
+    let slug: string;
+    if (data.slug) {
+      const slugCheck = await validateAndNormalizeSlug(tx, data.slug);
+      if (!slugCheck.valid || !slugCheck.available) {
+        throw new UnprocessableEntityError(slugCheck.reason || 'Invalid or unavailable slug');
+      }
+      slug = slugCheck.normalizedSlug;
+    } else {
+      slug = await generateUniqueSlug(tx, data.title);
+    }
+
     const event = await tx.event.create({
       data: {
         title: data.title,
+        slug,
         description: data.description,
         startTime: data.start_time,
         endTime: data.end_time,
@@ -67,12 +238,13 @@ export const createEvent = async (callerId: string, data: CreateEventInput): Pro
         registrationEndTime: data.registration_end_time,
         locationName: data.location_name,
         eventType: data.event_type,
-        visibility: data.visibility,
+        visibility: data.visibility || null,
         registrationType: data.registration_type,
         attendanceType: data.attendance_type,
         metadata: (data.metadata || {}) as Prisma.InputJsonValue,
         createdBy: callerId,
         maxCapacity: data.max_capacity,
+        maxParticipants: data.max_participants,
         audience: data.audience,
         eventClubs: {
           create: data.club_ids.map((c) => ({
@@ -150,7 +322,11 @@ export const listEvents = async (callerId: string, query: ListEventsQuery): Prom
         query.sort === 'created_at' ? { createdAt: query.order } : { startTime: query.order },
         { id: 'asc' }
       ],
-      include: { eventClubs: { include: { club: true } }, eventAudienceBatches: true },
+      include: { 
+        eventClubs: { include: { club: true } }, 
+        eventAudienceBatches: true,
+        _count: { select: { eventRegistrations: { where: { deletedAt: null, registrationStatus: { not: 'CANCELLED' } } } } },
+      },
     });
 
     const has_more = items.length > query.limit;
@@ -191,9 +367,12 @@ export const listEvents = async (callerId: string, query: ListEventsQuery): Prom
       const dbNow = timeResult[0].now;
 
       finalItems = items.map((item) => {
-        const { eventAudienceBatches, ...rest } = item;
+        const { eventAudienceBatches, _count, ...rest } = item;
+        const participantCount = _count?.eventRegistrations ?? 0;
         return {
           ...rest,
+          participantCount,
+          participant_count: participantCount,
           audienceBatchIds: eventAudienceBatches.map(b => b.batchId),
           location_geofence: geoMap.get(item.id) || null,
           lock_deadline: new Date(item.endTime.getTime() + 24 * 60 * 60 * 1000).toISOString(),
@@ -221,6 +400,8 @@ type GetEventByIdResponse = Prisma.EventGetPayload<{
   registrationStatus: 'UPCOMING' | 'OPEN' | 'CLOSED';
   audienceBatchIds?: string[];
   below_minimum_team_count: number;
+  participantCount: number;
+  participant_count: number;
 };
 
 export const getEventById = async (callerId: string, eventId: string): Promise<GetEventByIdResponse> => {
@@ -230,7 +411,7 @@ export const getEventById = async (callerId: string, eventId: string): Promise<G
       include: {
         eventClubs: { include: { club: true } },
         attendanceSessions: { where: { deletedAt: null } },
-        _count: { select: { eventRegistrations: { where: { deletedAt: null } } } },
+        _count: { select: { eventRegistrations: { where: { deletedAt: null, registrationStatus: { not: 'CANCELLED' } } } } },
         eventAudienceBatches: true,
       },
     });
@@ -265,9 +446,12 @@ export const getEventById = async (callerId: string, eventId: string): Promise<G
     const dbNow = timeResult[0].now;
 
     const { eventAudienceBatches, ...eventRest } = event;
+    const participantCount = eventRest._count?.eventRegistrations ?? 0;
     
     return {
       ...eventRest,
+      participantCount,
+      participant_count: participantCount,
       audienceBatchIds: eventAudienceBatches.map(b => b.batchId),
       location_geofence: geo[0]?.geojson ? JSON.parse(geo[0].geojson) : null,
       lock_deadline: new Date(event.endTime.getTime() + 24 * 60 * 60 * 1000).toISOString(),
@@ -299,7 +483,7 @@ export const updateEvent = async (callerId: string, eventId: string, data: Updat
   return withUserContext(callerId, async (tx) => {
     const existing = await tx.event.findUnique({
       where: { id: eventId },
-      select: { state: true, deletedAt: true, startTime: true, endTime: true, registrationStartTime: true, registrationEndTime: true },
+      select: { state: true, deletedAt: true, startTime: true, endTime: true, registrationStartTime: true, registrationEndTime: true, slug: true },
     });
 
     if (!existing || existing.deletedAt) {
@@ -345,10 +529,37 @@ export const updateEvent = async (callerId: string, eventId: string, data: Updat
       throw new UnprocessableEntityError('registration_end_time must be less than or equal to event end_time');
     }
 
+    let slugToUpdate: string | undefined = undefined;
+    if (data.slug !== undefined) {
+      const normalizedDesired = generateSlug(data.slug);
+      if (normalizedDesired !== existing.slug) {
+        const slugCheck = await validateAndNormalizeSlug(tx, data.slug, eventId);
+        if (!slugCheck.valid || !slugCheck.available) {
+          throw new UnprocessableEntityError(slugCheck.reason || 'Invalid or unavailable slug');
+        }
+        slugToUpdate = slugCheck.normalizedSlug;
+
+        // Archive previous slug into event_slug_history if it existed
+        if (existing.slug) {
+          await tx.eventSlugHistory.upsert({
+            where: { slug: existing.slug },
+            create: { eventId, slug: existing.slug },
+            update: { eventId },
+          });
+        }
+
+        // If new slug was previously in history for this event, remove it from history
+        await tx.eventSlugHistory.deleteMany({
+          where: { eventId, slug: slugToUpdate },
+        });
+      }
+    }
+
     const event = await tx.event.update({
       where: { id: eventId },
       data: {
         title: data.title,
+        slug: slugToUpdate !== undefined ? slugToUpdate : undefined,
         description: data.description,
         startTime: data.start_time,
         endTime: data.end_time,
@@ -356,11 +567,12 @@ export const updateEvent = async (callerId: string, eventId: string, data: Updat
         registrationEndTime: data.registration_end_time,
         locationName: data.location_name,
         eventType: data.event_type,
-        visibility: data.visibility,
+        visibility: data.visibility !== undefined ? data.visibility : undefined,
         registrationType: data.registration_type,
         attendanceType: data.attendance_type,
         metadata: data.metadata ? (data.metadata as Prisma.InputJsonValue) : undefined,
         maxCapacity: data.max_capacity,
+        maxParticipants: data.max_participants,
         audience: data.audience,
       },
       include: {
@@ -481,6 +693,10 @@ export const approveEvent = async (callerId: string, eventId: string) => {
       include: { eventClubs: { include: { club: true } } },
     });
     if (!event) throw new NotFoundError('Event not found');
+
+    if (!event.visibility || !['PUBLIC', 'UNLISTED', 'RESTRICTED'].includes(event.visibility)) {
+      throw new UnprocessableEntityError('Event visibility must be selected before publication');
+    }
 
     try {
       await tx.$queryRaw`SELECT id FROM approve_event(${eventId}::uuid)`;
@@ -716,11 +932,71 @@ export const updateSession = async (
   });
 };
 
-export const getEventFormFields = async (eventId: string) => {
-  return prisma.eventFormField.findMany({
-    where: { eventId },
-    include: { fieldDefinition: true },
-    orderBy: { order: 'asc' },
+export const getEventFormFields = async (eventId: string, callerId?: string) => {
+  if (callerId) {
+    return withUserContext(callerId, async (tx) => {
+      const event = await tx.event.findUnique({
+        where: { id: eventId },
+        select: {
+          id: true,
+          state: true,
+          visibility: true,
+          audience: true,
+          deletedAt: true,
+          eventClubs: {
+            where: { isPrimary: true },
+            select: { clubId: true },
+          },
+        },
+      });
+
+      if (!event || event.deletedAt) {
+        throw new NotFoundError('Event not found');
+      }
+
+      const user = await tx.user.findUnique({
+        where: { id: callerId },
+        select: { globalRole: true },
+      });
+      const isPlatformAdmin = user && ['PLATFORM_ADMIN', 'FACULTY_ADMIN'].includes(user.globalRole);
+
+      let isOrganizer = isPlatformAdmin;
+      if (!isOrganizer && event.eventClubs.length > 0) {
+        const primaryClubId = event.eventClubs[0].clubId;
+        const membership = await tx.clubMembership.findFirst({
+          where: {
+            clubId: primaryClubId,
+            userId: callerId,
+            deletedAt: null,
+            role: { in: ['CLUB_ADMIN', 'CORE_MEMBER', 'FACULTY_MENTOR'] },
+          },
+        });
+        if (membership) {
+          isOrganizer = true;
+        }
+      }
+
+      if (!isOrganizer) {
+        if (event.state !== 'PUBLISHED' || event.visibility !== 'PUBLIC') {
+          throw new NotFoundError('Event not found');
+        }
+        await checkAudienceEligibility(eventId, callerId, tx);
+      }
+
+      return tx.eventFormField.findMany({
+        where: { eventId, formId: null },
+        include: { fieldDefinition: true },
+        orderBy: { order: 'asc' },
+      });
+    });
+  }
+
+  return withUserContext(undefined, async (tx) => {
+    return tx.eventFormField.findMany({
+      where: { eventId, formId: null },
+      include: { fieldDefinition: true },
+      orderBy: { order: 'asc' },
+    });
   });
 };
 
@@ -732,23 +1008,98 @@ export const updateEventFormFields = async (
   return withUserContext(callerId, async (tx) => {
     const event = await tx.event.findUnique({
       where: { id: eventId },
-      select: { deletedAt: true },
+      include: {
+        eventClubs: {
+          select: { clubId: true },
+        },
+      },
     });
 
     if (!event || event.deletedAt) {
       throw new NotFoundError('Event not found');
     }
 
-    // Delete existing form fields
-    await tx.eventFormField.deleteMany({
-      where: { eventId },
+    // Determine caller's club authorization for custom definitions
+    const caller = await tx.user.findUnique({
+      where: { id: callerId },
+      select: { globalRole: true },
     });
 
-    // Create new form fields
-    if (data.fields.length > 0) {
+    let derivedClubId: string | null = null;
+    if (caller && !['PLATFORM_ADMIN', 'FACULTY_ADMIN'].includes(caller.globalRole)) {
+      derivedClubId = event.eventClubs[0]?.clubId || null;
+      if (!derivedClubId) {
+        const membership = await tx.clubMembership.findFirst({
+          where: {
+            userId: callerId,
+            role: { in: ['CLUB_ADMIN', 'CORE_MEMBER'] },
+            deletedAt: null,
+          },
+          select: { clubId: true },
+        });
+        derivedClubId = membership?.clubId || null;
+      }
+    }
+
+    // Track keys within this batch to prevent duplicate creation
+    const resolvedKeys = new Map<string, string>();
+    const resolvedFields: Array<{ fieldDefinitionId: string; isRequired: boolean; order: number }> = [];
+
+    for (const f of data.fields) {
+      let resolvedId = f.fieldDefinitionId;
+
+      if (!resolvedId && f.definition) {
+        const cachedId = resolvedKeys.get(f.definition.key);
+        if (cachedId) {
+          resolvedId = cachedId;
+        } else {
+          // Check if field definition exists in database
+          const existingDef = await tx.fieldDefinition.findUnique({
+            where: { key: f.definition.key },
+          });
+
+          if (existingDef) {
+            resolvedId = existingDef.id;
+          } else {
+            // Create new field definition atomically inside the transaction under caller context
+            const created = await tx.fieldDefinition.create({
+              data: {
+                key: f.definition.key,
+                label: f.definition.label,
+                fieldType: f.definition.fieldType,
+                options: f.definition.options ? (f.definition.options as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
+                isReusable: f.definition.isReusable ?? true,
+                createdByClubId: derivedClubId,
+              },
+            });
+            resolvedId = created.id;
+          }
+          resolvedKeys.set(f.definition.key, resolvedId);
+        }
+      }
+
+      if (!resolvedId) {
+        throw new BadRequestError('Each question must have a valid field definition ID or definition payload');
+      }
+
+      resolvedFields.push({
+        fieldDefinitionId: resolvedId,
+        isRequired: f.isRequired,
+        order: f.order,
+      });
+    }
+
+    // Delete existing registration form fields only (where formId is null)
+    await tx.eventFormField.deleteMany({
+      where: { eventId, formId: null },
+    });
+
+    // Create new form fields with explicit formId: null
+    if (resolvedFields.length > 0) {
       await tx.eventFormField.createMany({
-        data: data.fields.map((f: { fieldDefinitionId: string; isRequired: boolean; order: number }) => ({
+        data: resolvedFields.map((f) => ({
           eventId,
+          formId: null,
           fieldDefinitionId: f.fieldDefinitionId,
           isRequired: f.isRequired,
           order: f.order,
@@ -757,9 +1108,252 @@ export const updateEventFormFields = async (
     }
 
     return tx.eventFormField.findMany({
-      where: { eventId },
+      where: { eventId, formId: null },
       include: { fieldDefinition: true },
       orderBy: { order: 'asc' },
     });
   });
 };
+
+export const listPublicEvents = async (query: PublicEventsQuery) => {
+  return withUserContext(null, async (tx) => {
+    const timeResult = await tx.$queryRaw<{ now: Date }[]>`SELECT now() as now`;
+    const dbNow = timeResult[0].now;
+
+    const where: Prisma.EventWhereInput = {
+      deletedAt: null,
+      state: 'PUBLISHED',
+      visibility: 'PUBLIC',
+    };
+
+    const eventType = query.filter_event_type || (query as any).event_type;
+    if (eventType) where.eventType = eventType;
+    const clubId = query.filter_club_id || (query as any).club_id;
+    if (clubId) {
+      where.eventClubs = { some: { clubId } };
+    }
+
+    if (query.time_filter === 'past') {
+      where.endTime = { lt: dbNow };
+    } else {
+      // Default: upcoming
+      where.endTime = { gte: dbNow };
+    }
+
+    if (query.q) {
+      const fts = await tx.$queryRaw<{ id: string }[]>`
+        SELECT id FROM events 
+        WHERE deleted_at IS NULL
+          AND state = 'PUBLISHED'
+          AND visibility = 'PUBLIC'
+          AND search_vector @@ plainto_tsquery('english', ${query.q})
+        LIMIT 1000
+      `;
+      where.id = { in: fts.map((f) => f.id) };
+    }
+
+    let orderBy: Prisma.EventOrderByWithRelationInput[];
+    if (query.sort === 'created_at') {
+      orderBy = [{ createdAt: query.order }, { id: 'asc' }];
+    } else if (query.time_filter === 'past') {
+      orderBy = [{ startTime: 'desc' }, { id: 'asc' }];
+    } else {
+      orderBy = [{ startTime: 'asc' }, { id: 'asc' }];
+    }
+
+    const limit = query.limit || 20;
+    const items = await tx.event.findMany({
+      where,
+      take: limit + 1,
+      skip: query.cursor ? 1 : undefined,
+      cursor: query.cursor ? { id: query.cursor } : undefined,
+      orderBy,
+      include: {
+        eventClubs: { include: { club: true } },
+      },
+    });
+
+    const has_more = items.length > limit;
+    if (has_more) items.pop();
+    const next_cursor = has_more ? items[items.length - 1].id : undefined;
+
+    const finalItems = items.map((item) => {
+      const primaryClub = item.eventClubs.find((c) => c.isPrimary) || item.eventClubs[0];
+      const metadata = (item.metadata || {}) as Record<string, any>;
+      const regStatus = calculateRegistrationStatus(dbNow, item.registrationStartTime, item.registrationEndTime);
+
+      return {
+        id: item.id,
+        slug: item.slug,
+        title: item.title,
+        description: item.description,
+        banner_url: metadata.banner_url || null,
+        start_time: item.startTime,
+        end_time: item.endTime,
+        registration_start_time: item.registrationStartTime,
+        registration_end_time: item.registrationEndTime,
+        location_name: item.locationName,
+        event_type: item.eventType,
+        registration_type: item.registrationType,
+        visibility: item.visibility,
+        state: item.state,
+        clubs: item.eventClubs.map((ec) => ({
+          id: ec.club.id,
+          name: ec.club.name,
+          banner_url: ec.club.bannerUrl,
+          is_primary: ec.isPrimary,
+        })),
+        primary_club: primaryClub ? {
+          id: primaryClub.club.id,
+          name: primaryClub.club.name,
+          banner_url: primaryClub.club.bannerUrl,
+        } : null,
+        registration_status: regStatus,
+      };
+    });
+
+    return { data: finalItems, pagination: { next_cursor, has_more } };
+  });
+};
+
+export const getPublicEventBySlug = async (slugParam: string, callerId?: string) => {
+  return withUserContext(callerId || null, async (tx) => {
+    const timeResult = await tx.$queryRaw<{ now: Date }[]>`SELECT now() as now`;
+    const dbNow = timeResult[0].now;
+
+    const normalizedSlug = generateSlug(slugParam);
+
+    // 1. Check active event by slug
+    let event = await tx.event.findFirst({
+      where: {
+        slug: normalizedSlug,
+        deletedAt: null,
+      },
+      include: {
+        eventClubs: { include: { club: true } },
+      },
+    });
+
+    // 2. If not found by active slug, check legacy UUID and historical slugs
+    if (!event) {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(slugParam);
+      if (isUuid) {
+        const legacyEvent = await tx.event.findFirst({
+          where: { id: slugParam, deletedAt: null },
+          select: { id: true, slug: true, state: true, visibility: true },
+        });
+
+        if (legacyEvent) {
+          if (legacyEvent.state !== 'PUBLISHED') {
+            throw new NotFoundError('Event not found');
+          }
+          if (legacyEvent.visibility === 'RESTRICTED') {
+            if (!callerId) {
+              throw new UnauthorizedError('Authentication required to access restricted event');
+            }
+            const user = await tx.user.findUnique({
+              where: { id: callerId },
+              select: { email: true },
+            });
+            if (!isInstitutionalEmail(user?.email)) {
+              throw new ForbiddenError('Only verified institutional accounts may access restricted events');
+            }
+          }
+          return {
+            redirect: true,
+            canonical_slug: legacyEvent.slug,
+            permanent: true,
+          };
+        }
+      }
+
+      // Check event_slug_history
+      const history = await tx.eventSlugHistory.findUnique({
+        where: { slug: normalizedSlug },
+        include: {
+          event: {
+            select: { id: true, slug: true, state: true, visibility: true, deletedAt: true },
+          },
+        },
+      });
+
+      if (history && !history.event.deletedAt) {
+        if (history.event.state !== 'PUBLISHED') {
+          throw new NotFoundError('Event not found');
+        }
+        if (history.event.visibility === 'RESTRICTED') {
+          if (!callerId) {
+            throw new UnauthorizedError('Authentication required to access restricted event');
+          }
+          const user = await tx.user.findUnique({
+            where: { id: callerId },
+            select: { email: true },
+          });
+          if (!isInstitutionalEmail(user?.email)) {
+            throw new ForbiddenError('Only verified institutional accounts may access restricted events');
+          }
+        }
+        return {
+          redirect: true,
+          canonical_slug: history.event.slug,
+          permanent: true,
+        };
+      }
+
+      throw new NotFoundError('Event not found');
+    }
+
+    // Active event matched
+    if (event.state !== 'PUBLISHED') {
+      throw new NotFoundError('Event not found');
+    }
+
+    if (event.visibility === 'RESTRICTED') {
+      if (!callerId) {
+        throw new UnauthorizedError('Authentication required to access restricted event');
+      }
+      const user = await tx.user.findUnique({
+        where: { id: callerId },
+        select: { email: true },
+      });
+      if (!isInstitutionalEmail(user?.email)) {
+        throw new ForbiddenError('Only verified institutional accounts may access restricted events');
+      }
+    }
+
+    const metadata = (event.metadata || {}) as Record<string, any>;
+    const regStatus = calculateRegistrationStatus(dbNow, event.registrationStartTime, event.registrationEndTime);
+    const primaryClub = event.eventClubs.find((c) => c.isPrimary) || event.eventClubs[0];
+
+    return {
+      id: event.id,
+      slug: event.slug,
+      title: event.title,
+      description: event.description,
+      banner_url: metadata.banner_url || null,
+      start_time: event.startTime,
+      end_time: event.endTime,
+      registration_start_time: event.registrationStartTime,
+      registration_end_time: event.registrationEndTime,
+      location_name: event.locationName,
+      event_type: event.eventType,
+      registration_type: event.registrationType,
+      visibility: event.visibility,
+      state: event.state,
+      clubs: event.eventClubs.map((ec) => ({
+        id: ec.club.id,
+        name: ec.club.name,
+        banner_url: ec.club.bannerUrl,
+        is_primary: ec.isPrimary,
+      })),
+      primary_club: primaryClub ? {
+        id: primaryClub.club.id,
+        name: primaryClub.club.name,
+        banner_url: primaryClub.club.bannerUrl,
+      } : null,
+      registration_status: regStatus,
+    };
+  });
+};
+
+

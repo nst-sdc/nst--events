@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, Button, Table, Typography, Space, Modal, Form, Select, Switch, Input, List } from 'antd';
 import { PlusOutlined, DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
-import { useFieldDefinitions, useCreateFieldDefinition, FieldType } from '../../hooks/useFieldDefinitions';
+import { useAttachableFieldDefinitions, useCreateFieldDefinition, FieldType } from '../../hooks/useFieldDefinitions';
 import { useEventFormFields, useUpdateEventFormFields, EventFormField } from '../../hooks/useEventFormFields';
 
 const { Title, Text } = Typography;
@@ -11,7 +11,7 @@ interface EventFormFieldsManagerProps {
 }
 
 export function EventFormFieldsManager({ eventId }: EventFormFieldsManagerProps) {
-  const { data: allFields, isLoading: isLoadingFields } = useFieldDefinitions();
+  const { data: allFields, isLoading: isLoadingFields } = useAttachableFieldDefinitions();
   const { data: eventFields, isLoading: isLoadingEventFields } = useEventFormFields(eventId);
   const { mutateAsync: updateEventFields, isPending: isUpdating } = useUpdateEventFormFields(eventId);
   const { mutateAsync: createFieldDefinition, isPending: isCreatingField } = useCreateFieldDefinition();
@@ -84,11 +84,14 @@ export function EventFormFieldsManager({ eventId }: EventFormFieldsManagerProps)
   };
 
   const handleCreateField = async (values: any) => {
+    const optionsList = values.options
+      ? values.options.split(',').map((s: string) => s.trim()).filter(Boolean)
+      : undefined;
     await createFieldDefinition({
       key: values.key,
       label: values.label,
       fieldType: values.fieldType,
-      options: values.options ? values.options.split(',').map((s: string) => s.trim()) : null,
+      options: optionsList && optionsList.length > 0 ? optionsList : undefined,
       isReusable: values.isReusable,
     });
     setIsCreateFieldVisible(false);
@@ -215,7 +218,9 @@ export function EventFormFieldsManager({ eventId }: EventFormFieldsManagerProps)
               <Select.Option value="EMAIL">Email</Select.Option>
               <Select.Option value="NUMBER">Number</Select.Option>
               <Select.Option value="PHONE">Phone</Select.Option>
-              <Select.Option value="SELECT">Select</Select.Option>
+              <Select.Option value="SELECT">Select (single choice)</Select.Option>
+              <Select.Option value="MULTI_SELECT">Multi-Select (multiple choices)</Select.Option>
+              <Select.Option value="RADIO">Radio Buttons (single choice)</Select.Option>
             </Select>
           </Form.Item>
           <Form.Item name="isReusable" label="Save to Student Profile?" valuePropName="checked">

@@ -205,19 +205,24 @@ export default function TeamsManagementPage({ params }: { params: Promise<{ id: 
       title: 'Status',
       key: 'registration',
       render: (_: unknown, record: Team) => {
-        const status = record.status || 'FORMING';
+        const effectiveStatus = (record.status === 'FORMING' && minTeamSize && record.member_count >= minTeamSize)
+          ? 'REGISTERED'
+          : (record.status || 'FORMING');
         let color = 'default';
-        if (status === 'REGISTERED') color = 'success';
-        if (status === 'WAITLISTED') color = 'warning';
-        if (status === 'CANCELLED') color = 'error';
-        return <Tag color={color} style={{ margin: 0 }}>{status}</Tag>;
+        if (effectiveStatus === 'REGISTERED') color = 'success';
+        if (effectiveStatus === 'WAITLISTED') color = 'warning';
+        if (effectiveStatus === 'CANCELLED') color = 'error';
+        return <Tag color={color} style={{ margin: 0 }}>{effectiveStatus}</Tag>;
       }
     },
     {
       title: 'Attention',
       key: 'attention',
       render: (_: unknown, record: Team) => {
-        const isBelowMin = minTeamSize && record.status === 'REGISTERED' && record.member_count < minTeamSize;
+        const effectiveStatus = (record.status === 'FORMING' && minTeamSize && record.member_count >= minTeamSize)
+          ? 'REGISTERED'
+          : (record.status || 'FORMING');
+        const isBelowMin = minTeamSize && effectiveStatus === 'REGISTERED' && record.member_count < minTeamSize;
         if (isBelowMin) {
           return <Tag color="warning" style={{ margin: 0 }}>BELOW MINIMUM ({record.member_count} / {minTeamSize})</Tag>;
         }
@@ -314,7 +319,10 @@ export default function TeamsManagementPage({ params }: { params: Promise<{ id: 
              ) : (
                <Flex vertical gap="middle">
                  {teams.map((record) => {
-                   const isBelowMin = minTeamSize && record.status === 'REGISTERED' && record.member_count < minTeamSize;
+                   const effectiveStatus = (record.status === 'FORMING' && minTeamSize && record.member_count >= minTeamSize)
+                     ? 'REGISTERED'
+                     : (record.status || 'FORMING');
+                   const isBelowMin = minTeamSize && effectiveStatus === 'REGISTERED' && record.member_count < minTeamSize;
                    
                    return (
                      <Card 
@@ -344,8 +352,8 @@ export default function TeamsManagementPage({ params }: { params: Promise<{ id: 
                          <Text type="secondary">Leader: {record.leader_name}</Text>
                          <Text type="secondary">{record.member_count} members</Text>
                          
-                         <Tag color={record.status === 'REGISTERED' ? 'success' : record.status === 'WAITLISTED' ? 'warning' : record.status === 'CANCELLED' ? 'error' : 'default'} style={{ margin: 0 }}>
-                           {record.status || 'FORMING'}
+                         <Tag color={effectiveStatus === 'REGISTERED' ? 'success' : effectiveStatus === 'WAITLISTED' ? 'warning' : effectiveStatus === 'CANCELLED' ? 'error' : 'default'} style={{ margin: 0 }}>
+                           {effectiveStatus}
                          </Tag>
                          
                          {isBelowMin && (

@@ -1,4 +1,4 @@
-import { describe, it, before } from 'node:test';
+import { describe, it, before, after } from 'node:test';
 import * as assert from 'node:assert';
 import { adminPrisma } from '../helpers/adminDb';
 import { signJwt } from '../../src/lib/jwt';
@@ -20,6 +20,7 @@ describe('BACKEND-GAP-022: Manual Attendance Authorization & Multi-Session', () 
     // Clear existing data
     await adminPrisma.leaderboardScore.deleteMany({});
     await adminPrisma.auditLog.deleteMany({});
+    await adminPrisma.attendanceDispute.deleteMany({});
     await adminPrisma.attendanceRecord.deleteMany({});
     await adminPrisma.attendanceSession.deleteMany({});
     await adminPrisma.eventRegistration.deleteMany({});
@@ -199,4 +200,30 @@ describe('BACKEND-GAP-022: Manual Attendance Authorization & Multi-Session', () 
     });
     assert.ok(rec2, 'Session 2 record created by PLATFORM_ADMIN');
   });
+
+  after(async () => {
+    await adminPrisma.leaderboardScore.deleteMany({});
+    await adminPrisma.auditLog.deleteMany({});
+    await adminPrisma.attendanceDispute.deleteMany({});
+    await adminPrisma.attendanceRecord.deleteMany({});
+    await adminPrisma.attendanceSession.deleteMany({});
+    await adminPrisma.eventRegistration.deleteMany({});
+    await adminPrisma.eventClub.deleteMany({});
+    await adminPrisma.clubMembership.deleteMany({});
+    await adminPrisma.event.deleteMany({ where: { title: 'GAP-022 Test Event' } });
+    await adminPrisma.club.deleteMany({ where: { name: { in: ['GAP022 Primary Club', 'GAP022 Unrelated Club'] } } });
+    await adminPrisma.user.deleteMany({
+      where: {
+        email: {
+          in: [
+            'gap022_student@nst.com',
+            'gap022_primary_admin@nst.com',
+            'gap022_unrelated_admin@nst.com',
+            'gap022_platform_admin@nst.com'
+          ]
+        }
+      }
+    });
+  });
 });
+

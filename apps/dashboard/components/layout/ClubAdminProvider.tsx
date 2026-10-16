@@ -2,6 +2,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
+import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 
 interface ClubAdminContextType {
@@ -15,7 +16,25 @@ interface ClubAdminContextType {
 
 const ClubAdminContext = createContext<ClubAdminContextType | undefined>(undefined);
 
-export function ClubAdminProvider({ children }: { children: ReactNode }) {
+function QueryBoundary({ children }: { children: ReactNode }) {
+  let hasClient = true;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useQueryClient();
+  } catch {
+    hasClient = false;
+  }
+
+  const [fallbackClient] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: false } } }));
+
+  if (!hasClient) {
+    return <QueryClientProvider client={fallbackClient}>{children}</QueryClientProvider>;
+  }
+
+  return <>{children}</>;
+}
+
+function ClubAdminInner({ children }: { children: ReactNode }) {
   const { data: user, isLoading: isUserLoading } = useCurrentUser();
   
   const [isStorageLoaded, setIsStorageLoaded] = useState(false);
@@ -63,11 +82,7 @@ export function ClubAdminProvider({ children }: { children: ReactNode }) {
 
   const handleSetMode = (active: boolean) => {
     setIsClubAdminMode(active);
-    if (active) {
-      localStorage.setItem('nst_club_admin_mode', 'true');
-    } else {
-      localStorage.removeItem('nst_club_admin_mode');
-    }
+    localStorage.setItem('nst_club_admin_mode', active ? 'true' : 'false');
   };
 
   const handleSetClub = (clubId: string) => {
@@ -88,6 +103,14 @@ export function ClubAdminProvider({ children }: { children: ReactNode }) {
     >
       {children}
     </ClubAdminContext.Provider>
+  );
+}
+
+export function ClubAdminProvider({ children }: { children: ReactNode }) {
+  return (
+    <QueryBoundary>
+      <ClubAdminInner>{children}</ClubAdminInner>
+    </QueryBoundary>
   );
 }
 

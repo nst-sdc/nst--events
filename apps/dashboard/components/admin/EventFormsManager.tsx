@@ -1,12 +1,23 @@
 import React, { useState } from 'react';
 import { Card, Button, Table, Typography, Space, Modal, Form, Input, Select, DatePicker, Tag, Popconfirm, message, Badge } from 'antd';
-import { PlusOutlined, SettingOutlined, EyeOutlined, EditOutlined, DeleteOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined, SettingOutlined, EyeOutlined, EditOutlined, DeleteOutlined, ClockCircleOutlined, CopyOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { useEventForms, useCreateEventForm, useUpdateEventForm, useDeleteEventForm, EventForm } from '../../hooks/useEventForms';
+import { useEventForms, useCreateEventForm, useUpdateEventForm, useDeleteEventForm, useDuplicateEventForm, EventForm } from '../../hooks/useEventForms';
 import { EventFormFieldsConfigModal } from './EventFormFieldsConfigModal';
 import { FormResponsesModal } from './FormResponsesModal';
 
 const { Title, Text } = Typography;
+
+// Mirrors the backend rule that `closeAt` must be after `releaseAt` when both are set.
+const closeAfterReleaseRule = ({ getFieldValue }: any) => ({
+  validator(_: any, value: any) {
+    const releaseAt = getFieldValue('releaseAt');
+    if (!value || !releaseAt || value.isAfter(releaseAt)) {
+      return Promise.resolve();
+    }
+    return Promise.reject(new Error('Close time must be after the release time'));
+  },
+});
 
 interface EventFormsManagerProps {
   eventId: string;
@@ -17,6 +28,7 @@ export function EventFormsManager({ eventId }: EventFormsManagerProps) {
   const { mutateAsync: createForm, isPending: isCreating } = useCreateEventForm(eventId);
   const { mutateAsync: updateForm, isPending: isUpdating } = useUpdateEventForm(eventId);
   const { mutateAsync: deleteForm } = useDeleteEventForm(eventId);
+  const { mutateAsync: duplicateForm, isPending: isDuplicating } = useDuplicateEventForm(eventId);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingForm, setEditingForm] = useState<EventForm | null>(null);
@@ -80,6 +92,15 @@ export function EventFormsManager({ eventId }: EventFormsManagerProps) {
       message.success('Form deleted successfully');
     } catch (err: any) {
       message.error(err.message || 'Failed to delete form');
+    }
+  };
+
+  const handleDuplicate = async (form: EventForm) => {
+    try {
+      await duplicateForm({ formId: form.id, title: form.title, purpose: form.purpose });
+      message.success('Form duplicated successfully');
+    } catch (err: any) {
+      message.error(err.message || 'Failed to duplicate form');
     }
   };
 
@@ -179,6 +200,13 @@ export function EventFormsManager({ eventId }: EventFormsManagerProps) {
             size="small"
             icon={<EditOutlined />}
             onClick={() => handleOpenEditModal(record)}
+          />
+          <Button
+            size="small"
+            icon={<CopyOutlined />}
+            loading={isDuplicating}
+            onClick={() => handleDuplicate(record)}
+            title="Duplicate form"
           />
           <Popconfirm
             title="Delete Form"
@@ -288,6 +316,8 @@ export function EventFormsManager({ eventId }: EventFormsManagerProps) {
             name="closeAt"
             label="Deadline / Close Date & Time (Optional)"
             tooltip="Leave empty to keep open indefinitely. Once this time arrives, submissions will be closed."
+            dependencies={['releaseAt']}
+            rules={[closeAfterReleaseRule]}
           >
             <DatePicker showTime style={{ width: '100%' }} />
           </Form.Item>
@@ -322,6 +352,8 @@ export function EventFormsManager({ eventId }: EventFormsManagerProps) {
           <Form.Item
             name="closeAt"
             label="Deadline / Close Date & Time (Optional)"
+            dependencies={['releaseAt']}
+            rules={[closeAfterReleaseRule]}
           >
             <DatePicker showTime style={{ width: '100%' }} />
           </Form.Item>

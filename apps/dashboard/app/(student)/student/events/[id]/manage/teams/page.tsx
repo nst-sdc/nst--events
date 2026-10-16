@@ -182,25 +182,32 @@ export default function ManageTeamsPage({ params }: { params: Promise<{ id: stri
             <p className="text-xs text-[#a0a4b8] font-mono uppercase tracking-widest">No teams registered matching criteria.</p>
           </div>
         ) : (
-          filteredTeams.map((team) => (
-            <div key={team.id} className="border-2 border-white/15 bg-[#090a0f] flex flex-col group shadow-[4px_4px_0px_#000]">
-              <div className="p-5 flex-grow">
-                <div className="flex items-center justify-between mb-3">
-                  <span className={clsx(
-                    "text-[10px] font-mono font-bold tracking-[0.2em] uppercase px-2 py-0.5 border shadow-[2px_2px_0px_#000]",
-                    team.status === 'READY' || team.status === 'REGISTERED' ? "border-black bg-[#C8FF00] text-black font-black" :
-                    team.status === 'WAITLISTED' ? "border-[#FF9500] text-[#FF9500] bg-[#FF9500]/20" :
-                    team.status === 'CANCELLED' ? "border-[#FF3B30] text-[#FF3B30] bg-[#FF3B30]/20" :
-                    "border-white/15 text-[#a0a4b8]"
-                  )}>
-                    {team.status || 'UNKNOWN'}
-                  </span>
-                  {team.below_minimum && team.status !== 'CANCELLED' && (
-                    <span className="text-[10px] font-mono tracking-widest uppercase bg-[#FF9500]/20 text-[#FF9500] border border-[#FF9500] px-2 py-0.5">
-                      UNDERSIZED
+          filteredTeams.map((team) => {
+            const minTeamSize = typeof event?.metadata?.minimum_team_size === 'number' ? event.metadata.minimum_team_size : 1;
+            const effectiveStatus = (team.status === 'FORMING' && team.member_count >= minTeamSize)
+              ? 'REGISTERED'
+              : (team.status || 'UNKNOWN');
+            const isBelowMin = (effectiveStatus === 'REGISTERED' && team.member_count < minTeamSize) || team.below_minimum === true;
+
+            return (
+              <div key={team.id} className="border-2 border-white/15 bg-[#090a0f] flex flex-col group shadow-[4px_4px_0px_#000]">
+                <div className="p-5 flex-grow">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className={clsx(
+                      "text-[10px] font-mono font-bold tracking-[0.2em] uppercase px-2 py-0.5 border shadow-[2px_2px_0px_#000]",
+                      effectiveStatus === 'READY' || effectiveStatus === 'REGISTERED' ? "border-black bg-[#C8FF00] text-black font-black" :
+                      effectiveStatus === 'WAITLISTED' ? "border-[#FF9500] text-[#FF9500] bg-[#FF9500]/20" :
+                      effectiveStatus === 'CANCELLED' ? "border-[#FF3B30] text-[#FF3B30] bg-[#FF3B30]/20" :
+                      "border-white/15 text-[#a0a4b8]"
+                    )}>
+                      {effectiveStatus}
                     </span>
-                  )}
-                </div>
+                    {isBelowMin && effectiveStatus !== 'CANCELLED' && (
+                      <span className="text-[10px] font-mono tracking-widest uppercase bg-[#FF9500]/20 text-[#FF9500] border border-[#FF9500] px-2 py-0.5">
+                        UNDERSIZED
+                      </span>
+                    )}
+                  </div>
                 
                 <h3 className="text-lg font-black text-[#F5F5F2] leading-tight mb-4 group-hover:text-[#0057FF] transition-colors truncate" style={{ fontFamily: "'Syne', sans-serif" }}>
                   {team.name}
@@ -301,7 +308,8 @@ export default function ManageTeamsPage({ params }: { params: Promise<{ id: stri
                 )}
               </div>
             </div>
-          ))
+          );
+        })
         )}
       </div>
 

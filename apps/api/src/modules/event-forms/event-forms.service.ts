@@ -1,5 +1,5 @@
 import { prisma } from '../../lib/prisma';
-import { withUserContext } from '@nst/database';
+import { withUserContext, Prisma } from '@nst/database';
 import { NotFoundError, ForbiddenError, BadRequestError } from '../../lib/errors';
 import { validateFieldValue } from '../../utils/form-validation';
 
@@ -62,11 +62,7 @@ export async function listEventForms(userId: string, eventId: string) {
 
     const whereClause: any = { eventId };
     if (!isAdmin) {
-      // Students only see released forms (null releaseAt means immediate)
-      whereClause.OR = [
-        { releaseAt: null },
-        { releaseAt: { lte: new Date() } },
-      ];
+      whereClause.publishedAt = { not: null };
     }
 
     return tx.eventForm.findMany({
@@ -75,6 +71,7 @@ export async function listEventForms(userId: string, eventId: string) {
     });
   });
 }
+
 
 export async function getEventForm(userId: string, eventId: string, formId: string) {
   return withUserContext(userId, async (tx) => {
@@ -115,7 +112,7 @@ export async function getEventForm(userId: string, eventId: string, formId: stri
 
     if (!form) throw new NotFoundError('Form not found');
 
-    if (!isAdmin && form.releaseAt && form.releaseAt > new Date()) {
+    if (!isAdmin && (form.publishedAt === null || (form.releaseAt && form.releaseAt > new Date()))) {
       throw new ForbiddenError('This form is not yet available.');
     }
 
@@ -124,6 +121,14 @@ export async function getEventForm(userId: string, eventId: string, formId: stri
 }
 
 export async function createEventForm(userId: string, eventId: string, data: { title: string, purpose: any, releaseAt?: string | null, closeAt?: string | null }) {
+  if (data.releaseAt && data.closeAt) {
+    const release = new Date(data.releaseAt);
+    const close = new Date(data.closeAt);
+    if (close <= release) {
+      throw new BadRequestError('Form closing time must be after opening time.');
+    }
+  }
+
   return withUserContext(userId, async (tx) => {
     return tx.eventForm.create({
       data: {
@@ -132,15 +137,81 @@ export async function createEventForm(userId: string, eventId: string, data: { t
         purpose: data.purpose,
         releaseAt: data.releaseAt ? new Date(data.releaseAt) : null,
         closeAt: data.closeAt ? new Date(data.closeAt) : null,
+        publishedAt: null, // Always starts as a Draft
       },
     });
   });
 }
 
-export async function updateEventForm(userId: string, eventId: string, formId: string, data: { title?: string, releaseAt?: string | null, closeAt?: string | null }) {
+export async function publishEventForm(userId: string, eventId: string, formId: string) {
+  return withUserContext(userId, async (tx) => {
+    const form = await tx.eventForm.findFirst({
+      where: { id: formId, eventId },
+    });
+    if (!form) throw new NotFoundError('Form not found');
+
+    if (form.releaseAt && form.closeAt && form.closeAt <= form.releaseAt) {
+      throw new BadRequestError('Form closing time must be after opening time.');
+    }
+
+    const questionCount = await tx.eventFormField.count({
+      where: { formId, eventId },
+    });
+    if (questionCount === 0) {
+      throw new BadRequestError('Cannot publish a form with no questions. Add at least one question first.');
+    }
+
+    return tx.eventForm.update({
+      where: { id: formId },
+      data: {
+        publishedAt: new Date(),
+      },
+    });
+  });
+}
+
+export async function unpublishEventForm(userId: string, eventId: string, formId: string) {
+  return withUserContext(userId, async (tx) => {
+    const form = await tx.eventForm.findFirst({
+      where: { id: formId, eventId },
+    });
+    if (!form) throw new NotFoundError('Form not found');
+
+    return tx.eventForm.update({
+      where: { id: formId },
+      data: {
+        publishedAt: null,
+      },
+    });
+  });
+}
+
+export async function updateEventForm(userId: string, eventId: string, formId: string, data: { title?: string, releaseAt?: string | null, closeAt?: string | null, isPublished?: boolean }) {
   return withUserContext(userId, async (tx) => {
     const existing = await tx.eventForm.findFirst({ where: { id: formId, eventId } });
     if (!existing) throw new NotFoundError('Form not found');
+
+    const targetReleaseAt = data.releaseAt !== undefined
+      ? (data.releaseAt ? new Date(data.releaseAt) : null)
+      : existing.releaseAt;
+    const targetCloseAt = data.closeAt !== undefined
+      ? (data.closeAt ? new Date(data.closeAt) : null)
+      : existing.closeAt;
+
+    if (targetReleaseAt && targetCloseAt && targetCloseAt <= targetReleaseAt) {
+      throw new BadRequestError('Form closing time must be after opening time.');
+    }
+
+    let newPublishedAt = existing.publishedAt;
+    if (data.isPublished === true) {
+      const questionCount = await tx.eventFormField.count({ where: { formId, eventId } });
+      if (questionCount === 0) {
+        throw new BadRequestError('Cannot publish a form with no questions. Add at least one question first.');
+      }
+      newPublishedAt = existing.publishedAt || new Date();
+    } else if (data.isPublished === false) {
+      newPublishedAt = null;
+    }
 
     let newNotifiedAt: Date | null | undefined = undefined;
     const newReleaseAt = data.releaseAt !== undefined ? (data.releaseAt ? new Date(data.releaseAt) : null) : undefined;
@@ -160,6 +231,7 @@ export async function updateEventForm(userId: string, eventId: string, formId: s
         title: data.title,
         releaseAt: newReleaseAt,
         closeAt: data.closeAt !== undefined ? (data.closeAt ? new Date(data.closeAt) : null) : undefined,
+        publishedAt: newPublishedAt,
         ...(newNotifiedAt !== undefined && { notifiedAt: newNotifiedAt }),
       },
     });
@@ -179,18 +251,91 @@ export async function updateEventFormFields(
   userId: string,
   eventId: string,
   formId: string,
-  fields: Array<{ fieldDefinitionId: string; isRequired: boolean; order: number }>
+  fields: Array<{ fieldDefinitionId?: string; definition?: any; isRequired: boolean; order: number }>
 ) {
   return withUserContext(userId, async (tx) => {
     const form = await tx.eventForm.findFirst({ where: { id: formId, eventId } });
     if (!form) throw new NotFoundError('Form not found');
+
+    const event = await tx.event.findUnique({
+      where: { id: eventId },
+      include: {
+        eventClubs: {
+          select: { clubId: true },
+        },
+      },
+    });
+
+    const caller = await tx.user.findUnique({
+      where: { id: userId },
+      select: { globalRole: true },
+    });
+
+    let derivedClubId: string | null = null;
+    if (caller && !['PLATFORM_ADMIN', 'FACULTY_ADMIN'].includes(caller.globalRole)) {
+      derivedClubId = event?.eventClubs[0]?.clubId || null;
+      if (!derivedClubId) {
+        const membership = await tx.clubMembership.findFirst({
+          where: {
+            userId,
+            role: { in: ['CLUB_ADMIN', 'CORE_MEMBER'] },
+            deletedAt: null,
+          },
+          select: { clubId: true },
+        });
+        derivedClubId = membership?.clubId || null;
+      }
+    }
+
+    const resolvedKeys = new Map<string, string>();
+    const resolvedFields: Array<{ fieldDefinitionId: string; isRequired: boolean; order: number }> = [];
+
+    for (const f of fields) {
+      let resolvedId = f.fieldDefinitionId;
+      if (!resolvedId && f.definition) {
+        const cachedId = resolvedKeys.get(f.definition.key);
+        if (cachedId) {
+          resolvedId = cachedId;
+        } else {
+          const existingDef = await tx.fieldDefinition.findUnique({
+            where: { key: f.definition.key },
+          });
+          if (existingDef) {
+            resolvedId = existingDef.id;
+          } else {
+            const created = await tx.fieldDefinition.create({
+              data: {
+                key: f.definition.key,
+                label: f.definition.label,
+                fieldType: f.definition.fieldType,
+                options: f.definition.options ? (f.definition.options as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
+                isReusable: f.definition.isReusable ?? true,
+                createdByClubId: derivedClubId,
+              },
+            });
+            resolvedId = created.id;
+          }
+          resolvedKeys.set(f.definition.key, resolvedId);
+        }
+      }
+
+      if (!resolvedId) {
+        throw new BadRequestError('Each question must have a valid field definition ID or definition payload');
+      }
+
+      resolvedFields.push({
+        fieldDefinitionId: resolvedId,
+        isRequired: f.isRequired,
+        order: f.order,
+      });
+    }
 
     await tx.eventFormField.deleteMany({
       where: { eventId, formId },
     });
 
     const createdFields = [];
-    for (const f of fields) {
+    for (const f of resolvedFields) {
       const field = await tx.eventFormField.create({
         data: {
           eventId,
@@ -199,6 +344,7 @@ export async function updateEventFormFields(
           isRequired: f.isRequired,
           order: f.order,
         },
+        include: { fieldDefinition: true },
       });
       createdFields.push(field);
     }
@@ -224,10 +370,15 @@ export async function submitEventFormResponses(
     });
     if (!form) throw new NotFoundError('Form not found');
 
-    if (form.releaseAt && form.releaseAt > new Date()) {
+    const now = new Date();
+
+    if (form.publishedAt === null) {
+      throw new ForbiddenError('This form is not published.');
+    }
+    if (form.releaseAt && now < form.releaseAt) {
       throw new ForbiddenError('Form is not yet released.');
     }
-    if (form.closeAt && form.closeAt < new Date()) {
+    if (form.closeAt && now >= form.closeAt) {
       throw new ForbiddenError('Form is closed for submissions.');
     }
 
@@ -253,7 +404,7 @@ export async function submitEventFormResponses(
         return !providedFieldIds.has(f.fieldDefinitionId) || 
                !response || 
                !response.value?.trim() || 
-               response.value === '[]';
+               response.value.trim() === '[]';
       });
       
       if (missingFields.length > 0) {
@@ -297,23 +448,25 @@ export async function submitEventFormResponses(
       });
       savedResponses.push(response);
 
-      // Also upsert to StudentProfileValue for the student's profile context if applicable
-      await tx.studentProfileValue.upsert({
-        where: {
-          userId_fieldDefinitionId: {
+      // Only upsert to StudentProfileValue if the field definition is marked reusable
+      if (field.fieldDefinition.isReusable) {
+        await tx.studentProfileValue.upsert({
+          where: {
+            userId_fieldDefinitionId: {
+              userId,
+              fieldDefinitionId: r.fieldDefinitionId,
+            },
+          },
+          create: {
             userId,
             fieldDefinitionId: r.fieldDefinitionId,
+            value: r.value,
           },
-        },
-        create: {
-          userId,
-          fieldDefinitionId: r.fieldDefinitionId,
-          value: r.value,
-        },
-        update: {
-          value: r.value,
-        }
-      });
+          update: {
+            value: r.value,
+          }
+        });
+      }
     }
 
     return savedResponses;

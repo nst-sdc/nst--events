@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { useAppTheme } from '../store/theme-store';
 import { MonoLabel, Title, Mono } from './core/Typography';
+import { StatusBadge } from './core/StatusBadge';
 import { AttendanceRecordItem } from '../hooks/use-attendance-history';
 
 interface AttendanceHistoryRowProps {
@@ -80,9 +81,7 @@ export const AttendanceHistoryRow: React.FC<AttendanceHistoryRowProps> = ({ item
   return (
     <TouchableOpacity style={styles.cardContainer} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.statusRow}>
-        <MonoLabel style={[styles.statusText, isPresent ? styles.statusPresent : styles.statusOther]}>
-          {item.status}
-        </MonoLabel>
+        <StatusBadge status={item.status} type={isPresent ? 'success' : 'default'} />
         <MonoLabel style={styles.checkIcon}>{isPresent ? '✓' : ''}</MonoLabel>
       </View>
       <Title style={styles.eventTitle} numberOfLines={1}>

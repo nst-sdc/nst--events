@@ -9,10 +9,18 @@ export default function SplashScreen() {
   const router = useRouter();
   const theme = useAppTheme();
   
-  const token = useAuthStore((state) => state.accessToken);
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const isInitialized = useAuthStore((state) => state.isInitialized);
+  const initSession = useAuthStore((state) => state.initSession);
   const [bootText, setBootText] = useState('RESTORING CACHED SESSION...');
   const [bootPct, setBootPct] = useState(24);
   const progressAnim = useState(new Animated.Value(0.24))[0];
+
+  useEffect(() => {
+    if (!isInitialized) {
+      initSession();
+    }
+  }, [isInitialized, initSession]);
 
   useEffect(() => {
     const steps = [
@@ -36,8 +44,15 @@ export default function SplashScreen() {
       } else {
         clearInterval(interval);
         setTimeout(() => {
-          if (token) {
-            router.replace('/(app)');
+          const authState = useAuthStore.getState();
+          if (authState.isLoggedIn) {
+            const pendingDeepLink = authState.pendingDeepLink;
+            if (pendingDeepLink) {
+              authState.setPendingDeepLink(null);
+              router.replace(pendingDeepLink as any);
+            } else {
+              router.replace('/(app)');
+            }
           } else {
             router.replace('/(auth)');
           }
@@ -46,7 +61,7 @@ export default function SplashScreen() {
     }, 350);
 
     return () => clearInterval(interval);
-  }, [token]);
+  }, [router, progressAnim]);
 
   const styles = useMemo(() => StyleSheet.create({
     safeArea: {
@@ -89,7 +104,7 @@ export default function SplashScreen() {
       backgroundColor: theme.colors.surfaceContainerHigh,
       paddingHorizontal: 8,
       paddingVertical: 2,
-      borderRadius: 2,
+      borderRadius: 0,
     },
     statusPillText: {
       fontFamily: theme.typography.monoBold,

@@ -52,6 +52,8 @@ describe('SECURITY DEFINER Helpers BOLA & Validation Tests', () => {
         createdBy: leaderAId,
         startTime: new Date(Date.now() + 100000),
         endTime: new Date(Date.now() + 200000),
+        registrationStartTime: new Date(Date.now() - 3600000),
+        registrationEndTime: new Date(Date.now() + 3600000),
         metadata: { maximum_team_size: 2 }
       }
     });

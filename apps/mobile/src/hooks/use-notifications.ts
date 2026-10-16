@@ -53,7 +53,7 @@ export function useNotifications() {
 
   // Handle cold-start notification tap interaction
   useEffect(() => {
-    if (lastNotificationResponse && isLoggedIn) {
+    if (lastNotificationResponse) {
       const responseId = lastNotificationResponse.notification.request.identifier;
       if (coldStartHandledRef.current === responseId) return;
 
@@ -64,8 +64,12 @@ export function useNotifications() {
       });
       if (route) {
         coldStartHandledRef.current = responseId;
-        if (normalizeRoute(pathname) !== normalizeRoute(route)) {
-          router.push(route as any);
+        if (isLoggedIn) {
+          if (normalizeRoute(pathname) !== normalizeRoute(route)) {
+            router.push(route as any);
+          }
+        } else {
+          useAuthStore.getState().setPendingDeepLink(route);
         }
       }
     }
@@ -74,15 +78,18 @@ export function useNotifications() {
   // Handle runtime notification tap interaction (app in foreground or background)
   useEffect(() => {
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      if (!isLoggedIn) return;
       const data = response.notification.request.content.data as any;
       const route = resolveNotificationRoute({
         type: data?.notification_type || data?.type,
         metadata: data?.metadata,
       });
       if (route) {
-        if (normalizeRoute(pathname) !== normalizeRoute(route)) {
-          router.push(route as any);
+        if (isLoggedIn) {
+          if (normalizeRoute(pathname) !== normalizeRoute(route)) {
+            router.push(route as any);
+          }
+        } else {
+          useAuthStore.getState().setPendingDeepLink(route);
         }
       }
     });

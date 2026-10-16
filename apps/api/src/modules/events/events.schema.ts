@@ -6,6 +6,7 @@ import {
   RegistrationType,
   AttendanceType,
   EventAudience,
+  FieldType,
 } from '@nst/database';
 
 const EventBodySchema = z.object({
@@ -19,14 +20,17 @@ const EventBodySchema = z.object({
   location_lat: z.number().min(-90).max(90).optional(),
   location_lng: z.number().min(-180).max(180).optional(),
   event_type: z.nativeEnum(EventType),
-  visibility: z.nativeEnum(EventVisibility).default('PUBLIC'),
+  visibility: z.nativeEnum(EventVisibility).optional().nullable(),
+  slug: z.string().min(3).max(100).optional(),
   registration_type: z.nativeEnum(RegistrationType).default('INDIVIDUAL'),
   attendance_type: z.nativeEnum(AttendanceType).default('SINGLE'),
   audience: z.nativeEnum(EventAudience).default('ALL_STUDENTS'),
   audience_batch_ids: z.array(z.string().uuid()).optional(),
   metadata: z.record(z.unknown()).default({}),
   /** Maximum capacity limit. For INDIVIDUAL events: registered students. For TEAM events: registered teams. NULL/omitted: unlimited. */
-  max_capacity: z.number().int().positive().optional(),
+  max_capacity: z.number().int().positive().nullable().optional(),
+  /** Maximum participants limit for TEAM events: total registered participants across all teams. NULL/omitted: unlimited. */
+  max_participants: z.number().int().positive().nullable().optional(),
 
   club_ids: z
     .array(
@@ -99,6 +103,13 @@ const validateEventBody = (data: z.infer<typeof EventBodySchema> | Partial<z.inf
          message: 'team rules must not be present in metadata for INDIVIDUAL events',
          path: ['metadata']
        });
+    }
+    if (data.max_participants !== undefined && data.max_participants !== null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'max_participants is only configurable for TEAM events',
+        path: ['max_participants']
+      });
     }
   }
 };
@@ -187,13 +198,24 @@ export type RejectEventInput = z.infer<typeof RejectEventSchema>['body'];
 export type CreateSessionInput = z.infer<typeof CreateSessionSchema>['body'];
 export type UpdateSessionInput = z.infer<typeof UpdateSessionSchema>['body'];
 
+export const InlineFieldDefinitionSchema = z.object({
+  key: z.string().min(1).max(50),
+  label: z.string().min(1).max(100),
+  fieldType: z.nativeEnum(FieldType),
+  options: z.array(z.string()).optional(),
+  isReusable: z.boolean().default(true),
+});
+
 export const UpdateEventFormFieldsSchema = z.object({
   body: z.object({
     fields: z.array(
       z.object({
-        fieldDefinitionId: z.string().uuid(),
+        fieldDefinitionId: z.string().uuid().optional(),
+        definition: InlineFieldDefinitionSchema.optional(),
         isRequired: z.boolean().default(true),
         order: z.number().int().min(0),
+      }).refine((f) => !!f.fieldDefinitionId || !!f.definition, {
+        message: 'Each field must have either a fieldDefinitionId or an inline definition',
       })
     ),
   }),
@@ -202,3 +224,32 @@ export const UpdateEventFormFieldsSchema = z.object({
 export type UpdateEventFormFieldsInput = z.infer<typeof UpdateEventFormFieldsSchema>['body'];
 
 export type EventLockState = 'UNLOCKED' | 'MANUALLY_LOCKED' | 'PERMANENTLY_LOCKED';
+
+export const PublicEventsQuerySchema = z.object({
+  query: z.object({
+    cursor: z.string().uuid().optional(),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+    sort: z.enum(['start_time', 'created_at']).default('start_time'),
+    order: z.enum(['asc', 'desc']).default('asc'),
+    time_filter: z.enum(['upcoming', 'past']).default('upcoming'),
+    filter_event_type: z.nativeEnum(EventType).optional(),
+    filter_club_id: z.string().uuid().optional(),
+    q: z.string().max(255).optional(),
+  }).passthrough(),
+});
+
+export const ValidateSlugQuerySchema = z.object({
+  query: z.object({
+    slug: z.string().min(1).max(100),
+    event_id: z.string().uuid().optional(),
+  }).passthrough(),
+});
+
+export const SlugParamSchema = z.object({
+  params: z.object({
+    slug: z.string().min(1).max(255),
+  }).passthrough(),
+});
+
+export type PublicEventsQuery = z.infer<typeof PublicEventsQuerySchema>['query'];
+

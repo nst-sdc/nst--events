@@ -26,7 +26,7 @@ spec:
                   - key: kubernetes.io/hostname
                     operator: NotIn
                     values:
-                      - nst-n1
+                    - nst-n1
           preferredDuringSchedulingIgnoredDuringExecution:
             - weight: 80
               preference:
@@ -44,7 +44,7 @@ spec:
                       - nst-n7
       containers:
         - name: dashboard
-          image: ghcr.io/nst-sdc/nst-dashboard:latest
+          image: ghcr.io/nst-sdc/nst-dashboard:f7eeb8218ce48c7555b15cc948a799bb9764d22b
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
@@ -80,3 +80,4 @@ spec:
   ports:
     - port: 80
       targetPort: 3000
+

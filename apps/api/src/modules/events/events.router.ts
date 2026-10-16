@@ -1,5 +1,5 @@
 import { Router, Request } from 'express';
-import { authenticate } from '../../middleware/authenticate';
+import { authenticate, optionalAuthenticate } from '../../middleware/authenticate';
 import { canManageEvent, canApproveEvent, canLockEvent } from '../../middleware/authorize';
 import { validate } from '../../middleware/validate';
 import { prisma } from '../../lib/prisma';
@@ -13,6 +13,9 @@ import {
   CreateSessionSchema,
   UpdateSessionSchema,
   UpdateEventFormFieldsSchema,
+  PublicEventsQuerySchema,
+  ValidateSlugQuerySchema,
+  SlugParamSchema,
 } from './events.schema';
 import { CreateTeamSchema } from '../teams/teams.schema';
 import * as teamsService from '../teams/teams.service';
@@ -29,6 +32,54 @@ const ParamEventTeamIdSchema = z.object({
 }).passthrough();
 
 const router = Router();
+
+// ==========================================
+// Public Discovery & Slug Routes
+// ==========================================
+
+router.get(
+  '/public',
+  validate(PublicEventsQuerySchema),
+  async (req, res, next) => {
+    try {
+      const result = await eventsService.listPublicEvents(req.query as any);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.get(
+  '/public/:slug',
+  optionalAuthenticate,
+  validate(SlugParamSchema),
+  async (req, res, next) => {
+    try {
+      const result = await eventsService.getPublicEventBySlug(req.params.slug, req.user?.id);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.get(
+  '/validate-slug',
+  authenticate,
+  validate(ValidateSlugQuerySchema),
+  async (req, res, next) => {
+    try {
+      const result = await eventsService.validateSlugAvailability(
+        req.query.slug as string,
+        req.query.event_id as string | undefined
+      );
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 // ==========================================
 // CRUD Routes
@@ -113,10 +164,11 @@ router.delete(
 
 router.get(
   '/:id/form-fields',
+  optionalAuthenticate,
   validate(ParamIdSchema),
   async (req, res, next) => {
     try {
-      const result = await eventsService.getEventFormFields(req.params.id);
+      const result = await eventsService.getEventFormFields(req.params.id, req.user?.id);
       res.json({ data: result });
     } catch (err) {
       next(err);
@@ -252,7 +304,7 @@ router.post(
   validate(CreateTeamSchema),
   async (req, res, next) => {
     try {
-      const team = await teamsService.createTeam(req.user!.id, req.params.id, req.body.team_name);
+      const team = await teamsService.createTeam(req.user!.id, req.params.id, req.body.team_name, req.body.responses);
       res.status(201).json(team);
     } catch (err) {
       next(err);

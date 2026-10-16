@@ -16,6 +16,28 @@ import { LogOut, ChevronRight } from 'lucide-react';
 import { Modal } from '../../../../components/ui/Modal';
 import { DevClubCreditsModal } from '../../../../components/brand/DevClubCreditsModal';
 import { DASHBOARD_APP_VERSION, DEV_CLUB_MISSION } from '../../../../lib/brand-config';
+import { useQuery } from '@tanstack/react-query';
+import { eventResultsApi } from '../../../../lib/event-results-api';
+import { StudentPortfolioSettings } from '../../../../components/student/StudentPortfolioSettings';
+
+interface StudentAchievementItem {
+  id: string;
+  placement?: number | null;
+  published_at: string;
+  award_title: string;
+  is_team_award?: boolean;
+  team_name?: string | null;
+  event: {
+    id: string;
+    title: string;
+    slug: string;
+  };
+  linked_project?: {
+    id: string;
+    slug: string;
+    title: string;
+  } | null;
+}
 
 const profileStyles = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&family=Outfit:wght@400;700;900&family=Syne:wght@700;800;900&display=swap');
@@ -185,6 +207,13 @@ export default function StudentProfilePage() {
   const [isCreditsOpen, setIsCreditsOpen] = useState(false);
   const [updatingKey, setUpdatingKey] = useState<keyof NotificationPreferences | null>(null);
   const [updateError, setUpdateError] = useState<string | null>(null);
+
+  const { data: achievementsData, isLoading: isLoadingAchievements } = useQuery({
+    queryKey: ['student-achievements', user?.id],
+    queryFn: () => eventResultsApi.getStudentAchievements(user!.id),
+    enabled: !!user?.id,
+  });
+  const achievements = achievementsData?.achievements || [];
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -408,7 +437,148 @@ export default function StudentProfilePage() {
         </div>
 
         {/* ==========================================================================
-             2. MY CLUBS SECTION
+             1B. PUBLIC DOSSIER, PORTFOLIO & VISIBILITY SETTINGS
+             ========================================================================== */}
+        <StudentPortfolioSettings />
+
+        {/* ==========================================================================
+             2. OFFICIAL HONORS & ACHIEVEMENTS
+             ========================================================================== */}
+        <div className="profile-section-card">
+          <div className="micro-annotation annotation-blue" style={{ marginBottom: '12px' }}>
+            VERIFIED CREDENTIALS // COMPETITIONS & JAM RECOGNITION
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '8px' }}>
+            <h3 style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '26px',
+              fontWeight: 900,
+              textTransform: 'uppercase',
+              margin: 0,
+            }}>
+              OFFICIAL HONORS & ACHIEVEMENTS
+            </h3>
+            <span className="micro-annotation annotation-green">
+              INSTITUTIONAL RECORD
+            </span>
+          </div>
+
+          {isLoadingAchievements ? (
+            <div className="animate-pulse space-y-4 py-4">
+              <div className="h-16 w-full bg-neutral-900" />
+              <div className="h-16 w-full bg-neutral-900" />
+            </div>
+          ) : achievements && achievements.length > 0 ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+              {achievements.map((ach: StudentAchievementItem) => (
+                <div
+                  key={ach.id}
+                  style={{
+                    background: '#000',
+                    border: '2px solid rgba(245,245,242,0.2)',
+                    padding: '16px',
+                    position: 'relative',
+                  }}
+                  className="hover:border-[#C8FF00] transition-colors"
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        padding: '3px 8px',
+                        background: ach.placement === 1 ? '#FEF08A' : ach.placement === 2 ? '#E2E8F0' : ach.placement === 3 ? '#FED7AA' : 'rgba(255,255,255,0.1)',
+                        color: ach.placement === 1 ? '#854D0E' : ach.placement === 2 ? '#334155' : ach.placement === 3 ? '#9A3412' : '#FFF',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {ach.placement ? (ach.placement === 1 ? '🥇 1st Place' : ach.placement === 2 ? '🥈 2nd Place' : ach.placement === 3 ? '🥉 3rd Place' : `Rank #${ach.placement}`) : 'Award'}
+                    </span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: '#666' }}>
+                      {new Date(ach.published_at).getFullYear()}
+                    </span>
+                  </div>
+
+                  <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 800, color: '#FFF', margin: '4px 0 6px 0' }}>
+                    {ach.award_title}
+                  </h4>
+
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: '#a0a4b8', marginBottom: '12px' }}>
+                    {ach.event?.title}
+                    {ach.is_team_award && ach.team_name && (
+                      <span style={{ display: 'block', fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                        Team: {ach.team_name}
+                      </span>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px' }}>
+                    <Link
+                      href={`/event/${ach.event.slug}/results`}
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '11px',
+                        color: 'var(--electric-blue)',
+                        textDecoration: 'none',
+                        fontWeight: 700,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}
+                    >
+                      <span>OFFICIAL RESULTS</span>
+                      <ChevronRight size={12} />
+                    </Link>
+
+                    {ach.linked_project && (
+                      <Link
+                        href={`/projects/${ach.linked_project.slug}`}
+                        style={{
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '11px',
+                          color: 'var(--acid-green)',
+                          textDecoration: 'none',
+                          fontWeight: 700,
+                        }}
+                      >
+                        VIEW PROJECT ↗
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{
+              background: '#000',
+              border: '1px dashed rgba(245,245,242,0.2)',
+              padding: '28px 24px',
+              textAlign: 'center',
+              marginBottom: '16px',
+            }}>
+              <p style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: '14px',
+                color: '#a0a4b8',
+                margin: '0 0 16px 0',
+                lineHeight: 1.6,
+              }}>
+                No official competition awards recorded yet. Participate in campus hackathons, design jams, and competitive events to earn verified institutional honors.
+              </p>
+              <Link
+                href="/student/events"
+                className="profile-cta-btn"
+                style={{ fontSize: '11px', padding: '10px 20px' }}
+              >
+                BROWSE UPCOMING EVENTS →
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* ==========================================================================
+             3. MY CLUBS SECTION
              ========================================================================== */}
         <div className="profile-section-card">
           <div className="micro-annotation annotation-blue" style={{ marginBottom: '12px' }}>

@@ -57,7 +57,7 @@ export const AttendanceSuccessView: React.FC<AttendanceSuccessViewProps> = ({
       width: '100%',
       backgroundColor: theme.colors.surfaceContainerLow,
       padding: theme.spacing.md,
-      borderRadius: theme.borderRadius.sm,
+      borderRadius: 0,
       gap: theme.spacing.sm,
     },
     detailRow: {
@@ -96,7 +96,7 @@ export const AttendanceSuccessView: React.FC<AttendanceSuccessViewProps> = ({
         </View>
 
         <View style={styles.contentCard}>
-          <Title style={styles.title}>Attendance Recorded!</Title>
+          <Title style={styles.title}>ATTENDANCE RECORDED</Title>
           <Body style={styles.subtitle}>
             You have successfully marked your attendance for this session.
           </Body>

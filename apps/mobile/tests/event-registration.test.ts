@@ -70,7 +70,7 @@ describe('In-App Solo Event Registration & Cancellation Tests', () => {
       });
 
       const { registerAsync } = useRegistration('evt-123');
-      const result = await registerAsync();
+      const result = await registerAsync(undefined);
 
       expect(mockApiClient).toHaveBeenCalledWith('/v1/events/evt-123/register', { method: 'POST' });
       expect(result.status).toBe('REGISTERED');
@@ -90,7 +90,7 @@ describe('In-App Solo Event Registration & Cancellation Tests', () => {
       });
 
       const { registerAsync } = useRegistration('evt-123');
-      await registerAsync();
+      await registerAsync(undefined);
 
       expect(mockShowToast).toHaveBeenCalledWith('The event is full. You are on the waitlist.', 'info', 'Waitlisted');
     });
@@ -123,7 +123,7 @@ describe('In-App Solo Event Registration & Cancellation Tests', () => {
       isOnlineMock = false;
 
       const { registerAsync } = useRegistration('evt-123');
-      await expect(registerAsync()).rejects.toEqual({ status: 0, message: 'Offline' });
+      await expect(registerAsync(undefined)).rejects.toEqual({ status: 0, message: 'Offline' });
       expect(mockApiClient).not.toHaveBeenCalled();
       expect(mockShowToast).toHaveBeenCalledWith('You are currently offline.', 'error', 'No Connection');
     });
@@ -135,7 +135,7 @@ describe('In-App Solo Event Registration & Cancellation Tests', () => {
       });
 
       const { registerAsync } = useRegistration('evt-123');
-      await expect(registerAsync()).rejects.toBeDefined();
+      await expect(registerAsync(undefined)).rejects.toBeDefined();
       expect(mockShowToast).toHaveBeenCalledWith(
         'This event is restricted to Computer Science students.',
         'error',
@@ -151,7 +151,7 @@ describe('In-App Solo Event Registration & Cancellation Tests', () => {
       });
 
       const { registerAsync } = useRegistration('evt-123');
-      await expect(registerAsync()).rejects.toBeDefined();
+      await expect(registerAsync(undefined)).rejects.toBeDefined();
       expect(mockShowToast).toHaveBeenCalledWith(
         'An unexpected error occurred.',
         'error',
@@ -170,7 +170,7 @@ describe('In-App Solo Event Registration & Cancellation Tests', () => {
 
       const handleConfirmRegister = async () => {
         try {
-          await registerAsync();
+          await registerAsync(undefined);
         } catch {
         } finally {
           setShowRegisterModal(false);

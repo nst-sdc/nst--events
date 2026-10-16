@@ -7,6 +7,126 @@ import { validateFieldValue } from '../../utils/form-validation';
 import { mapDatabaseError } from '../../lib/errors/database-error-mapper';
 
 import { checkAudienceEligibility } from '../events/audience.service';
+import { isInstitutionalEmail, validateRegistrationEligibility } from '../events/events.service';
+
+export const validateRegistrationResponses = async (
+  tx: any,
+  eventId: string,
+  responses?: { fieldDefinitionId: string; value: string }[]
+) => {
+  // Validate required custom fields (Registration Questionnaire fields have formId: null)
+  const requiredFields = await tx.eventFormField.findMany({
+    where: { eventId, formId: null, isRequired: true },
+  });
+
+  if (requiredFields.length > 0) {
+    const providedFieldIds = new Set(responses?.map((r) => r.fieldDefinitionId) || []);
+    const missingFields = requiredFields.filter((f: any) => {
+      const resp = responses?.find((r) => r.fieldDefinitionId === f.fieldDefinitionId);
+      return (
+        !providedFieldIds.has(f.fieldDefinitionId) ||
+        !resp ||
+        !resp.value?.trim() ||
+        resp.value.trim() === '[]'
+      );
+    });
+
+    if (missingFields.length > 0) {
+      throw new BadRequestError(
+        `Missing required registration fields: ${missingFields.map((f: any) => f.fieldDefinitionId).join(', ')}`
+      );
+    }
+  }
+
+  // If custom responses provided, validate against event's registration fields
+  if (responses && responses.length > 0) {
+    const eventFields = await tx.eventFormField.findMany({
+      where: { eventId, formId: null },
+    });
+    const allowedFieldIds = new Set(eventFields.map((f: any) => f.fieldDefinitionId));
+
+    const fieldDefs = await tx.fieldDefinition.findMany({
+      where: { id: { in: responses.map((r) => r.fieldDefinitionId) } },
+    });
+
+    for (const response of responses) {
+      if (!allowedFieldIds.has(response.fieldDefinitionId)) {
+        throw new BadRequestError(
+          `Field ${response.fieldDefinitionId} is not part of this event's registration form`
+        );
+      }
+      const fieldDef = fieldDefs.find((f: any) => f.id === response.fieldDefinitionId);
+      if (!fieldDef) {
+        throw new BadRequestError(`Field definition ${response.fieldDefinitionId} not found`);
+      }
+      validateFieldValue(
+        { fieldType: fieldDef.fieldType, options: fieldDef.options, label: fieldDef.label },
+        response.value
+      );
+    }
+  }
+};
+
+export const saveRegistrationResponses = async (
+  tx: any,
+  userId: string,
+  registrationId: string,
+  eventId: string,
+  responses?: { fieldDefinitionId: string; value: string }[]
+) => {
+  if (!responses || responses.length === 0) return;
+
+  const fieldDefs = await tx.fieldDefinition.findMany({
+    where: { id: { in: responses.map((r) => r.fieldDefinitionId) } },
+  });
+  const reusableFieldIds = new Set(fieldDefs.filter((f: any) => f.isReusable).map((f: any) => f.id));
+
+  for (const response of responses) {
+    const existingResponse = await tx.eventRegistrationResponse.findFirst({
+      where: {
+        eventRegistrationId: registrationId,
+        formId: null,
+        fieldDefinitionId: response.fieldDefinitionId,
+      },
+    });
+
+    if (existingResponse) {
+      await tx.eventRegistrationResponse.update({
+        where: { id: existingResponse.id },
+        data: { value: response.value },
+      });
+    } else {
+      await tx.eventRegistrationResponse.create({
+        data: {
+          eventRegistrationId: registrationId,
+          formId: null,
+          fieldDefinitionId: response.fieldDefinitionId,
+          value: response.value,
+        },
+      });
+    }
+
+    // Upsert StudentProfileValue if reusable
+    if (reusableFieldIds.has(response.fieldDefinitionId)) {
+      await tx.studentProfileValue.upsert({
+        where: {
+          userId_fieldDefinitionId: {
+            userId,
+            fieldDefinitionId: response.fieldDefinitionId,
+          },
+        },
+        create: {
+          userId,
+          fieldDefinitionId: response.fieldDefinitionId,
+          value: response.value,
+        },
+        update: {
+          value: response.value,
+        },
+      });
+    }
+  }
+};
 
 export const registerEvent = async (
   userId: string, 
@@ -15,19 +135,15 @@ export const registerEvent = async (
 ) => {
   return withUserContext(userId, async (tx) => {
     try {
-      // Validate required custom fields
-      const requiredFields = await tx.eventFormField.findMany({
-        where: { eventId, formId: null, isRequired: true },
-      });
-
-      if (requiredFields.length > 0) {
-        const providedFieldIds = new Set(responses?.map(r => r.fieldDefinitionId) || []);
-        const missingFields = requiredFields.filter(f => !providedFieldIds.has(f.fieldDefinitionId) || !responses?.find(r => r.fieldDefinitionId === f.fieldDefinitionId)?.value?.trim());
-        
-        if (missingFields.length > 0) {
-          throw new BadRequestError(`Missing required registration fields: ${missingFields.map(f => f.fieldDefinitionId).join(', ')}`);
-        }
+      if (tx.user) {
+        const user = await tx.user.findUnique({
+          where: { id: userId },
+          select: { id: true, email: true, googleSub: true, deletedAt: true },
+        });
+        validateRegistrationEligibility(user);
       }
+
+      await validateRegistrationResponses(tx, eventId, responses);
 
       const result = await tx.$queryRaw<{ register_event: any }[]>`
         SELECT register_event(${eventId}::uuid);
@@ -37,71 +153,12 @@ export const registerEvent = async (
 
       // Handle custom form responses
       if (responses && responses.length > 0) {
-        // Find the registration that was just created
         const reg = await tx.eventRegistration.findFirst({
           where: { eventId, userId, deletedAt: null },
         });
 
         if (reg) {
-          // Fetch field definitions to know which ones are reusable
-          const fieldDefs = await tx.fieldDefinition.findMany({
-            where: { id: { in: responses.map(r => r.fieldDefinitionId) } },
-          });
-          const reusableFieldIds = new Set(fieldDefs.filter(f => f.isReusable).map(f => f.id));
-
-          for (const response of responses) {
-            const existingResponse = await tx.eventRegistrationResponse.findFirst({
-              where: {
-                eventRegistrationId: reg.id,
-                formId: null,
-                fieldDefinitionId: response.fieldDefinitionId,
-              },
-            });
-
-            const fieldDef = fieldDefs.find(f => f.id === response.fieldDefinitionId);
-            if (fieldDef) {
-              validateFieldValue(
-                { fieldType: fieldDef.fieldType, options: fieldDef.options, label: fieldDef.label },
-                response.value
-              );
-            }
-
-            if (existingResponse) {
-              await tx.eventRegistrationResponse.update({
-                where: { id: existingResponse.id },
-                data: { value: response.value },
-              });
-            } else {
-              await tx.eventRegistrationResponse.create({
-                data: {
-                  eventRegistrationId: reg.id,
-                  formId: null,
-                  fieldDefinitionId: response.fieldDefinitionId,
-                  value: response.value,
-                },
-              });
-            }
-
-            // 2. Upsert StudentProfileValue if reusable
-            if (reusableFieldIds.has(response.fieldDefinitionId)) {
-              await tx.studentProfileValue.upsert({
-                where: {
-                  userId_fieldDefinitionId: {
-                    userId,
-                    fieldDefinitionId: response.fieldDefinitionId,
-                  }
-                },
-                create: {
-                  userId,
-                  fieldDefinitionId: response.fieldDefinitionId,
-                  value: response.value,
-                },
-                update: {
-                  value: response.value,
-                }
-              });
-            }
-          }
+          await saveRegistrationResponses(tx, userId, reg.id, eventId, responses);
         }
       }
 
@@ -215,8 +272,19 @@ export const getMyRegistrationStatus = async (userId: string, eventId: string) =
     }
 
     let waitlist_position: number | null = null;
+    let finalStatus: string = reg.registrationStatus;
     
-    if (reg.registrationStatus === 'WAITLISTED') {
+    if (reg.teamId) {
+      const team = await tx.team.findUnique({
+        where: { id: reg.teamId },
+        select: { status: true },
+      });
+      if (team?.status === 'FORMING') {
+        finalStatus = 'FORMING';
+      }
+    }
+
+    if (finalStatus === 'WAITLISTED') {
       if (event.registrationType === 'INDIVIDUAL') {
         const countResult = await tx.$queryRaw<{ count: number }[]>`
           SELECT COUNT(*)::int as count 
@@ -257,7 +325,7 @@ export const getMyRegistrationStatus = async (userId: string, eventId: string) =
     }
 
     return { 
-      status: reg.registrationStatus,
+      status: finalStatus,
       team_id: reg.teamId,
       waitlist_position 
     };
@@ -270,9 +338,22 @@ export const getRegistrationResponses = async (
   registrationId: string
 ) => {
   return withUserContext(userId, async (tx) => {
+    const reg = await tx.eventRegistration.findFirst({
+      where: {
+        id: registrationId,
+        eventId,
+        deletedAt: null,
+      },
+    });
+
+    if (!reg) {
+      throw new NotFoundError('Registration not found');
+    }
+
     return tx.eventRegistrationResponse.findMany({
       where: { eventRegistrationId: registrationId },
       include: { fieldDefinition: true },
     });
   });
 };
+

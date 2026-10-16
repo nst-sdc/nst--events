@@ -12,12 +12,14 @@ export interface UpdateEventInput {
   location_lat?: number;
   location_lng?: number;
   event_type?: string;
-  visibility?: 'PUBLIC' | 'PRIVATE';
+  visibility?: 'PUBLIC' | 'UNLISTED' | 'RESTRICTED';
+  slug?: string;
   registration_type?: 'INDIVIDUAL' | 'TEAM';
   attendance_type?: 'SINGLE' | 'MULTI_SESSION';
   audience?: 'ALL_STUDENTS' | 'SPECIFIC_BATCHES';
   audience_batch_ids?: string[];
   max_capacity?: number | null;
+  max_participants?: number | null;
   metadata?: Record<string, unknown>;
 }
 

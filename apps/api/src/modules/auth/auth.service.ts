@@ -35,7 +35,11 @@ export async function loginWithIdToken(
   ipAddress?: string,
   userAgent?: string
 ): Promise<AuthTokenResponse> {
-  const { sub, email, name } = await googleOAuth.verifyIdToken(id_token);
+  const { sub, email, name, email_verified } = await googleOAuth.verifyIdToken(id_token);
+
+  if (email_verified === false) {
+    throw new ForbiddenError('EMAIL_NOT_VERIFIED: Institutional email address is not verified by Google');
+  }
 
   // 2. Enforce email domain restriction
   const normalizedEmail = email.trim().toLowerCase();
@@ -153,6 +157,15 @@ export async function loginWithIdToken(
       }
     } catch (err) {
       console.error('Failed to assign academic profile on login:', err);
+    }
+
+    // 4c. Student Profile Auto-Provisioning
+    if (mappedUser.globalRole === 'STUDENT') {
+      try {
+        await tx.$executeRaw`SELECT provision_student_profile(${mappedUser.id}::uuid)`;
+      } catch (err) {
+        console.error('Failed to auto-provision student profile on login:', err);
+      }
     }
 
     // 5. Issue access JWT & refresh token

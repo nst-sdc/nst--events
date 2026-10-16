@@ -11,6 +11,7 @@ import { getPersistentDeviceId } from '../../../../src/lib/device-id';
 import { useAppTheme } from '../../../../src/store/theme-store';
 import { CameraPermissionView } from '../../../../src/ui/CameraPermissionView';
 import { LocationPermissionView } from '../../../../src/ui/LocationPermissionView';
+import { AttendancePermissionsView } from '../../../../src/ui/AttendancePermissionsView';
 import { ScannerOverlay } from '../../../../src/ui/ScannerOverlay';
 import { AttendanceVerificationView } from '../../../../src/ui/AttendanceVerificationView';
 import { AttendanceSuccessView } from '../../../../src/ui/AttendanceSuccessView';
@@ -18,6 +19,7 @@ import { AttendanceFailureView } from '../../../../src/ui/AttendanceFailureView'
 
 type ScanFlowState =
   | 'CHECKING'
+  | 'PERMISSIONS'
   | 'CAMERA_PERMISSION'
   | 'LOCATION_PERMISSION'
   | 'SCANNING'
@@ -32,6 +34,7 @@ export default function ScanAttendanceScreen() {
   const toast = useToast();
 
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
   const [flowState, setFlowState] = useState<ScanFlowState>('CHECKING');
   const [torchActive, setTorchActive] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState('ACQUIRING LOCATION...');
@@ -84,14 +87,10 @@ export default function ScanAttendanceScreen() {
   useEffect(() => {
     (async () => {
       if (!cameraPermission) return;
-      if (!cameraPermission.granted) {
-        setFlowState('CAMERA_PERMISSION');
-        return;
-      }
-      
       const locPerm = await Location.getForegroundPermissionsAsync();
-      if (!locPerm.granted) {
-        setFlowState('LOCATION_PERMISSION');
+      setLocationPermissionGranted(locPerm.granted);
+      if (!cameraPermission.granted || !locPerm.granted) {
+        setFlowState('PERMISSIONS');
         return;
       }
       
@@ -386,42 +385,39 @@ export default function ScanAttendanceScreen() {
     prefetchLocation();
   };
 
-  // Render Permission Branches & Flow States
-  if (flowState === 'CAMERA_PERMISSION') {
-    return (
-      <CameraPermissionView
-        onRequestPermission={async () => {
-          const res = await requestCameraPermission();
-          if (res.granted) {
-            const locPerm = await Location.getForegroundPermissionsAsync();
-            if (locPerm.granted) {
-              setFlowState('SCANNING');
-              prefetchLocation();
-            } else {
-              setFlowState('LOCATION_PERMISSION');
-            }
-          }
-        }}
-        onCancel={() => router.back()}
-      />
-    );
-  }
+  const handleRequestAllPermissions = async () => {
+    let camGranted = cameraPermission?.granted;
+    if (!camGranted) {
+      const res = await requestCameraPermission();
+      camGranted = res.granted;
+    }
 
-  if (flowState === 'LOCATION_PERMISSION') {
+    const locPerm = await Location.getForegroundPermissionsAsync();
+    let locGranted = locPerm.granted;
+    if (!locGranted) {
+      const locRes = await Location.requestForegroundPermissionsAsync();
+      locGranted = locRes.granted;
+    }
+    setLocationPermissionGranted(locGranted);
+
+    if (camGranted && locGranted) {
+      if (pendingQrDataRef.current) {
+        processAttendanceSubmission(pendingQrDataRef.current);
+      } else {
+        setFlowState('SCANNING');
+        prefetchLocation();
+      }
+    }
+  };
+
+  // Render Permission Branches & Flow States
+  if (flowState === 'PERMISSIONS' || flowState === 'CAMERA_PERMISSION' || flowState === 'LOCATION_PERMISSION') {
     return (
-      <LocationPermissionView
-        onRequestPermission={async () => {
-          const res = await Location.requestForegroundPermissionsAsync();
-          if (res.granted) {
-            if (pendingQrDataRef.current) {
-              processAttendanceSubmission(pendingQrDataRef.current);
-            } else {
-              setFlowState('SCANNING');
-              prefetchLocation();
-            }
-          }
-        }}
+      <AttendancePermissionsView
+        onRequestPermissions={handleRequestAllPermissions}
         onCancel={() => router.back()}
+        cameraGranted={cameraPermission?.granted}
+        locationGranted={locationPermissionGranted}
       />
     );
   }
@@ -462,7 +458,7 @@ export default function ScanAttendanceScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.surface }]}>
       <StatusBar 
-        barStyle={theme.colors.surface === '#fbfbfb' ? 'dark-content' : 'light-content'} 
+        barStyle={theme.mode === 'light' ? 'dark-content' : 'light-content'} 
         backgroundColor="transparent" 
         translucent 
       />

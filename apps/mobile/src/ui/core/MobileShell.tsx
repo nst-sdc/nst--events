@@ -15,6 +15,7 @@ interface MobileShellProps {
   refreshControl?: React.ReactElement<any>;
   showNotificationBell?: boolean;
   rightAction?: React.ReactNode;
+  contentContainerStyle?: any;
 }
 
 export function MobileShell({ 
@@ -26,6 +27,7 @@ export function MobileShell({
   refreshControl,
   showNotificationBell = true,
   rightAction,
+  contentContainerStyle: customContentStyle,
 }: MobileShellProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -101,7 +103,8 @@ export function MobileShell({
 
   const contentStyle = [
     styles.content,
-    { paddingBottom: Math.max(insets.bottom, 12) + 80 }
+    { paddingBottom: Math.max(insets.bottom, 12) + 80 },
+    customContentStyle,
   ];
 
   return (
@@ -121,7 +124,7 @@ export function MobileShell({
         
         <View style={styles.titleContainer}>
           <MonoLabel style={styles.brandTitle}>
-            {showBackButton ? `/   ${title.toUpperCase()}` : `NST EVENTS / ${title.toUpperCase()}`}
+            {showBackButton ? `//   ${title.toUpperCase()}` : `NST EVENTS // ${title.toUpperCase()}`}
           </MonoLabel>
         </View>
 
@@ -145,12 +148,13 @@ export function MobileShell({
           style={styles.container}
           contentContainerStyle={contentStyle}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
           refreshControl={refreshControl}
         >
           {children}
         </ScrollView>
       ) : (
-        <View style={[styles.container, contentStyle]}>
+        <View style={[styles.container, customContentStyle]}>
           {children}
         </View>
       )}

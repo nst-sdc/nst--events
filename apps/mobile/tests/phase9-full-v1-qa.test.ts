@@ -76,15 +76,14 @@ describe('Phase 9 — Full Mobile V1 End-to-End QA Test Suite', () => {
     vi.clearAllMocks();
   });
 
-  // 1. Navigation Architecture & Tabs
-  it('1. Navigation architecture preserves strictly 3 tabs and no team tabs or routes', () => {
-    expect(tabsLayoutContent).toContain("allowedRoutes = ['index', 'history', 'profile']");
+  // 1. Navigation Architecture & UX 2.0 Destinations
+  it('1. Navigation architecture configures 4 destinations: HOME, EXPLORE, ACTIVITY, PROFILE', () => {
+    expect(tabsLayoutContent).toContain("allowedRoutes = ['index', 'explore', 'activity', 'profile']");
     expect(tabsLayoutContent).toContain('<Tabs.Screen name="index" />');
-    expect(tabsLayoutContent).toContain('<Tabs.Screen name="history" />');
+    expect(tabsLayoutContent).toContain('<Tabs.Screen name="explore" />');
+    expect(tabsLayoutContent).toContain('<Tabs.Screen name="activity" />');
     expect(tabsLayoutContent).toContain('<Tabs.Screen name="profile" />');
-    expect(tabsLayoutContent).not.toContain('name="invitations"');
     expect(tabsLayoutContent).not.toContain('name="teams"');
-    expect(appLayoutContent).not.toContain('name="invitations"');
   });
 
   // 2. Authentication & Domain Restriction

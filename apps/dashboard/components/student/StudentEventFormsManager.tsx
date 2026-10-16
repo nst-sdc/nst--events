@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Plus, Settings, Eye, Edit2, Trash2, Clock, Calendar, CheckCircle, AlertTriangle } from 'lucide-react';
-import { useEventForms, useCreateEventForm, useUpdateEventForm, useDeleteEventForm, EventForm } from '../../hooks/useEventForms';
+import { Plus, Settings, Eye, Edit2, Trash2, Clock, Calendar, CheckCircle, AlertTriangle, Copy } from 'lucide-react';
+import { useEventForms, useCreateEventForm, useUpdateEventForm, useDeleteEventForm, useDuplicateEventForm, EventForm } from '../../hooks/useEventForms';
 import { StudentEventFormFieldsConfigModal } from './StudentEventFormFieldsConfigModal';
 import { StudentFormResponsesModal } from './StudentFormResponsesModal';
 import { Modal } from '../ui/Modal';
@@ -14,6 +14,7 @@ export function StudentEventFormsManager({ eventId }: StudentEventFormsManagerPr
   const { mutateAsync: createForm, isPending: isCreating } = useCreateEventForm(eventId);
   const { mutateAsync: updateForm, isPending: isUpdating } = useUpdateEventForm(eventId);
   const { mutateAsync: deleteForm } = useDeleteEventForm(eventId);
+  const { mutateAsync: duplicateForm, isPending: isDuplicating } = useDuplicateEventForm(eventId);
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingForm, setEditingForm] = useState<EventForm | null>(null);
@@ -91,6 +92,15 @@ export function StudentEventFormsManager({ eventId }: StudentEventFormsManagerPr
       setDeletingFormId(null);
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to delete form');
+    }
+  };
+
+  const handleDuplicate = async (form: EventForm) => {
+    setErrorMsg(null);
+    try {
+      await duplicateForm({ formId: form.id, title: form.title, purpose: form.purpose });
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to duplicate form');
     }
   };
 
@@ -233,6 +243,16 @@ export function StudentEventFormsManager({ eventId }: StudentEventFormsManagerPr
                     className="px-3 py-1.5 bg-[#1a1d29] border-2 border-white/20 hover:border-[#FFE600] text-white hover:text-[#FFE600] font-mono font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-[2px_2px_0px_#000]"
                   >
                     <Eye className="w-3.5 h-3.5" /> Responses
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleDuplicate(form)}
+                    disabled={isDuplicating}
+                    className="p-1.5 border-2 border-white/10 hover:border-white/40 text-[#a0a4b8] hover:text-white transition-colors disabled:opacity-50"
+                    title="Duplicate Form"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
                   </button>
 
                   <button

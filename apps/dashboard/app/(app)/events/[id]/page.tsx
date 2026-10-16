@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { Card, Skeleton, Alert, Typography, Row, Col, Tag, Space, Button, Breadcrumb, theme, Popconfirm, Modal, Input, App } from 'antd';
-import { LockOutlined, UnlockOutlined, CheckCircleOutlined, CloseCircleOutlined, SendOutlined, EditOutlined, IdcardOutlined, QrcodeOutlined, RightOutlined, TeamOutlined } from '@ant-design/icons';
+import { LockOutlined, UnlockOutlined, CheckCircleOutlined, CloseCircleOutlined, SendOutlined, EditOutlined, IdcardOutlined, QrcodeOutlined, RightOutlined, TeamOutlined, FormOutlined } from '@ant-design/icons';
 import { useEventDetail, EventDetail } from '../../../../hooks/useEventDetail';
 import { resolveEventLockState } from '../../../../lib/event-utils';
 import { useEventLiveUpdates } from '../../../../hooks/useEventLiveUpdates';
@@ -68,10 +68,13 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     }
 
     const eventParam = event as unknown as Parameters<typeof canManageEvent>[1];
+    const lockState = event ? resolveEventLockState(event) : 'MANUALLY_LOCKED';
     const canManageRegistrations = isGlobalAdmin || isClubAdmin || isCoreMember || isMentor;
     const canManageTeams = canManageRegistrations && event?.registrationType === 'TEAM';
     const canManageAttendance = isGlobalAdmin || isClubAdmin || isCoreMember || isMentor;
-    const canEdit = canManageEvent(currentUser, eventParam) && event?.state === 'DRAFT';
+    const canEdit = canManageEvent(currentUser, eventParam) && (
+      event?.state === 'DRAFT' || (event?.state === 'PUBLISHED' && lockState === 'UNLOCKED')
+    );
     const canSubmit = canManageEvent(currentUser, eventParam) && event?.state === 'DRAFT';
     const canApprove = canApproveEvent(currentUser, eventParam) && event?.state === 'PENDING_APPROVAL';
     const canReject = canApproveEvent(currentUser, eventParam) && event?.state === 'PENDING_APPROVAL';
@@ -302,7 +305,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
       const showLock = lockState === 'UNLOCKED' && auth.canLock;
       const hasPermission = auth.isGlobalAdmin || auth.isClubAdmin || auth.isMentor;
       
-      if (showLock || showUnlock || (lockState === 'PERMANENTLY_LOCKED' && hasPermission)) {
+      if (showLock || showUnlock || auth.canEdit || (lockState === 'PERMANENTLY_LOCKED' && hasPermission)) {
         let subtitleText = 'This event is live and editable.';
         if (lockState === 'MANUALLY_LOCKED') {
           subtitleText = 'This event is locked and read-only.';
@@ -312,40 +315,47 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
 
         return (
           <Card style={{ marginBottom: 24 }}>
-            <Space align="center" style={{ width: '100%', justifyContent: 'space-between' }}>
+            <Space align="center" style={{ width: '100%', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
               <Space orientation="vertical" size={0}>
                 <Text strong>Event Lifecycle</Text>
                 <Text type="secondary">{subtitleText}</Text>
               </Space>
-              {showUnlock && (
-                <Button 
-                  type="primary"
-                  icon={<UnlockOutlined />} 
-                  loading={unlockMutation.isPending} 
-                  disabled={anyMutationPending}
-                  onClick={() => unlockMutation.mutate(eventId, {
-                    onSuccess: () => message.success('Event unlocked'),
-                    onError: (err) => message.error(err.message || 'Failed to unlock')
-                  })}
-                >
-                  Unlock Event
-                </Button>
-              )}
-              {showLock && (
-                <Button 
-                  type="primary"
-                  danger 
-                  icon={<LockOutlined />} 
-                  loading={lockMutation.isPending} 
-                  disabled={anyMutationPending}
-                  onClick={() => lockMutation.mutate(eventId, {
-                    onSuccess: () => message.success('Event locked'),
-                    onError: (err) => message.error(err.message || 'Failed to lock')
-                  })}
-                >
-                  Lock Event
-                </Button>
-              )}
+              <Space wrap>
+                {auth.canEdit && (
+                  <Link href={`/events/${eventId}/edit`}>
+                    <Button icon={<EditOutlined />}>Edit Event</Button>
+                  </Link>
+                )}
+                {showUnlock && (
+                  <Button 
+                    type="primary"
+                    icon={<UnlockOutlined />} 
+                    loading={unlockMutation.isPending} 
+                    disabled={anyMutationPending}
+                    onClick={() => unlockMutation.mutate(eventId, {
+                      onSuccess: () => message.success('Event unlocked'),
+                      onError: (err) => message.error(err.message || 'Failed to unlock')
+                    })}
+                  >
+                    Unlock Event
+                  </Button>
+                )}
+                {showLock && (
+                  <Button 
+                    type="primary" 
+                    danger 
+                    icon={<LockOutlined />} 
+                    loading={lockMutation.isPending} 
+                    disabled={anyMutationPending}
+                    onClick={() => lockMutation.mutate(eventId, {
+                      onSuccess: () => message.success('Event locked'),
+                      onError: (err) => message.error(err.message || 'Failed to lock')
+                    })}
+                  >
+                    Lock Event
+                  </Button>
+                )}
+              </Space>
             </Space>
           </Card>
         );
@@ -393,6 +403,14 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         description: 'Manage sessions and attendance records',
         icon: <QrcodeOutlined style={{ fontSize: 24, color: token.colorPrimary }} />,
         link: `/events/${eventId}/attendance`
+      });
+    }
+    if (auth.canEdit) {
+      data.push({
+        title: 'Forms & Custom Fields',
+        description: 'Configure prerequisite forms, submissions, and custom registration fields',
+        icon: <FormOutlined style={{ fontSize: 24, color: token.colorPrimary }} />,
+        link: `/events/${eventId}/edit#forms`
       });
     }
 
@@ -514,25 +532,35 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         {/* Main Column */}
         <Col xs={24} lg={16}>
           <div style={{ marginBottom: 24 }}>
-            <Space align="center" style={{ marginBottom: 8, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              <Title level={1} style={{ margin: 0 }}>{event.title}</Title>
-              <Text strong style={{ color: token.colorPrimary, border: `1px solid ${token.colorPrimary}`, padding: '2px 8px', borderRadius: 4, fontSize: 12 }}>
-                {event.state.replace('_', ' ')}
-              </Text>
-            </Space>
-            
-            <Space separator={<Text type="secondary">•</Text>} wrap style={{ fontSize: 14 }}>
-              {event.eventClubs && event.eventClubs.length > 0 && (
-                <Text strong>{event.eventClubs[0].club.name}</Text>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
+              <div>
+                <Space align="center" style={{ marginBottom: 8, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  <Title level={1} style={{ margin: 0 }}>{event.title}</Title>
+                  <Text strong style={{ color: token.colorPrimary, border: `1px solid ${token.colorPrimary}`, padding: '2px 8px', borderRadius: 4, fontSize: 12 }}>
+                    {event.state.replace('_', ' ')}
+                  </Text>
+                </Space>
+                
+                <Space separator={<Text type="secondary">•</Text>} wrap style={{ fontSize: 14 }}>
+                  {event.eventClubs && event.eventClubs.length > 0 && (
+                    <Text strong>{event.eventClubs[0].club.name}</Text>
+                  )}
+                  <Text type="secondary">{event.eventType?.replace('_', ' ')}</Text>
+                  <Text type="secondary">{event.visibility}</Text>
+                  {event.audience === 'ALL_STUDENTS' ? (
+                    <Text type="secondary">All Students</Text>
+                  ) : (
+                    <Text type="secondary">{event.audienceBatchIds?.length || 0} specific batches</Text>
+                  )}
+                </Space>
+              </div>
+
+              {auth.canEdit && (
+                <Link href={`/events/${eventId}/edit`}>
+                  <Button type="primary" icon={<EditOutlined />}>Edit Event</Button>
+                </Link>
               )}
-              <Text type="secondary">{event.eventType?.replace('_', ' ')}</Text>
-              <Text type="secondary">{event.visibility}</Text>
-              {event.audience === 'ALL_STUDENTS' ? (
-                <Text type="secondary">All Students</Text>
-              ) : (
-                <Text type="secondary">{event.audienceBatchIds?.length || 0} specific batches</Text>
-              )}
-            </Space>
+            </div>
           </div>
           
           {event.below_minimum_team_count && event.below_minimum_team_count > 0 ? (
@@ -591,10 +619,20 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                   </div>
                 </Col>
                 <Col span={12}>
-                  <Text type="secondary" style={{ fontSize: 12 }}>CAPACITY</Text>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {event.registrationType === 'TEAM' ? 'MAX TEAMS' : 'CAPACITY'}
+                  </Text>
                   <div style={{ marginTop: 4 }}>
                     <Text strong>{event.maxCapacity ?? 'Unlimited'}</Text>
                   </div>
+                  {event.registrationType === 'TEAM' && (
+                    <div style={{ marginTop: 8 }}>
+                      <Text type="secondary" style={{ fontSize: 12 }}>MAX PARTICIPANTS</Text>
+                      <div style={{ marginTop: 4 }}>
+                        <Text strong>{event.maxParticipants ?? 'Unlimited'}</Text>
+                      </div>
+                    </div>
+                  )}
                 </Col>
               </Row>
             </Card>
@@ -656,18 +694,42 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
             </Card>
 
             <Card title="Registration">
-              <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                <Space align="baseline">
-                  <Text style={{ fontSize: 36, fontWeight: 'bold' }}>{event.registrationCount}</Text>
-                  <Text type="secondary">/ {event.maxCapacity ?? '∞'} registered</Text>
-                </Space>
-                <Text type="secondary" style={{ display: 'block' }}>{spotsLeft}</Text>
-                {event.state === 'PUBLISHED' && (
-                  <Tag color={status === 'OPEN' ? 'success' : 'default'} style={{ marginTop: 16, fontSize: 14, padding: '4px 12px' }}>
-                    {status}
-                  </Tag>
-                )}
-              </div>
+              {event.registrationType === 'TEAM' ? (
+                <div style={{ textAlign: 'center', marginBottom: 24 }}>
+                  <div style={{ marginBottom: 12 }}>
+                    <Text type="secondary" style={{ fontSize: 12, display: 'block', textTransform: 'uppercase' }}>Teams</Text>
+                    <Space align="baseline">
+                      <Text style={{ fontSize: 28, fontWeight: 'bold' }}>{event.registrationCount}</Text>
+                      <Text type="secondary">/ {event.maxCapacity ?? '∞'} teams</Text>
+                    </Space>
+                  </div>
+                  <div>
+                    <Text type="secondary" style={{ fontSize: 12, display: 'block', textTransform: 'uppercase' }}>Participants</Text>
+                    <Space align="baseline">
+                      <Text style={{ fontSize: 28, fontWeight: 'bold' }}>{event.participantCount ?? 0}</Text>
+                      <Text type="secondary">/ {event.maxParticipants ?? '∞'} participants</Text>
+                    </Space>
+                  </div>
+                  {event.state === 'PUBLISHED' && (
+                    <Tag color={status === 'OPEN' ? 'success' : 'default'} style={{ marginTop: 16, fontSize: 14, padding: '4px 12px' }}>
+                      {status}
+                    </Tag>
+                  )}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', marginBottom: 24 }}>
+                  <Space align="baseline">
+                    <Text style={{ fontSize: 36, fontWeight: 'bold' }}>{event.registrationCount}</Text>
+                    <Text type="secondary">/ {event.maxCapacity ?? '∞'} registered</Text>
+                  </Space>
+                  <Text type="secondary" style={{ display: 'block' }}>{spotsLeft}</Text>
+                  {event.state === 'PUBLISHED' && (
+                    <Tag color={status === 'OPEN' ? 'success' : 'default'} style={{ marginTop: 16, fontSize: 14, padding: '4px 12px' }}>
+                      {status}
+                    </Tag>
+                  )}
+                </div>
+              )}
             </Card>
           </Space>
         </Col>

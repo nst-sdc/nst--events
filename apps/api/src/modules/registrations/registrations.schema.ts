@@ -18,8 +18,26 @@ export const CreateTeamSchema = z.object({
   }).passthrough(),
   body: z.object({
     team_name: z.string().min(1).max(255),
+    responses: z.array(
+      z.object({
+        fieldDefinitionId: z.string().uuid(),
+        value: z.string(),
+      })
+    ).optional(),
   }),
 });
+
+export const JoinTeamSchema = z.object({
+  params: z.object({ id: z.string().uuid() }).passthrough(),
+  body: z.object({
+    responses: z.array(
+      z.object({
+        fieldDefinitionId: z.string().uuid(),
+        value: z.string(),
+      })
+    ).optional(),
+  }).optional(),
+}).passthrough();
 
 export const ListRegistrationsQuerySchema = z.object({
   query: z.object({

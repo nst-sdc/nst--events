@@ -65,6 +65,8 @@ describe('Team Lifecycle Integration Tests', () => {
         },
         startTime: new Date('2027-01-01T00:00:00Z'),
         endTime: new Date('2027-01-02T00:00:00Z'),
+        registrationStartTime: new Date(Date.now() - 3600000),
+        registrationEndTime: new Date(Date.now() + 3600000),
         audience: 'ALL_STUDENTS',
         eventType: 'WORKSHOP',
         createdBy: admin.id
@@ -210,6 +212,8 @@ describe('Team Lifecycle Integration Tests', () => {
         },
         startTime: new Date('2027-01-01T00:00:00Z'),
         endTime: new Date('2027-01-02T00:00:00Z'),
+        registrationStartTime: new Date(Date.now() - 3600000),
+        registrationEndTime: new Date(Date.now() + 3600000),
         audience: 'ALL_STUDENTS',
         eventType: 'WORKSHOP',
         createdBy: adminId

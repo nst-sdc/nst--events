@@ -13,12 +13,14 @@ export interface CreateEventPayload {
   location_lat?: number;
   location_lng?: number;
   event_type: string;
-  visibility: string;
+  visibility?: 'PUBLIC' | 'UNLISTED' | 'RESTRICTED' | string;
+  slug?: string;
   registration_type: string;
   attendance_type: string;
   audience?: 'ALL_STUDENTS' | 'SPECIFIC_BATCHES';
   audience_batch_ids?: string[];
   max_capacity?: number;
+  max_participants?: number;
   club_ids: { club_id: string; is_primary: boolean }[];
   metadata?: Record<string, unknown>;
 }

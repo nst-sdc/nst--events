@@ -75,13 +75,26 @@ export const FlatList = ({ data = [], renderItem, ListEmptyComponent, ListHeader
 };
 export const Image = (props: any) => React.createElement('img', cleanProps(props));
 export const TextInput = (props: any) => React.createElement('input', cleanProps(props));
+export const Switch = ({ value, onValueChange, ...props }: any) =>
+  React.createElement('input', {
+    type: 'checkbox',
+    checked: !!value,
+    onChange: (e: any) => onValueChange && onValueChange(e.target.checked),
+    ...cleanProps(props),
+  });
+export const KeyboardAvoidingView = ({ children, ...props }: any) => React.createElement('div', cleanProps(props), children);
+export const Share = {
+  share: async () => ({ action: 'sharedAction' }),
+};
 export const Linking = {
   openURL: async () => {},
   canOpenURL: async () => true,
 };
+export const NativeModules: Record<string, any> = {};
 
 export default {
   Platform,
+  NativeModules,
   Appearance,
   useColorScheme,
   StyleSheet,
@@ -98,5 +111,8 @@ export default {
   FlatList,
   Image,
   TextInput,
+  Switch,
+  KeyboardAvoidingView,
+  Share,
   Linking,
 };

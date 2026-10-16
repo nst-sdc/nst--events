@@ -19,6 +19,24 @@ export const RemoveMemberSchema = z.object({
 export const CreateTeamSchema = z.object({
   params: z.object({ id: z.string().uuid() }).passthrough(),
   body: z.object({
-    team_name: z.string().min(3).max(50)
+    team_name: z.string().min(3).max(50),
+    responses: z.array(
+      z.object({
+        fieldDefinitionId: z.string().uuid(),
+        value: z.string(),
+      })
+    ).optional(),
   })
+}).passthrough();
+
+export const JoinTeamSchema = z.object({
+  params: z.object({ id: z.string().uuid() }).passthrough(),
+  body: z.object({
+    responses: z.array(
+      z.object({
+        fieldDefinitionId: z.string().uuid(),
+        value: z.string(),
+      })
+    ).optional(),
+  }).optional(),
 }).passthrough();

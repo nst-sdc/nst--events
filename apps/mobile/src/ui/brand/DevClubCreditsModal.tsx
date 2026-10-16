@@ -394,13 +394,14 @@ export function DevClubCreditsModal({ visible, onClose }: DevClubCreditsModalPro
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   modalContainer: {
     width: '100%',
+    maxWidth: 480,
     maxHeight: '85%',
     borderWidth: 1,
   },

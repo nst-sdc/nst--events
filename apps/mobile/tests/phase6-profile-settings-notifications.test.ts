@@ -360,11 +360,12 @@ describe('Phase 6 — Profile, Settings & Notifications UI & Contract Tests', ()
     expect(queryClient.getQueryData(['my-attendance'])).toBeUndefined();
   });
 
-  // 25. Three-tab structure remains exactly: ATTENDANCE / HISTORY / PROFILE
-  it('25. Three-tab structure remains strictly ATTENDANCE / HISTORY / PROFILE in (tabs)/_layout.tsx', () => {
-    expect(tabsLayoutContent).toContain("allowedRoutes = ['index', 'history', 'profile']");
+  // 25. UX 2.0 4 destinations: HOME / EXPLORE / ACTIVITY / PROFILE
+  it('25. Structure registers 4 destinations HOME / EXPLORE / ACTIVITY / PROFILE in (tabs)/_layout.tsx', () => {
+    expect(tabsLayoutContent).toContain("allowedRoutes = ['index', 'explore', 'activity', 'profile']");
     expect(tabsLayoutContent).toContain('<Tabs.Screen name="index" />');
-    expect(tabsLayoutContent).toContain('<Tabs.Screen name="history" />');
+    expect(tabsLayoutContent).toContain('<Tabs.Screen name="explore" />');
+    expect(tabsLayoutContent).toContain('<Tabs.Screen name="activity" />');
     expect(tabsLayoutContent).toContain('<Tabs.Screen name="profile" />');
   });
 

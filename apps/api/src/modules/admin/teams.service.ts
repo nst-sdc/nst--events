@@ -62,7 +62,7 @@ export const manualWaitlistPromotion = async (userId: string, teamId: string) =>
 
 export const cancelTeam = async (userId: string, teamId: string) => {
   return withUserContext(userId, async (tx) => {
-    const team = await tx.team.findUnique({ where: { id: teamId }, include: { event: true } });
+    const team = await tx.team.findUnique({ where: { id: teamId }, select: { id: true, eventId: true, leaderId: true } });
     if (!team) throw new NotFoundError('Team not found');
 
     let result;

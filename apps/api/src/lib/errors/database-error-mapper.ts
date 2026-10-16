@@ -62,6 +62,8 @@ export const SQLSTATE_MAP: Record<string, {
   U0053: { semanticCode: 'INVALID_RESOLUTION',         httpStatus: 400, userMessage: 'Invalid resolution status',                      ErrorClass: BadRequestError },
   U0054: { semanticCode: 'ATTENDANCE_ALREADY_RECORDED',httpStatus: 409, userMessage: 'Attendance is already recorded',                 ErrorClass: ConflictError },
   U0055: { semanticCode: 'TEAM_NAME_TAKEN',            httpStatus: 409, userMessage: 'This team name is already taken for this event', ErrorClass: ConflictError },
+  U0056: { semanticCode: 'REGISTRATION_CLOSED',        httpStatus: 400, userMessage: 'Registration is not open for this event',        ErrorClass: BadRequestError },
+  U0057: { semanticCode: 'Event participant capacity is full.', httpStatus: 400, userMessage: 'Event participant capacity is full', ErrorClass: BadRequestError },
 };
 
 /**

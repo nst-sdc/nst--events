@@ -723,7 +723,9 @@ export default function StudentEventsPage() {
                         {reg.team && (
                           <div className="me-team-box">
                             <span>TEAM // {reg.team.name}</span>
-                            <span style={{ color: 'var(--electric-blue)' }}>[{reg.team.status}]</span>
+                            <span style={{ color: 'var(--electric-blue)' }}>
+                              [{(reg.team.status === 'FORMING' && (reg.registrationStatus === 'REGISTERED' || (typeof reg.event?.metadata?.minimum_team_size === 'number' && (reg.team.memberCount ?? 1) >= reg.event.metadata.minimum_team_size))) ? 'REGISTERED' : reg.team.status}]
+                            </span>
                           </div>
                         )}
                       </div>

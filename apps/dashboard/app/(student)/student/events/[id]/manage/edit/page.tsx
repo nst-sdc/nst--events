@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Send } from 'lucide-react';
+import { ArrowLeft, Save, Send, AlertCircle, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { useEventDetail } from '../../../../../../../hooks/useEventDetail';
 import { useUpdateEvent } from '../../../../../../../hooks/useUpdateEvent';
@@ -11,10 +11,42 @@ import { useEventLifecycle } from '../../../../../../../hooks/useEventLifecycle'
 import { useClubAdmin } from '../../../../../../../components/layout/ClubAdminProvider';
 import { useAcademicBatches } from '../../../../../../../hooks/useAcademicBatches';
 import { useClubs } from '../../../../../../../hooks/useClubs';
-import { StudentEventFormFieldsManager } from '../../../../../../../components/student/StudentEventFormFieldsManager';
-import { StudentEventFormsManager } from '../../../../../../../components/student/StudentEventFormsManager';
+import { StudentFormStudio } from '../../../../../../../components/student/StudentFormStudio';
 import { MultiSelect } from '../../../../../components/MultiSelect';
 import { Modal } from '../../../../../../../components/ui/Modal';
+
+const BANNER_PRESETS = [
+  {
+    label: 'Cyber Hackathon',
+    category: 'HACKATHON',
+    url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    label: 'Code & Dev Workshop',
+    category: 'WORKSHOP',
+    url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    label: 'Design & Neon Jam',
+    category: 'OTHER',
+    url: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    label: 'Keynote & Tech Talk',
+    category: 'SEMINAR',
+    url: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    label: 'Campus Cultural Fest',
+    category: 'CULTURAL',
+    url: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=80',
+  },
+  {
+    label: 'E-Sports & Gaming Arena',
+    category: 'COMPETITION',
+    url: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1200&q=80',
+  },
+];
 
 const formatLocalDate = (d: Date) => {
   const year = d.getFullYear();
@@ -27,6 +59,27 @@ const formatLocalTime = (d: Date) => {
   const hours = String(d.getHours()).padStart(2, '0');
   const minutes = String(d.getMinutes()).padStart(2, '0');
   return `${hours}:${minutes}`;
+};
+
+const toIsoDateTime = (dateStr: string, timeStr: string): string | null => {
+  if (!dateStr) return null;
+  const time = timeStr ? (timeStr.length === 5 ? `${timeStr}:00` : timeStr) : '00:00:00';
+  const d = new Date(`${dateStr}T${time}`);
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString();
+};
+
+const extractErrorMessage = (err: any): string => {
+  if (!err) return 'Failed to save draft changes';
+  if (typeof err === 'string') return err;
+  if (err.data?.error) return err.data.error;
+  if (err.data?.message) return err.data.message;
+  if (err.data?.detail) return err.data.detail;
+  if (Array.isArray(err.data?.issues) && err.data.issues.length > 0) {
+    return err.data.issues.map((i: any) => i.message || `${i.path?.join('.')}: invalid`).join(', ');
+  }
+  if (err.message) return err.message;
+  return 'Failed to save draft changes. Please verify all fields.';
 };
 
 export default function ManageEventEditPage({ params }: { params: Promise<{ id: string }> }) {
@@ -60,6 +113,7 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
     registration_type: 'INDIVIDUAL',
     attendance_type: 'SINGLE',
     max_capacity: '',
+    max_participants: '',
     minimum_team_size: '',
     maximum_team_size: '',
     audience: 'ALL_STUDENTS',
@@ -67,6 +121,8 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
     collaborating_club_ids: [] as string[]
   });
 
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -79,7 +135,11 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
 
       // Parse start and end times in local timezone
       const start = new Date(event.startTime);
-      const end = new Date(event.endTime);
+      let end = new Date(event.endTime);
+      if (isNaN(end.getTime()) || end.getTime() <= start.getTime()) {
+        // Fallback: If corrupt or end <= start, default end to start + 2 hours
+        end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+      }
 
       const startDate = formatLocalDate(start);
       const startTime = formatLocalTime(start);
@@ -120,6 +180,7 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
         registration_type: event.registrationType || 'INDIVIDUAL',
         attendance_type: (event.attendanceType as any) || metadata.attendance_type || 'SINGLE',
         max_capacity: event.maxCapacity ? String(event.maxCapacity) : '',
+        max_participants: (event as any).maxParticipants ? String((event as any).maxParticipants) : '',
         minimum_team_size: metadata.minimum_team_size ? String(metadata.minimum_team_size) : '',
         maximum_team_size: metadata.maximum_team_size ? String(metadata.maximum_team_size) : '',
         audience: (event.audience as any) || metadata.audience || 'ALL_STUDENTS',
@@ -139,52 +200,156 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    if (saveError) setSaveError(null);
   };
 
   const handleMultiSelectChange = (name: string, values: string[]) => {
     setFormData(prev => ({ ...prev, [name]: values }));
+    if (saveError) setSaveError(null);
   };
 
   const handleSaveDraft = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaveError(null);
+    setSaveSuccess(false);
 
-    const startDateTime = new Date(`${formData.startDate}T${formData.startTime}:00`).toISOString();
-    const endDateTime = new Date(`${formData.endDate}T${formData.endTime}:00`).toISOString();
-
-    let registration_start_time;
-    let registration_end_time;
-    if (formData.registrationStartDate && formData.registrationStartTime) {
-      registration_start_time = new Date(`${formData.registrationStartDate}T${formData.registrationStartTime}:00`).toISOString();
+    if (!formData.title || formData.title.trim().length < 3) {
+      setSaveError('Event title must be at least 3 characters long.');
+      return;
     }
-    if (formData.registrationEndDate && formData.registrationEndTime) {
-      registration_end_time = new Date(`${formData.registrationEndDate}T${formData.registrationEndTime}:00`).toISOString();
+
+    const startDateTime = toIsoDateTime(formData.startDate, formData.startTime);
+    if (!startDateTime) {
+      setSaveError('Please provide a valid event start date and time.');
+      return;
+    }
+
+    const endDateTime = toIsoDateTime(formData.endDate, formData.endTime);
+    if (!endDateTime) {
+      setSaveError('Please provide a valid event end date and time.');
+      return;
+    }
+
+    if (new Date(startDateTime).getTime() >= new Date(endDateTime).getTime()) {
+      setSaveError('Event start time must be before end time.');
+      return;
+    }
+
+    let registration_start_time: string | undefined = undefined;
+    let registration_end_time: string | undefined = undefined;
+
+    if (formData.registrationStartDate) {
+      const regStartIso = toIsoDateTime(formData.registrationStartDate, formData.registrationStartTime || '00:00');
+      if (!regStartIso) {
+        setSaveError('Invalid registration start date or time.');
+        return;
+      }
+      registration_start_time = regStartIso;
+    }
+
+    if (formData.registrationEndDate) {
+      const regEndIso = toIsoDateTime(formData.registrationEndDate, formData.registrationEndTime || '23:59');
+      if (!regEndIso) {
+        setSaveError('Invalid registration end date or time.');
+        return;
+      }
+      registration_end_time = regEndIso;
+    }
+
+    if (registration_start_time && registration_end_time) {
+      if (new Date(registration_start_time).getTime() >= new Date(registration_end_time).getTime()) {
+        setSaveError('Registration start time must be before registration end time.');
+        return;
+      }
+    }
+
+    if (registration_start_time && new Date(registration_start_time).getTime() >= new Date(endDateTime).getTime()) {
+      setSaveError('Registration start time must be before event end time.');
+      return;
+    }
+
+    if (registration_end_time && new Date(registration_end_time).getTime() > new Date(endDateTime).getTime()) {
+      setSaveError('Registration end time must be less than or equal to event end time.');
+      return;
+    }
+
+    if (formData.audience === 'SPECIFIC_BATCHES' && (!formData.audience_batch_ids || formData.audience_batch_ids.length === 0)) {
+      setSaveError('Please select at least one batch for Specific Batches audience.');
+      return;
+    }
+
+    if (formData.registration_type === 'TEAM') {
+      const min = parseInt(formData.minimum_team_size, 10);
+      const max = parseInt(formData.maximum_team_size, 10);
+      if (isNaN(min) || min < 1) {
+        setSaveError('Minimum team size must be an integer greater than or equal to 1.');
+        return;
+      }
+      if (isNaN(max) || max < min) {
+        setSaveError('Maximum team size must be greater than or equal to minimum team size.');
+        return;
+      }
+    }
+
+    const maxCapacity = formData.max_capacity ? parseInt(formData.max_capacity, 10) : null;
+    if (formData.max_capacity && (isNaN(maxCapacity!) || maxCapacity! < 1)) {
+      setSaveError('Maximum capacity must be a positive integer.');
+      return;
+    }
+
+    const maxParticipants = formData.registration_type === 'TEAM'
+      ? (formData.max_participants ? parseInt(formData.max_participants, 10) : null)
+      : null;
+    if (formData.registration_type === 'TEAM' && formData.max_participants && (isNaN(maxParticipants!) || maxParticipants! < 1)) {
+      setSaveError('Maximum participants must be a positive integer.');
+      return;
+    }
+
+    const metadata: Record<string, any> = {
+      ...((event?.metadata as any) || {}),
+    };
+
+    if (formData.banner_url?.trim()) {
+      metadata.banner_url = formData.banner_url.trim();
+    } else {
+      delete metadata.banner_url;
+    }
+
+    if (formData.registration_type === 'TEAM') {
+      metadata.minimum_team_size = parseInt(formData.minimum_team_size, 10);
+      metadata.maximum_team_size = parseInt(formData.maximum_team_size, 10);
+    } else {
+      delete metadata.minimum_team_size;
+      delete metadata.maximum_team_size;
     }
 
     const payload: any = {
-      title: formData.title,
-      description: formData.description || undefined,
+      title: formData.title.trim(),
+      description: formData.description?.trim() || undefined,
       start_time: startDateTime,
       end_time: endDateTime,
       registration_start_time,
       registration_end_time,
-      location_name: formData.location_name || undefined,
+      location_name: formData.location_name?.trim() || undefined,
       event_type: formData.event_type,
       visibility: formData.visibility,
       registration_type: formData.registration_type,
       attendance_type: formData.attendance_type,
       audience: formData.audience,
       audience_batch_ids: formData.audience === 'SPECIFIC_BATCHES' ? formData.audience_batch_ids : [],
-      max_capacity: formData.max_capacity ? parseInt(formData.max_capacity, 10) : undefined,
-      metadata: {
-        banner_url: formData.banner_url || undefined,
-        minimum_team_size: formData.registration_type === 'TEAM' && formData.minimum_team_size ? parseInt(formData.minimum_team_size, 10) : undefined,
-        maximum_team_size: formData.registration_type === 'TEAM' && formData.maximum_team_size ? parseInt(formData.maximum_team_size, 10) : undefined
-      }
+      max_capacity: maxCapacity,
+      max_participants: maxParticipants,
+      metadata,
     };
 
     updateEvent.mutate(payload, {
       onSuccess: () => {
+        setSaveSuccess(true);
         router.push(`/student/events/${eventId}/manage`);
+      },
+      onError: (err: any) => {
+        const msg = extractErrorMessage(err);
+        setSaveError(msg);
       }
     });
   };
@@ -229,18 +394,39 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
             Edit Event Parameters
           </h1>
         </div>
-        <button 
-          onClick={() => setIsSubmitModalOpen(true)}
-          disabled={submitMutation.isPending || updateEvent.isPending}
-          className="px-6 py-3 bg-[#C8FF00] text-black font-mono font-black text-xs tracking-widest hover:bg-white transition-all uppercase flex items-center gap-2 border-2 border-black shadow-[3px_3px_0px_#000] whitespace-nowrap disabled:opacity-50"
-        >
-          <Send className="w-4 h-4" />
-          {submitMutation.isPending ? 'Submitting...' : 'Submit for Approval ↗'}
-        </button>
+        {event.state === 'DRAFT' && (
+          <button 
+            onClick={() => setIsSubmitModalOpen(true)}
+            disabled={submitMutation.isPending || updateEvent.isPending}
+            className="px-6 py-3 bg-[#C8FF00] text-black font-mono font-black text-xs tracking-widest hover:bg-white transition-all uppercase flex items-center gap-2 border-2 border-black shadow-[3px_3px_0px_#000] whitespace-nowrap disabled:opacity-50"
+          >
+            <Send className="w-4 h-4" />
+            {submitMutation.isPending ? 'Submitting...' : 'Submit for Approval ↗'}
+          </button>
+        )}
       </div>
 
       <form onSubmit={handleSaveDraft} className="space-y-8 p-6 md:p-8 border-2 border-white/15 bg-[#090a0f] shadow-[8px_8px_0px_#000]">
         
+        {saveError && (
+          <div className="p-4 bg-red-500/10 border-2 border-[#FF3B30] text-[#FF3B30] flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <div>
+              <h4 className="text-xs font-mono font-bold uppercase tracking-wider">Cannot Save Changes</h4>
+              <p className="text-xs font-mono mt-1 text-[#FF857F]">{saveError}</p>
+            </div>
+          </div>
+        )}
+
+        {saveSuccess && (
+          <div className="p-4 bg-[#C8FF00]/10 border-2 border-[#C8FF00] text-[#C8FF00] flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+            <span className="text-xs font-mono uppercase tracking-wider font-bold">
+              {event.state === 'DRAFT' ? 'Draft changes saved successfully! Redirecting...' : 'Changes saved successfully! Redirecting...'}
+            </span>
+          </div>
+        )}
+
         {/* Basic Info */}
         <section className="space-y-4">
           <div className="flex items-center gap-2 border-b-2 border-white/10 pb-2 mb-4">
@@ -274,18 +460,76 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
           </div>
 
           <div>
-            <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Event Banner URL *</label>
-            <input 
-              required
-              type="url"
-              name="banner_url"
-              value={formData.banner_url}
-              onChange={handleChange}
-              className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-sm font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
-              placeholder="https://images.unsplash.com/... or https://cdn.example.com/banner.jpg"
-            />
+            <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Event Banner Poster (Optional)</label>
+            
+            {/* Curated Presets Library */}
+            <div className="mb-3">
+              <span className="text-[10px] font-mono text-[#a0a4b8] uppercase tracking-wider block mb-2">
+                Quick Curated Posters:
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                {BANNER_PRESETS.map((preset) => {
+                  const isSelected = formData.banner_url === preset.url;
+                  return (
+                    <button
+                      type="button"
+                      key={preset.label}
+                      onClick={() => {
+                        setFormData((prev) => ({ ...prev, banner_url: preset.url }));
+                        if (saveError) setSaveError(null);
+                      }}
+                      className={`relative aspect-video rounded overflow-hidden border-2 text-left transition-all group ${
+                        isSelected ? 'border-[#C8FF00] shadow-[0_0_8px_rgba(200,255,0,0.5)]' : 'border-white/15 hover:border-white/40'
+                      }`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={preset.url}
+                        alt={preset.label}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-1.5">
+                        <span className="text-[9px] font-mono font-bold text-white truncate block w-full">
+                          {preset.label}
+                        </span>
+                      </div>
+                      {isSelected && (
+                        <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-[#C8FF00] rounded-full border border-black shadow" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Custom Banner URL */}
+            <div>
+              <span className="text-[10px] font-mono text-[#a0a4b8] uppercase tracking-wider block mb-1.5">
+                Or Custom Image URL:
+              </span>
+              <div className="flex gap-2">
+                <input 
+                  type="text"
+                  name="banner_url"
+                  value={formData.banner_url}
+                  onChange={handleChange}
+                  className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+                  placeholder="https://images.unsplash.com/... or https://cdn.example.com/banner.jpg"
+                />
+                {formData.banner_url && (
+                  <button
+                    type="button"
+                    onClick={() => setFormData((prev) => ({ ...prev, banner_url: '' }))}
+                    className="px-3 py-2 border-2 border-white/20 text-[#a0a4b8] hover:text-white font-mono text-xs uppercase"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            </div>
+
             {formData.banner_url && (
-              <div className="mt-3 border-2 border-white/15 overflow-hidden max-h-48 bg-black shadow-[4px_4px_0px_#000]">
+              <div className="mt-3 border-2 border-white/15 overflow-hidden max-h-48 bg-black shadow-[4px_4px_0px_#000] rounded relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                   src={formData.banner_url} 
@@ -432,8 +676,10 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
                 <option value="WORKSHOP">Workshop</option>
                 <option value="HACKATHON">Hackathon</option>
                 <option value="SEMINAR">Seminar</option>
-                <option value="SOCIAL">Social</option>
                 <option value="COMPETITION">Competition</option>
+                <option value="MEETUP">Meetup</option>
+                <option value="CULTURAL">Cultural</option>
+                <option value="SPORTS">Sports</option>
                 <option value="OTHER">Other</option>
               </select>
             </div>
@@ -448,7 +694,6 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
               >
                 <option value="PUBLIC">Public</option>
                 <option value="PRIVATE">Private</option>
-                <option value="UNLISTED">Unlisted</option>
               </select>
             </div>
 
@@ -544,6 +789,23 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
               </div>
 
               {formData.registration_type === 'TEAM' && (
+                <div>
+                  <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">
+                    Maximum Participants
+                  </label>
+                  <input 
+                    type="number"
+                    min="1"
+                    name="max_participants"
+                    value={formData.max_participants}
+                    onChange={handleChange}
+                    placeholder="Leave empty for unlimited"
+                    className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+                  />
+                </div>
+              )}
+
+              {formData.registration_type === 'TEAM' && (
                 <>
                   <div>
                     <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Minimum Team Size *</label>
@@ -577,6 +839,13 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
           </div>
         </section>
 
+        {saveError && (
+          <div className="p-3 bg-red-500/10 border border-[#FF3B30] text-[#FF3B30] font-mono text-xs uppercase tracking-wider flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span>{saveError}</span>
+          </div>
+        )}
+
         <div className="pt-6 border-t-2 border-white/10 flex justify-end gap-3">
           <Link 
             href={`/student/events/${eventId}/manage`}
@@ -590,20 +859,19 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
             className="px-8 py-3 bg-[#0057FF] text-white hover:bg-[#0042c7] border-2 border-[#0057FF] font-mono font-bold text-xs tracking-widest uppercase flex items-center gap-2 shadow-[3px_3px_0px_#000] disabled:opacity-50 transition-all"
           >
             <Save className="w-4 h-4" />
-            {updateEvent.isPending ? 'Saving...' : 'Save Draft Changes'}
+            {updateEvent.isPending
+              ? 'Saving...'
+              : event.state === 'DRAFT'
+              ? 'Save Draft Changes'
+              : 'Save Changes'}
           </button>
         </div>
 
       </form>
 
-      {/* REGISTRATION FORM FIELDS CONFIG */}
+      {/* FORM STUDIO (REGISTRATION & IN-EVENT FORMS) */}
       <div className="mt-8">
-        <StudentEventFormFieldsManager eventId={eventId} />
-      </div>
-
-      {/* ADDITIONAL SCHEDULED FORMS */}
-      <div className="mt-8">
-        <StudentEventFormsManager eventId={eventId} />
+        <StudentFormStudio eventId={eventId} />
       </div>
 
       <Modal 

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, StatusBar } from 'react-native';
-import { Stack } from 'expo-router';
+import { View, Text, StyleSheet, StatusBar, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Stack, useRouter } from 'expo-router';
 import { useAppTheme } from '../../src/store/theme-store';
 import { Button } from '../../src/ui/Button';
 import { ActivityIndicator } from '../../src/ui/core/ActivityIndicator';
@@ -9,8 +10,14 @@ import { useAuthStore } from '../../src/store/auth';
 import { logout } from '../../src/services/session';
 
 export default function AppLayout() {
+  const router = useRouter();
   const theme = useAppTheme();
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0, 12);
+  const bottomInset = Math.max(insets.bottom, 16);
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const isInitialized = useAuthStore((state) => state.isInitialized);
+  const initSession = useAuthStore((state) => state.initSession);
   const { data: profile, isLoading, isError } = useUserProfile();
 
   const styles = useMemo(() => StyleSheet.create({
@@ -161,22 +168,35 @@ export default function AppLayout() {
   }), [theme]);
 
   React.useEffect(() => {
-    if (!isLoggedIn || isError) {
+    if (!isInitialized) {
+      initSession();
+    }
+  }, [isInitialized, initSession]);
+
+  React.useEffect(() => {
+    if (!isInitialized) return;
+    if (!isLoggedIn) {
+      router.replace('/(auth)');
+    } else if (isError) {
       logout();
     }
-  }, [isLoggedIn, isError]);
+  }, [isInitialized, isLoggedIn, isError, router]);
 
   // 1. Loading State: Render Credential Validator
-  if (isLoading) {
+  if (!isInitialized || isLoading) {
     return (
-      <SafeAreaView style={styles.centerContainer}>
-        <StatusBar barStyle={theme.mode === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.surface} />
+      <View style={[styles.centerContainer, { paddingTop: topInset, paddingBottom: bottomInset }]}>
+        <StatusBar 
+          barStyle={theme.mode === 'dark' ? 'light-content' : 'dark-content'} 
+          backgroundColor="transparent"
+          translucent={Platform.OS === 'android'}
+        />
         <View style={styles.loadingCard}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={styles.loadingTitle}>VERIFYING STUDENT CREDENTIALS...</Text>
           <Text style={styles.loadingSub}>AUTHENTICATING STUDENT ACCOUNT...</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -187,8 +207,12 @@ export default function AppLayout() {
     };
 
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle={theme.mode === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.surface} />
+      <View style={[styles.safeArea, { paddingTop: topInset, paddingBottom: bottomInset }]}>
+        <StatusBar 
+          barStyle={theme.mode === 'dark' ? 'light-content' : 'dark-content'} 
+          backgroundColor="transparent"
+          translucent={Platform.OS === 'android'}
+        />
         <View style={styles.accessDeniedContainer}>
           {/* Header Bar */}
           <View style={styles.header}>
@@ -238,7 +262,7 @@ export default function AppLayout() {
             />
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -247,12 +271,20 @@ export default function AppLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="events/[id]/index" />
+      <Stack.Screen name="events/[id]/register" />
+      <Stack.Screen name="events/[id]/teams" />
+      <Stack.Screen name="events/[id]/results" />
+      <Stack.Screen name="events/[id]/forms/[formId]" />
       <Stack.Screen name="events/[id]/scan" options={{ presentation: 'fullScreenModal' }} />
       <Stack.Screen name="history/[id]" />
       <Stack.Screen name="disputes/index" />
       <Stack.Screen name="disputes/new" />
       <Stack.Screen name="disputes/submitted" />
       <Stack.Screen name="disputes/[id]" />
+      <Stack.Screen name="clubs/index" />
+      <Stack.Screen name="students/index" />
+      <Stack.Screen name="students/[slug]" />
+      <Stack.Screen name="leaderboard" />
       <Stack.Screen name="notifications" />
       <Stack.Screen name="settings" />
     </Stack>

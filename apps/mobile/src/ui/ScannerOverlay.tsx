@@ -161,7 +161,7 @@ export const ScannerOverlay: React.FC<ScannerOverlayProps> = ({
     },
     footerValueWarning: {
       fontSize: 12,
-      color: '#ffb77b',
+      color: theme.colors.warning,
     },
     footerValueError: {
       fontSize: 12,

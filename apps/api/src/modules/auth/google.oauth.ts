@@ -1,11 +1,12 @@
 import { OAuth2Client } from 'google-auth-library';
 import { env } from '../../config/env';
-import { UnauthorizedError } from '../../lib/errors';
+import { UnauthorizedError, ForbiddenError } from '../../lib/errors';
 
 export interface VerifiedGoogleUser {
   sub: string;
   email: string;
   name: string;
+  email_verified?: boolean;
 }
 
 const getOAuth2Client = () =>
@@ -43,10 +44,14 @@ export async function verifyIdToken(idToken: string): Promise<VerifiedGoogleUser
   if (!payload || !payload.sub || !payload.email) {
     throw new UnauthorizedError('Invalid Google id_token payload');
   }
+  if (payload.email_verified === false) {
+    throw new ForbiddenError('EMAIL_NOT_VERIFIED: Institutional email address is not verified by Google');
+  }
   return {
     sub: payload.sub,
     email: payload.email,
     name: payload.name || payload.email.split('@')[0] || 'Unknown User',
+    email_verified: payload.email_verified,
   };
 }
 

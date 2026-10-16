@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, TouchableOpacity, SafeAreaView, StatusBar, Linking } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, StatusBar, Linking, ScrollView, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAppTheme } from '../store/theme-store';
 import { Title, Body, MonoLabel, Mono } from './core/Typography';
@@ -14,17 +15,27 @@ export const CameraPermissionView: React.FC<CameraPermissionViewProps> = ({
   onCancel,
 }) => {
   const theme = useAppTheme();
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0, 12);
+  const bottomInset = Math.max(insets.bottom, 16);
 
   const styles = useMemo(() => StyleSheet.create({
     safeArea: {
       flex: 1,
       backgroundColor: theme.colors.surface,
     },
-    container: {
+    scrollView: {
       flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
       paddingHorizontal: theme.spacing.base,
-      paddingVertical: theme.spacing.md,
+      paddingTop: theme.spacing.xs,
+      paddingBottom: theme.spacing.md,
       justifyContent: 'space-between',
+    },
+    topSection: {
+      flexShrink: 0,
     },
     header: {
       flexDirection: 'row',
@@ -39,7 +50,7 @@ export const CameraPermissionView: React.FC<CameraPermissionViewProps> = ({
       backgroundColor: theme.colors.surfaceContainerHigh,
       paddingHorizontal: 8,
       paddingVertical: 4,
-      borderRadius: 2,
+      borderRadius: 0,
     },
     pingDot: {
       width: 6,
@@ -122,7 +133,7 @@ export const CameraPermissionView: React.FC<CameraPermissionViewProps> = ({
     },
     mainBtn: {
       height: 52,
-      borderRadius: theme.borderRadius.sm,
+      borderRadius: 0,
     },
     settingsBtn: {
       alignItems: 'center',
@@ -141,10 +152,15 @@ export const CameraPermissionView: React.FC<CameraPermissionViewProps> = ({
   }), [theme]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle={theme.mode === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.surface} />
-      <View style={styles.container}>
-        <View>
+    <View style={[styles.safeArea, { paddingTop: topInset, paddingBottom: bottomInset }]}>
+      <StatusBar barStyle={theme.mode === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+      >
+        <View style={styles.topSection}>
           <View style={styles.header}>
             <View style={styles.headerBadge}>
               <View style={styles.pingDot} />
@@ -210,7 +226,7 @@ export const CameraPermissionView: React.FC<CameraPermissionViewProps> = ({
             </TouchableOpacity>
           )}
         </View>
-      </View>
-    </SafeAreaView>
+      </ScrollView>
+    </View>
   );
 };

@@ -53,8 +53,11 @@ export default function TeamHubPage({ params }: { params: Promise<{ id: string }
   const isLocked = event.lock_state !== 'UNLOCKED' || isPermanentLock || new Date(event.endTime) <= dbNow;
 
   const isLeader = team?.leader_id === currentUser?.id;
+  const minTeamSize = typeof event.metadata?.minimum_team_size === 'number' ? event.metadata.minimum_team_size : 1;
   const teamStatus = team?.status || 'UNKNOWN';
-  const isBelowMinimum = team?.below_minimum === true;
+  const isBelowMinimum = team
+    ? (teamStatus === 'REGISTERED' && (team?.member_count || 0) < minTeamSize) || team.below_minimum === true
+    : false;
 
   const handleLeaveConfirm = () => {
     if (!team) return;
@@ -292,8 +295,8 @@ export default function TeamHubPage({ params }: { params: Promise<{ id: string }
 
                   {event.metadata?.maximum_team_size && (
                     <div>
-                      <div className="text-[10px] text-[#a0a4b8] uppercase tracking-wider mb-1">Max Ceiling</div>
-                      <div className="text-sm font-bold text-white">{event.metadata.maximum_team_size} members max</div>
+                      <div className="text-[10px] text-[#a0a4b8] uppercase tracking-wider mb-1">Maximum Ceiling</div>
+                      <div className="text-sm font-bold text-white">{event.metadata.maximum_team_size} members maximum</div>
                     </div>
                   )}
 

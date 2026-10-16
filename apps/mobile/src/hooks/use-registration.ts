@@ -35,9 +35,12 @@ export const useRegistration = (eventId: string) => {
   const { isOnline } = useNetworkStatus();
 
   const register = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (data?: { responses: { fieldDefinitionId: string; value: string }[] }) => {
       if (!isOnline) throw { status: 0, message: 'Offline' };
-      return apiClient(`/v1/events/${eventId}/register`, { method: 'POST' });
+      return apiClient(`/v1/events/${eventId}/register`, {
+        method: 'POST',
+        ...(data ? { body: JSON.stringify(data) } : {}),
+      });
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['events', eventId] });

@@ -8,7 +8,9 @@ export async function processFormReleaseSweep() {
     const releasedForms: any[] = await prisma.$queryRaw`
       UPDATE event_forms 
       SET notified_at = now() 
-      WHERE release_at <= now() 
+      WHERE published_at IS NOT NULL
+        AND release_at IS NOT NULL
+        AND release_at <= now() 
         AND notified_at IS NULL 
       RETURNING *
     `;

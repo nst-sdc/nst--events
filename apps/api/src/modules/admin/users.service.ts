@@ -338,6 +338,14 @@ export const adminUsersService = {
 
       let user = await tx.user.findUniqueOrThrow({ where: { id: userId } });
 
+      if (user.globalRole === 'STUDENT') {
+        try {
+          await tx.$executeRaw`SELECT provision_student_profile(${user.id}::uuid)`;
+        } catch (err) {
+          console.error('Failed to auto-provision student profile in admin provision:', err);
+        }
+      }
+
       if (clubId && clubRole === 'CLUB_ADMIN') {
         // Create club membership if not exists
         const existingMembership = await tx.clubMembership.findFirst({

@@ -6,7 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useEventDetail } from '../../../../../../hooks/useEventDetail';
 import Link from 'next/link';
 import clsx from 'clsx';
-import { ArrowLeft, LayoutDashboard, Users, UserCheck, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, LayoutDashboard, Users, UserCheck, ShieldAlert, Trophy } from 'lucide-react';
 
 export default function EventManageLayout({ children, params }: { children: React.ReactNode, params: Promise<{ id: string }> }) {
   const { id: eventId } = use(params);
@@ -37,7 +37,8 @@ export default function EventManageLayout({ children, params }: { children: Reac
     { name: 'Overview', path: `/student/events/${eventId}/manage`, icon: LayoutDashboard },
     { name: 'Registrations', path: `/student/events/${eventId}/manage/registrations`, icon: Users },
     { name: 'Teams', path: `/student/events/${eventId}/manage/teams`, icon: ShieldAlert, show: event?.registrationType === 'TEAM' },
-    { name: 'Attendance', path: `/student/events/${eventId}/manage/attendance`, icon: UserCheck }
+    { name: 'Attendance', path: `/student/events/${eventId}/manage/attendance`, icon: UserCheck },
+    { name: 'Results & Winners', path: `/student/events/${eventId}/manage/results`, icon: Trophy },
   ];
 
   if (!isHydrated || isLoading) {

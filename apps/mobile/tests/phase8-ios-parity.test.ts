@@ -147,11 +147,12 @@ describe('Phase 8 — iOS Parity & Regression Tests', () => {
     expect(useAuthStore.getState().isLoggedIn).toBe(false);
   });
 
-  // 9. Three Permanent Tabs Frozen
-  it('9. Retains exactly the 3 permanent tabs (ATTENDANCE, HISTORY, PROFILE) on iOS', () => {
-    expect(tabsLayoutContent).toContain("allowedRoutes = ['index', 'history', 'profile']");
+  // 9. UX 2.0 4 Destinations
+  it('9. Retains the 4 destinations (HOME, EXPLORE, ACTIVITY, PROFILE) on iOS', () => {
+    expect(tabsLayoutContent).toContain("allowedRoutes = ['index', 'explore', 'activity', 'profile']");
     expect(tabsLayoutContent).toContain('<Tabs.Screen name="index" />');
-    expect(tabsLayoutContent).toContain('<Tabs.Screen name="history" />');
+    expect(tabsLayoutContent).toContain('<Tabs.Screen name="explore" />');
+    expect(tabsLayoutContent).toContain('<Tabs.Screen name="activity" />');
     expect(tabsLayoutContent).toContain('<Tabs.Screen name="profile" />');
     expect(tabsLayoutContent).not.toContain('name="invitations"');
     expect(tabsLayoutContent).not.toContain('name="teams"');

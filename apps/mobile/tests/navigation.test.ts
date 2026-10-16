@@ -6,16 +6,17 @@ describe('NST-Events Mobile V1 Navigation Architecture Tests', () => {
   const appDir = path.resolve(__dirname, '../app/(app)');
   const tabsDir = path.resolve(__dirname, '../app/(app)/(tabs)');
 
-  describe('1. Permanent 3-Tab Navigator Contract', () => {
-    it('only registers the 3 frozen tabs: index, history, profile in (tabs)/_layout.tsx', () => {
+  describe('1. UX 2.0 4-Destination Navigator Contract', () => {
+    it('registers the 4 destinations: index, explore, activity, profile in (tabs)/_layout.tsx', () => {
       const tabsLayoutContent = fs.readFileSync(path.join(tabsDir, '_layout.tsx'), 'utf-8');
 
       // Allowed routes in tab bar
-      expect(tabsLayoutContent).toContain("allowedRoutes = ['index', 'history', 'profile']");
+      expect(tabsLayoutContent).toContain("allowedRoutes = ['index', 'explore', 'activity', 'profile']");
 
       // Tabs.Screen declarations
       expect(tabsLayoutContent).toContain('<Tabs.Screen name="index" />');
-      expect(tabsLayoutContent).toContain('<Tabs.Screen name="history" />');
+      expect(tabsLayoutContent).toContain('<Tabs.Screen name="explore" />');
+      expect(tabsLayoutContent).toContain('<Tabs.Screen name="activity" />');
       expect(tabsLayoutContent).toContain('<Tabs.Screen name="profile" />');
 
       // Prohibit detail screens inside tabs navigator
@@ -29,14 +30,16 @@ describe('NST-Events Mobile V1 Navigation Architecture Tests', () => {
     it('ensures no duplicate tab files exist directly under app/(app)', () => {
       const appFiles = fs.readdirSync(appDir);
       expect(appFiles).not.toContain('index.tsx');
-      expect(appFiles).not.toContain('history.tsx');
+      expect(appFiles).not.toContain('explore.tsx');
+      expect(appFiles).not.toContain('activity.tsx');
       expect(appFiles).not.toContain('profile.tsx');
     });
 
-    it('ensures the 3 tab files exist under app/(app)/(tabs)', () => {
+    it('ensures the primary destination tab files exist under app/(app)/(tabs)', () => {
       const tabFiles = fs.readdirSync(tabsDir);
       expect(tabFiles).toContain('index.tsx');
-      expect(tabFiles).toContain('history.tsx');
+      expect(tabFiles).toContain('explore.tsx');
+      expect(tabFiles).toContain('activity.tsx');
       expect(tabFiles).toContain('profile.tsx');
     });
   });

@@ -1,35 +1,32 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, TextInput, Modal as RNModal } from 'react-native';
+import { View, Text, TouchableOpacity, Modal as RNModal } from 'react-native';
 import { ActivityIndicator } from './core/ActivityIndicator';
+import { Button as CoreButton } from './Button';
+import { TextField } from './core/TextField';
+import { StatusBadge } from './core/StatusBadge';
+import { MonoLabel, Title, Body } from './core/Typography';
+import { theme } from './theme';
 
-export const Button = ({ title, onPress, disabled, loading, variant = 'primary', accessibilityLabel, accessibilityRole = 'button' }: any) => (
-  <TouchableOpacity 
-    onPress={onPress} 
-    disabled={disabled || loading}
-    accessibilityLabel={accessibilityLabel || title}
-    accessibilityRole={accessibilityRole}
-    accessibilityState={{ disabled: disabled || loading, busy: loading }}
-    className={`p-4 rounded-md flex-row justify-center items-center ${disabled ? 'bg-gray-300' : variant === 'danger' ? 'bg-danger' : 'bg-primary'}`}
-  >
-    {loading ? <Spinner color="white" /> : <Text className="text-white font-bold">{title}</Text>}
-  </TouchableOpacity>
-);
-
-export const IconButton = ({ icon, onPress }: any) => (
-  <TouchableOpacity onPress={onPress} className="p-2 rounded-full bg-surface">
-    <Text>{icon}</Text>
-  </TouchableOpacity>
-);
+export const Button = CoreButton;
 
 export const Card = ({ children }: { children: React.ReactNode }) => (
-  <View className="p-4 bg-white rounded-lg shadow-sm mb-4">
+  <View
+    style={{
+      padding: theme.spacing.base,
+      backgroundColor: theme.colors.surfaceContainerLow,
+      borderWidth: 1,
+      borderColor: theme.colors.outlineVariant,
+      marginBottom: theme.spacing.md,
+      borderRadius: 0,
+    }}
+  >
     {children}
   </View>
 );
 
 export const Input = ({ value, onChangeText, placeholder, secureTextEntry }: any) => (
-  <TextInput
-    className="border border-gray-300 p-4 rounded-md mb-4 bg-surface"
+  <TextField
+    label={placeholder || ''}
     value={value}
     onChangeText={onChangeText}
     placeholder={placeholder}
@@ -37,87 +34,46 @@ export const Input = ({ value, onChangeText, placeholder, secureTextEntry }: any
   />
 );
 
-export const Spinner = ({ color = '#0F172A', size = 'small' }: any) => (
+export const Spinner = ({ color, size = 'small' }: any) => (
   <ActivityIndicator color={color} size={size} accessibilityRole="progressbar" accessibilityLabel="Loading" />
 );
 
-export const Skeleton = ({ height = 20, width = '100%', rounded = 'md' }: any) => (
-  <View style={{ height, width }} className={`bg-gray-200 rounded-${rounded} mb-2 opacity-50`} />
+export const Divider = () => (
+  <View style={{ height: 1, backgroundColor: theme.colors.borderHairline, marginVertical: theme.spacing.base, width: '100%' }} />
 );
 
-export const Divider = () => <View className="h-[1px] bg-gray-200 my-4 w-full" />;
-
-export const Badge = ({ text, variant = 'primary' }: any) => (
-  <View className={`px-2 py-1 rounded-full ${variant === 'success' ? 'bg-success' : 'bg-primary'}`}>
-    <Text className="text-white text-xs">{text}</Text>
-  </View>
+export const Badge = ({ text, type = 'default' }: any) => (
+  <StatusBadge status={text} type={type} />
 );
 
-export const Chip = ({ text, onPress, selected }: any) => (
-  <TouchableOpacity onPress={onPress} className={`px-4 py-2 rounded-full border ${selected ? 'bg-primary border-primary' : 'bg-white border-gray-300'}`}>
-    <Text className={selected ? 'text-white' : 'text-gray-700'}>{text}</Text>
-  </TouchableOpacity>
-);
-
-export const Avatar = ({ initials, size = 40 }: any) => (
-  <View style={{ width: size, height: size, borderRadius: size/2 }} className="bg-secondary justify-center items-center">
-    <Text className="text-white font-bold">{initials}</Text>
-  </View>
-);
-
-export const EmptyState = ({ title, message, icon }: any) => (
-  <View className="flex-1 justify-center items-center p-8">
-    <Text className="text-4xl mb-4">{icon}</Text>
-    <Text className="text-xl font-bold text-primary mb-2 text-center">{title}</Text>
-    <Text className="text-gray-500 text-center">{message}</Text>
-  </View>
-);
-
-export const Banner = ({ message, type = 'info' }: any) => (
-  <View className={`w-full p-4 ${type === 'error' ? 'bg-danger' : 'bg-secondary'}`}>
-    <Text className="text-white text-center font-bold">{message}</Text>
+export const EmptyState = ({ title, message }: any) => (
+  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: theme.spacing.xl, gap: theme.spacing.sm }}>
+    <Title style={{ textAlign: 'center' }}>{title}</Title>
+    <Body style={{ color: theme.colors.onSurfaceVariant, textAlign: 'center' }}>{message}</Body>
   </View>
 );
 
 export const Modal = ({ visible, onClose, title, children }: any) => (
-  <RNModal visible={visible} transparent animationType="slide">
-    <View className="flex-1 bg-black/50 justify-center items-center p-4">
-      <View className="w-full bg-white rounded-lg p-6">
-        <Text className="text-xl font-bold mb-4">{title}</Text>
+  <RNModal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: theme.spacing.base }}>
+      <View
+        style={{
+          width: '100%',
+          maxWidth: 480,
+          backgroundColor: theme.colors.surface,
+          borderWidth: 1,
+          borderColor: theme.colors.outlineVariant,
+          padding: theme.spacing.lg,
+          gap: theme.spacing.md,
+        }}
+      >
+        <MonoLabel style={{ fontSize: 13, color: theme.colors.primary }}>[{title.toUpperCase()}]</MonoLabel>
         {children}
-        <Button title="Close" onPress={onClose} variant="secondary" />
+        <CoreButton title="[ CLOSE ]" onPress={onClose} variant="secondary" />
       </View>
     </View>
   </RNModal>
 );
 
-export const BottomSheet = ({ visible, onClose, children }: any) => (
-  <RNModal visible={visible} transparent animationType="slide">
-    <View className="flex-1 bg-black/50 justify-end">
-      <View className="w-full bg-white rounded-t-xl p-6 min-h-[300px]">
-        {children}
-        <Button title="Dismiss" onPress={onClose} />
-      </View>
-    </View>
-  </RNModal>
-);
+export const Dialog = Modal;
 
-export const Dialog = Modal; // Alias for now
-
-export const LoadingOverlay = ({ visible }: { visible: boolean }) => {
-  if (!visible) return null;
-  return (
-    <View className="absolute inset-0 bg-black/30 justify-center items-center z-50">
-      <Spinner size="large" color="white" />
-    </View>
-  );
-};
-
-export const Toast = ({ message, visible }: any) => {
-  if (!visible) return null;
-  return (
-    <View className="absolute bottom-10 self-center bg-gray-800 px-6 py-3 rounded-full shadow-lg z-50">
-      <Text className="text-white">{message}</Text>
-    </View>
-  );
-};

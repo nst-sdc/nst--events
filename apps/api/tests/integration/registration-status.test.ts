@@ -48,8 +48,8 @@ describe('Participant Registration Status', () => {
     });
     eventId = event.id;
 
-    // Set capacity to 1 and state to PUBLISHED
-    await adminPrisma.$executeRaw`UPDATE events SET max_capacity = 1, state = 'PUBLISHED' WHERE id = ${eventId}::uuid`;
+    // Set capacity to 1, state to PUBLISHED, and open registration window
+    await adminPrisma.$executeRaw`UPDATE events SET max_capacity = 1, state = 'PUBLISHED', registration_start_time = now() - interval '1 hour', registration_end_time = now() + interval '1 hour' WHERE id = ${eventId}::uuid`;
   });
 
   after(async () => {

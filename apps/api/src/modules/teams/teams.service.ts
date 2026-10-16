@@ -3,6 +3,7 @@ import { enqueueNotification } from '@nst/shared';
 import { prisma } from '../../lib/prisma';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../../lib/errors';
 import { checkAudienceEligibility } from '../events/audience.service';
+import { isInstitutionalEmail, validateRegistrationEligibility } from '../events/events.service';
 import { mapDatabaseError } from '../../lib/errors/database-error-mapper';
 
 
@@ -112,24 +113,69 @@ export const getTeamById = async (userId: string, teamId: string) => {
   });
 };
 
-export const createTeam = async (userId: string, eventId: string, teamName: string) => {
+import { 
+  validateRegistrationResponses, 
+  saveRegistrationResponses 
+} from '../registrations/registrations.service';
+
+export const createTeam = async (
+  userId: string, 
+  eventId: string, 
+  teamName: string,
+  responses?: { fieldDefinitionId: string; value: string }[]
+) => {
   return withUserContext(userId, async (tx) => {
     try {
+      if (tx.user) {
+        const user = await tx.user.findUnique({
+          where: { id: userId },
+          select: { id: true, email: true, googleSub: true, deletedAt: true },
+        });
+        validateRegistrationEligibility(user);
+      }
+
+      await validateRegistrationResponses(tx, eventId, responses);
+
       const result = await tx.$queryRaw<{ create_team: any }[]>`
         SELECT create_team(${eventId}::uuid, ${teamName});
       `;
       const createResult = result[0].create_team;
-      return { team_id: createResult.team_id, name: teamName, leader_id: userId, status: createResult.status, registration_id: createResult.registration_id };
+
+      if (responses && responses.length > 0 && createResult.registration_id) {
+        await saveRegistrationResponses(tx, userId, createResult.registration_id, eventId, responses);
+      }
+
+      return { 
+        team_id: createResult.team_id, 
+        name: teamName, 
+        leader_id: userId, 
+        status: createResult.status, 
+        registration_id: createResult.registration_id 
+      };
     } catch (err: any) {
       mapDatabaseError(err);
     }
   });
 };
 
-export const joinTeam = async (userId: string, teamId: string) => {
+export const joinTeam = async (
+  userId: string, 
+  teamId: string,
+  responses?: { fieldDefinitionId: string; value: string }[]
+) => {
   return withUserContext(userId, async (tx) => {
+    if (tx.user) {
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        select: { id: true, email: true, googleSub: true, deletedAt: true },
+      });
+      validateRegistrationEligibility(user);
+    }
+
     const team = await tx.team.findUnique({ where: { id: teamId } });
     if (!team) throw new NotFoundError('Team not found');
+
+    await validateRegistrationResponses(tx, team.eventId, responses);
 
     // Fetch all members before mutation using helper SQL function to bypass RLS
     const resultMembers = await tx.$queryRaw<{ get_team_members: string[] }[]>`
@@ -143,6 +189,10 @@ export const joinTeam = async (userId: string, teamId: string) => {
         SELECT join_team(${team.eventId}::uuid, ${teamId}::uuid);
       `;
       const joinResult = result[0].join_team;
+
+      if (responses && responses.length > 0 && joinResult.registration_id) {
+        await saveRegistrationResponses(tx, userId, joinResult.registration_id, team.eventId, responses);
+      }
 
       if (joinResult.status === 'REGISTERED') {
         await enqueueNotification({

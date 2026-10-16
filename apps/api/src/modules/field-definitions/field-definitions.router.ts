@@ -25,9 +25,7 @@ router.post(
   validate(CreateFieldDefinitionSchema),
   async (req, res, next) => {
     try {
-      let derivedClubId: string | null = null;
-
-      await withUserContext(req.user!.id, async (tx) => {
+      const field = await withUserContext(req.user!.id, async (tx) => {
         const user = await tx.user.findUnique({
           where: { id: req.user!.id },
           select: { globalRole: true },
@@ -35,6 +33,7 @@ router.post(
 
         if (!user) throw new ForbiddenError('User not found');
 
+        let derivedClubId: string | null = null;
         // Allow platform/faculty admins unconditionally (derivedClubId remains null for platform-wide fields)
         if (!['PLATFORM_ADMIN', 'FACULTY_ADMIN'].includes(user.globalRole)) {
           // Check if they are a club admin or core member in ANY club
@@ -53,12 +52,16 @@ router.post(
 
           derivedClubId = membership.clubId;
         }
+
+        return fieldDefinitionsService.createFieldDefinition(
+          {
+            ...req.body,
+            createdByClubId: derivedClubId ?? undefined,
+          },
+          tx as any
+        );
       });
 
-      const field = await fieldDefinitionsService.createFieldDefinition({
-        ...req.body,
-        createdByClubId: derivedClubId ?? undefined,
-      });
       res.status(201).json({ data: field });
     } catch (error) {
       next(error);

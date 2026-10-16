@@ -89,6 +89,16 @@ export default function EventManageOverviewPage({ params }: { params: Promise<{ 
             </h3>
             <p className="text-xs text-[#a0a4b8] font-mono">Event is visible on the student directory. Registrations and tickets are active.</p>
           </div>
+          {isClubAdmin && lockState === 'UNLOCKED' && (
+            <div className="flex gap-3 w-full sm:w-auto">
+              <Link 
+                href={`/student/events/${eventId}/manage/edit`}
+                className="flex-1 sm:flex-none px-5 py-2.5 border-2 border-[#C8FF00] text-[#C8FF00] font-mono font-bold text-xs tracking-widest hover:bg-[#C8FF00] hover:text-black transition-colors uppercase whitespace-nowrap text-center flex items-center justify-center gap-2"
+              >
+                <Edit2 className="w-4 h-4" /> Edit Event & Forms
+              </Link>
+            </div>
+          )}
         </div>
       )}
 

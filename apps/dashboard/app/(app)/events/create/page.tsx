@@ -3,14 +3,16 @@
 import React, { useState } from 'react';
 import {
   Form, Input, Button, Select, DatePicker, InputNumber,
-  Card, Breadcrumb, Typography, Space, Row, Col, Alert, Result
+  Card, Breadcrumb, Typography, Space, Row, Col, Alert, Result, Radio, Divider
 } from 'antd';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import dayjs from 'dayjs';
 import { useCurrentUser } from '../../../../hooks/useCurrentUser';
 import { useClubs } from '../../../../hooks/useClubs';
 import { useAcademicBatches } from '../../../../hooks/useAcademicBatches';
 import { useCreateEvent, useSubmitEventForApproval, CreateEventPayload } from '../../../../hooks/useCreateEvent';
+import { API_BASE_URL } from '../../../../lib/api';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -38,22 +40,71 @@ export default function CreateEventPage() {
 
   const isAuthorizedToCreate = isGlobalAdmin || eligibleClubs.length > 0;
 
+  const [hasManuallyEditedSlug, setHasManuallyEditedSlug] = useState(false);
+  const [slugValidation, setSlugValidation] = useState<{
+    status: 'idle' | 'validating' | 'available' | 'unavailable';
+    reason?: string;
+    suggestedSlug?: string;
+    normalizedSlug?: string;
+  }>({ status: 'idle' });
+
+  const slugify = (input: string) => {
+    return input
+      .toLowerCase()
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 80);
+  };
+
+  const validateSlugLive = async (slugCandidate: string) => {
+    if (!slugCandidate || slugCandidate.length < 3) {
+      setSlugValidation({ status: 'idle' });
+      return;
+    }
+    setSlugValidation({ status: 'validating' });
+    try {
+      const res = await fetch(`${API_BASE_URL}/v1/events/validate-slug?slug=${encodeURIComponent(slugCandidate)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.available) {
+          setSlugValidation({ status: 'available', normalizedSlug: data.normalized_slug });
+        } else {
+          setSlugValidation({
+            status: 'unavailable',
+            reason: data.reason,
+            suggestedSlug: data.suggested_slug,
+            normalizedSlug: data.normalized_slug,
+          });
+        }
+      }
+    } catch {
+      setSlugValidation({ status: 'idle' });
+    }
+  };
+
   interface CreateEventFormValues {
     title: string;
+    slug?: string;
     description?: string;
     banner_url: string;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     dateRange: [any, any];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    registrationDateRange?: [any, any];
+    registration_start_time?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    registration_end_time?: any;
     location_name?: string;
     event_type: string;
-    visibility: string;
+    visibility?: string;
     registration_type: string;
     attendance_type: string;
     minimum_team_size?: number;
     maximum_team_size?: number;
     max_capacity?: number;
+    max_participants?: number;
     club_id: string;
     collaborating_club_ids?: string[];
     audience: 'ALL_STUDENTS' | 'SPECIFIC_BATCHES';
@@ -66,14 +117,26 @@ export default function CreateEventPage() {
     setErrorMessage(null);
     setSubmitApprovalError(null);
 
+    if (action === 'SUBMIT' && !values.visibility) {
+      setErrorMessage('Please select event visibility (Public, Unlisted, or Restricted) before submitting for approval.');
+      return;
+    }
+
     let eventId = createdEventId;
 
     try {
       if (!eventId) {
         const [start, end] = values.dateRange;
-        let regStart, regEnd;
-        if (values.registrationDateRange) {
-          [regStart, regEnd] = values.registrationDateRange;
+        const regStart = values.registration_start_time;
+        const regEnd = values.registration_end_time;
+
+        if (regStart && regEnd && dayjs(regStart).isAfter(dayjs(regEnd))) {
+          setErrorMessage('Registration Opens At must be before Registration Closes At.');
+          return;
+        }
+        if (regEnd && end && dayjs(regEnd).isAfter(dayjs(end))) {
+          setErrorMessage('Registration Closes At must be before or at event end time.');
+          return;
         }
 
         const payload: CreateEventPayload = {
@@ -81,16 +144,18 @@ export default function CreateEventPage() {
           description: values.description,
           start_time: start.toISOString(),
           end_time: end.toISOString(),
-          registration_start_time: regStart ? regStart.toISOString() : undefined,
-          registration_end_time: regEnd ? regEnd.toISOString() : undefined,
+          registration_start_time: regStart ? dayjs(regStart).toISOString() : undefined,
+          registration_end_time: regEnd ? dayjs(regEnd).toISOString() : undefined,
           location_name: values.location_name,
           event_type: values.event_type,
           visibility: values.visibility,
+          slug: values.slug?.trim() || undefined,
           registration_type: values.registration_type,
           attendance_type: values.attendance_type,
           audience: values.audience,
           audience_batch_ids: values.audience === 'SPECIFIC_BATCHES' ? values.audience_batch_ids : undefined,
           max_capacity: values.max_capacity ?? undefined,
+          max_participants: values.registration_type === 'TEAM' ? (values.max_participants ?? undefined) : undefined,
           club_ids: [
             { club_id: values.club_id, is_primary: true },
             ...(values.collaborating_club_ids ?? [])
@@ -190,12 +255,16 @@ export default function CreateEventPage() {
         layout="vertical"
         disabled={isPending}
         initialValues={{
-          visibility: 'PUBLIC',
           registration_type: 'INDIVIDUAL',
           attendance_type: 'SINGLE',
           audience: 'ALL_STUDENTS',
         }}
         onValuesChange={(changedValues) => {
+          if (changedValues.title && !hasManuallyEditedSlug) {
+            const generated = slugify(changedValues.title);
+            form.setFieldsValue({ slug: generated });
+            validateSlugLive(generated);
+          }
           if (changedValues.registration_type === 'INDIVIDUAL') {
             form.setFieldsValue({ minimum_team_size: undefined, maximum_team_size: undefined });
           }
@@ -221,6 +290,53 @@ export default function CreateEventPage() {
               rules={[{ required: true, message: 'Please enter the event name' }, { min: 3, max: 255 }]}
             >
               <Input placeholder="e.g. AI Hackathon 2026" />
+            </Form.Item>
+            <Form.Item
+              name="slug"
+              label="Event URL Slug"
+              extra={
+                slugValidation.status === 'validating' ? (
+                  <span style={{ color: '#888' }}>Checking URL availability...</span>
+                ) : slugValidation.status === 'available' ? (
+                  <span style={{ color: '#52c41a' }}>
+                    Available: /event/{slugValidation.normalizedSlug || form.getFieldValue('slug')}
+                  </span>
+                ) : slugValidation.status === 'unavailable' ? (
+                  <span style={{ color: '#ff4d4f' }}>
+                    {slugValidation.reason || 'This URL is not available.'}{' '}
+                    {slugValidation.suggestedSlug && (
+                      <Button
+                        type="link"
+                        size="small"
+                        style={{ padding: 0 }}
+                        onClick={() => {
+                          form.setFieldsValue({ slug: slugValidation.suggestedSlug });
+                          validateSlugLive(slugValidation.suggestedSlug!);
+                        }}
+                      >
+                        Use suggestion: {slugValidation.suggestedSlug}
+                      </Button>
+                    )}
+                  </span>
+                ) : (
+                  'Custom URL slug for this event (e.g. /event/ai-hackathon-2026). Generated from title if left empty.'
+                )
+              }
+              rules={[
+                {
+                  pattern: /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+                  message: 'Slug must contain only lowercase letters, numbers, and single hyphens',
+                },
+              ]}
+            >
+              <Input
+                placeholder="e.g. ai-hackathon-2026"
+                addonBefore="/event/"
+                onChange={(e) => {
+                  setHasManuallyEditedSlug(true);
+                  validateSlugLive(e.target.value);
+                }}
+              />
             </Form.Item>
             <Form.Item
               name="description"
@@ -278,7 +394,8 @@ export default function CreateEventPage() {
               <Col xs={24} md={12}>
                 <Form.Item
                   name="dateRange"
-                  label="Start and End Date/Time"
+                  label="Event Schedule (Start and End Date/Time)"
+                  extra="The actual date and time when the event takes place."
                   rules={[{ required: true, message: 'Please select the date range' }]}
                 >
                   <RangePicker showTime format="YYYY-MM-DD HH:mm" style={{ width: '100%' }} />
@@ -291,6 +408,79 @@ export default function CreateEventPage() {
                   rules={[{ max: 255 }]}
                 >
                   <Input placeholder="e.g. Main Auditorium" />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Divider style={{ margin: '12px 0 16px 0' }} />
+
+            <div style={{ marginBottom: 12 }}>
+              <Text strong>Registration Period</Text>
+              <br />
+              <Text type="secondary" style={{ fontSize: 13 }}>
+                Configure the window during which students can register for this event. Registration must close on or before the event ends.
+              </Text>
+            </div>
+
+            <Row gutter={16}>
+              <Col xs={24} md={12}>
+                <Form.Item
+                  name="registration_start_time"
+                  label="Registration Opens At"
+                  extra="Date and time when registration becomes available."
+                  dependencies={['registration_end_time', 'dateRange']}
+                  rules={[
+                    ({ getFieldValue }) => ({
+                      validator(_, value) {
+                        const regEnd = getFieldValue('registration_end_time');
+                        const dateRange = getFieldValue('dateRange');
+                        if (value && regEnd && dayjs(value).isAfter(dayjs(regEnd))) {
+                          return Promise.reject(new Error('Registration Opens At must be before Registration Closes At'));
+                        }
+                        if (value && dateRange && dateRange[1] && dayjs(value).isAfter(dayjs(dateRange[1]))) {
+                          return Promise.reject(new Error('Registration Opens At must be before event end time'));
+                        }
+                        return Promise.resolve();
+                      },
+                    }),
+                  ]}
+                >
+                  <DatePicker
+                    showTime
+                    format="YYYY-MM-DD HH:mm"
+                    style={{ width: '100%' }}
+                    placeholder="Select registration open time"
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item
+                  name="registration_end_time"
+                  label="Registration Closes At"
+                  extra="Date and time when registration stops accepting registrations."
+                  dependencies={['registration_start_time', 'dateRange']}
+                  rules={[
+                    ({ getFieldValue }) => ({
+                      validator(_, value) {
+                        const regStart = getFieldValue('registration_start_time');
+                        const dateRange = getFieldValue('dateRange');
+                        if (regStart && value && dayjs(value).isBefore(dayjs(regStart))) {
+                          return Promise.reject(new Error('Registration Closes At must be after Registration Opens At'));
+                        }
+                        if (dateRange && dateRange[1] && value && dayjs(value).isAfter(dayjs(dateRange[1]))) {
+                          return Promise.reject(new Error('Registration Closes At must be before or at event end time'));
+                        }
+                        return Promise.resolve();
+                      },
+                    }),
+                  ]}
+                >
+                  <DatePicker
+                    showTime
+                    format="YYYY-MM-DD HH:mm"
+                    style={{ width: '100%' }}
+                    placeholder="Select registration close time"
+                  />
                 </Form.Item>
               </Col>
             </Row>
@@ -384,18 +574,30 @@ export default function CreateEventPage() {
                   {({ getFieldValue }) => {
                     const isTeam = getFieldValue('registration_type') === 'TEAM';
                     return (
-                      <Form.Item
-                        name="max_capacity"
-                        label={isTeam ? "Maximum Teams" : "Maximum Participants"}
-                        extra={
-                          isTeam
-                            ? "Maximum number of registered teams allowed. Leave empty for unlimited."
-                            : "Maximum number of individual students allowed. Leave empty for unlimited."
-                        }
-                        rules={[{ type: 'number', min: 1 }]}
-                      >
-                        <InputNumber style={{ width: '100%' }} placeholder={isTeam ? "e.g. 10" : "e.g. 100"} />
-                      </Form.Item>
+                      <>
+                        <Form.Item
+                          name="max_capacity"
+                          label={isTeam ? "Maximum Teams" : "Maximum Participants"}
+                          extra={
+                            isTeam
+                              ? "Maximum number of registered teams allowed. Leave empty for unlimited."
+                              : "Maximum number of individual students allowed. Leave empty for unlimited."
+                          }
+                          rules={[{ type: 'number', min: 1 }]}
+                        >
+                          <InputNumber style={{ width: '100%' }} placeholder={isTeam ? "e.g. 10" : "e.g. 100"} />
+                        </Form.Item>
+                        {isTeam && (
+                          <Form.Item
+                            name="max_participants"
+                            label="Maximum Participants"
+                            extra="Maximum number of individual students allowed across all teams. Leave empty for unlimited."
+                            rules={[{ type: 'number', min: 1 }]}
+                          >
+                            <InputNumber style={{ width: '100%' }} placeholder="e.g. 50" />
+                          </Form.Item>
+                        )}
+                      </>
                     );
                   }}
                 </Form.Item>
@@ -462,34 +664,41 @@ export default function CreateEventPage() {
                   shouldUpdate={(prev, curr) => prev.visibility !== curr.visibility}
                 >
                   {({ getFieldValue }) => {
-                    const vis = getFieldValue('visibility');
                     return (
                       <Form.Item
                         name="visibility"
-                        label="Visibility"
-                        extra={
-                          vis === 'PRIVATE'
-                            ? "Visible only to authorized event or club users and global administrators."
-                            : "Visible to authenticated users when the event is published."
-                        }
-                        rules={[{ required: true }]}
+                        label="Event Visibility"
+                        extra="Select the discoverability tier. Explicit choice is mandatory before publication."
                       >
-                        <Select
-                          options={[
-                            { label: 'Public', value: 'PUBLIC' },
-                            { label: 'Private', value: 'PRIVATE' },
-                          ]}
-                        />
+                        <Radio.Group style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          <Radio value="PUBLIC" style={{ border: '1px solid var(--ant-color-border-secondary, #333)', padding: '10px 14px', borderRadius: 8, width: '100%' }}>
+                            <div style={{ display: 'inline-block', verticalAlign: 'top', marginLeft: 6 }}>
+                              <div style={{ fontWeight: 600 }}>Public Discovery</div>
+                              <div style={{ fontSize: 12, opacity: 0.75 }}>
+                                Visible in public campus directory &amp; search; indexed by search engines.
+                              </div>
+                            </div>
+                          </Radio>
+                          <Radio value="UNLISTED" style={{ border: '1px solid var(--ant-color-border-secondary, #333)', padding: '10px 14px', borderRadius: 8, width: '100%' }}>
+                            <div style={{ display: 'inline-block', verticalAlign: 'top', marginLeft: 6 }}>
+                              <div style={{ fontWeight: 600 }}>Unlisted Link</div>
+                              <div style={{ fontSize: 12, opacity: 0.75 }}>
+                                Hidden from discovery directory and search engines. Accessible only via direct link.
+                              </div>
+                            </div>
+                          </Radio>
+                          <Radio value="RESTRICTED" style={{ border: '1px solid var(--ant-color-border-secondary, #333)', padding: '10px 14px', borderRadius: 8, width: '100%' }}>
+                            <div style={{ display: 'inline-block', verticalAlign: 'top', marginLeft: 6 }}>
+                              <div style={{ fontWeight: 600 }}>Restricted Institutional</div>
+                              <div style={{ fontSize: 12, opacity: 0.75 }}>
+                                Requires verified institutional Google login (@adypu.edu.in or @newtonschool.co) to view or register.
+                              </div>
+                            </div>
+                          </Radio>
+                        </Radio.Group>
                       </Form.Item>
                     );
                   }}
-                </Form.Item>
-                <Form.Item
-                  name="registrationDateRange"
-                  label="Registration Window"
-                  extra="Optional. Defines when students can register. If left empty, registrations are permanently closed by default until explicitly scheduled."
-                >
-                  <RangePicker showTime format="YYYY-MM-DD HH:mm" style={{ width: '100%' }} />
                 </Form.Item>
               </Col>
             </Row>

@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Download, Search, RefreshCw, User, Calendar, ExternalLink } from 'lucide-react';
 import { useEventFormResponses } from '../../hooks/useEventForms';
 import { Modal } from '../ui/Modal';
+import { exportSubmissionsToCSV } from '../../lib/form-studio-utils';
 
 interface StudentFormResponsesModalProps {
   eventId: string;
@@ -18,6 +19,7 @@ export function StudentFormResponsesModal({
 }: StudentFormResponsesModalProps) {
   const { data: rawResponses, isLoading, refetch, isFetching } = useEventFormResponses(eventId, formId);
   const [searchText, setSearchText] = useState('');
+  const [exportFeedback, setExportFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Group responses by student registration
   const { submissions, fieldColumns } = useMemo(() => {
@@ -84,35 +86,20 @@ export function StudentFormResponsesModal({
   // Export CSV
   const handleExportCSV = () => {
     if (submissions.length === 0) return;
-
-    const headers = ['Student Name', 'Student Email', 'Submitted At', ...fieldColumns.map(f => `"${f.label.replace(/"/g, '""')}"`)];
-    const rows = submissions.map(sub => {
-      const answersPart = fieldColumns.map(f => {
-        let val = sub.answers[f.id]?.value || '';
-        try {
-          const parsed = JSON.parse(val);
-          if (Array.isArray(parsed)) {
-            val = parsed.join(', ');
-          }
-        } catch {}
-        return `"${String(val).replace(/"/g, '""')}"`;
+    try {
+      exportSubmissionsToCSV(formTitle, fieldColumns, submissions);
+      setExportFeedback({
+        type: 'success',
+        text: `Exported ${submissions.length} submission${submissions.length === 1 ? '' : 's'} to CSV successfully.`,
       });
-      return [
-        `"${sub.user.fullName.replace(/"/g, '""')}"`,
-        `"${sub.user.email.replace(/"/g, '""')}"`,
-        `"${new Date(sub.submittedAt).toLocaleString()}"`,
-        ...answersPart,
-      ].join(',');
-    });
-
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `${formTitle.replace(/[^a-zA-Z0-9_-]/g, '_')}_responses.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      setTimeout(() => setExportFeedback(null), 3000);
+    } catch (err: any) {
+      setExportFeedback({
+        type: 'error',
+        text: err.message || 'Failed to export CSV.',
+      });
+      setTimeout(() => setExportFeedback(null), 4000);
+    }
   };
 
   return (
@@ -123,6 +110,19 @@ export function StudentFormResponsesModal({
       maxWidth="max-w-5xl"
     >
       <div className="p-6">
+        {/* Export Feedback Notification */}
+        {exportFeedback && (
+          <div
+            className={`mb-4 p-3 border-2 font-mono text-xs uppercase tracking-wider ${
+              exportFeedback.type === 'success'
+                ? 'bg-[#00E5FF]/10 border-[#00E5FF] text-[#00E5FF]'
+                : 'bg-red-500/10 border-red-500 text-red-400'
+            }`}
+          >
+            {exportFeedback.text}
+          </div>
+        )}
+
         {/* Controls Bar */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-6 pb-4 border-b-2 border-white/10">
           <div className="relative flex-1 max-w-md">

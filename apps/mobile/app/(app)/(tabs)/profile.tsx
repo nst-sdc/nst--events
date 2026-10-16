@@ -4,6 +4,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Modal,
+  Linking,
 } from 'react-native';
 import { ActivityIndicator } from '../../../src/ui/core/ActivityIndicator';
 import { useRouter } from 'expo-router';
@@ -12,6 +13,9 @@ import { useAppTheme } from '../../../src/store/theme-store';
 import { StatusBadge } from '../../../src/ui/core/StatusBadge';
 import { Button } from '../../../src/ui/Button';
 import { useUserProfile } from '../../../src/hooks/use-user-profile';
+import { useStudentAchievements, StudentAchievementItem } from '../../../src/hooks/use-event-results';
+import { useMyStudentProfile } from '../../../src/hooks/use-student-profiles';
+import { ProfileVisibilityModal } from '../../../src/ui/ProfileVisibilityModal';
 import { logout } from '../../../src/services/session';
 import { MobileShell } from '../../../src/ui/core/MobileShell';
 import { Title, Body, MonoLabel, Mono, Display } from '../../../src/ui/core/Typography';
@@ -26,7 +30,14 @@ export default function ProfileScreen() {
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showCreditsModal, setShowCreditsModal] = useState(false);
+  const [showVisibilityModal, setShowVisibilityModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const { data: myProfileData } = useMyStudentProfile();
+  const mySlug = myProfileData?.profile?.slug;
+
+  const { data: achievementsData, isLoading: isAchievementsLoading } = useStudentAchievements(profile?.id, !!profile?.id);
+  const achievements = achievementsData?.achievements || [];
 
   const fullName = profile?.full_name || profile?.email || '';
   const email = profile?.email || '';
@@ -136,6 +147,9 @@ export default function ProfileScreen() {
       fontSize: 11,
       color: theme.colors.onSurfaceVariant,
     },
+    achievementsSection: {
+      gap: theme.spacing.sm,
+    },
     menuContainer: {
       gap: theme.spacing.sm,
     },
@@ -230,6 +244,57 @@ export default function ProfileScreen() {
               </View>
             </View>
 
+            {/* PUBLIC DOSSIER & PORTFOLIO */}
+            <View style={{
+              backgroundColor: theme.colors.surfaceContainerLow,
+              borderWidth: 1,
+              borderColor: theme.colors.primary,
+              padding: theme.spacing.base,
+              gap: theme.spacing.sm,
+            }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <MonoLabel style={{ color: theme.colors.primary }}>PUBLIC STUDENT PORTFOLIO</MonoLabel>
+                {mySlug && (
+                  <Mono style={{ fontSize: 10, color: theme.colors.primary }}>@{mySlug}</Mono>
+                )}
+              </View>
+
+              <Body style={{ fontSize: 12, color: theme.colors.onSurfaceVariant }}>
+                Control which projects, honors, and verified credentials appear on your public web portfolio.
+              </Body>
+
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+                {mySlug && (
+                  <TouchableOpacity
+                    onPress={() => router.push(`/students/${mySlug}` as any)}
+                    style={{
+                      flex: 1,
+                      backgroundColor: theme.colors.primary,
+                      paddingVertical: 10,
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Mono style={{ fontSize: 11, fontFamily: theme.typography.monoBold, color: theme.colors.onPrimary }}>
+                      VIEW DOSSIER ↗
+                    </Mono>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  onPress={() => setShowVisibilityModal(true)}
+                  style={{
+                    flex: 1,
+                    backgroundColor: theme.colors.surfaceContainerHighest,
+                    paddingVertical: 10,
+                    alignItems: 'center',
+                  }}
+                >
+                  <Mono style={{ fontSize: 11, fontFamily: theme.typography.monoBold, color: theme.colors.onSurface }}>
+                    VISIBILITY ⚙
+                  </Mono>
+                </TouchableOpacity>
+              </View>
+            </View>
+
             <View style={styles.clubsSection}>
               <MonoLabel style={styles.sectionTitle}>AFFILIATIONS</MonoLabel>
               {profile.club_memberships && profile.club_memberships.length > 0 ? (
@@ -243,6 +308,150 @@ export default function ProfileScreen() {
               ) : (
                 <Mono style={styles.emptyClubsText}>NO ACTIVE CLUB AFFILIATIONS</Mono>
               )}
+            </View>
+
+            {/* OFFICIAL HONORS & ACHIEVEMENTS */}
+            <View style={styles.achievementsSection} testID="profile-achievements-section">
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <MonoLabel style={styles.sectionTitle}>OFFICIAL HONORS & ACHIEVEMENTS</MonoLabel>
+                <MonoLabel style={{ color: theme.colors.success, fontSize: 9 }}>[VERIFIED RECORD]</MonoLabel>
+              </View>
+
+              {isAchievementsLoading ? (
+                <View style={{ paddingVertical: 12, alignItems: 'center' }}>
+                  <ActivityIndicator size="small" color={theme.colors.primary} />
+                </View>
+              ) : achievements && achievements.length > 0 ? (
+                <View style={{ gap: 10 }}>
+                  {achievements.map((ach: StudentAchievementItem) => {
+                    const isPodium = ach.placement && ach.placement <= 3;
+                    const rankText = ach.placement
+                      ? ach.placement === 1
+                        ? '🥇 1ST PLACE'
+                        : ach.placement === 2
+                        ? '🥈 2ND PLACE'
+                        : ach.placement === 3
+                        ? '🥉 3RD PLACE'
+                        : `RANK #${ach.placement}`
+                      : 'AWARD';
+
+                    return (
+                      <View
+                        key={ach.id}
+                        style={{
+                          backgroundColor: theme.colors.surfaceContainerLow,
+                          borderWidth: 1,
+                          borderColor: isPodium ? theme.colors.podiumGold : theme.colors.outlineVariant,
+                          padding: 12,
+                          gap: 6,
+                        }}
+                        testID={`achievement-card-${ach.id}`}
+                      >
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <MonoLabel style={{ color: theme.colors.primary, fontSize: 10 }}>
+                            {rankText}
+                          </MonoLabel>
+                          <Mono style={{ fontSize: 9, color: theme.colors.outline }}>
+                            {new Date(ach.published_at).getFullYear()}
+                          </Mono>
+                        </View>
+
+                        <Title style={{ fontSize: 14, fontWeight: 'bold', textTransform: 'uppercase', color: theme.colors.onSurface }}>
+                          {ach.award_title}
+                        </Title>
+
+                        <Body style={{ fontSize: 11, color: theme.colors.onSurfaceVariant }}>
+                          {ach.event.title}
+                          {ach.is_team_award && ach.team_name ? ` • Team: ${ach.team_name}` : ''}
+                        </Body>
+
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4, paddingTop: 6, borderTopWidth: 1, borderTopColor: theme.colors.borderHairline }}>
+                          <TouchableOpacity
+                            onPress={() => router.push(`/(app)/events/${ach.event.id}/results`)}
+                            style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                          >
+                            <Mono style={{ fontSize: 10, color: theme.colors.primary, fontWeight: 'bold' }}>
+                              [ VIEW RESULTS ]
+                            </Mono>
+                          </TouchableOpacity>
+
+                          {ach.linked_project && (
+                            <TouchableOpacity
+                              onPress={() => Linking.openURL(`https://events.nstsdc.org/projects/${ach.linked_project?.slug}`).catch(() => {})}
+                              style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                            >
+                              <Mono style={{ fontSize: 10, color: theme.colors.secondary, fontWeight: 'bold' }}>
+                                [ SHOWCASE PROJECT ↗ ]
+                              </Mono>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              ) : (
+                <View
+                  style={{
+                    backgroundColor: theme.colors.surfaceContainerLow,
+                    borderWidth: 1,
+                    borderStyle: 'dashed',
+                    borderColor: theme.colors.outlineVariant,
+                    padding: 16,
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <Body style={{ fontSize: 11, color: theme.colors.onSurfaceVariant, textAlign: 'center' }}>
+                    No official event honors or podium rankings recorded yet.
+                  </Body>
+                  <MonoLabel style={{ fontSize: 9, color: theme.colors.outline }}>
+                    PARTICIPATE IN CAMPUS HACKATHONS & JAM COMPETITIONS TO EARN OFFICIAL CREDENTIALS.
+                  </MonoLabel>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.menuContainer}>
+              <MonoLabel style={styles.sectionTitle}>CAMPUS DIRECTORY</MonoLabel>
+
+              <View style={styles.menuList}>
+                <TouchableOpacity
+                  style={styles.menuRow}
+                  onPress={() => router.push('/(app)/clubs')}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.menuRowLeft}>
+                    <MaterialIcons name="groups" size={16} color={theme.colors.primary} />
+                    <Body style={styles.menuRowTitle}>STUDENT CLUBS</Body>
+                  </View>
+                  <MonoLabel style={styles.menuRowArrow}>→</MonoLabel>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.menuRow}
+                  onPress={() => router.push('/(app)/students')}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.menuRowLeft}>
+                    <MaterialIcons name="person-search" size={16} color={theme.colors.primary} />
+                    <Body style={styles.menuRowTitle}>STUDENT DIRECTORY</Body>
+                  </View>
+                  <MonoLabel style={styles.menuRowArrow}>→</MonoLabel>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.menuRow}
+                  onPress={() => router.push('/(app)/leaderboard')}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.menuRowLeft}>
+                    <MaterialIcons name="leaderboard" size={16} color={theme.colors.primary} />
+                    <Body style={styles.menuRowTitle}>CAMPUS LEADERBOARD</Body>
+                  </View>
+                  <MonoLabel style={styles.menuRowArrow}>→</MonoLabel>
+                </TouchableOpacity>
+              </View>
             </View>
 
             <View style={styles.menuContainer}>
@@ -366,6 +575,11 @@ export default function ProfileScreen() {
       <DevClubCreditsModal
         visible={showCreditsModal}
         onClose={() => setShowCreditsModal(false)}
+      />
+
+      <ProfileVisibilityModal
+        visible={showVisibilityModal}
+        onClose={() => setShowVisibilityModal(false)}
       />
     </MobileShell>
   );

@@ -62,7 +62,7 @@ router.post('/events/:id/teams',
   validate(CreateTeamSchema),
   async (req, res, next) => {
     try {
-      const result = await teamsService.createTeam(req.user!.id, req.params.id, req.body.team_name);
+      const result = await teamsService.createTeam(req.user!.id, req.params.id, req.body.team_name, req.body.responses);
       res.status(201).json(result);
     } catch (err) {
       next(err);
