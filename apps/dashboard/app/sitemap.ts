@@ -16,12 +16,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'hourly',
       priority: 0.9,
     },
+    {
+      url: `${siteUrl}/students`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
   ];
+
+  const apiBase =
+    API_BASE_URL && API_BASE_URL.startsWith('http')
+      ? API_BASE_URL
+      : process.env.INTERNAL_API_URL && process.env.INTERNAL_API_URL.startsWith('http')
+        ? process.env.INTERNAL_API_URL
+        : '';
+
+  if (!apiBase) {
+    return routes;
+  }
 
   // 1. Dynamic Public Events
   try {
-    const res = await fetch(`${API_BASE_URL}/v1/events/public?limit=100`, {
+    const res = await fetch(`${apiBase}/v1/events/public?limit=100`, {
       next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(3000),
     });
     if (res.ok) {
       const data = await res.json();
@@ -49,8 +67,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // 2. Dynamic Published Projects
   try {
-    const res = await fetch(`${API_BASE_URL}/v1/projects?limit=100`, {
+    const res = await fetch(`${apiBase}/v1/projects?limit=100`, {
       next: { revalidate: 1800 },
+      signal: AbortSignal.timeout(3000),
     });
     if (res.ok) {
       const data = await res.json();
@@ -71,16 +90,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   // 3. Dynamic Public Student Profiles & Directory
-  routes.push({
-    url: `${siteUrl}/students`,
-    lastModified: new Date(),
-    changeFrequency: 'daily',
-    priority: 0.9,
-  });
-
   try {
-    const res = await fetch(`${API_BASE_URL}/v1/students?limit=100`, {
+    const res = await fetch(`${apiBase}/v1/students?limit=100`, {
       next: { revalidate: 1800 },
+      signal: AbortSignal.timeout(3000),
     });
     if (res.ok) {
       const data = await res.json();
