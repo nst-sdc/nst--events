@@ -20,9 +20,18 @@ interface PageProps {
 }
 
 async function fetchPublicEvent(slug: string) {
+  const apiBase =
+    API_BASE_URL && API_BASE_URL.startsWith('http')
+      ? API_BASE_URL
+      : process.env.INTERNAL_API_URL && process.env.INTERNAL_API_URL.startsWith('http')
+        ? process.env.INTERNAL_API_URL
+        : '';
+  if (!apiBase) return null;
+
   try {
-    const res = await fetch(`${API_BASE_URL}/v1/events/public/${encodeURIComponent(slug)}`, {
+    const res = await fetch(`${apiBase}/v1/events/public/${encodeURIComponent(slug)}`, {
       next: { revalidate: 60 },
+      signal: AbortSignal.timeout(5000),
     });
 
     if (res.status === 404) return null;
