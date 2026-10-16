@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useCreateTeam, useTeamsList, useJoinTeam, Team } from '../../../../../../hooks/useTeams';
 import { useEventFormFields } from '../../../../../../hooks/useEventFormFields';
 import { useProfileValues, ProfileValue } from '../../../../../../hooks/useProfileValues';
@@ -38,7 +38,6 @@ export function TeamGatewayModal({
   const { data: profileValues } = useProfileValues();
 
   const [formResponses, setFormResponses] = useState<Record<string, string>>({});
-  const [preFilledFields, setPreFilledFields] = useState<Record<string, string>>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [registrationError, setRegistrationError] = useState<string | null>(null);
 
@@ -47,25 +46,23 @@ export function TeamGatewayModal({
   
   const { data: teamsData, isLoading: isLoadingTeams } = useTeamsList(eventId);
 
-  // Pre-fill profile values when fields or profile values are loaded
-  useEffect(() => {
-    if (isOpen && eventFormFields && profileValues) {
-      const initial: Record<string, string> = {};
-      const preFilled: Record<string, string> = {};
-      eventFormFields.forEach((f) => {
-        const profileMatch = profileValues.find((p: ProfileValue) => p.fieldDefinitionId === f.fieldDefinitionId);
-        if (profileMatch && profileMatch.value) {
-          initial[f.fieldDefinitionId] = profileMatch.value;
-          preFilled[f.fieldDefinitionId] = profileMatch.value;
-        }
-      });
-      const timer = setTimeout(() => {
-        setFormResponses((prev) => ({ ...initial, ...prev }));
-        setPreFilledFields(preFilled);
-      }, 0);
-      return () => clearTimeout(timer);
-    }
+  // Pre-fill profile values derived synchronously via useMemo
+  const preFilledFields = useMemo(() => {
+    if (!isOpen || !eventFormFields || !profileValues) return {};
+    const preFilled: Record<string, string> = {};
+    eventFormFields.forEach((f) => {
+      const profileMatch = profileValues.find((p: ProfileValue) => p.fieldDefinitionId === f.fieldDefinitionId);
+      if (profileMatch && profileMatch.value) {
+        preFilled[f.fieldDefinitionId] = profileMatch.value;
+      }
+    });
+    return preFilled;
   }, [isOpen, eventFormFields, profileValues]);
+
+  // Combined active responses: user-entered responses take precedence over pre-filled values
+  const effectiveResponses = useMemo(() => {
+    return { ...preFilledFields, ...formResponses };
+  }, [preFilledFields, formResponses]);
 
   // Debounced local validation for team name uniqueness
   useEffect(() => {
@@ -123,11 +120,11 @@ export function TeamGatewayModal({
 
     // Validate registration questionnaire responses if configured
     if (eventFormFields && eventFormFields.length > 0) {
-      const validation = validateFormResponses(eventFormFields, formResponses);
+      const validation = validateFormResponses(eventFormFields, effectiveResponses);
       if (!validation.isValid) {
         setFieldErrors(validation.errors);
         const firstMissing = eventFormFields.find(
-          (f) => f.isRequired && isFieldValueEmpty(formResponses[f.fieldDefinitionId])
+          (f) => f.isRequired && isFieldValueEmpty(effectiveResponses[f.fieldDefinitionId])
         );
         if (firstMissing) {
           setRegistrationError(`Please fill in required field: ${firstMissing.fieldDefinition.label}`);
@@ -141,7 +138,7 @@ export function TeamGatewayModal({
     setFieldErrors({});
     setRegistrationError(null);
 
-    const responses = eventFormFields && eventFormFields.length > 0 ? toResponsePayload(formResponses) : undefined;
+    const responses = eventFormFields && eventFormFields.length > 0 ? toResponsePayload(effectiveResponses) : undefined;
 
     createTeam({ name: teamName.trim(), responses }, {
       onSuccess: () => {
@@ -167,11 +164,11 @@ export function TeamGatewayModal({
 
     // Validate registration questionnaire responses if configured
     if (eventFormFields && eventFormFields.length > 0) {
-      const validation = validateFormResponses(eventFormFields, formResponses);
+      const validation = validateFormResponses(eventFormFields, effectiveResponses);
       if (!validation.isValid) {
         setFieldErrors(validation.errors);
         const firstMissing = eventFormFields.find(
-          (f) => f.isRequired && isFieldValueEmpty(formResponses[f.fieldDefinitionId])
+          (f) => f.isRequired && isFieldValueEmpty(effectiveResponses[f.fieldDefinitionId])
         );
         if (firstMissing) {
           setRegistrationError(`Please fill in required field: ${firstMissing.fieldDefinition.label}`);
@@ -185,7 +182,7 @@ export function TeamGatewayModal({
     setFieldErrors({});
     setRegistrationError(null);
 
-    const responses = eventFormFields && eventFormFields.length > 0 ? toResponsePayload(formResponses) : undefined;
+    const responses = eventFormFields && eventFormFields.length > 0 ? toResponsePayload(effectiveResponses) : undefined;
 
     joinTeam({ teamId: selectedTeam.id, responses }, {
       onSuccess: () => {
@@ -203,6 +200,7 @@ export function TeamGatewayModal({
     setTeamName('');
     setTeamNameError(null);
     setSelectedTeam(null);
+    setFormResponses({});
     setFieldErrors({});
     setRegistrationError(null);
   };
@@ -393,11 +391,11 @@ export function TeamGatewayModal({
                     <DynamicFieldInput
                       key={field.fieldDefinitionId}
                       field={field}
-                      value={formResponses[field.fieldDefinitionId] || ''}
+                      value={effectiveResponses[field.fieldDefinitionId] || ''}
                       onChange={(val) => handleFieldResponseChange(field.fieldDefinitionId, val)}
                       disabled={isCreating}
                       error={fieldErrors[field.fieldDefinitionId]}
-                      isPrefilled={!!preFilledFields[field.fieldDefinitionId]}
+                      isPrefilled={!!preFilledFields[field.fieldDefinitionId] && formResponses[field.fieldDefinitionId] === undefined}
                     />
                   ))}
                 </div>
@@ -540,11 +538,11 @@ export function TeamGatewayModal({
                     <DynamicFieldInput
                       key={field.fieldDefinitionId}
                       field={field}
-                      value={formResponses[field.fieldDefinitionId] || ''}
+                      value={effectiveResponses[field.fieldDefinitionId] || ''}
                       onChange={(val) => handleFieldResponseChange(field.fieldDefinitionId, val)}
                       disabled={isJoining}
                       error={fieldErrors[field.fieldDefinitionId]}
-                      isPrefilled={!!preFilledFields[field.fieldDefinitionId]}
+                      isPrefilled={!!preFilledFields[field.fieldDefinitionId] && formResponses[field.fieldDefinitionId] === undefined}
                     />
                   ))}
                 </div>
