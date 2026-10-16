@@ -69,7 +69,8 @@
       "expo-notifications",
       "expo-secure-store",
       "expo-dev-client",
-      "expo-router"
+      "expo-router",
+      "./plugins/withInstallReferrer.js"
     ],
     "extra": {
       "eas": {

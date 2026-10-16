@@ -17,6 +17,7 @@ Please read these documents before starting work:
 2. [docs/frontend/AI_BUILD_RULES.md](file:///Users/sohamdhande/Docs_Local/nst-events-docs/docs/frontend/AI_BUILD_RULES.md)
 3. [docs/frontend/shared/DATA_CONTRACT.md](file:///Users/sohamdhande/Docs_Local/nst-events-docs/docs/frontend/shared/DATA_CONTRACT.md)
 4. [docs/api/02-api-routing-matrix.md](file:///Users/sohamdhande/Docs_Local/nst-events-docs/docs/api/02-api-routing-matrix.md)
+5. [docs/LOCAL_TEST_DATA_GUIDE.md](file:///Users/sohamdhande/Docs_Local/nst-events/docs/LOCAL_TEST_DATA_GUIDE.md) — Local test data, student authorization, and admin promotion guide (use this instead of scanning Prisma schemas).
 
 ## Critical data-shape warning
 This backend returns DIFFERENT field casing for the same logical resource depending on which endpoint is called (e.g. `GET /clubs` returns `bannerUrl` camelCase, `GET /clubs/:id` returns `banner_url` snake_case — confirmed via Phase 22C ground-truth audit against actual service code). Never share a TypeScript type between list and detail endpoints for: Event, Club, User, Registration. Always pull the exact field list for the SPECIFIC endpoint from `DATA_CONTRACT.md`.

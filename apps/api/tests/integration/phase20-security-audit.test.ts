@@ -28,6 +28,10 @@ describe('Phase 20 Security Audit', () => {
 
   beforeAll(async () => {
     // Teardown first
+    await prisma.eventRegistrationResponse.deleteMany({});
+    await prisma.eventFormField.deleteMany({});
+    await prisma.eventForm.deleteMany({});
+    await prisma.attendanceDispute.deleteMany({});
     await prisma.eventRegistration.deleteMany({});
     await prisma.attendanceRecord.deleteMany({});
     await prisma.attendanceSession.deleteMany({});
@@ -90,6 +94,10 @@ describe('Phase 20 Security Audit', () => {
 
   afterAll(async () => {
     // Teardown
+    await prisma.eventRegistrationResponse.deleteMany({});
+    await prisma.eventFormField.deleteMany({});
+    await prisma.eventForm.deleteMany({});
+    await prisma.attendanceDispute.deleteMany({});
     await prisma.eventRegistration.deleteMany({});
     await prisma.attendanceRecord.deleteMany({});
     await prisma.attendanceSession.deleteMany({});
@@ -111,6 +119,8 @@ describe('Phase 20 Security Audit', () => {
       title: 'Audit Event',
       start_time: new Date(Date.now() + 100000).toISOString(),
       end_time: new Date(Date.now() + 200000).toISOString(),
+      registration_start_time: new Date(Date.now() - 3600000).toISOString(),
+      registration_end_time: new Date(Date.now() + 3600000).toISOString(),
       event_type: EventType.HACKATHON,
       registration_type: RegistrationType.TEAM,
       attendance_type: AttendanceType.SINGLE,
@@ -118,6 +128,7 @@ describe('Phase 20 Security Audit', () => {
       audience_batch_ids: [batchXId],
       max_capacity: 5,
       metadata: { minimum_team_size: 2, maximum_team_size: 3 },
+      visibility: 'RESTRICTED',
       club_ids: [{ club_id: clubAId, is_primary: true }],
     } as any);
 
@@ -164,12 +175,15 @@ describe('Phase 20 Security Audit', () => {
       title: 'Race Event',
       start_time: new Date(Date.now() + 100000).toISOString(),
       end_time: new Date(Date.now() + 200000).toISOString(),
+      registration_start_time: new Date(Date.now() - 3600000).toISOString(),
+      registration_end_time: new Date(Date.now() + 3600000).toISOString(),
       event_type: EventType.MEETUP,
       registration_type: RegistrationType.TEAM,
       attendance_type: AttendanceType.SINGLE,
       audience: EventAudience.ALL_STUDENTS,
       max_capacity: 10,
       metadata: { minimum_team_size: 1, maximum_team_size: 2 },
+      visibility: 'PUBLIC',
       club_ids: [{ club_id: clubAId, is_primary: true }],
     } as any);
     await submitForApproval(clubAdminAId, ev.id);
@@ -208,7 +222,7 @@ describe('Phase 20 Security Audit', () => {
     });
 
     // Student A attempts to create a team in this permanently locked event
-    await assert.rejects(createTeam(studentAId, ev.id, 'Too Late Team'), /Event is locked|permanently locked/i);
+    await assert.rejects(createTeam(studentAId, ev.id, 'Too Late Team'), /Event is locked|permanently locked|Registration is closed/i);
   });
 
   it('7. Concurrent Last-Seat Test & Waitlist', async () => {
@@ -217,12 +231,15 @@ describe('Phase 20 Security Audit', () => {
       title: 'Race Event 2',
       start_time: new Date(Date.now() + 100000).toISOString(),
       end_time: new Date(Date.now() + 200000).toISOString(),
+      registration_start_time: new Date(Date.now() - 3600000).toISOString(),
+      registration_end_time: new Date(Date.now() + 3600000).toISOString(),
       event_type: EventType.MEETUP,
       registration_type: RegistrationType.INDIVIDUAL,
       attendance_type: AttendanceType.SINGLE,
       audience: EventAudience.ALL_STUDENTS,
       max_capacity: 1, // Only 1 seat!
       metadata: {},
+      visibility: 'PUBLIC',
       club_ids: [{ club_id: clubAId, is_primary: true }],
     } as any);
     await submitForApproval(clubAdminAId, ev.id);

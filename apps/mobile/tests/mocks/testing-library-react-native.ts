@@ -106,6 +106,16 @@ export const screen = {
     }
     throw new Error(`Timed out waiting for element with text: ${matcher}`);
   },
+  getByPlaceholderText: (text: string | RegExp) => {
+    if (!currentContainer) throw new Error('No component rendered');
+    const inputs = Array.from(currentContainer.querySelectorAll('input, textarea')) as HTMLInputElement[];
+    const match = inputs.find((input) => {
+      const ph = input.getAttribute('placeholder') || '';
+      return typeof text === 'string' ? ph.includes(text) : text.test(ph);
+    });
+    if (!match) throw new Error(`Unable to find input with placeholder: ${text}`);
+    return match;
+  },
 };
 
 export const fireEvent = {
@@ -117,6 +127,33 @@ export const fireEvent = {
   click: (element: HTMLElement) => {
     act(() => {
       element.click();
+    });
+  },
+  changeText: (element: HTMLElement, text: string) => {
+    act(() => {
+      const input = element as HTMLInputElement;
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value'
+      )?.set;
+      if (setter) {
+        setter.call(input, text);
+      } else {
+        input.value = text;
+      }
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+
+      const reactPropsKey = Object.keys(input).find((k) => k.startsWith('__reactProps'));
+      if (reactPropsKey) {
+        const props = (input as any)[reactPropsKey];
+        if (props?.onChangeText) {
+          props.onChangeText(text);
+        }
+        if (props?.onChange) {
+          props.onChange({ target: { value: text }, nativeEvent: { text } });
+        }
+      }
     });
   },
 };

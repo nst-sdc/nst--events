@@ -91,7 +91,10 @@ test('Web Auth: Access token is not written to localStorage', () => {
   const store = getWebAuthStore();
   store.setAccessToken('new-token');
 
-  // Since we don't even use window.localStorage in our lib, this verifies it's memory-only
-  expect(typeof window).toBe('undefined'); // In node test env
+  // Verify access token is strictly in-memory and never persisted to localStorage
+  if (typeof window !== 'undefined' && window.localStorage) {
+    expect(window.localStorage.getItem('accessToken')).toBeNull();
+    expect(window.localStorage.getItem('access_token')).toBeNull();
+  }
   expect(store.accessToken).toBe('new-token');
 });

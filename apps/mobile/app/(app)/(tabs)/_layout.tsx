@@ -44,7 +44,7 @@ export default function TabsLayout() {
   return (
     <Tabs
       tabBar={({ state, descriptors, navigation }: any) => {
-        const allowedRoutes = ['index', 'history', 'profile'];
+        const allowedRoutes = ['index', 'explore', 'activity', 'profile'];
         const visibleRoutes = state.routes.filter((r: any) => allowedRoutes.includes(r.name));
 
         return (
@@ -67,11 +67,14 @@ export default function TabsLayout() {
               let iconName: any = 'help';
               let label = route.name;
               if (route.name === 'index') {
-                iconName = 'qr-code-scanner';
-                label = 'ATTENDANCE';
-              } else if (route.name === 'history') {
-                iconName = 'history';
-                label = 'HISTORY';
+                iconName = 'home';
+                label = 'HOME';
+              } else if (route.name === 'explore') {
+                iconName = 'explore';
+                label = 'EXPLORE';
+              } else if (route.name === 'activity') {
+                iconName = 'confirmation-number';
+                label = 'ACTIVITY';
               } else if (route.name === 'profile') {
                 iconName = 'person';
                 label = 'PROFILE';
@@ -110,8 +113,10 @@ export default function TabsLayout() {
       screenOptions={{ headerShown: false }}
     >
       <Tabs.Screen name="index" />
-      <Tabs.Screen name="history" />
+      <Tabs.Screen name="explore" />
+      <Tabs.Screen name="activity" />
       <Tabs.Screen name="profile" />
+      <Tabs.Screen name="history" options={{ href: null }} />
     </Tabs>
   );
 }

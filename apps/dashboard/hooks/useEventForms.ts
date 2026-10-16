@@ -8,6 +8,7 @@ export interface EventForm {
   purpose: 'REGISTRATION' | 'SUBMISSION' | 'FEEDBACK' | 'CUSTOM';
   releaseAt: string | null;
   closeAt: string | null;
+  publishedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -107,11 +108,45 @@ export const useDeleteEventForm = (eventId: string) => {
   });
 };
 
+export const usePublishEventForm = (eventId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (formId: string) => {
+      const res = await apiClient<EventForm>(`/v1/events/${eventId}/forms/${formId}/publish`, {
+        method: 'POST',
+      });
+      return res;
+    },
+    onSuccess: (_, formId) => {
+      queryClient.invalidateQueries({ queryKey: ['event-forms', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['event-form', eventId, formId] });
+    },
+  });
+};
+
+export const useUnpublishEventForm = (eventId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (formId: string) => {
+      const res = await apiClient<EventForm>(`/v1/events/${eventId}/forms/${formId}/unpublish`, {
+        method: 'POST',
+      });
+      return res;
+    },
+    onSuccess: (_, formId) => {
+      queryClient.invalidateQueries({ queryKey: ['event-forms', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['event-form', eventId, formId] });
+    },
+  });
+};
+
 export const useUpdateEventFormFields = (eventId: string) => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: async ({ formId, fields }: { formId: string, fields: Array<{ fieldDefinitionId: string; isRequired: boolean; order: number }> }) => {
+    mutationFn: async ({ formId, fields }: { formId: string, fields: Array<{ fieldDefinitionId?: string; definition?: any; isRequired: boolean; order: number }> }) => {
       const res = await apiClient<{ data: EventFormField[] }>(`/v1/events/${eventId}/forms/${formId}/fields`, {
         method: 'PATCH',
         body: JSON.stringify({ fields }),
@@ -120,6 +155,43 @@ export const useUpdateEventFormFields = (eventId: string) => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['event-form', eventId, variables.formId] });
+      queryClient.invalidateQueries({ queryKey: ['fieldDefinitions'] });
+    },
+  });
+};
+
+/**
+ * Duplicates a form's metadata and attached fields onto a brand-new form.
+ * Uses only existing endpoints (create form + replace fields).
+ */
+export const useDuplicateEventForm = (eventId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ formId, title, purpose }: { formId: string; title: string; purpose: EventForm['purpose'] }) => {
+      const source = await apiClient<EventFormWithFields>(`/v1/events/${eventId}/forms/${formId}`);
+      const created = await apiClient<EventForm>(`/v1/events/${eventId}/forms`, {
+        method: 'POST',
+        body: JSON.stringify({ title: `${title} (copy)`, purpose }),
+      });
+
+      if (source.fields && source.fields.length > 0) {
+        await apiClient(`/v1/events/${eventId}/forms/${created.id}/fields`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            fields: source.fields.map((f) => ({
+              fieldDefinitionId: f.fieldDefinitionId,
+              isRequired: f.isRequired,
+              order: f.order,
+            })),
+          }),
+        });
+      }
+
+      return created;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['event-forms', eventId] });
     },
   });
 };

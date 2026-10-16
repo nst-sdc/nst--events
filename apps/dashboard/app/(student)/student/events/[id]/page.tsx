@@ -19,6 +19,10 @@ import { useEventLifecycle } from '../../../../../hooks/useEventLifecycle';
 import { useClubAdmin } from '../../../../../components/layout/ClubAdminProvider';
 import { useEventFormFields } from '../../../../../hooks/useEventFormFields';
 import { useProfileValues } from '../../../../../hooks/useProfileValues';
+import {
+  validateFormResponses,
+  toResponsePayload,
+} from '../../../../../lib/form-utils';
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 const timeFormatter = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
@@ -335,6 +339,8 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
   const [formResponses, setFormResponses] = useState<Record<string, string>>({});
   const [preFilledFields, setPreFilledFields] = useState<Record<string, string>>({});
   const [editableFields, setEditableFields] = useState<string[]>([]);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [registrationError, setRegistrationError] = useState<string | null>(null);
 
   const { data: eventForms, refetch: refetchEventForms } = useEventForms(eventId);
   const [activeFormForModal, setActiveFormForModal] = useState<EventForm | null>(null);
@@ -403,7 +409,14 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
   const isEnded = new Date(event.endTime) <= dbNow;
 
   const registrationCount = (event as any).registrationCount ?? (event as any).registration_count;
-  const isCapacityFull = event.maxCapacity !== null && typeof registrationCount === 'number' && registrationCount >= event.maxCapacity;
+  const participantCount = (event as any).participantCount ?? (event as any).participant_count ?? 0;
+  const maxParticipants = (event as any).maxParticipants ?? (event as any).max_participants ?? null;
+
+  const isTeamCapacityFull = event.registrationType === 'TEAM' && event.maxCapacity !== null && typeof registrationCount === 'number' && registrationCount >= event.maxCapacity;
+  const isParticipantCapacityFull = event.registrationType === 'TEAM' && maxParticipants !== null && typeof participantCount === 'number' && participantCount >= maxParticipants;
+  const isCapacityFull = event.registrationType === 'TEAM'
+    ? (isTeamCapacityFull || isParticipantCapacityFull)
+    : (event.maxCapacity !== null && typeof registrationCount === 'number' && registrationCount >= event.maxCapacity);
 
   const studentBatchId = currentUser?.academic_profile?.batch?.id ?? null;
   const isBatchRestricted = event.audience === 'SPECIFIC_BATCHES';
@@ -427,36 +440,54 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
     setFormResponses(initial);
     setPreFilledFields(preFilled);
     setEditableFields([]);
+    setFieldErrors({});
+    setRegistrationError(null);
     setIsRegisterModalOpen(true);
   };
 
-  const handleRegisterConfirm = () => {
-    // Validate required fields
-    if (eventFormFields) {
-      const missingRequired = eventFormFields.find(f => {
-        if (!f.isRequired) return false;
-        const val = formResponses[f.fieldDefinitionId];
-        if (!val || val.trim() === '' || val === '[]') return true;
-        return false;
+  const handleFieldResponseChange = (fieldDefId: string, value: string) => {
+    setFormResponses((prev) => ({ ...prev, [fieldDefId]: value }));
+    if (fieldErrors[fieldDefId]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next[fieldDefId];
+        return next;
       });
-      if (missingRequired) {
-        alert(`Please fill in required field: ${missingRequired.fieldDefinition.label}`);
-        return;
+    }
+    if (registrationError) {
+      setRegistrationError(null);
+    }
+  };
+
+  const handleRegisterConfirm = () => {
+    // Validate required fields and field formats
+    const validation = validateFormResponses(eventFormFields, formResponses);
+    if (!validation.isValid) {
+      setFieldErrors(validation.errors);
+      const firstMissing = (eventFormFields || []).find(
+        (f) => f.isRequired && (!formResponses[f.fieldDefinitionId] || formResponses[f.fieldDefinitionId].trim() === '' || formResponses[f.fieldDefinitionId] === '[]')
+      );
+      if (firstMissing) {
+        setRegistrationError(`Please fill in required field: ${firstMissing.fieldDefinition.label}`);
+      } else {
+        setRegistrationError(validation.firstError || 'Please fill in all required fields.');
       }
+      return;
     }
 
+    setFieldErrors({});
+    setRegistrationError(null);
+
     const payload = {
-      responses: Object.entries(formResponses)
-        .filter(([_, value]) => value !== undefined && value !== '')
-        .map(([fieldDefinitionId, value]) => ({
-          fieldDefinitionId,
-          value,
-        }))
+      responses: toResponsePayload(formResponses),
     };
 
     register(payload, {
       onSuccess: () => {
         setIsRegisterModalOpen(false);
+      },
+      onError: (err: any) => {
+        setRegistrationError(err?.message || 'Registration failed. Please check your answers and try again.');
       }
     });
   };
@@ -524,10 +555,24 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
 
     // Unregistered State for Team Event
     if (event.registrationType === 'TEAM' && (!registration || (!registration.team_id && registration.status !== 'REGISTERED' && registration.status !== 'WAITLISTED'))) {
+      if (isParticipantCapacityFull) {
+        return (
+          <div>
+            <div className="ed-status-badge" style={{ borderColor: 'var(--warm-red)', color: 'var(--warm-red)' }}>
+              SYSTEM NOTICE // PARTICIPANT CAPACITY FULL
+            </div>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: '#a0a4b8', marginTop: '10px', lineHeight: 1.5 }}>
+              This event has reached its maximum participant limit across all teams. No further squad creation or joins are permitted.
+            </p>
+          </div>
+        );
+      }
+
       return (
         <div>
           <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: '#a0a4b8', marginBottom: '14px', lineHeight: 1.5 }}>
             This is a collective team competition. Assemble or join an official squad to secure access.
+            {isTeamCapacityFull && ' Note: Maximum registered teams reached; new squads will be placed on the waitlist, but you can still join existing eligible squads.'}
           </p>
           <button 
             onClick={() => setIsTeamGatewayOpen(true)}
@@ -683,31 +728,59 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
         onClose={() => !isRegistering && setIsRegisterModalOpen(false)} 
         title={isCapacityFull ? "JOIN WAITLIST QUEUE" : "CONFIRM EVENT PASS"}
       >
-        <div style={{ padding: '24px', paddingTop: 0, fontFamily: 'var(--font-body)' }}>
-          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', marginBottom: '20px' }}>
-            {event.title}
-          </h3>
-          
-          <div style={{ borderTop: '2px solid #fff', borderBottom: '2px solid #fff', padding: '16px 0', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div>
-              <div className="ed-micro">DATE SPECIFICATION</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 700, color: '#fff', marginTop: '2px' }}>
-                {formatModalDate(event.startTime)}
+        <div style={{ padding: '24px', fontFamily: 'var(--font-body)' }}>
+          {/* IN-UI VALIDATION ALERT */}
+          {registrationError && (
+            <div
+              style={{
+                marginBottom: '20px',
+                padding: '12px 16px',
+                background: 'rgba(255, 59, 48, 0.12)',
+                border: '2px solid var(--warm-red, #FF3B30)',
+                boxShadow: '3px 3px 0px var(--warm-red, #FF3B30)',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '12px',
+              }}
+            >
+              <div
+                style={{
+                  color: 'var(--warm-red, #FF3B30)',
+                  fontSize: '16px',
+                  fontWeight: 900,
+                  lineHeight: 1,
+                  marginTop: '1px',
+                }}
+              >
+                ⚠
+              </div>
+              <div style={{ flex: 1 }}>
+                <div
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    color: 'var(--warm-red, #FF3B30)',
+                    letterSpacing: '1px',
+                    textTransform: 'uppercase',
+                    marginBottom: '4px',
+                  }}
+                >
+                  VALIDATION NOTICE
+                </div>
+                <div
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '12px',
+                    color: '#fff',
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {registrationError}
+                </div>
               </div>
             </div>
-            <div>
-              <div className="ed-micro">SESSION WINDOW</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 700, color: '#fff', marginTop: '2px' }}>
-                {formatModalTime(event.startTime)} — {formatModalTime(event.endTime)}
-              </div>
-            </div>
-            <div>
-              <div className="ed-micro">ADMISSION FORMAT</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 700, color: 'var(--electric-blue)', marginTop: '2px' }}>
-                Individual Registration Pass
-              </div>
-            </div>
-          </div>
+          )}
 
           {/* DYNAMIC FORM FIELDS */}
           {eventFormFields && eventFormFields.length > 0 && (
@@ -718,13 +791,14 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
               {eventFormFields.map((field) => {
                 const isPreFilled = !!preFilledFields[field.fieldDefinitionId];
                 const isEditable = !isPreFilled || editableFields.includes(field.fieldDefinitionId);
+                const fieldError = fieldErrors[field.fieldDefinitionId];
 
                 return (
                 <div key={field.fieldDefinitionId} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <label 
-                    style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700, color: '#a0a4b8', textTransform: 'uppercase', letterSpacing: '1px' }}
+                    style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700, color: fieldError ? 'var(--warm-red, #FF3B30)' : '#a0a4b8', textTransform: 'uppercase', letterSpacing: '1px' }}
                   >
-                    {field.fieldDefinition.label} {field.isRequired && <span style={{ color: 'var(--electric-blue)' }}>*</span>}
+                    {field.fieldDefinition.label} {field.isRequired && <span style={{ color: fieldError ? 'var(--warm-red, #FF3B30)' : 'var(--electric-blue)' }}>*</span>}
                   </label>
                   
                   {isEditable ? (
@@ -736,14 +810,14 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
                             return (
                               <label
                                 key={i}
-                                onClick={() => setFormResponses(prev => ({ ...prev, [field.fieldDefinitionId]: opt }))}
+                                onClick={() => handleFieldResponseChange(field.fieldDefinitionId, opt)}
                                 style={{
                                   display: 'flex',
                                   alignItems: 'center',
                                   gap: '10px',
                                   padding: '8px 12px',
-                                  border: isSelected ? '1px solid var(--electric-blue)' : '1px solid rgba(255,255,255,0.1)',
-                                  background: isSelected ? 'rgba(0,229,255,0.1)' : '#0e1017',
+                                  border: fieldError ? '1px solid var(--warm-red, #FF3B30)' : isSelected ? '1px solid var(--electric-blue)' : '1px solid rgba(255,255,255,0.1)',
+                                  background: fieldError ? 'rgba(255,59,48,0.06)' : isSelected ? 'rgba(0,229,255,0.1)' : '#0e1017',
                                   cursor: 'pointer',
                                   fontFamily: 'var(--font-mono)',
                                   fontSize: '12px',
@@ -756,7 +830,7 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
                                     width: '14px',
                                     height: '14px',
                                     borderRadius: '50%',
-                                    border: isSelected ? '2px solid var(--electric-blue)' : '1px solid rgba(255,255,255,0.3)',
+                                    border: fieldError ? '2px solid var(--warm-red, #FF3B30)' : isSelected ? '2px solid var(--electric-blue)' : '1px solid rgba(255,255,255,0.3)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -788,15 +862,15 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
                                   key={i}
                                   onClick={() => {
                                     const next = isChecked ? selectedList.filter(item => item !== opt) : [...selectedList, opt];
-                                    setFormResponses(prev => ({ ...prev, [field.fieldDefinitionId]: JSON.stringify(next) }));
+                                    handleFieldResponseChange(field.fieldDefinitionId, JSON.stringify(next));
                                   }}
                                   style={{
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '10px',
                                     padding: '8px 12px',
-                                    border: isChecked ? '1px solid var(--electric-blue)' : '1px solid rgba(255,255,255,0.1)',
-                                    background: isChecked ? 'rgba(0,229,255,0.1)' : '#0e1017',
+                                    border: fieldError ? '1px solid var(--warm-red, #FF3B30)' : isChecked ? '1px solid var(--electric-blue)' : '1px solid rgba(255,255,255,0.1)',
+                                    background: fieldError ? 'rgba(255,59,48,0.06)' : isChecked ? 'rgba(0,229,255,0.1)' : '#0e1017',
                                     cursor: 'pointer',
                                     fontFamily: 'var(--font-mono)',
                                     fontSize: '12px',
@@ -808,7 +882,7 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
                                     style={{
                                       width: '14px',
                                       height: '14px',
-                                      border: isChecked ? '2px solid var(--electric-blue)' : '1px solid rgba(255,255,255,0.3)',
+                                      border: fieldError ? '2px solid var(--warm-red, #FF3B30)' : isChecked ? '2px solid var(--electric-blue)' : '1px solid rgba(255,255,255,0.3)',
                                       background: isChecked ? 'var(--electric-blue)' : 'transparent',
                                       display: 'flex',
                                       alignItems: 'center',
@@ -829,8 +903,8 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
                       ) : field.fieldDefinition.fieldType === 'SELECT' ? (
                         <select
                           value={formResponses[field.fieldDefinitionId] || ''}
-                          onChange={(e) => setFormResponses(prev => ({ ...prev, [field.fieldDefinitionId]: e.target.value }))}
-                          className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+                          onChange={(e) => handleFieldResponseChange(field.fieldDefinitionId, e.target.value)}
+                          className={`w-full bg-[#0e1017] border-2 ${fieldError ? 'border-[#FF3B30]' : 'border-white/20'} px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors`}
                           required={field.isRequired}
                           style={{ appearance: 'none' }}
                         >
@@ -848,11 +922,17 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
                             : 'text'
                           }
                           value={formResponses[field.fieldDefinitionId] || ''}
-                          onChange={(e) => setFormResponses(prev => ({ ...prev, [field.fieldDefinitionId]: e.target.value }))}
-                          className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+                          onChange={(e) => handleFieldResponseChange(field.fieldDefinitionId, e.target.value)}
+                          className={`w-full bg-[#0e1017] border-2 ${fieldError ? 'border-[#FF3B30]' : 'border-white/20'} px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors`}
                           required={field.isRequired}
                           placeholder={field.fieldDefinition.fieldType === 'URL' ? 'https://...' : field.fieldDefinition.fieldType === 'PHONE' ? '+1 (555) 000-0000' : ''}
                         />
+                      )}
+                      {fieldError && (
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--warm-red, #FF3B30)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>↳</span>
+                          <span>{fieldError}</span>
+                        </div>
                       )}
                     </>
                   ) : (
@@ -987,6 +1067,8 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
         eventId={eventId}
         isOpen={isTeamGatewayOpen}
         onClose={() => setIsTeamGatewayOpen(false)}
+        isTeamCapacityFull={isTeamCapacityFull}
+        isParticipantCapacityFull={isParticipantCapacityFull}
       />
 
       <div className="ed-page">
@@ -1331,7 +1413,7 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
                                   {team.name}
                                 </h4>
                                 <div className="ed-micro" style={{ marginBottom: '14px' }}>
-                                  STATUS: {team.status || 'ACTIVE'} &bull; {team.member_count} {event.metadata?.maximum_team_size ? `/ ${event.metadata.maximum_team_size}` : ''} MEMBERS
+                                  STATUS: {((team.status === 'FORMING' && typeof event.metadata?.minimum_team_size === 'number' && (team.member_count || 0) >= event.metadata.minimum_team_size) ? 'REGISTERED' : (team.status || 'ACTIVE'))} &bull; {team.member_count} {event.metadata?.maximum_team_size ? `/ ${event.metadata.maximum_team_size}` : ''} MEMBERS
                                 </div>
                                 <Link href={`/student/events/${eventId}/team`} className="ed-cta-btn">
                                   ACCESS TEAM HUB ↗
@@ -1453,19 +1535,50 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
                   )}
 
                   {/* Capacity */}
-                  {event.maxCapacity !== null && typeof registrationCount === 'number' && (
-                    <div className="ed-spec-item">
-                      <Info size={18} style={{ color: 'var(--electric-blue)', flexShrink: 0, marginTop: '2px' }} />
-                      <div>
-                        <div className="ed-micro">CAPACITY METRIC</div>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 700, color: '#fff', marginTop: '2px' }}>
-                          {registrationCount} / {event.maxCapacity}{' '}
-                          <span style={{ fontSize: '11px', color: '#a0a4b8', fontWeight: 400 }}>
-                            {event.registrationType === 'TEAM' ? 'TEAMS' : 'SEATS'}
-                          </span>
+                  {event.registrationType === 'TEAM' ? (
+                    <>
+                      {/* Participant Capacity */}
+                      <div className="ed-spec-item">
+                        <Users size={18} style={{ color: 'var(--electric-blue)', flexShrink: 0, marginTop: '2px' }} />
+                        <div>
+                          <div className="ed-micro">PARTICIPANT CAPACITY</div>
+                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 700, color: '#fff', marginTop: '2px' }}>
+                            {participantCount} / {maxParticipants ?? '∞'}{' '}
+                            <span style={{ fontSize: '11px', color: '#a0a4b8', fontWeight: 400 }}>
+                              PARTICIPANTS
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                      {/* Team Capacity */}
+                      <div className="ed-spec-item">
+                        <Info size={18} style={{ color: 'var(--electric-blue)', flexShrink: 0, marginTop: '2px' }} />
+                        <div>
+                          <div className="ed-micro">TEAM CAPACITY</div>
+                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 700, color: '#fff', marginTop: '2px' }}>
+                            {registrationCount} / {event.maxCapacity ?? '∞'}{' '}
+                            <span style={{ fontSize: '11px', color: '#a0a4b8', fontWeight: 400 }}>
+                              TEAMS
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    event.maxCapacity !== null && typeof registrationCount === 'number' && (
+                      <div className="ed-spec-item">
+                        <Info size={18} style={{ color: 'var(--electric-blue)', flexShrink: 0, marginTop: '2px' }} />
+                        <div>
+                          <div className="ed-micro">CAPACITY METRIC</div>
+                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 700, color: '#fff', marginTop: '2px' }}>
+                            {registrationCount} / {event.maxCapacity}{' '}
+                            <span style={{ fontSize: '11px', color: '#a0a4b8', fontWeight: 400 }}>
+                              SEATS
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )
                   )}
                 </div>
 

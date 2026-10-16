@@ -27,6 +27,8 @@ test('Registration Concurrency Race', async (t) => {
       eventType: 'WORKSHOP',
       startTime: new Date(),
       endTime: new Date(Date.now() + 100000),
+      registrationStartTime: new Date(Date.now() - 3600000),
+      registrationEndTime: new Date(Date.now() + 3600000),
     }
   });
 

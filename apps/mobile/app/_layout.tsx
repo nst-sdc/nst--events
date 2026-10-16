@@ -5,7 +5,9 @@ import { AppQueryProvider } from '../src/providers/QueryProvider';
 import { useNotifications } from '../src/hooks/use-notifications';
 import { useThemeStore } from '../src/store/theme-store';
 import { useAppVersionStore } from '../src/store/app-version-store';
+import { useAuthStore } from '../src/store/auth';
 import { UpdateRequiredPrompt } from '../src/ui/UpdateRequiredPrompt';
+import Constants from 'expo-constants';
 import { useFonts } from 'expo-font';
 import {
   Syne_700Bold,
@@ -30,7 +32,7 @@ if (typeof __DEV__ !== 'undefined' && __DEV__) {
 SplashScreen.preventAutoHideAsync();
 
 function NotificationLifecycle() {
-  if (Platform.OS === 'web') return null;
+  if (Platform.OS === 'web' || Constants.appOwnership === 'expo') return null;
   return <NativeNotificationLifecycle />;
 }
 
@@ -53,13 +55,18 @@ function RootLayoutInner() {
   });
 
   const initTheme = useThemeStore((state) => state.initTheme);
+  const initSession = useAuthStore((state) => state.initSession);
+  const isInitialized = useAuthStore((state) => state.isInitialized);
 
   useEffect(() => {
     if (typeof __DEV__ !== 'undefined' && __DEV__) {
       console.log('[APP BOOT MOUNT] Literal EXPO_PUBLIC_API_URL:', process.env.EXPO_PUBLIC_API_URL);
     }
     initTheme();
-  }, [initTheme]);
+    if (!isInitialized) {
+      initSession();
+    }
+  }, [initTheme, initSession, isInitialized]);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
@@ -76,6 +83,8 @@ function RootLayoutInner() {
     <>
       <NotificationLifecycle />
       <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="splash" />
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(app)" />
       </Stack>

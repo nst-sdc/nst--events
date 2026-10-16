@@ -32,18 +32,18 @@ export function StatusBadge({ status, type = 'default' }: StatusBadgeProps) {
 
     successContainer: {
       backgroundColor: theme.colors.surface,
-      borderColor: theme.colors.primaryFixed,
+      borderColor: theme.colors.success,
     },
     successText: {
-      color: theme.colors.primaryFixed,
+      color: theme.colors.success,
     },
 
     warningContainer: {
       backgroundColor: theme.colors.surface,
-      borderColor: theme.colors.error, // Replaced hardcoded yellow
+      borderColor: theme.colors.warning,
     },
     warningText: {
-      color: theme.colors.error,
+      color: theme.colors.warning,
     },
 
     errorContainer: {
@@ -85,9 +85,11 @@ export function StatusBadge({ status, type = 'default' }: StatusBadgeProps) {
       break;
   }
 
+  const formattedStatus = status.startsWith('[') && status.endsWith(']') ? status : `[${status}]`;
+
   return (
     <View style={[styles.badge, containerStyle]}>
-      <MonoLabel style={[styles.text, textStyle]}>{status}</MonoLabel>
+      <MonoLabel style={[styles.text, textStyle]}>{formattedStatus}</MonoLabel>
     </View>
   );
 }

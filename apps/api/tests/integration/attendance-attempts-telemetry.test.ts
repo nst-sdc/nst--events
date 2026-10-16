@@ -32,6 +32,7 @@ test('Phase 2: Attendance Attempt Telemetry Persistence', async (t) => {
       eventType: 'WORKSHOP',
       createdBy: organizer.id,
       state: 'PUBLISHED',
+      visibility: 'PUBLIC',
       isLocked: false,
     },
   });

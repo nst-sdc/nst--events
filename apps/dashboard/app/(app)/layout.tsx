@@ -58,6 +58,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     // If authenticated and user is loaded, check role
     if (isAuthenticated && user) {
+      if (typeof window !== 'undefined') {
+        const returnTo = window.sessionStorage.getItem('return_to');
+        if (returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//')) {
+          window.sessionStorage.removeItem('return_to');
+          router.replace(returnTo);
+          return;
+        }
+      }
       if (user.global_role === 'STUDENT' && !pathname.startsWith('/student')) {
         router.replace('/student/home');
       }

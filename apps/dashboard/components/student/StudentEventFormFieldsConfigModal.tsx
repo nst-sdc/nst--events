@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, ArrowUp, ArrowDown, Save, Check, X, Sliders, AlertCircle } from 'lucide-react';
-import { useFieldDefinitions, useCreateFieldDefinition, FieldDefinition } from '../../hooks/useFieldDefinitions';
+import { useAttachableFieldDefinitions, useCreateFieldDefinition, FieldDefinition } from '../../hooks/useFieldDefinitions';
 import { useEventForm, useUpdateEventFormFields, EventFormField } from '../../hooks/useEventForms';
 import { Modal } from '../ui/Modal';
+import { generateFieldKey, validateQuestionChoices } from '../../lib/form-studio-utils';
 
 interface StudentEventFormFieldsConfigModalProps {
   eventId: string;
@@ -18,7 +19,7 @@ export function StudentEventFormFieldsConfigModal({
   onClose,
 }: StudentEventFormFieldsConfigModalProps) {
   const { data: formDetails, isLoading: isLoadingForm } = useEventForm(eventId, formId);
-  const { data: allFields, isLoading: isLoadingFields } = useFieldDefinitions();
+  const { data: allFields, isLoading: isLoadingFields } = useAttachableFieldDefinitions();
   const { mutateAsync: updateFields, isPending: isSaving } = useUpdateEventFormFields(eventId);
   const { mutateAsync: createFieldDefinition, isPending: isCreatingField } = useCreateFieldDefinition();
 
@@ -34,6 +35,7 @@ export function StudentEventFormFieldsConfigModal({
   const [newFieldType, setNewFieldType] = useState<string>('TEXT');
   const [newFieldOptions, setNewFieldOptions] = useState('');
   const [newFieldReusable, setNewFieldReusable] = useState(true);
+  const [fieldToRemove, setFieldToRemove] = useState<EventFormField | null>(null);
 
   useEffect(() => {
     if (formDetails?.fields) {
@@ -101,11 +103,27 @@ export function StudentEventFormFieldsConfigModal({
     try {
       await updateFields({
         formId,
-        fields: localFields.map(f => ({
-          fieldDefinitionId: f.fieldDefinitionId,
-          isRequired: f.isRequired,
-          order: f.order,
-        })),
+        fields: localFields.map(f => {
+          const isDraft = !f.fieldDefinitionId || f.fieldDefinitionId.startsWith('draft_');
+          if (!isDraft) {
+            return {
+              fieldDefinitionId: f.fieldDefinitionId,
+              isRequired: f.isRequired,
+              order: f.order,
+            };
+          }
+          return {
+            definition: {
+              key: f.fieldDefinition!.key,
+              label: f.fieldDefinition!.label,
+              fieldType: f.fieldDefinition!.fieldType,
+              options: f.fieldDefinition!.options && f.fieldDefinition!.options.length > 0 ? f.fieldDefinition!.options : undefined,
+              isReusable: f.fieldDefinition!.isReusable ?? true,
+            },
+            isRequired: f.isRequired,
+            order: f.order,
+          };
+        }),
       });
       setSaveSuccess(true);
       setTimeout(() => {
@@ -119,31 +137,62 @@ export function StudentEventFormFieldsConfigModal({
 
   const handleCreateField = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newFieldLabel || !newFieldKey) return;
-
-    try {
-      const created = await createFieldDefinition({
-        label: newFieldLabel,
-        key: newFieldKey.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
-        fieldType: newFieldType as any,
-        options: ['SELECT', 'MULTI_SELECT', 'RADIO'].includes(newFieldType)
-          ? newFieldOptions.split(',').map(s => s.trim()).filter(Boolean)
-          : null,
-        isReusable: newFieldReusable,
-      });
-
-      if (created?.id) {
-        handleAddField(created);
-      }
-
-      setIsCreateFieldOpen(false);
-      setNewFieldLabel('');
-      setNewFieldKey('');
-      setNewFieldType('TEXT');
-      setNewFieldOptions('');
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to create field definition');
+    const rawLabel = newFieldLabel.trim();
+    if (!rawLabel) {
+      setErrorMessage('Field label cannot be empty.');
+      return;
     }
+    if (rawLabel.length > 200) {
+      setErrorMessage('Field label cannot exceed 200 characters.');
+      return;
+    }
+
+    let parsedOptions: string[] | undefined = undefined;
+    if (['SELECT', 'MULTI_SELECT', 'RADIO'].includes(newFieldType)) {
+      const choiceValidation = validateQuestionChoices(newFieldType as any, newFieldOptions);
+      if (!choiceValidation.isValid) {
+        setErrorMessage(choiceValidation.error || 'Invalid choice options.');
+        return;
+      }
+      parsedOptions = choiceValidation.cleanedOptions;
+    }
+
+    const existingKeys = new Set((allFields || []).map((f) => f.key));
+    const generatedKey = newFieldKey.trim()
+      ? newFieldKey.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 50)
+      : generateFieldKey(rawLabel, existingKeys);
+
+    const existingDef = allFields?.find((f) => f.key === generatedKey);
+    const draftDef: FieldDefinition = existingDef || {
+      id: `draft_${generatedKey}`,
+      key: generatedKey,
+      label: rawLabel,
+      fieldType: newFieldType as any,
+      options: parsedOptions && parsedOptions.length > 0 ? parsedOptions : null,
+      isReusable: newFieldReusable,
+      createdByClubId: null,
+      createdAt: new Date().toISOString(),
+    };
+
+    setLocalFields([
+      ...localFields,
+      {
+        id: `draft_field_${generatedKey}`,
+        eventId,
+        formId,
+        fieldDefinitionId: draftDef.id,
+        isRequired: true,
+        order: localFields.length,
+        createdAt: new Date().toISOString(),
+        fieldDefinition: draftDef,
+      },
+    ]);
+
+    setIsCreateFieldOpen(false);
+    setNewFieldLabel('');
+    setNewFieldKey('');
+    setNewFieldType('TEXT');
+    setNewFieldOptions('');
   };
 
   const availableFields =
@@ -163,6 +212,14 @@ export function StudentEventFormFieldsConfigModal({
             {errorMessage}
           </div>
         )}
+
+        {/* IMMUTABILITY BANNER */}
+        <div className="mb-4 p-3 bg-[#0057FF]/10 border border-[#0057FF]/30 flex items-start gap-2.5">
+          <AlertCircle className="w-4 h-4 text-[#00E5FF] shrink-0 mt-0.5" />
+          <p className="font-mono text-[11px] text-[#a0a4b8] leading-relaxed">
+            <strong className="text-white">FIELD DEFINITIONS ARE IMMUTABLE:</strong> Field types, choice options, and machine keys cannot be altered once created to preserve historical responses. You can freely reorder questions, toggle required status, or remove/replace them.
+          </p>
+        </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b-2 border-white/10 mb-6">
           <div>
@@ -267,8 +324,9 @@ export function StudentEventFormFieldsConfigModal({
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleRemoveField(field.fieldDefinitionId)}
+                    onClick={() => setFieldToRemove(field)}
                     className="p-1.5 border border-white/10 hover:border-[#FF3B30] text-[#a0a4b8] hover:text-[#FF3B30] transition-colors"
+                    title="Remove from form"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -471,6 +529,44 @@ export function StudentEventFormFieldsConfigModal({
           </form>
         </Modal>
       )}
+
+      {/* REMOVE FIELD CONFIRMATION MODAL */}
+      <Modal
+        isOpen={!!fieldToRemove}
+        onClose={() => setFieldToRemove(null)}
+        title="REMOVE FIELD"
+        maxWidth="max-w-md"
+      >
+        <div className="p-6 bg-[#0d0e12] text-white space-y-4">
+          <p className="font-mono text-xs text-[#a0a4b8] leading-relaxed">
+            Are you sure you want to remove <span className="text-white font-bold">{fieldToRemove?.fieldDefinition?.label}</span> from this form?
+          </p>
+          <p className="font-mono text-xs text-[#00E5FF] bg-[#00E5FF]/10 p-3 border border-[#00E5FF]/20 leading-relaxed">
+            Any existing responses for this question already submitted by students remain safely preserved in the database.
+          </p>
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setFieldToRemove(null)}
+              className="px-4 py-2 border border-white/20 text-[#a0a4b8] hover:text-white font-mono text-xs uppercase"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (fieldToRemove) {
+                  handleRemoveField(fieldToRemove.fieldDefinitionId);
+                  setFieldToRemove(null);
+                }
+              }}
+              className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-mono text-xs font-bold uppercase tracking-wider"
+            >
+              Confirm Remove
+            </button>
+          </div>
+        </div>
+      </Modal>
     </Modal>
   );
 }

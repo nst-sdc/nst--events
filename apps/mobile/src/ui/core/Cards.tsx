@@ -182,9 +182,70 @@ export function ActiveAttendanceCard({
         disabled={status === 'ATTENDANCE_MARKED'}
       >
         <MonoLabel style={styles.actionText}>
-          {status === 'SCAN_QR' ? '[ MARK ATTENDANCE ]' : 'ATTENDANCE MARKED'}
+          {status === 'SCAN_QR' ? '[ MARK ATTENDANCE ]' : '[ ATTENDANCE MARKED ]'}
         </MonoLabel>
       </TouchableOpacity>
     </TouchableOpacity>
+  );
+}
+
+export interface MatrixCardProps {
+  children: React.ReactNode;
+  style?: ViewStyle;
+}
+
+export function MatrixCard({ children, style }: MatrixCardProps) {
+  const theme = useAppTheme();
+  return (
+    <View
+      style={[
+        {
+          backgroundColor: theme.colors.surfaceContainerLow,
+          borderWidth: 1,
+          borderColor: theme.colors.outlineVariant,
+        },
+        style,
+      ]}
+    >
+      {children}
+    </View>
+  );
+}
+
+export interface LedgerRowProps {
+  label: string;
+  value: React.ReactNode;
+  isLast?: boolean;
+  valueColor?: string;
+  style?: ViewStyle;
+}
+
+export function LedgerRow({ label, value, isLast = false, valueColor, style }: LedgerRowProps) {
+  const theme = useAppTheme();
+  return (
+    <View
+      style={[
+        {
+          padding: theme.spacing.sm,
+          borderBottomWidth: isLast ? 0 : 1,
+          borderBottomColor: theme.colors.outlineVariant,
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        },
+        style,
+      ]}
+    >
+      <MonoLabel style={{ fontSize: 9, color: theme.colors.onSurfaceVariant }}>
+        {label}
+      </MonoLabel>
+      {typeof value === 'string' ? (
+        <Mono style={{ fontSize: 11, color: valueColor || theme.colors.primary, fontFamily: theme.typography.monoMedium }}>
+          {value}
+        </Mono>
+      ) : (
+        value
+      )}
+    </View>
   );
 }

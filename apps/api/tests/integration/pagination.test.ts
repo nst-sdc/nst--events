@@ -15,6 +15,7 @@ describe('Phase 14: Cursor Pagination Stability', () => {
   let userId: string;
   let clubId: string;
   const eventIds: string[] = [];
+  const tempUserIds: string[] = [];
 
   let registrationUserId: string;
   let token: string;
@@ -70,6 +71,7 @@ describe('Phase 14: Cursor Pagination Stability', () => {
       const tempUser = await adminPrisma.user.create({
         data: { email: `reg_${i}@example.com`, googleSub: `sub_${i}`, fullName: `Temp ${i}` }
       });
+      tempUserIds.push(tempUser.id);
       await adminPrisma.eventRegistration.create({
         data: {
           eventId: eventIds[0],
@@ -83,11 +85,13 @@ describe('Phase 14: Cursor Pagination Stability', () => {
   after(async () => {
     // Cleanup
     await adminPrisma.eventRegistration.deleteMany({ where: { eventId: { in: eventIds } } });
-    await adminPrisma.user.deleteMany({ where: { email: { startsWith: 'reg_' } } });
     await adminPrisma.eventClub.deleteMany({ where: { clubId } });
-    await adminPrisma.event.deleteMany({ where: { createdBy: userId } });
+    await adminPrisma.event.deleteMany({ where: { id: { in: eventIds } } });
     await adminPrisma.clubMembership.deleteMany({ where: { clubId } });
     await adminPrisma.club.delete({ where: { id: clubId } });
+    if (tempUserIds.length > 0) {
+      await adminPrisma.user.deleteMany({ where: { id: { in: tempUserIds } } });
+    }
     await adminPrisma.user.delete({ where: { id: userId } });
     await adminPrisma.user.delete({ where: { id: registrationUserId } });
   });

@@ -134,6 +134,44 @@ router.delete(
   }
 );
 
+router.post(
+  '/:eventId/forms/:formId/publish',
+  authenticate,
+  validate(ParamFormIdSchema),
+  canManageEvent((req: Request) => req.params.eventId),
+  async (req, res, next) => {
+    try {
+      const form = await eventFormsService.publishEventForm(
+        req.user!.id,
+        req.params.eventId,
+        req.params.formId
+      );
+      res.json(form);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.post(
+  '/:eventId/forms/:formId/unpublish',
+  authenticate,
+  validate(ParamFormIdSchema),
+  canManageEvent((req: Request) => req.params.eventId),
+  async (req, res, next) => {
+    try {
+      const form = await eventFormsService.unpublishEventForm(
+        req.user!.id,
+        req.params.eventId,
+        req.params.formId
+      );
+      res.json(form);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 router.patch(
   '/:eventId/forms/:formId/fields',
   authenticate,

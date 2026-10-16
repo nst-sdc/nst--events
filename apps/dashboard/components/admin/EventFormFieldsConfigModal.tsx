@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Table, Typography, Space, Form, Select, Switch, Input, Tag, Popconfirm, message } from 'antd';
+import { Modal, Button, Table, Typography, Space, Form, Select, Switch, Input, Tag, Popconfirm, message, Alert } from 'antd';
 import { PlusOutlined, DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
-import { useFieldDefinitions, useCreateFieldDefinition, FieldType, FieldDefinition } from '../../hooks/useFieldDefinitions';
+import { useAttachableFieldDefinitions, useCreateFieldDefinition, FieldType, FieldDefinition } from '../../hooks/useFieldDefinitions';
 import { useEventForm, useUpdateEventFormFields, EventFormField } from '../../hooks/useEventForms';
+import { validateQuestionChoices } from '../../lib/form-studio-utils';
 
 const { Title, Text } = Typography;
 
@@ -20,7 +21,7 @@ export function EventFormFieldsConfigModal({
   onClose,
 }: EventFormFieldsConfigModalProps) {
   const { data: formDetails, isLoading: isLoadingForm } = useEventForm(eventId, formId);
-  const { data: allFields, isLoading: isLoadingAllFields } = useFieldDefinitions();
+  const { data: allFields, isLoading: isLoadingAllFields } = useAttachableFieldDefinitions();
   const { mutateAsync: updateFields, isPending: isSaving } = useUpdateEventFormFields(eventId);
   const { mutateAsync: createFieldDefinition, isPending: isCreatingField } = useCreateFieldDefinition();
 
@@ -93,11 +94,27 @@ export function EventFormFieldsConfigModal({
     try {
       await updateFields({
         formId,
-        fields: localFields.map(f => ({
-          fieldDefinitionId: f.fieldDefinitionId,
-          isRequired: f.isRequired,
-          order: f.order,
-        })),
+        fields: localFields.map(f => {
+          const isDraft = !f.fieldDefinitionId || f.fieldDefinitionId.startsWith('draft_');
+          if (!isDraft) {
+            return {
+              fieldDefinitionId: f.fieldDefinitionId,
+              isRequired: f.isRequired,
+              order: f.order,
+            };
+          }
+          return {
+            definition: {
+              key: f.fieldDefinition!.key,
+              label: f.fieldDefinition!.label,
+              fieldType: f.fieldDefinition!.fieldType,
+              options: f.fieldDefinition!.options && f.fieldDefinition!.options.length > 0 ? f.fieldDefinition!.options : undefined,
+              isReusable: f.fieldDefinition!.isReusable ?? true,
+            },
+            isRequired: f.isRequired,
+            order: f.order,
+          };
+        }),
       });
       message.success('Form fields saved successfully');
       onClose();
@@ -106,23 +123,75 @@ export function EventFormFieldsConfigModal({
     }
   };
 
+  const handleClose = () => {
+    const original = formDetails?.fields || [];
+    const isDirty =
+      original.length !== localFields.length ||
+      localFields.some((f, i) => {
+        const o = original[i];
+        return (
+          !o ||
+          o.fieldDefinitionId !== f.fieldDefinitionId ||
+          o.isRequired !== f.isRequired ||
+          o.order !== f.order
+        );
+      });
+
+    if (!isDirty) {
+      onClose();
+      return;
+    }
+
+    Modal.confirm({
+      title: 'Discard unsaved changes?',
+      content: 'You have unsaved field configuration changes for this form.',
+      okText: 'Discard',
+      okType: 'danger',
+      cancelText: 'Keep editing',
+      onOk: onClose,
+    });
+  };
+
   const handleCreateNewField = async (values: any) => {
     try {
-      const created = await createFieldDefinition({
+      const fieldType = values.fieldType;
+      let cleanedOptions: string[] | undefined = undefined;
+      if (['SELECT', 'MULTI_SELECT', 'RADIO'].includes(fieldType)) {
+        const choiceValidation = validateQuestionChoices(fieldType, values.options);
+        if (!choiceValidation.isValid) {
+          message.error(choiceValidation.error || 'Invalid choices');
+          return;
+        }
+        cleanedOptions = choiceValidation.cleanedOptions;
+      }
+
+      const existingDef = allFields?.find((f) => f.key === values.key);
+      const draftDef: FieldDefinition = existingDef || {
+        id: `draft_${values.key}`,
         key: values.key,
         label: values.label,
         fieldType: values.fieldType,
-        options: values.options ? values.options.split(',').map((s: string) => s.trim()) : null,
-        isReusable: values.isReusable,
-      });
+        options: cleanedOptions && cleanedOptions.length > 0 ? cleanedOptions : null,
+        isReusable: !!values.isReusable,
+        createdByClubId: null,
+        createdAt: new Date().toISOString(),
+      };
 
-      // Automatically add to current form
-      if (created?.id) {
-        handleAddField(created.id);
-      }
+      setLocalFields([
+        ...localFields,
+        {
+          id: `draft_field_${values.key}`,
+          eventId,
+          formId,
+          fieldDefinitionId: draftDef.id,
+          isRequired: true,
+          order: localFields.length,
+          createdAt: new Date().toISOString(),
+          fieldDefinition: draftDef,
+        },
+      ]);
       setIsCreateFieldModalOpen(false);
-      createForm.resetFields();
-      message.success('Custom field definition created');
+      message.success('Custom field added to form (unsaved draft)');
     } catch (err: any) {
       message.error(err.message || 'Failed to create field definition');
     }
@@ -131,7 +200,7 @@ export function EventFormFieldsConfigModal({
   const availableFields =
     allFields?.filter(f => !localFields.some(lf => lf.fieldDefinitionId === f.id)) || [];
 
-  const columns = [
+  const columns: any[] = [
     {
       title: 'Order',
       key: 'order',
@@ -193,12 +262,21 @@ export function EventFormFieldsConfigModal({
       key: 'actions',
       width: 80,
       render: (_: any, record: EventFormField) => (
-        <Button
-          type="text"
-          danger
-          icon={<DeleteOutlined />}
-          onClick={() => handleRemoveField(record.fieldDefinitionId)}
-        />
+        <Popconfirm
+          title="Remove question from form?"
+          description="Historical responses in database are preserved, but this field won't appear in new submissions."
+          onConfirm={() => handleRemoveField(record.fieldDefinitionId)}
+          okText="Remove"
+          cancelText="Cancel"
+          okButtonProps={{ danger: true }}
+        >
+          <Button
+            type="text"
+            danger
+            icon={<DeleteOutlined />}
+            title="Remove from form"
+          />
+        </Popconfirm>
       ),
     },
   ];
@@ -217,10 +295,10 @@ export function EventFormFieldsConfigModal({
           </div>
         }
         open={!!formId}
-        onCancel={onClose}
+        onCancel={handleClose}
         width={820}
         footer={[
-          <Button key="cancel" onClick={onClose}>
+          <Button key="cancel" onClick={handleClose}>
             Cancel
           </Button>,
           <Button key="save" type="primary" loading={isSaving} onClick={handleSave}>
@@ -228,6 +306,14 @@ export function EventFormFieldsConfigModal({
           </Button>,
         ]}
       >
+        <Alert
+          type="info"
+          showIcon
+          title="Field Definitions are Immutable"
+          description="Field types, choice options, and machine keys cannot be modified once created to preserve historical responses. You can reorder questions, toggle required status, or remove/replace them."
+          style={{ marginBottom: 16 }}
+        />
+
         <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Space>
             <Button
@@ -247,7 +333,7 @@ export function EventFormFieldsConfigModal({
           <Text type="secondary">{localFields.length} field{localFields.length === 1 ? '' : 's'} configured</Text>
         </div>
 
-        <Table
+        <Table<EventFormField>
           dataSource={localFields}
           columns={columns}
           rowKey="fieldDefinitionId"
@@ -320,11 +406,11 @@ export function EventFormFieldsConfigModal({
 
       {/* Create New Field Definition Modal */}
       <Modal
+        destroyOnHidden
         title="Create New Field Definition"
         open={isCreateFieldModalOpen}
         onCancel={() => {
           setIsCreateFieldModalOpen(false);
-          createForm.resetFields();
         }}
         onOk={() => createForm.submit()}
         confirmLoading={isCreatingField}

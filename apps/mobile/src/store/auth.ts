@@ -8,6 +8,8 @@ interface AuthState {
   refreshToken: string | null;
   isLoggedIn: boolean;
   isInitialized: boolean;
+  pendingDeepLink: string | null;
+  setPendingDeepLink: (link: string | null) => void;
   initSession: () => Promise<void>;
   setSession: (userId: string, accessToken: string, refreshToken: string) => Promise<void>;
   clearSession: () => Promise<void>;
@@ -26,19 +28,43 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   refreshToken: null,
   isLoggedIn: false,
   isInitialized: false,
+  pendingDeepLink: null,
+  setPendingDeepLink: (pendingDeepLink) => {
+    if (pendingDeepLink) {
+      safeSecureStore.setItemAsync('pending_deep_link', pendingDeepLink).catch(() => {});
+    } else {
+      safeSecureStore.deleteItemAsync('pending_deep_link').catch(() => {});
+    }
+    set({ pendingDeepLink });
+  },
 
   initSession: async () => {
     try {
       const token = await safeSecureStore.getItemAsync('access_token');
       const userId = await safeSecureStore.getItemAsync('user_id');
       const refreshToken = await safeSecureStore.getItemAsync('refresh_token');
+      const persistedPendingDeepLink = await safeSecureStore.getItemAsync('pending_deep_link');
       if (token && userId && refreshToken) {
-        set({ userId, accessToken: token, refreshToken, isLoggedIn: true, isInitialized: true });
+        set({
+          userId,
+          accessToken: token,
+          refreshToken,
+          isLoggedIn: true,
+          isInitialized: true,
+          pendingDeepLink: persistedPendingDeepLink ?? null,
+        });
       } else {
-        set({ userId: null, accessToken: null, refreshToken: null, isLoggedIn: false, isInitialized: true });
+        set({
+          userId: null,
+          accessToken: null,
+          refreshToken: null,
+          isLoggedIn: false,
+          isInitialized: true,
+          pendingDeepLink: persistedPendingDeepLink ?? null,
+        });
       }
     } catch {
-      set({ userId: null, accessToken: null, refreshToken: null, isLoggedIn: false, isInitialized: true });
+      set({ userId: null, accessToken: null, refreshToken: null, isLoggedIn: false, isInitialized: true, pendingDeepLink: null });
     }
   },
 
@@ -53,7 +79,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     await safeSecureStore.deleteItemAsync('access_token');
     await safeSecureStore.deleteItemAsync('user_id');
     await safeSecureStore.deleteItemAsync('refresh_token');
-    set({ userId: null, accessToken: null, refreshToken: null, isLoggedIn: false, isInitialized: true });
+    await safeSecureStore.deleteItemAsync('pending_deep_link');
+    set({ userId: null, accessToken: null, refreshToken: null, isLoggedIn: false, isInitialized: true, pendingDeepLink: null });
   },
 
   /**

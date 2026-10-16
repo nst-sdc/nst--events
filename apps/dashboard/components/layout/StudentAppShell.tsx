@@ -16,9 +16,17 @@ import { StudentFooter } from '../brand/StudentFooter';
 
 const studentNavItems = [
   { label: 'Home', href: '/student/home', icon: Home },
+  { label: 'Events', href: '/', icon: Calendar },
   { label: 'Campus', href: '/student/campus', icon: Compass, exactMatch: false },
   { label: 'My Events', href: '/student/events', icon: Calendar },
+  { label: 'Projects', href: '/projects', icon: Compass, exactMatch: false },
   { label: 'Profile', href: '/student/profile', icon: User, exactMatch: false },
+];
+
+const publicNavItems = [
+  { label: 'Events', href: '/', icon: Calendar },
+  { label: 'Projects', href: '/projects', icon: Compass, exactMatch: false },
+  { label: 'Sign In', href: '/login', icon: User },
 ];
 
 const adminNavItems = [
@@ -30,13 +38,16 @@ import { useRealtimeNotifications } from '../../hooks/useRealtimeNotifications';
 
 export function StudentAppShell({ children }: { children: React.ReactNode }) {
   useRealtimeNotifications();
-  const pathname = usePathname();
+  const pathname = (typeof usePathname === 'function' ? usePathname() : '') || '';
   const { data: user, isLoading: isUserLoading } = useCurrentUser();
   const { isClubAdminMode } = useClubAdmin();
 
-  const navItems = isClubAdminMode ? adminNavItems : studentNavItems;
+  const navItems = isClubAdminMode ? adminNavItems : (user ? studentNavItems : publicNavItems);
 
   const isActive = (item: { href: string; exactMatch?: boolean }) => {
+    if (item.href === '/') {
+      return pathname === '/' || pathname.startsWith('/event/');
+    }
     if (item.exactMatch === false) {
       return pathname === item.href || pathname.startsWith(`${item.href}/`);
     }
@@ -50,6 +61,8 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
   const isEditorial = pathname.startsWith('/student');
   const rawFirstName = user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'STUDENT';
   const displayFirstName = rawFirstName.toUpperCase();
+
+  const logoTargetHref = isClubAdminMode ? '/student/manage/club' : (user ? '/student/home' : '/');
 
   return (
     <div className="min-h-screen flex flex-col font-sans pb-[64px] md:pb-0 bg-[#050505] text-[#F5F5F2]">
@@ -65,7 +78,7 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
             ) : null}
             <Link
               aria-label="NST Events Home"
-              href={isClubAdminMode ? "/student/manage/club" : "/student/home"}
+              href={logoTargetHref}
               className={clsx(
                 "flex items-center gap-3 transition-opacity hover:opacity-90",
                 isDeepRoute ? "hidden md:flex" : "flex"
@@ -91,51 +104,99 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-8">
             <nav aria-label="Main Navigation" className="hidden md:flex items-center gap-7 font-['JetBrains_Mono',monospace] text-[11px] font-bold uppercase tracking-[1.5px]">
               {!isClubAdminMode ? (
-                <>
-                  <Link
-                    aria-current={isActive({ href: '/student/home' }) ? 'page' : undefined}
-                    href="/student/home"
-                    className={clsx(
-                      "transition-colors duration-200", 
-                      isActive({ href: '/student/home' }) ? "text-[#0057FF]" : "text-[#a0a4b8] hover:text-[#0057FF]"
-                    )}
-                  >
-                    HOME
-                  </Link>
-                  
-                  {/* Campus Dropdown */}
-                  <div className="relative group">
-                    <Link 
-                      href="/student/campus" 
+                user ? (
+                  <>
+                    <Link
+                      aria-current={isActive({ href: '/student/home' }) ? 'page' : undefined}
+                      href="/student/home"
                       className={clsx(
-                        "flex items-center gap-1 transition-colors relative z-10",
-                        isCampusActive ? "text-[#0057FF]" : "text-[#a0a4b8] hover:text-[#0057FF]"
+                        "transition-colors duration-200", 
+                        isActive({ href: '/student/home' }) ? "text-[#0057FF]" : "text-[#a0a4b8] hover:text-[#0057FF]"
                       )}
                     >
-                      CAMPUS &darr;
+                      HOME
+                    </Link>
+
+                    <Link
+                      aria-current={isActive({ href: '/' }) ? 'page' : undefined}
+                      href="/"
+                      className={clsx(
+                        "transition-colors duration-200", 
+                        isActive({ href: '/' }) ? "text-[#0057FF]" : "text-[#a0a4b8] hover:text-[#0057FF]"
+                      )}
+                    >
+                      EVENTS
                     </Link>
                     
-                    {/* Nested Menu Container with transparent spacer for unbroken hit area */}
-                    <div className="absolute top-full left-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                      <div className="w-48 bg-[#0d0e12] border-2 border-[#000000] shadow-[4px_4px_0px_#0057FF]">
-                        <Link href="/student/campus/discover" className="block px-4 py-2.5 text-[11px] text-[#a0a4b8] hover:text-[#ffffff] hover:bg-[#0057FF] border-b border-[#222] transition-colors">DISCOVER</Link>
-                        <Link href="/student/campus/leaderboard" className="block px-4 py-2.5 text-[11px] text-[#a0a4b8] hover:text-[#ffffff] hover:bg-[#0057FF] border-b border-[#222] transition-colors">LEADERBOARD</Link>
-                        <Link href="/student/campus/clubs" className="block px-4 py-2.5 text-[11px] text-[#a0a4b8] hover:text-[#ffffff] hover:bg-[#0057FF] transition-colors">CLUBS</Link>
+                    {/* Campus Dropdown */}
+                    <div className="relative group">
+                      <Link 
+                        href="/student/campus" 
+                        className={clsx(
+                          "flex items-center gap-1 transition-colors relative z-10",
+                          isCampusActive ? "text-[#0057FF]" : "text-[#a0a4b8] hover:text-[#0057FF]"
+                        )}
+                      >
+                        CAMPUS &darr;
+                      </Link>
+                      
+                      {/* Nested Menu Container with transparent spacer for unbroken hit area */}
+                      <div className="absolute top-full left-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                        <div className="w-48 bg-[#0d0e12] border-2 border-[#000000] shadow-[4px_4px_0px_#0057FF]">
+                          <Link href="/student/campus/discover" className="block px-4 py-2.5 text-[11px] text-[#a0a4b8] hover:text-[#ffffff] hover:bg-[#0057FF] border-b border-[#222] transition-colors">DISCOVER</Link>
+                          <Link href="/student/campus/leaderboard" className="block px-4 py-2.5 text-[11px] text-[#a0a4b8] hover:text-[#ffffff] hover:bg-[#0057FF] border-b border-[#222] transition-colors">LEADERBOARD</Link>
+                          <Link href="/student/campus/clubs" className="block px-4 py-2.5 text-[11px] text-[#a0a4b8] hover:text-[#ffffff] hover:bg-[#0057FF] transition-colors">CLUBS</Link>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <Link
-                    aria-current={isActive({ href: '/student/events' }) ? 'page' : undefined}
-                    href="/student/events"
-                    className={clsx(
-                      "transition-colors duration-200", 
-                      isActive({ href: '/student/events' }) ? "text-[#0057FF]" : "text-[#a0a4b8] hover:text-[#0057FF]"
-                    )}
-                  >
-                    MY EVENTS
-                  </Link>
-                </>
+                    <Link
+                      aria-current={isActive({ href: '/student/events' }) ? 'page' : undefined}
+                      href="/student/events"
+                      className={clsx(
+                        "transition-colors duration-200", 
+                        isActive({ href: '/student/events' }) ? "text-[#0057FF]" : "text-[#a0a4b8] hover:text-[#0057FF]"
+                      )}
+                    >
+                      MY EVENTS
+                    </Link>
+
+                    <Link
+                      aria-current={isActive({ href: '/projects', exactMatch: false }) ? 'page' : undefined}
+                      href="/projects"
+                      className={clsx(
+                        "transition-colors duration-200", 
+                        isActive({ href: '/projects', exactMatch: false }) ? "text-[#0057FF]" : "text-[#a0a4b8] hover:text-[#0057FF]"
+                      )}
+                    >
+                      PROJECTS
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      aria-current={isActive({ href: '/' }) ? 'page' : undefined}
+                      href="/"
+                      className={clsx(
+                        "transition-colors duration-200", 
+                        isActive({ href: '/' }) ? "text-[#0057FF]" : "text-[#a0a4b8] hover:text-[#0057FF]"
+                      )}
+                    >
+                      EVENTS
+                    </Link>
+
+                    <Link
+                      aria-current={isActive({ href: '/projects', exactMatch: false }) ? 'page' : undefined}
+                      href="/projects"
+                      className={clsx(
+                        "transition-colors duration-200", 
+                        isActive({ href: '/projects', exactMatch: false }) ? "text-[#0057FF]" : "text-[#a0a4b8] hover:text-[#0057FF]"
+                      )}
+                    >
+                      PROJECTS
+                    </Link>
+                  </>
+                )
               ) : (
                 <>
                   <Link aria-current={isActive({ href: '/student/manage/club' }) ? 'page' : undefined} href="/student/manage/club" className={clsx(
@@ -160,12 +221,20 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
               {/* Notifications */}
               <StudentNotificationPopover />
 
-              {/* User Badge (hidden on reduced screen sizes) */}
-              <Link aria-label="User Profile" href="/student/profile" className="hidden md:flex items-center gap-2 group">
-                <div className="font-['JetBrains_Mono',monospace] text-[11px] font-bold tracking-wider text-[#ffffff] bg-[#0057FF] px-3.5 py-1.5 uppercase shadow-[3px_3px_0px_#ffffff] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5">
-                  {displayFirstName}
-                </div>
-              </Link>
+              {/* User Badge or Sign In button */}
+              {user ? (
+                <Link aria-label="User Profile" href="/student/profile" className="hidden md:flex items-center gap-2 group">
+                  <div className="font-['JetBrains_Mono',monospace] text-[11px] font-bold tracking-wider text-[#ffffff] bg-[#0057FF] px-3.5 py-1.5 uppercase shadow-[3px_3px_0px_#ffffff] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5">
+                    {displayFirstName}
+                  </div>
+                </Link>
+              ) : (
+                <Link aria-label="Sign In" href="/login" className="hidden md:flex items-center gap-2 group">
+                  <div className="font-['JetBrains_Mono',monospace] text-[11px] font-bold tracking-wider text-[#ffffff] bg-[#0057FF] px-3.5 py-1.5 uppercase shadow-[3px_3px_0px_#ffffff] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5">
+                    SIGN IN
+                  </div>
+                </Link>
+              )}
             </div>
           </div>
         </div>

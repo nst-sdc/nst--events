@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 const getApiBaseUrl = () => {
@@ -7,6 +8,16 @@ const getApiBaseUrl = () => {
   if (typeof __DEV__ !== 'undefined' && !__DEV__) {
     return process.env.EXPO_PUBLIC_PROD_API_URL || 'https://events.nstsdc.org';
   }
+
+  // If running in development on a physical device, dynamically infer host from Metro bundler IP
+  const hostUri = Constants.expoConfig?.hostUri;
+  if (hostUri) {
+    const hostIp = hostUri.split(':')[0];
+    if (hostIp && hostIp !== 'localhost' && hostIp !== '127.0.0.1') {
+      return `http://${hostIp}:3001`;
+    }
+  }
+
   if (Platform.OS === 'android') {
     // Android emulator communicates via adb reverse tunnel on localhost:3001
     return 'http://localhost:3001';

@@ -9,8 +9,12 @@ export class FieldDefinitionsService {
    * Creates a new reusable field definition.
    * Can be created by platform admins or club admins/core members.
    */
-  async createFieldDefinition(data: CreateFieldDefinitionData & { createdByClubId?: string }) {
-    return this.db.fieldDefinition.create({
+  async createFieldDefinition(
+    data: CreateFieldDefinitionData & { createdByClubId?: string },
+    tx?: Prisma.TransactionClient | PrismaClient
+  ) {
+    const client = tx || this.db;
+    return client.fieldDefinition.create({
       data: {
         key: data.key,
         label: data.label,

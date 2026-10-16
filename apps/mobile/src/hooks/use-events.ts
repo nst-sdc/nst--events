@@ -14,7 +14,9 @@ export interface EventResponse {
   attendanceType: string;
   state: string;
   maxCapacity: number | null;
+  maxParticipants?: number | null;
   registrationCount: number;
+  participantCount?: number;
   audience: string;
   registrationStartTime?: string | null;
   registrationEndTime?: string | null;
@@ -44,15 +46,33 @@ export interface EventsResponse {
   };
 }
 
-export function useEvents() {
+export interface UseEventsParams {
+  q?: string;
+  category?: string;
+  clubId?: string;
+}
+
+export function useEvents(params?: UseEventsParams) {
+  const q = params?.q?.trim() || '';
+  const category = params?.category && params.category !== 'ALL' ? params.category : '';
+  const clubId = params?.clubId?.trim() || '';
+
   return useInfiniteQuery<EventsResponse, Error>({
-    queryKey: ['events'],
-    queryFn: ({ pageParam }) => {
-      const url = pageParam ? `/v1/events?cursor=${pageParam}` : '/v1/events';
-      return apiClient(url);
+    queryKey: ['events', { q, category, clubId }],
+    queryFn: async ({ pageParam }) => {
+      const searchParams = new URLSearchParams();
+      if (pageParam) searchParams.append('cursor', pageParam as string);
+      if (q) searchParams.append('q', q);
+      if (category) searchParams.append('filter_event_type', category);
+      if (clubId) searchParams.append('filter_club_id', clubId);
+
+      const qs = searchParams.toString();
+      const url = qs ? `/v1/events?${qs}` : '/v1/events';
+      const response = await apiClient(url);
+      return response as EventsResponse;
     },
     initialPageParam: undefined,
-    getNextPageParam: (lastPage) => lastPage.pagination.next_cursor || undefined,
+    getNextPageParam: (lastPage) => lastPage?.pagination?.next_cursor || undefined,
     staleTime: 5 * 60 * 1000,
   });
 }

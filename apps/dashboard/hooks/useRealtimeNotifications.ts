@@ -11,7 +11,7 @@ export function useRealtimeNotifications() {
     const accessToken = getWebAuthStore().accessToken;
     
     // Only connect if the user is authenticated
-    if (!accessToken) {
+    if (!accessToken || typeof EventSource === 'undefined') {
       return;
     }
 

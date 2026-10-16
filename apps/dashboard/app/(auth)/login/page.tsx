@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect, useState, useMemo, Suspense } from 'react';
+import React, { useEffect, useState, useMemo, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { ArrowRight, ShieldCheck, Lock, Activity } from 'lucide-react';
 import { getWebAuthStore } from '../../../lib/auth-store';
 import { API_BASE_URL } from '../../../lib/api';
 import { DevClubCreditsModal } from '../../../components/brand/DevClubCreditsModal';
@@ -96,231 +97,49 @@ function GoogleIcon({ className = 'w-4 h-4' }: { className?: string }) {
   );
 }
 
-const loginStyles = `
+const responsiveStyles = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&family=Outfit:wght@400;700;900&family=Syne:wght@700;800;900&display=swap');
 
-  :root {
-    --bg-black: #050505;
-    --bg-paper-white: #F5F5F2;
-    --bg-dark-card: #0d0e12;
-    --electric-blue: #0057FF;
-    --acid-green: #C8FF00;
-    --warm-red: #FF3B30;
+  .lp-login-btn {
+    background-color: #0057FF !important;
+    color: #FFFFFF !important;
+    border: 2px solid #000000 !important;
+    box-shadow: 5px 5px 0px #C8FF00;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+  }
+  .lp-login-btn:hover:not(:disabled) {
+    transform: translate(-2px, -2px);
+    box-shadow: 7px 7px 0px #C8FF00;
+    filter: brightness(1.08);
+  }
+  .lp-login-btn:active:not(:disabled) {
+    transform: translate(1px, 1px);
+    box-shadow: 3px 3px 0px #C8FF00;
+  }
+  .lp-login-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
   }
 
-  /* ── Card wrapper ── */
-  .lp-card-shell {
-    width: 100%;
-    max-width: 520px;
-    position: relative;
-    margin: 0 auto;
-  }
-
-  /* Main poster card — dark mode brutalist */
-  .lp-card {
-    background: var(--bg-dark-card);
-    color: var(--bg-paper-white);
-    border: 3px solid rgba(245,245,242,0.18);
-    padding: 44px 40px;
-    box-shadow: 12px 12px 0px var(--electric-blue);
-    position: relative;
-    z-index: 2;
-    width: 100%;
-  }
-
-  /* ── Typography ── */
-  .lp-mono {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.13em;
-    text-transform: uppercase;
-    color: #a0a4b8;
-  }
-
-  .lp-mono-blue { color: var(--electric-blue); }
-  .lp-mono-green { color: var(--acid-green); }
-
-  /* "ACCESS STUDENT PORTAL" — Syne 900 */
-  .lp-headline {
-    font-family: 'Syne', sans-serif;
+  .lp-title-responsive {
+    font-family: var(--font-syne), 'Syne', sans-serif;
     font-weight: 900;
-    font-size: 38px;
-    line-height: 0.95;
+    font-size: clamp(24px, 7vw, 42px);
+    line-height: 1.02;
     letter-spacing: -0.02em;
     text-transform: uppercase;
-    color: #ffffff;
-    margin: 0;
+    color: #FFFFFF;
+    word-break: keep-all;
+    overflow-wrap: normal;
   }
 
-  /* Sub-labels like "NST EVENTS • NEWTON…" */
-  .lp-outfit-label {
-    font-family: 'Outfit', sans-serif;
-    font-weight: 700;
-    font-size: 11px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+  @media (max-width: 480px) {
+    .lp-card-responsive {
+      box-shadow: 7px 7px 0px #0057FF !important;
+    }
   }
-
-  .lp-body {
-    font-family: 'Inter', sans-serif;
-    font-size: 13px;
-    color: #a0a4b8;
-    line-height: 1.6;
-  }
-  .lp-body strong {
-    color: var(--bg-paper-white);
-  }
-
-  /* ── Primary CTA ── */
-  .lp-btn-google {
-    width: 100%;
-    height: 52px;
-    background: var(--electric-blue);
-    color: #fff;
-    border: 2px solid #000;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    cursor: pointer;
-    transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
-    box-shadow: 4px 4px 0px var(--acid-green);
-    margin-bottom: 10px;
-  }
-  .lp-btn-google:hover:not(:disabled) {
-    transform: translate(-2px, -2px);
-    box-shadow: 6px 6px 0px var(--acid-green);
-    filter: brightness(1.1);
-  }
-  .lp-btn-google:active:not(:disabled) {
-    transform: translate(1px, 1px);
-    box-shadow: 2px 2px 0px var(--acid-green);
-  }
-  .lp-btn-google:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
-
-
-
-  .lp-google-icon-wrap {
-    width: 22px; height: 22px;
-    background: #fff;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-    border-radius: 2px;
-  }
-
-
-  /* ── Error block ── */
-  .lp-error {
-    border: 2px solid var(--warm-red);
-    background: rgba(255, 59, 48, 0.08);
-    padding: 16px;
-    margin-bottom: 24px;
-    position: relative;
-  }
-  .lp-error-hd {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-bottom: 12px;
-    border-bottom: 1px solid rgba(255, 59, 48, 0.3);
-    margin-bottom: 12px;
-  }
-  .lp-error-badge {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px; font-weight: 700;
-    letter-spacing: 0.12em; text-transform: uppercase; color: var(--warm-red);
-    display: flex; align-items: center; gap: 8px;
-  }
-  .lp-error-dismiss {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 9px; font-weight: 700;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--warm-red); background: transparent;
-    border: 1px solid var(--warm-red); padding: 4px 8px;
-    cursor: pointer; transition: all 0.15s;
-  }
-  .lp-error-dismiss:hover { background: var(--warm-red); color: #fff; }
-  .lp-error-title {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px; font-weight: 700;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    color: #ff8a84; margin-bottom: 6px;
-  }
-  .lp-error-msg  { font-family: 'Inter', sans-serif; font-size: 13px; color: #ffb3af; line-height: 1.5; margin-bottom: 8px; }
-  .lp-error-detail { font-family: 'Inter', sans-serif; font-size: 12px; color: #d67a76; opacity: 0.9; line-height: 1.5; }
-  
-  .lp-error-action {
-    width: 100%; padding: 10px 12px; margin-top: 12px;
-    background: var(--warm-red); color: #fff; border: 2px solid #000;
-    font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
-    transition: transform 0.15s, box-shadow 0.15s;
-    box-shadow: 2px 2px 0px #000;
-  }
-  .lp-error-action:hover { 
-    transform: translate(-1px, -1px);
-    box-shadow: 3px 3px 0px #000;
-  }
-  .lp-error-outline {
-    width: 100%; padding: 10px 12px; margin-top: 8px;
-    background: transparent; color: var(--warm-red);
-    border: 1.5px solid var(--warm-red);
-    font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    cursor: pointer; transition: all 0.15s;
-  }
-  .lp-error-outline:hover { background: rgba(255, 59, 48, 0.1); }
-  .lp-error-note {
-    font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--warm-red);
-    opacity: 0.8; letter-spacing: 0.08em; text-transform: uppercase;
-    line-height: 1.5; margin-top: 12px; padding-top: 10px;
-    border-top: 1px dashed rgba(255, 59, 48, 0.3);
-  }
-
-  /* ── Footer ── */
-  .lp-footer {
-    margin-top: 28px;
-    padding-top: 20px;
-    border-top: 2px dashed rgba(245,245,242,0.15);
-    text-align: center;
-  }
-  .lp-footer-p {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 9px; font-weight: 700;
-    letter-spacing: 0.12em; text-transform: uppercase;
-    color: #888; margin-bottom: 6px;
-  }
-  .lp-footer-s {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 8px; letter-spacing: 0.1em;
-    text-transform: uppercase; color: #555; margin-bottom: 12px;
-  }
-  .lp-footer-link {
-    font-family: 'Outfit', sans-serif;
-    font-size: 11px; font-weight: 700;
-    color: var(--electric-blue); cursor: pointer;
-    text-decoration: none; border-bottom: 1px dashed var(--electric-blue);
-    background: none; border-top: none; border-left: none; border-right: none; padding: 0; letter-spacing: 0.04em;
-    transition: color 0.15s, border-color 0.15s;
-  }
-  .lp-footer-link:hover { color: var(--acid-green); border-color: var(--acid-green); }
-
-  /* ── Spinner ── */
-  .lp-spin {
-    width: 14px; height: 14px;
-    border: 2px solid rgba(255,255,255,0.25);
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: lp-rotate 0.7s linear infinite;
-  }
-  @keyframes lp-rotate { to { transform: rotate(360deg); } }
 `;
 
 function LoginContent() {
@@ -329,9 +148,17 @@ function LoginContent() {
   const store = getWebAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [isCreditsOpen, setIsCreditsOpen] = useState(false);
-  const lastLoginClickRef = React.useRef<number>(0);
+  const [pulseTick, setPulseTick] = useState(0);
+  const lastLoginClickRef = useRef<number>(0);
   const [isDismissed, setIsDismissed] = useState(false);
   const [prevErrorParam, setPrevErrorParam] = useState<string | null>(null);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setPulseTick((prev) => (prev + 1) % 100);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const errorParam = searchParams.get('error');
   if (errorParam !== prevErrorParam) {
@@ -386,7 +213,6 @@ function LoginContent() {
     window.location.href = `${authBase}/auth/google`;
   };
 
-
   const handleDismissError = () => {
     setIsDismissed(true);
     const params = new URLSearchParams(searchParams.toString());
@@ -403,102 +229,190 @@ function LoginContent() {
     window.location.href = `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
   };
 
-
   return (
     <>
       <style href="login-styles" precedence="high">
-        {loginStyles}
+        {responsiveStyles}
       </style>
 
-      <div className="lp-card-shell">
-        {/* Main poster card */}
-        <div className="lp-card">
+      {/* Top Branding / Environment Strip */}
+      <div className="relative z-10 w-full max-w-xl mb-3 sm:mb-4 flex items-center justify-between font-mono text-[10px] sm:text-[11px] text-[#71768a] px-1 tracking-wider uppercase">
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0057FF] opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#0057FF]"></span>
+          </span>
+          <span className="font-semibold text-[#a0a4b8]">NST EVENTS PLATFORM</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-[#5e6378]">
+          <Activity className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#0057FF]" />
+          <span className="hidden xs:inline">AUTH_GATEWAY_ACTIVE</span>
+          <span className="xs:hidden">ACTIVE</span>
+        </div>
+      </div>
 
-          {/* ── Top annotations ── */}
-          <div className="lp-mono" style={{ marginBottom: 4 }}>AUTH GATEWAY // NST-NET</div>
-          <div className="lp-outfit-label lp-mono-blue" style={{ marginBottom: 24 }}>
-            NST EVENTS &bull; NEWTON SCHOOL OF TECHNOLOGY
+      {/* Main Brutalist Poster Card */}
+      <div className="lp-card-responsive relative z-10 w-full max-w-xl bg-[#0c0d12]/95 border-2 border-white/20 p-4 sm:p-7 md:p-10 shadow-[12px_12px_0px_#0057FF] backdrop-blur-xl">
+        {/* Tactical Corner Crosshairs */}
+        <div className="absolute -top-1.5 -left-1.5 w-2.5 h-2.5 sm:w-3 sm:h-3 border-t-2 border-l-2 border-[#C8FF00]" />
+        <div className="absolute -top-1.5 -right-1.5 w-2.5 h-2.5 sm:w-3 sm:h-3 border-t-2 border-r-2 border-[#C8FF00]" />
+        <div className="absolute -bottom-1.5 -left-1.5 w-2.5 h-2.5 sm:w-3 sm:h-3 border-b-2 border-l-2 border-[#0057FF]" />
+        <div className="absolute -bottom-1.5 -right-1.5 w-2.5 h-2.5 sm:w-3 sm:h-3 border-b-2 border-r-2 border-[#0057FF]" />
+
+        {/* Card Header: System Status Bar */}
+        <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-2 border-b border-white/10 pb-3 sm:pb-4 mb-4 sm:mb-6">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 bg-[#0057FF] inline-block animate-pulse shrink-0"></span>
+            <span className="font-mono text-[10px] sm:text-[11px] font-bold tracking-[1.5px] sm:tracking-[2px] uppercase text-[#0057FF]">
+              AUTH GATEWAY // PROTOCOL SEC-02
+            </span>
           </div>
+          <span className="font-mono text-[9px] sm:text-[10px] text-[#C8FF00] uppercase tracking-widest bg-[#C8FF00]/10 px-2 py-0.5 border border-[#C8FF00]/30 font-semibold shrink-0">
+            INSTITUTIONAL SSO
+          </span>
+        </div>
 
-          {/* ── Divider + Headline ── */}
-          <div style={{ borderBottom: '2px solid rgba(245,245,242,0.18)', paddingBottom: 20, marginBottom: 24 }}>
-            <div className="lp-mono" style={{ color: '#fff', marginBottom: 10 }}>
-              IDENTITY VERIFICATION // SEC-02
-            </div>
-            <h1 className="lp-headline">
-              ACCESS<br />STUDENT<br />PORTAL
-            </h1>
+        {/* Main Headline */}
+        <div className="mb-4 sm:mb-6">
+          <div className="font-mono text-[10px] sm:text-[11px] font-bold tracking-[0.16em] sm:tracking-[0.2em] text-[#0057FF] uppercase mb-1.5 flex items-center gap-1.5 sm:gap-2">
+            <span className="inline-block w-2 sm:w-2.5 h-0.5 bg-[#0057FF]" />
+            IDENTITY VERIFICATION &bull; NEWTON SCHOOL OF TECHNOLOGY
           </div>
+          <h1 className="lp-title-responsive">
+            ACCESS<br className="block sm:hidden" /> STUDENT PORTAL
+          </h1>
+        </div>
 
-          {/* ── Body copy ── */}
-          <p className="lp-body" style={{ marginBottom: 24 }}>
-            Sign in with your institutional{' '}
-            <strong>@adypu.edu.in</strong> or{' '}
-            <strong>@newtonschool.co</strong>{' '}
-            account to synchronize: attendance, event registrations, and club management.
+        {/* Primary Explanation Box */}
+        <div className="p-3.5 sm:p-4 bg-white/[0.03] border border-white/10 mb-4 sm:mb-6 font-mono text-[11px] sm:text-xs text-[#a0a4b8] leading-relaxed">
+          <p className="mb-2.5 sm:mb-3 text-[#d0d4e4]">
+            Sign in with your verified institutional Google account to synchronize event attendance, ticket passes, and club leadership roles.
           </p>
+          <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-[#C8FF00]">
+            <ShieldCheck className="w-4 h-4 text-[#C8FF00] shrink-0" />
+            <span>Authorized: @adypu.edu.in (students) &bull; @newtonschool.co (faculty)</span>
+          </div>
+        </div>
 
-          {/* ── Auth Error Block ── */}
-          {authError && (
-            <div className="lp-error">
-              <div className="lp-error-hd">
-                <div className="lp-error-badge">
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--warm-red)', display: 'inline-block', flexShrink: 0 }} />
-                  {authError.badge}
-                </div>
-                <button type="button" className="lp-error-dismiss" onClick={handleDismissError} aria-label="Dismiss error">
-                  DISMISS [×]
-                </button>
+        {/* Auth Error Banner */}
+        {authError && (
+          <div className="p-3.5 sm:p-4 bg-red-950/20 border-2 border-[#FF3B30] mb-4 sm:mb-6 font-mono text-[11px] sm:text-xs text-[#ffb3af] relative">
+            <div className="flex items-center justify-between border-b border-[#FF3B30]/30 pb-2 mb-2.5">
+              <div className="flex items-center gap-2 text-[#FF3B30] font-bold tracking-wider text-[10px] uppercase">
+                <span className="w-2 h-2 rounded-full bg-[#FF3B30] inline-block animate-ping" />
+                {authError.badge}
               </div>
-              <div className="lp-error-title">{authError.title}</div>
-              <div className="lp-error-msg">{authError.message}</div>
-              <div className="lp-error-detail">{authError.detail}</div>
-              {authError.canSwitchAccount && (
-                <button type="button" className="lp-error-action" onClick={handleLogin} disabled={isLoading}>
-                  <GoogleIcon className="w-3.5 h-3.5" />
-                  SWITCH GOOGLE ACCOUNT
-                </button>
-              )}
-              {authError.canContactCoordinator && (
-                <button type="button" className="lp-error-outline" onClick={handleContactCoordinator}>
-                  CONTACT ACADEMIC COORDINATOR
-                </button>
-              )}
-              <div className="lp-error-note">
-                NOTE: If Google signs you in automatically without prompting, sign out at accounts.google.com or use private browsing.
-              </div>
+              <button
+                type="button"
+                onClick={handleDismissError}
+                aria-label="Dismiss error"
+                className="text-[9px] font-bold text-[#FF3B30] hover:text-white border border-[#FF3B30]/50 hover:bg-[#FF3B30] px-2 py-0.5 transition-colors uppercase cursor-pointer"
+              >
+                DISMISS [×]
+              </button>
             </div>
-          )}
+            <div className="font-bold text-[#ff8a84] text-[11px] uppercase tracking-wide mb-1">
+              {authError.title}
+            </div>
+            <p className="font-sans text-xs text-[#ffb3af] mb-1.5 leading-relaxed">
+              {authError.message}
+            </p>
+            <p className="font-sans text-[11px] text-[#d67a76] leading-relaxed mb-3">
+              {authError.detail}
+            </p>
+            {authError.canSwitchAccount && (
+              <button
+                type="button"
+                onClick={handleLogin}
+                disabled={isLoading}
+                className="w-full py-2.5 px-3 bg-[#FF3B30] text-white border-2 border-black font-mono text-[10px] font-bold tracking-wider uppercase flex items-center justify-center gap-2 shadow-[2px_2px_0px_#000] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_#000] transition-all cursor-pointer mb-2 disabled:opacity-50"
+              >
+                <GoogleIcon className="w-3.5 h-3.5" />
+                SWITCH GOOGLE ACCOUNT
+              </button>
+            )}
+            {authError.canContactCoordinator && (
+              <button
+                type="button"
+                onClick={handleContactCoordinator}
+                className="w-full py-2 px-3 bg-transparent text-[#FF3B30] hover:bg-[#FF3B30]/10 border border-[#FF3B30] font-mono text-[10px] font-bold tracking-wider uppercase transition-colors cursor-pointer"
+              >
+                CONTACT ACADEMIC COORDINATOR
+              </button>
+            )}
+            <div className="text-[9px] text-[#FF3B30]/80 uppercase tracking-wider mt-2.5 pt-2 border-t border-dashed border-[#FF3B30]/30 leading-normal">
+              NOTE: If Google signs you in automatically without prompting, sign out at accounts.google.com or use private browsing.
+            </div>
+          </div>
+        )}
 
-          {/* ── Primary CTA ── */}
+        {/* Status Telemetry Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 mb-5 sm:mb-7 font-mono text-xs">
+          <div className="p-2.5 sm:p-3 bg-black/40 border border-white/10 flex flex-col gap-1">
+            <div className="text-[10px] text-[#6b7280] uppercase tracking-wider flex items-center gap-1.5">
+              <Lock className="w-3 h-3 text-[#0057FF] shrink-0" />
+              SESSION ENCRYPTION
+            </div>
+            <div className="text-[11px] font-semibold text-[#0057FF] flex items-center gap-1.5">
+              TLS 1.3 // SEC-02 RBAC
+            </div>
+          </div>
+
+          <div className="p-2.5 sm:p-3 bg-black/40 border border-white/10 flex flex-col gap-1">
+            <div className="text-[10px] text-[#6b7280] uppercase tracking-wider flex items-center gap-1.5">
+              <ShieldCheck className="w-3 h-3 text-[#C8FF00] shrink-0" />
+              DIRECTORY SSO GATEWAY
+            </div>
+            <div className="text-[11px] font-semibold text-[#C8FF00]">
+              100% OPERATIONAL
+            </div>
+          </div>
+        </div>
+
+        {/* Primary Action Button (Neo-Brutalist CTA) */}
+        <div className="space-y-3">
           <button
             id="btn-google-login"
             type="button"
-            className="lp-btn-google"
+            className="lp-login-btn w-full inline-flex items-center justify-center gap-2.5 sm:gap-3 font-mono uppercase text-xs sm:text-sm font-bold tracking-[0.14em] sm:tracking-[0.16em] px-5 sm:px-8 py-3.5 sm:py-4 active:translate-x-[1px] active:translate-y-[1px] group cursor-pointer text-center"
             onClick={handleLogin}
             disabled={isLoading}
             aria-label="Sign in with Google"
           >
             {isLoading ? (
-              <><div className="lp-spin" />AUTHENTICATING...</>
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span className="text-white">AUTHENTICATING...</span>
+              </>
             ) : (
               <>
-                <div className="lp-google-icon-wrap"><GoogleIcon className="w-4 h-4" /></div>
-                CONTINUE WITH GOOGLE
+                <div className="w-5 h-5 bg-white rounded-sm flex items-center justify-center shrink-0 p-0.5">
+                  <GoogleIcon className="w-3.5 h-3.5" />
+                </div>
+                <span className="text-white">CONTINUE WITH GOOGLE</span>
+                <ArrowRight className="w-4 h-4 text-white transition-transform group-hover:translate-x-1" />
               </>
             )}
           </button>
-
-
-          {/* ── Footer ── */}
-          <div className="lp-footer">
-            <div className="lp-footer-p">RESTRICTED TO ENROLLED NST STUDENTS &amp; FACULTY</div>
-            <div className="lp-footer-s">SEC-02 IDENTITY GATEWAY // @ADYPU.EDU.IN &amp; @NEWTONSCHOOL.CO</div>
-            <button type="button" className="lp-footer-link" onClick={() => setIsCreditsOpen(true)}>
-              CRAFTED BY NST SOFTWARE DEVELOPERS CLUB
-            </button>
-          </div>
         </div>
+
+        {/* Card Footer Micro-Metadata */}
+        <div className="mt-6 sm:mt-8 pt-3 sm:pt-4 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-2 font-mono text-[9px] sm:text-[10px] text-[#555a6d]">
+          <span>GATEWAY: TLS 1.3 // REGION: IN-BOM</span>
+          <span>DISPATCH TICK: #{1420 + pulseTick}</span>
+        </div>
+      </div>
+
+      {/* Bottom Sub-Footer with Dev Club Credits */}
+      <div className="relative z-10 mt-4 sm:mt-6 flex flex-col items-center gap-2 font-mono text-[9px] sm:text-[10px] text-[#424654] tracking-wider sm:tracking-widest uppercase text-center px-4">
+        <button
+          type="button"
+          onClick={() => setIsCreditsOpen(true)}
+          className="text-[#71768a] hover:text-[#0057FF] transition-colors border-b border-dashed border-[#71768a]/40 pb-0.5 cursor-pointer uppercase font-mono"
+        >
+          CRAFTED BY NST SOFTWARE DEVELOPERS CLUB
+        </button>
+        <div>NST Student Developer Community © 2026 // ALL SYSTEMS MONITORED</div>
       </div>
 
       <DevClubCreditsModal isOpen={isCreditsOpen} onClose={() => setIsCreditsOpen(false)} />
@@ -510,44 +424,43 @@ export default function LoginPage() {
   return (
     <div
       suppressHydrationWarning
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'var(--bg-black, #050505)',
-        padding: '48px 24px',
-      }}
+      className="relative min-h-screen w-full flex flex-col items-center justify-center bg-[#050505] text-[#F5F5F2] px-3 py-6 sm:p-6 md:p-8 overflow-x-hidden select-none"
     >
+      {/* Dynamic Background Glow */}
+      <div
+        className="pointer-events-none fixed inset-0 z-0 opacity-40"
+        style={{
+          background: 'radial-gradient(circle at 50% 45%, rgba(0, 87, 255, 0.2) 0%, rgba(5, 5, 5, 0) 70%)',
+        }}
+      />
+
+      {/* Cyber Grid Texture Overlay */}
+      <div
+        className="pointer-events-none fixed inset-0 z-0 opacity-25"
+        style={{
+          backgroundImage: `
+            linear-gradient(to right, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 1px, transparent 1px)
+          `,
+          backgroundSize: '32px 32px',
+        }}
+      />
+
+      {/* Huge Background Brutalist Watermark */}
+      <div
+        className="pointer-events-none absolute z-0 text-[20vw] sm:text-[18vw] font-black uppercase text-white/[0.02] tracking-tighter leading-none select-none"
+        style={{ fontFamily: "var(--font-syne), 'Syne', sans-serif" }}
+      >
+        NST AUTH
+      </div>
+
       <Suspense
         fallback={
-          <div style={{
-            position: 'relative', width: '100%', maxWidth: 520, margin: '0 auto'
-          }}>
-            <div style={{
-              position: 'absolute', inset: 0,
-              background: '#0057FF', transform: 'translate(12px,12px)', zIndex: 0,
-            }} />
-            <div style={{
-              position: 'relative', zIndex: 1,
-              background: '#0d0e12', border: '3px solid rgba(245,245,242,0.18)',
-              padding: '40px 44px', minHeight: 400,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-                <div style={{
-                  width: 32, height: 32,
-                  border: '3px solid #0057FF', borderTopColor: 'transparent',
-                  borderRadius: '50%', animation: 'lp-rotate 0.7s linear infinite',
-                }} />
-                <span style={{
-                  fontFamily: 'monospace', fontSize: 10, fontWeight: 700,
-                  letterSpacing: '0.12em', textTransform: 'uppercase', color: '#888',
-                }}>
-                  INITIALIZING AUTH GATEWAY...
-                </span>
-              </div>
-            </div>
+          <div className="relative z-10 w-full max-w-xl bg-[#0c0d12]/95 border-2 border-white/20 p-8 shadow-[12px_12px_0px_#0057FF] backdrop-blur-xl flex flex-col items-center justify-center min-h-[360px]">
+            <div className="w-8 h-8 border-3 border-[#0057FF] border-t-transparent rounded-full animate-spin mb-4" />
+            <span className="font-mono text-xs uppercase tracking-widest text-[#888]">
+              INITIALIZING AUTH GATEWAY...
+            </span>
           </div>
         }
       >

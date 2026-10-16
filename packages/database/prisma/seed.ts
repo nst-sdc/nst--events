@@ -220,7 +220,7 @@ async function main() {
     locationName: 'TBD',
     eventType: EventType.SEMINAR,
     state: EventState.DRAFT,
-    visibility: EventVisibility.PRIVATE,
+    visibility: EventVisibility.RESTRICTED,
     registrationType: RegistrationType.INDIVIDUAL,
     attendanceType: AttendanceType.SINGLE,
     isLocked: false,

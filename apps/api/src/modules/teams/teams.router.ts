@@ -4,6 +4,7 @@ import { validate } from '../../middleware/validate';
 import * as teamsService from './teams.service';
 import { 
   ParamTeamIdSchema,
+  JoinTeamSchema,
   TransferLeadershipSchema, 
   RemoveMemberSchema 
 } from './teams.schema';
@@ -25,10 +26,10 @@ router.get('/:id',
 
 router.post('/:id/join',
   authenticate,
-  validate(ParamTeamIdSchema),
+  validate(JoinTeamSchema),
   async (req, res, next) => {
     try {
-      const result = await teamsService.joinTeam(req.user!.id, req.params.id);
+      const result = await teamsService.joinTeam(req.user!.id, req.params.id, req.body?.responses);
       res.status(201).json(result);
     } catch (err) {
       next(err);

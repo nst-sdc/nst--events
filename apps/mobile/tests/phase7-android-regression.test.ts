@@ -178,11 +178,12 @@ describe('Phase 7 — Android Regression & Parity Tests', () => {
     expect(useAuthStore.getState().isLoggedIn).toBe(false);
   });
 
-  // 11. Three Permanent Tabs Preserved
-  it('11. Retains exactly the 3 permanent tabs (ATTENDANCE, HISTORY, PROFILE)', () => {
-    expect(tabsLayoutContent).toContain("allowedRoutes = ['index', 'history', 'profile']");
+  // 11. UX 2.0 4 Destinations Preserved
+  it('11. Retains the 4 destinations (HOME, EXPLORE, ACTIVITY, PROFILE)', () => {
+    expect(tabsLayoutContent).toContain("allowedRoutes = ['index', 'explore', 'activity', 'profile']");
     expect(tabsLayoutContent).toContain('<Tabs.Screen name="index" />');
-    expect(tabsLayoutContent).toContain('<Tabs.Screen name="history" />');
+    expect(tabsLayoutContent).toContain('<Tabs.Screen name="explore" />');
+    expect(tabsLayoutContent).toContain('<Tabs.Screen name="activity" />');
     expect(tabsLayoutContent).toContain('<Tabs.Screen name="profile" />');
     expect(tabsLayoutContent).not.toContain('name="invitations"');
     expect(tabsLayoutContent).not.toContain('name="teams"');

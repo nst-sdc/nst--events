@@ -25,7 +25,9 @@ describe('Phase 19 E2E Audit', () => {
   let sessionId: string;
 
   beforeAll(async () => {
-    // Cleanup first to avoid unique constraint failures
+    await prisma.eventRegistrationResponse.deleteMany({});
+    await prisma.eventFormField.deleteMany({});
+    await prisma.eventForm.deleteMany({});
     await prisma.attendanceDispute.deleteMany({});
     await prisma.eventRegistration.deleteMany({});
     await prisma.attendanceRecord.deleteMany({});
@@ -81,6 +83,10 @@ describe('Phase 19 E2E Audit', () => {
 
   afterAll(async () => {
     // Teardown
+    await prisma.eventRegistrationResponse.deleteMany({});
+    await prisma.eventFormField.deleteMany({});
+    await prisma.eventForm.deleteMany({});
+    await prisma.attendanceDispute.deleteMany({});
     await prisma.eventRegistration.deleteMany({});
     await prisma.attendanceRecord.deleteMany({});
     await prisma.attendanceSession.deleteMany({});
@@ -109,6 +115,8 @@ describe('Phase 19 E2E Audit', () => {
       audience: EventAudience.SPECIFIC_BATCHES,
       audience_batch_ids: [batchXId],
       max_capacity: 10,
+      registration_start_time: new Date(Date.now() - 60000).toISOString(),
+      registration_end_time: new Date(Date.now() + 100000).toISOString(),
       metadata: { minimum_team_size: 2, maximum_team_size: 4 },
       club_ids: [{ club_id: clubId, is_primary: true }],
     } as any);
@@ -125,6 +133,7 @@ describe('Phase 19 E2E Audit', () => {
 
     // 2. Draft Round Trip
     await updateEvent(adminId, eventId, {
+      visibility: 'PUBLIC',
       metadata: { minimum_team_size: 2, maximum_team_size: 5, extra: 'data' }
     } as any);
     const fetched2 = await getEventById(adminId, eventId);

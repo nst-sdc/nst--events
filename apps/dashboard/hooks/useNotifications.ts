@@ -20,15 +20,24 @@ export interface NotificationsResponse {
   };
 }
 
+import { getWebAuthStore } from '../lib/auth-store';
+
 export function useUnreadCount() {
+  const authStore = getWebAuthStore();
+  const isAuthenticated = !!authStore.accessToken;
+
   return useQuery<{ unread_count: number }, Error>({
     queryKey: ['notifications', 'unread-count'],
     queryFn: () => apiClient('/v1/notifications/unread-count'),
+    enabled: isAuthenticated,
     staleTime: 5 * 60 * 1000,
   });
 }
 
 export function useNotifications(options?: { filter_read?: boolean }) {
+  const authStore = getWebAuthStore();
+  const isAuthenticated = !!authStore.accessToken;
+
   const filterParams = options?.filter_read !== undefined 
     ? `&filter_read=${options.filter_read}` 
     : '';
@@ -43,6 +52,7 @@ export function useNotifications(options?: { filter_read?: boolean }) {
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => lastPage.pagination.next_cursor,
+    enabled: isAuthenticated,
     staleTime: 5 * 60 * 1000,
   });
 }

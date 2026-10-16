@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, SafeAreaView, StatusBar, TouchableOpacity, Linking } from 'react-native';
+import { View, StyleSheet, StatusBar, TouchableOpacity, Linking, ScrollView, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../store/theme-store';
 import { Title, Body, MonoLabel, Mono, Display } from './core/Typography';
 
@@ -13,17 +14,27 @@ export const LocationPermissionView: React.FC<LocationPermissionViewProps> = ({
   onCancel,
 }) => {
   const theme = useAppTheme();
+  const insets = useSafeAreaInsets();
+  const topInset = Math.max(insets.top, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0, 12);
+  const bottomInset = Math.max(insets.bottom, 16);
 
   const styles = useMemo(() => StyleSheet.create({
     safeArea: {
       flex: 1,
       backgroundColor: theme.colors.surface,
     },
-    container: {
+    scrollView: {
       flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
       paddingHorizontal: theme.spacing.base,
-      paddingVertical: theme.spacing.md,
+      paddingTop: theme.spacing.xs,
+      paddingBottom: theme.spacing.md,
       justifyContent: 'space-between',
+    },
+    topSection: {
+      flexShrink: 0,
     },
     header: {
       flexDirection: 'row',
@@ -38,7 +49,7 @@ export const LocationPermissionView: React.FC<LocationPermissionViewProps> = ({
       backgroundColor: theme.colors.surfaceContainerHigh,
       paddingHorizontal: 8,
       paddingVertical: 4,
-      borderRadius: 2,
+      borderRadius: 0,
     },
     pingDot: {
       width: 6,
@@ -77,10 +88,10 @@ export const LocationPermissionView: React.FC<LocationPermissionViewProps> = ({
     topRight: { top: 0, right: 0, borderTopWidth: 3, borderRightWidth: 3 },
     bottomLeft: { bottom: 0, left: 0, borderBottomWidth: 3, borderLeftWidth: 3 },
     bottomRight: { bottom: 0, right: 0, borderBottomWidth: 3, borderRightWidth: 3 },
-    locationCircle: {
+    locationBox: {
       width: 56,
       height: 56,
-      borderRadius: 28,
+      borderRadius: 0,
       backgroundColor: theme.colors.surface,
       alignItems: 'center',
       justifyContent: 'center',
@@ -134,7 +145,7 @@ export const LocationPermissionView: React.FC<LocationPermissionViewProps> = ({
     },
     mainBtn: {
       height: 52,
-      borderRadius: theme.borderRadius.sm,
+      borderRadius: 0,
     },
     settingsBtn: {
       alignItems: 'center',
@@ -153,10 +164,15 @@ export const LocationPermissionView: React.FC<LocationPermissionViewProps> = ({
   }), [theme]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle={theme.mode === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.surface} />
-      <View style={styles.container}>
-        <View>
+    <View style={[styles.safeArea, { paddingTop: topInset, paddingBottom: bottomInset }]}>
+      <StatusBar barStyle={theme.mode === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+      >
+        <View style={styles.topSection}>
           {/* Top Header */}
           <View style={styles.header}>
             <View style={styles.headerBadge}>
@@ -173,7 +189,7 @@ export const LocationPermissionView: React.FC<LocationPermissionViewProps> = ({
               <View style={[styles.cornerBracket, styles.topRight]} />
               <View style={[styles.cornerBracket, styles.bottomLeft]} />
               <View style={[styles.cornerBracket, styles.bottomRight]} />
-              <View style={styles.locationCircle}>
+              <View style={styles.locationBox}>
                 <Display style={styles.locationIconText}>📍</Display>
               </View>
             </View>
@@ -228,7 +244,7 @@ export const LocationPermissionView: React.FC<LocationPermissionViewProps> = ({
             </TouchableOpacity>
           )}
         </View>
-      </View>
-    </SafeAreaView>
+      </ScrollView>
+    </View>
   );
 };

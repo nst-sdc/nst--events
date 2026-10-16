@@ -49,12 +49,25 @@ export function useTeamLookup(teamId?: string | null) {
   });
 }
 
+export interface JoinTeamPayload {
+  teamId: string;
+  responses?: Array<{ fieldDefinitionId: string; value: string }>;
+}
+
 export function useJoinTeam(eventId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (teamId: string) => apiClient(`/v1/teams/${teamId}/join`, { method: 'POST' }),
-    onSuccess: (data, teamId) => {
+    mutationFn: (param: string | JoinTeamPayload) => {
+      const teamId = typeof param === 'string' ? param : param.teamId;
+      const responses = typeof param === 'string' ? undefined : param.responses;
+      return apiClient(`/v1/teams/${teamId}/join`, {
+        method: 'POST',
+        body: responses ? JSON.stringify({ responses }) : undefined,
+      });
+    },
+    onSuccess: (data, param) => {
+      const teamId = typeof param === 'string' ? param : param.teamId;
       queryClient.setQueryData(['event-my-registration', eventId], (old: any) => old ? { ...old, team_id: teamId } : old);
       queryClient.invalidateQueries({ queryKey: ['event-my-registration', eventId] });
       queryClient.invalidateQueries({ queryKey: ['event-teams', eventId] });
@@ -62,6 +75,7 @@ export function useJoinTeam(eventId: string) {
       queryClient.invalidateQueries({ queryKey: ['my-registrations'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
       queryClient.invalidateQueries({ queryKey: ['team', teamId] });
+      queryClient.invalidateQueries({ queryKey: ['profileValues'] });
     },
   });
 }
@@ -91,11 +105,20 @@ export interface CreateTeamResponse {
   registration_id: string;
 }
 
+export interface CreateTeamPayload {
+  name: string;
+  responses?: Array<{ fieldDefinitionId: string; value: string }>;
+}
+
 export function useCreateTeam(eventId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: { name: string }) => apiClient<CreateTeamResponse>(`/v1/events/${eventId}/teams`, { method: 'POST', body: JSON.stringify({ team_name: data.name }) }),
+    mutationFn: (data: CreateTeamPayload) =>
+      apiClient<CreateTeamResponse>(`/v1/events/${eventId}/teams`, {
+        method: 'POST',
+        body: JSON.stringify({ team_name: data.name, responses: data.responses }),
+      }),
     onSuccess: (data) => {
       queryClient.setQueryData(['event-my-registration', eventId], (old: any) => old ? { ...old, team_id: data.team_id } : old);
       queryClient.invalidateQueries({ queryKey: ['event-my-registration', eventId] });
@@ -104,6 +127,7 @@ export function useCreateTeam(eventId: string) {
       queryClient.invalidateQueries({ queryKey: ['my-registrations'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
       queryClient.invalidateQueries({ queryKey: ['team', data.team_id] });
+      queryClient.invalidateQueries({ queryKey: ['profileValues'] });
     },
   });
 }

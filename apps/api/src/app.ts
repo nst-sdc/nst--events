@@ -33,6 +33,10 @@ import { academicBatchesRouter } from './modules/academic-batches/academic-batch
 import { academicProgramsRouter } from './modules/academic-programs/academic-programs.router';
 import fieldDefinitionsRouter from './modules/field-definitions/field-definitions.router';
 import { eventFormsRouter } from './modules/event-forms/event-forms.router';
+import { projectsRouter } from './modules/projects/projects.router';
+import { adminProjectsRouter } from './modules/projects/admin-projects.router';
+import { eventResultsRouter } from './modules/event-results/event-results.router';
+import { studentsRouter } from './modules/students/students.router';
 
 export function createApp(): Express {
   const app = express();
@@ -86,6 +90,7 @@ export function createApp(): Express {
   app.use('/v1', sseRouter); // Mounted at /v1 (handles /events/:id/live and /notifications/live)
   app.use('/v1/events', eventsRouter);
   app.use('/v1/events', eventFormsRouter);
+  app.use('/v1/events', eventResultsRouter);
   app.use('/v1/teams', teamsRouter);
   app.use('/v1/dashboard', dashboardRouter);
   app.use('/v1', registrationsRouter);
@@ -104,6 +109,9 @@ export function createApp(): Express {
   app.use('/v1/academic-batches', academicBatchesRouter);
   app.use('/v1/academic-programs', academicProgramsRouter);
   app.use('/v1/field-definitions', fieldDefinitionsRouter);
+  app.use('/v1/projects', projectsRouter);
+  app.use('/v1/admin/projects', adminProjectsRouter);
+  app.use('/v1/students', studentsRouter);
 
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok' });

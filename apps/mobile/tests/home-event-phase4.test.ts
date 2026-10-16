@@ -211,11 +211,12 @@ describe('Phase 4 — Home & Event Attendance Audit & Implementation Tests', () 
     });
   });
 
-  describe('9. 3-Permanent Tab Invariance', () => {
-    it('strictly preserves the 3 frozen tabs: index, history, profile', () => {
-      expect(tabsLayoutContent).toContain("allowedRoutes = ['index', 'history', 'profile']");
+  describe('9. UX 2.0 4-Destination Invariance', () => {
+    it('registers the 4 destinations: index, explore, activity, profile', () => {
+      expect(tabsLayoutContent).toContain("allowedRoutes = ['index', 'explore', 'activity', 'profile']");
       expect(tabsLayoutContent).toContain('<Tabs.Screen name="index" />');
-      expect(tabsLayoutContent).toContain('<Tabs.Screen name="history" />');
+      expect(tabsLayoutContent).toContain('<Tabs.Screen name="explore" />');
+      expect(tabsLayoutContent).toContain('<Tabs.Screen name="activity" />');
       expect(tabsLayoutContent).toContain('<Tabs.Screen name="profile" />');
     });
   });

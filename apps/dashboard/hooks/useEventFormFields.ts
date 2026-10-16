@@ -21,12 +21,25 @@ export const useEventFormFields = (eventId: string) => {
   });
 };
 
+export interface UpdateEventFormFieldItem {
+  fieldDefinitionId?: string;
+  definition?: {
+    key: string;
+    label: string;
+    fieldType: string;
+    options?: string[];
+    isReusable?: boolean;
+  };
+  isRequired: boolean;
+  order: number;
+}
+
 export const useUpdateEventFormFields = (eventId: string) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { fields: Omit<EventFormField, 'eventId' | 'fieldDefinition'>[] }) => {
-      const response = await apiClient(`/v1/events/${eventId}/form-fields`, {
+    mutationFn: async (data: { fields: (UpdateEventFormFieldItem | Omit<EventFormField, 'eventId' | 'fieldDefinition'>)[] }) => {
+      const response = await apiClient<{ data: EventFormField[] }>(`/v1/events/${eventId}/form-fields`, {
         method: 'PUT',
         body: JSON.stringify(data),
       });
@@ -34,6 +47,7 @@ export const useUpdateEventFormFields = (eventId: string) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['eventFormFields', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['fieldDefinitions'] });
     },
   });
 };

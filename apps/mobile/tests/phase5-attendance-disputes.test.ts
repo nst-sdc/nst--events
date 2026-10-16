@@ -17,11 +17,12 @@ describe('Phase 5 — Attendance History & Disputes Contract Tests', () => {
   const useAttendanceHistoryContent = fs.readFileSync(path.join(hooksDir, 'use-attendance-history.ts'), 'utf-8');
   const tabsLayoutContent = fs.readFileSync(path.join(tabsDir, '_layout.tsx'), 'utf-8');
 
-  describe('1. Navigation & 3 Permanent Tabs Contract', () => {
-    it('preserves the 3 permanent tabs (index, history, profile) in (tabs)/_layout.tsx', () => {
-      expect(tabsLayoutContent).toContain("allowedRoutes = ['index', 'history', 'profile']");
+  describe('1. Navigation & UX 2.0 Destinations Contract', () => {
+    it('registers the 4 destinations (index, explore, activity, profile) in (tabs)/_layout.tsx', () => {
+      expect(tabsLayoutContent).toContain("allowedRoutes = ['index', 'explore', 'activity', 'profile']");
       expect(tabsLayoutContent).toContain('<Tabs.Screen name="index" />');
-      expect(tabsLayoutContent).toContain('<Tabs.Screen name="history" />');
+      expect(tabsLayoutContent).toContain('<Tabs.Screen name="explore" />');
+      expect(tabsLayoutContent).toContain('<Tabs.Screen name="activity" />');
       expect(tabsLayoutContent).toContain('<Tabs.Screen name="profile" />');
     });
 

@@ -46,12 +46,12 @@ describe('Phase UI-05D: Event Configuration Backend Enforcement', () => {
     
     // Insert events
     await adminPrisma.$executeRaw`
-      INSERT INTO events (id, title, state, visibility, registration_type, attendance_type, max_capacity, created_by, start_time, end_time, event_type) VALUES 
-      (${eventInd}::uuid, 'Ind Event', 'PUBLISHED', 'PUBLIC', 'INDIVIDUAL', 'SINGLE', 10, ${userInd}::uuid, now(), now() + interval '1 hour', 'WORKSHOP'),
-      (${eventTeam}::uuid, 'Team Event', 'PUBLISHED', 'PUBLIC', 'TEAM', 'SINGLE', 10, ${userTeam}::uuid, now(), now() + interval '1 hour', 'HACKATHON'),
-      (${eventTeamFull}::uuid, 'Team Full Event', 'PUBLISHED', 'PUBLIC', 'TEAM', 'SINGLE', 1, ${userTeamFull}::uuid, now(), now() + interval '1 hour', 'HACKATHON'),
-      (${eventSingle}::uuid, 'Single Event', 'PUBLISHED', 'PUBLIC', 'INDIVIDUAL', 'SINGLE', 10, ${userSingle}::uuid, now(), now() + interval '1 hour', 'WORKSHOP'),
-      (${eventMulti}::uuid, 'Multi Event', 'PUBLISHED', 'PUBLIC', 'INDIVIDUAL', 'MULTI_SESSION', 10, ${userMulti}::uuid, now(), now() + interval '1 hour', 'WORKSHOP');
+      INSERT INTO events (id, title, state, visibility, registration_type, attendance_type, max_capacity, created_by, start_time, end_time, registration_start_time, registration_end_time, event_type) VALUES 
+      (${eventInd}::uuid, 'Ind Event', 'PUBLISHED', 'PUBLIC', 'INDIVIDUAL', 'SINGLE', 10, ${userInd}::uuid, now(), now() + interval '1 hour', now() - interval '10 minutes', now() + interval '1 hour', 'WORKSHOP'),
+      (${eventTeam}::uuid, 'Team Event', 'PUBLISHED', 'PUBLIC', 'TEAM', 'SINGLE', 10, ${userTeam}::uuid, now(), now() + interval '1 hour', now() - interval '10 minutes', now() + interval '1 hour', 'HACKATHON'),
+      (${eventTeamFull}::uuid, 'Team Full Event', 'PUBLISHED', 'PUBLIC', 'TEAM', 'SINGLE', 1, ${userTeamFull}::uuid, now(), now() + interval '1 hour', now() - interval '10 minutes', now() + interval '1 hour', 'HACKATHON'),
+      (${eventSingle}::uuid, 'Single Event', 'PUBLISHED', 'PUBLIC', 'INDIVIDUAL', 'SINGLE', 10, ${userSingle}::uuid, now(), now() + interval '1 hour', now() - interval '10 minutes', now() + interval '1 hour', 'WORKSHOP'),
+      (${eventMulti}::uuid, 'Multi Event', 'PUBLISHED', 'PUBLIC', 'INDIVIDUAL', 'MULTI_SESSION', 10, ${userMulti}::uuid, now(), now() + interval '1 hour', now() - interval '10 minutes', now() + interval '1 hour', 'WORKSHOP');
     `;
 
     // Fill capacity for eventTeamFull

@@ -70,6 +70,7 @@ export const Button = ({
     disabled: {
       backgroundColor: theme.colors.surfaceContainerHighest,
       borderColor: theme.colors.outlineVariant,
+      opacity: 0.5,
     },
     disabledText: {
       color: theme.colors.outline,
