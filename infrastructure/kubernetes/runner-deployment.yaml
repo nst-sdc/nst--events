@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nst-n6-runner
+  namespace: nst-events
+  labels:
+    app: nst-n6-runner
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: nst-n6-runner
+  template:
+    metadata:
+      labels:
+        app: nst-n6-runner
+    spec:
+      nodeName: nst-n6
+      serviceAccountName: github-actions-deployer
+      initContainers:
+        - name: install-kubectl
+          image: bitnami/kubectl:latest
+          command:
+            - /bin/sh
+            - -c
+            - cp /opt/bitnami/kubectl/bin/kubectl /custom-bin/kubectl && chmod +x /custom-bin/kubectl
+          volumeMounts:
+            - name: custom-bin
+              mountPath: /custom-bin
+      containers:
+        - name: dind
+          image: docker:dind
+          securityContext:
+            privileged: true
+          args:
+            - "--mtu=1450"
+          env:
+            - name: DOCKER_TLS_CERTDIR
+              value: ""
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 2000m
+              memory: 4Gi
+          volumeMounts:
+            - name: docker-storage
+              mountPath: /var/lib/docker
+        - name: runner
+          image: myoung34/github-runner:ubuntu-noble
+          env:
+            - name: REPO_URL
+              value: "https://github.com/nst-sdc/nst--events"
+            - name: RUNNER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: runner-token
+                  key: RUNNER_TOKEN
+            - name: RUNNER_NAME
+              value: "nst-n6-runner"
+            - name: RUNNER_LABELS
+              value: "self-hosted,Linux,X64,n6"
+            - name: RUNNER_WORKDIR
+              value: "/tmp/runner/work"
+            - name: DOCKER_HOST
+              value: "tcp://localhost:2375"
+            - name: PATH
+              value: "/custom-bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 2000m
+              memory: 4Gi
+          volumeMounts:
+            - name: custom-bin
+              mountPath: /custom-bin
+            - name: runner-work
+              mountPath: /tmp/runner/work
+      volumes:
+        - name: custom-bin
+          emptyDir: {}
+        - name: docker-storage
+          emptyDir: {}
+        - name: runner-work
+          emptyDir: {}
