@@ -76,35 +76,30 @@ export const saveRegistrationResponses = async (
 ) => {
   if (!responses || responses.length === 0) return;
 
+  // Deduplicate responses by fieldDefinitionId (latest value takes precedence)
+  const dedupedMap = new Map<string, { fieldDefinitionId: string; value: string }>();
+  for (const resp of responses) {
+    dedupedMap.set(resp.fieldDefinitionId, resp);
+  }
+  const dedupedResponses = Array.from(dedupedMap.values());
+
   const fieldDefs = await tx.fieldDefinition.findMany({
-    where: { id: { in: responses.map((r) => r.fieldDefinitionId) } },
+    where: { id: { in: dedupedResponses.map((r) => r.fieldDefinitionId) } },
   });
   const reusableFieldIds = new Set(fieldDefs.filter((f: any) => f.isReusable).map((f: any) => f.id));
 
-  for (const response of responses) {
-    const existingResponse = await tx.eventRegistrationResponse.findFirst({
-      where: {
-        eventRegistrationId: registrationId,
-        formId: null,
-        fieldDefinitionId: response.fieldDefinitionId,
-      },
-    });
-
-    if (existingResponse) {
-      await tx.eventRegistrationResponse.update({
-        where: { id: existingResponse.id },
-        data: { value: response.value },
-      });
-    } else {
-      await tx.eventRegistrationResponse.create({
-        data: {
-          eventRegistrationId: registrationId,
-          formId: null,
-          fieldDefinitionId: response.fieldDefinitionId,
-          value: response.value,
-        },
-      });
-    }
+  for (const response of dedupedResponses) {
+    // Atomic upsert using the partial unique index WHERE form_id IS NULL
+    await tx.$executeRaw`
+      INSERT INTO event_registration_responses (
+        id, event_registration_id, form_id, field_definition_id, value, created_at
+      )
+      VALUES (
+        gen_random_uuid(), ${registrationId}::uuid, NULL, ${response.fieldDefinitionId}::uuid, ${response.value}, now()
+      )
+      ON CONFLICT (event_registration_id, field_definition_id) WHERE form_id IS NULL
+      DO UPDATE SET value = EXCLUDED.value
+    `;
 
     // Upsert StudentProfileValue if reusable
     if (reusableFieldIds.has(response.fieldDefinitionId)) {
@@ -138,7 +133,17 @@ export const registerEvent = async (
       if (tx.user) {
         const user = await tx.user.findUnique({
           where: { id: userId },
-          select: { id: true, email: true, googleSub: true, deletedAt: true },
+          select: {
+            id: true,
+            email: true,
+            googleSub: true,
+            deletedAt: true,
+            globalRole: true,
+            clubMemberships: {
+              where: { deletedAt: null },
+              select: { role: true, deletedAt: true },
+            },
+          },
         });
         validateRegistrationEligibility(user);
       }
@@ -172,6 +177,19 @@ export const registerEvent = async (
 export const cancelRegistration = async (userId: string, eventId: string) => {
   return withUserContext(userId, async (tx) => {
     try {
+      const reg = await tx.eventRegistration.findFirst({
+        where: { eventId, userId, deletedAt: null },
+        select: { id: true, teamId: true },
+      });
+
+      if (!reg) {
+        throw new NotFoundError('Registration not found');
+      }
+
+      if (reg.teamId) {
+        throw new BadRequestError('Cannot cancel individual registration for a team event. Please leave or manage your team.');
+      }
+
       const result = await tx.$queryRaw<{ cancel_registration: string[] }[]>`
         SELECT cancel_registration(${eventId}::uuid, ${userId}::uuid);
       `;

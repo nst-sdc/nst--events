@@ -377,4 +377,42 @@ export const adminUsersService = {
       return user;
     });
   },
+
+  async revokeSessions(adminUserId: string, targetUserId: string) {
+    // 1. Verify caller has admin rights and target user exists
+    await withUserContext(adminUserId, async (tx) => {
+      const user = await tx.user.findUnique({
+        where: { id: targetUserId },
+        select: { id: true, deletedAt: true },
+      });
+      if (!user || user.deletedAt) {
+        throw new NotFoundError('User not found');
+      }
+    });
+
+    // 2. Revoke refresh tokens under target user context so RLS (user_id = current_user_id()) permits update
+    const result = await withUserContext(targetUserId, async (tx) => {
+      const res = await tx.refreshToken.updateMany({
+        where: { userId: targetUserId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+      await tx.$executeRaw`SELECT increment_user_security_version(${targetUserId}::uuid)`;
+      return res;
+    });
+
+    // 3. Record audit log under admin context
+    await withUserContext(adminUserId, async (tx) => {
+      await tx.auditLog.create({
+        data: {
+          actorId: adminUserId,
+          action: 'REVOKE_SESSIONS',
+          entityType: 'User',
+          entityId: targetUserId,
+          newState: { revokedCount: result.count },
+        },
+      });
+    });
+
+    return { revoked_count: result.count };
+  },
 };

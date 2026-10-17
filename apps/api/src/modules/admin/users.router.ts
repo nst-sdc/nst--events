@@ -84,12 +84,10 @@ adminUsersRouter.post(
   requireRole(['PLATFORM_ADMIN']),
   async (req, res, next) => {
     try {
+      const adminId = req.user!.id;
       const { userId } = req.params;
-      const result = await prisma.refreshToken.updateMany({
-        where: { userId, revokedAt: null },
-        data: { revokedAt: new Date() },
-      });
-      res.json({ message: 'Sessions revoked', revoked_count: result.count });
+      const result = await adminUsersService.revokeSessions(adminId, userId);
+      res.json({ message: 'Sessions revoked', revoked_count: result.revoked_count });
     } catch (err) {
       console.error("ADMIN_BATCH_ERR:", err); next(err);
     }
