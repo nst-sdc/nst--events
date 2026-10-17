@@ -147,7 +147,7 @@ export default function AttendanceDetailScreen() {
       if (router.canGoBack()) {
         router.back();
       } else {
-        router.replace('/(app)/history');
+        router.replace('/(app)/(tabs)/activity?tab=attendance');
       }
     }}>
       {isLoading ? (
@@ -163,7 +163,7 @@ export default function AttendanceDetailScreen() {
           <Button
             title="RETURN TO ATTENDANCE HISTORY"
             variant="secondary"
-            onPress={() => router.replace('/(app)/history')}
+            onPress={() => router.replace('/(app)/(tabs)/activity?tab=attendance')}
             style={{ marginTop: 8 }}
           />
         </View>

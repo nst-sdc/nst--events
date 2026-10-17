@@ -156,7 +156,7 @@ export default function MyDisputesScreen() {
       <Button
         title="GO TO ATTENDANCE HISTORY"
         variant="secondary"
-        onPress={() => router.navigate('/(app)/history')}
+        onPress={() => router.navigate('/(app)/(tabs)/activity?tab=attendance')}
         style={styles.emptyCta}
       />
     </View>
@@ -202,7 +202,7 @@ export default function MyDisputesScreen() {
         if (router.canGoBack()) {
           router.back();
         } else {
-          router.replace('/(app)/history');
+          router.replace('/(app)/(tabs)/activity?tab=attendance');
         }
       }}
       scrollable={false}
