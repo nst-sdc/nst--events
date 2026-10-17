@@ -7,6 +7,11 @@ on:
       - completed
     branches: [main]
   workflow_dispatch:
+    inputs:
+      target_sha:
+        description: 'Specific commit SHA to deploy (defaults to HEAD of branch)'
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -17,18 +22,21 @@ jobs:
     name: Build, Deploy & Rollout Gate
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: [self-hosted, linux, x64, n6]
+    environment:
+      name: production
+      url: https://events.nstsdc.org
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 50
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ inputs.target_sha || github.event.workflow_run.head_sha || github.sha }}
 
       - name: Determine Target Commit SHA
         id: vars
         run: |
-          TARGET_SHA="${{ github.event.workflow_run.head_sha || github.sha }}"
+          TARGET_SHA="${{ inputs.target_sha || github.event.workflow_run.head_sha || github.sha }}"
           SHORT_SHA=$(git rev-parse --short "${TARGET_SHA}")
           echo "target_sha=${TARGET_SHA}" >> "$GITHUB_OUTPUT"
           echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"

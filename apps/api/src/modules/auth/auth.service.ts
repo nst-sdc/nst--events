@@ -59,48 +59,66 @@ export async function loginWithIdToken(
     }
   }
 
-  // Check if Newton user existed prior to upsert to assign default role
-  let newtonExisted = true;
-  if (domain === 'newtonschool.co') {
-    const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
-    if (!existing) newtonExisted = false;
-  }
-
-  // 3. Upsert user by googleSub with P2002 race-condition handling
+  // 3. Upsert user by googleSub with concurrency / unique-constraint race handling
   let user;
-  try {
-    const result = await prisma.$queryRaw<any[]>`
-      SELECT * FROM upsert_oauth_user(${sub}, ${normalizedEmail}, ${name})
-    `;
-    
-    if (!result || result.length === 0) {
-      throw new ForbiddenError('Account deactivated');
-    }
-    user = result[0];
+  const maxRetries = 3;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await prisma.$queryRaw<any[]>`
+        SELECT * FROM upsert_oauth_user(${sub}, ${normalizedEmail}, ${name})
+      `;
+
+      if (!result || result.length === 0) {
+        throw new ForbiddenError('Account deactivated');
+      }
+      user = result[0];
+      break;
     } catch (err: any) {
-      console.error('UPSERT ERROR:', err);
+      if (err instanceof ForbiddenError) {
+        throw err;
+      }
+
       if (
-        (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') ||
-        (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2010' && err.meta?.code === '23505')
+        err.message?.includes('ACCOUNT_LINK_CONFLICT') ||
+        err.meta?.code === 'U0001' ||
+        String(err.message).includes('U0001')
       ) {
-      user = await prisma.user.findUnique({
-        where: { email: normalizedEmail },
-      });
-      if (!user) {
-        throw new Error('Race condition during user creation: user not found');
+        throw new ForbiddenError('Email is already linked to another Google account');
       }
-      
-      if (user.googleSub !== sub) {
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { googleSub: sub, fullName: name }
-        });
-        user.googleSub = sub;
-        user.fullName = name;
+
+      const isUniqueConflict =
+        (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') ||
+        (err instanceof Prisma.PrismaClientKnownRequestError &&
+          err.code === 'P2010' &&
+          (err.meta?.code === '23505' || String(err.message).includes('23505'))) ||
+        err?.code === '23505' ||
+        String(err?.message).includes('23505') ||
+        String(err?.message).includes('unique constraint') ||
+        String(err?.message).includes('duplicate key');
+
+      if (isUniqueConflict && attempt < maxRetries) {
+        // Wait briefly for the concurrent transaction to commit, then retry via upsert_oauth_user
+        await new Promise((resolve) => setTimeout(resolve, 50 * Math.pow(2, attempt)));
+        continue;
       }
-    } else {
       throw err;
     }
+  }
+
+  if (!user) {
+    throw new Error('Race condition during user creation: user not found');
+  }
+
+  // Ensure an established Google identity was not replaced by an unauthorized subject
+  const establishedSub = user.google_sub || user.googleSub;
+  if (
+    establishedSub &&
+    establishedSub !== sub &&
+    !establishedSub.startsWith('provisioned:') &&
+    !establishedSub.startsWith('pending-oauth-') &&
+    !establishedSub.startsWith('unverified')
+  ) {
+    throw new ForbiddenError('Email is already linked to another Google account');
   }
 
   // Map raw row back to camelCase for the rest of the function if it came from queryRaw

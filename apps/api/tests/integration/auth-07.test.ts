@@ -19,15 +19,21 @@ const TEST_EMAILS = [
   'st2@adypu.edu.in',
   'e25concurrent1@adypu.edu.in',
   'f25concurrent2@adypu.edu.in',
+  'g27contention@adypu.edu.in',
+  'e25subconflict@adypu.edu.in',
+  'e25recovery@adypu.edu.in',
 ];
 
-const AUTH07_PROGRAM_CODES = ['TEST', 'e', 'f'];
+const AUTH07_PROGRAM_CODES = ['TEST', 'e', 'f', 'g'];
 
 const AUTH07_AUTHORIZED_STUDENTS = [
   'st1@adypu.edu.in',
   'st2@adypu.edu.in',
   'e25concurrent1@adypu.edu.in',
   'f25concurrent2@adypu.edu.in',
+  'g27contention@adypu.edu.in',
+  'e25subconflict@adypu.edu.in',
+  'e25recovery@adypu.edu.in',
 ];
 
 async function cleanupAuth07Fixtures() {
@@ -271,5 +277,202 @@ test('Phase AUTH-07 - Academic Profile RLS & Concurrency', async (t) => {
     assert.strictEqual(profiles.length, 1);
     assert.strictEqual(profiles[0].batchId, batchAdmin.id, 'Admin override should be preserved');
     assert.strictEqual(profiles[0].assignmentSource, 'ADMIN_OVERRIDE');
+  });
+
+  await t.test('14. High-contention simultaneous Google login reliably resolves single user', async () => {
+    const email = 'g27contention@adypu.edu.in';
+    const sub = 'sub-contention';
+    await adminPrisma.authorizedStudent.create({ data: { normalizedEmail: email } });
+
+    const prog = await adminPrisma.academicProgram.create({ data: { name: 'Prog Contention', code: 'g' } });
+    await adminPrisma.academicBatch.create({ data: { programId: prog.id, admissionYear: 2027, graduationYear: 2031 } });
+
+    sinon.restore();
+    sinon.stub(googleOAuth, 'exchangeCodeForTokens').resolves({
+      id_token: 'fake-id-token',
+      access_token: 'fake',
+      refresh_token: 'fake',
+      expires_in: 3600,
+      scope: 'openid',
+      token_type: 'Bearer',
+    });
+    sinon.stub(googleOAuth, 'verifyIdToken').resolves({ sub, email, name: 'Contention User' } as any);
+
+    // 10 concurrent requests at once
+    const promises = Array.from({ length: 10 }, (_, i) =>
+      authService.loginWithGoogle(`fake-contention-code-${i}`)
+    );
+
+    const results = await Promise.all(promises);
+
+    for (const res of results) {
+      assert.ok(res.access_token);
+      assert.strictEqual(res.user.email, email);
+    }
+
+    const users = await adminPrisma.user.findMany({ where: { email } });
+    assert.strictEqual(users.length, 1, 'Only one user record created under 10-way contention');
+
+    const profiles = await adminPrisma.userAcademicProfile.findMany({ where: { userId: users[0].id } });
+    assert.strictEqual(profiles.length, 1, 'Only one academic profile created');
+  });
+
+  await t.test('15. Different Google subject CANNOT silently replace subject of an established account', async () => {
+    const email = 'e25subconflict@adypu.edu.in';
+    const establishedSub = 'sub-established-original';
+    const attackerSub = 'sub-different-attacker';
+    await adminPrisma.authorizedStudent.create({ data: { normalizedEmail: email } });
+
+    // Pre-create the user with an established Google subject
+    await adminPrisma.user.create({
+      data: {
+        email,
+        fullName: 'Original User',
+        googleSub: establishedSub,
+        globalRole: 'STUDENT',
+      },
+    });
+
+    sinon.restore();
+    sinon.stub(googleOAuth, 'exchangeCodeForTokens').resolves({
+      id_token: 'fake-id-token',
+      access_token: 'fake',
+      refresh_token: 'fake',
+      expires_in: 3600,
+      scope: 'openid',
+      token_type: 'Bearer',
+    });
+    // Attempt login with a different sub for the same email
+    sinon.stub(googleOAuth, 'verifyIdToken').resolves({
+      sub: attackerSub,
+      email,
+      name: 'Intruder',
+    } as any);
+
+    // Must be rejected with ForbiddenError
+    await assert.rejects(
+      authService.loginWithGoogle('code-different-sub'),
+      (err: any) => {
+        return err.status === 403 || err.message?.includes('already linked') || err.message?.includes('ACCOUNT_LINK_CONFLICT');
+      },
+      'Should reject login attempt when a different Google subject presents an already-linked email'
+    );
+
+    // Verify database state: googleSub was NOT silently replaced!
+    const userInDb = await adminPrisma.user.findUnique({ where: { email } });
+    assert.strictEqual(userInDb?.googleSub, establishedSub, 'Established googleSub must remain unchanged');
+    assert.strictEqual(userInDb?.fullName, 'Original User', 'User fullName must remain unchanged');
+  });
+
+  await t.test('16. Legitimate account linking succeeds for provisioned placeholder and freezes subject thereafter', async () => {
+    const email = 'e25recovery@adypu.edu.in';
+    const legitimateSub = 'sub-legitimate-first-login';
+    const subsequentIntruderSub = 'sub-subsequent-intruder';
+    await adminPrisma.authorizedStudent.create({ data: { normalizedEmail: email } });
+
+    // Pre-create user with admin provisioned placeholder
+    const preProvisioned = await adminPrisma.user.create({
+      data: {
+        email,
+        fullName: 'Not yet registered',
+        googleSub: `provisioned:${email}`,
+        globalRole: 'STUDENT',
+      },
+    });
+
+    sinon.restore();
+    sinon.stub(googleOAuth, 'exchangeCodeForTokens').resolves({
+      id_token: 'fake-id-token',
+      access_token: 'fake',
+      refresh_token: 'fake',
+      expires_in: 3600,
+      scope: 'openid',
+      token_type: 'Bearer',
+    });
+
+    // 1. Legitimate first login: placeholder transitions to real Google subject
+    sinon.stub(googleOAuth, 'verifyIdToken').resolves({
+      sub: legitimateSub,
+      email,
+      name: 'Real Student',
+    } as any);
+
+    const firstLogin = await authService.loginWithGoogle('code-legitimate-first');
+    assert.ok(firstLogin.access_token);
+    assert.strictEqual(firstLogin.user.id, preProvisioned.id);
+
+    // Verify DB was updated to legitimate subject
+    const userAfterFirstLogin = await adminPrisma.user.findUnique({ where: { email } });
+    assert.strictEqual(userAfterFirstLogin?.googleSub, legitimateSub, 'googleSub correctly linked from provisioned placeholder');
+    assert.strictEqual(userAfterFirstLogin?.fullName, 'Real Student');
+
+    // 2. Subsequent attempt with a DIFFERENT Google subject must now be rejected
+    sinon.restore();
+    sinon.stub(googleOAuth, 'exchangeCodeForTokens').resolves({
+      id_token: 'fake-id-token',
+      access_token: 'fake',
+      refresh_token: 'fake',
+      expires_in: 3600,
+      scope: 'openid',
+      token_type: 'Bearer',
+    });
+    sinon.stub(googleOAuth, 'verifyIdToken').resolves({
+      sub: subsequentIntruderSub,
+      email,
+      name: 'Intruder After Linking',
+    } as any);
+
+    await assert.rejects(
+      authService.loginWithGoogle('code-intruder-after-linking'),
+      (err: any) => {
+        return err.status === 403 || err.message?.includes('already linked') || err.message?.includes('ACCOUNT_LINK_CONFLICT');
+      },
+      'Should reject subsequent login with different sub once account is established'
+    );
+
+    // Verify DB still holds the legitimate subject
+    const finalUser = await adminPrisma.user.findUnique({ where: { email } });
+    assert.strictEqual(finalUser?.googleSub, legitimateSub, 'googleSub must not be replaced by subsequent intruder');
+  });
+
+  await t.test('17. Concurrent logins with SAME Google subject recover from DB conflict without duplicate users', async () => {
+    const email = 'e25concurrent1@adypu.edu.in';
+    const sub = 'sub-concurrent-same-identity';
+
+    // Clean up if existed
+    await adminPrisma.user.deleteMany({ where: { email } });
+
+    sinon.restore();
+    sinon.stub(googleOAuth, 'exchangeCodeForTokens').resolves({
+      id_token: 'fake-id-token',
+      access_token: 'fake',
+      refresh_token: 'fake',
+      expires_in: 3600,
+      scope: 'openid',
+      token_type: 'Bearer',
+    });
+    sinon.stub(googleOAuth, 'verifyIdToken').resolves({
+      sub,
+      email,
+      name: 'Concurrent Same User',
+    } as any);
+
+    // 5 concurrent requests with identical subject & email
+    const results = await Promise.all([
+      authService.loginWithGoogle('same-code-1'),
+      authService.loginWithGoogle('same-code-2'),
+      authService.loginWithGoogle('same-code-3'),
+      authService.loginWithGoogle('same-code-4'),
+      authService.loginWithGoogle('same-code-5'),
+    ]);
+
+    for (const res of results) {
+      assert.ok(res.access_token);
+      assert.strictEqual(res.user.email, email);
+    }
+
+    const users = await adminPrisma.user.findMany({ where: { email } });
+    assert.strictEqual(users.length, 1, 'Exactly one user record exists');
+    assert.strictEqual(users[0].googleSub, sub);
   });
 });

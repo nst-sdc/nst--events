@@ -29,10 +29,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ? API_BASE_URL
       : process.env.INTERNAL_API_URL && process.env.INTERNAL_API_URL.startsWith('http')
         ? process.env.INTERNAL_API_URL
-        : '';
+        : process.env.NODE_ENV === 'production' && siteUrl.startsWith('http')
+          ? siteUrl
+          : '';
 
   if (!apiBase) {
+    if (process.env.NODE_ENV === 'production') {
+      console.error(
+        `[sitemap] Incomplete production sitemap generated: Neither NEXT_PUBLIC_API_URL nor INTERNAL_API_URL was provided, and siteUrl fallback (${siteUrl}) is not an absolute HTTP URL.`
+      );
+    }
     return routes;
+  }
+
+  if (process.env.NODE_ENV === 'production' && (!API_BASE_URL || !API_BASE_URL.startsWith('http')) && !process.env.INTERNAL_API_URL) {
+    console.warn(
+      `[sitemap] NEXT_PUBLIC_API_URL is missing in production. Falling back to siteUrl (${siteUrl}) for dynamic routes.`
+    );
   }
 
   // 1. Dynamic Public Events
@@ -41,28 +54,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       next: { revalidate: 3600 },
       signal: AbortSignal.timeout(3000),
     });
-    if (res.ok) {
-      const data = await res.json();
-      const events = data?.data || [];
-      for (const ev of events) {
-        if (ev.slug) {
-          routes.push({
-            url: `${siteUrl}/event/${ev.slug}`,
-            lastModified: new Date(ev.start_time || Date.now()),
-            changeFrequency: 'daily',
-            priority: 0.8,
-          });
-          routes.push({
-            url: `${siteUrl}/event/${ev.slug}/results`,
-            lastModified: new Date(ev.end_time || ev.start_time || Date.now()),
-            changeFrequency: 'daily',
-            priority: 0.7,
-          });
-        }
+    if (!res.ok) {
+      throw new Error(`Public events endpoint returned HTTP ${res.status} (${res.statusText})`);
+    }
+    const data = await res.json();
+    const events = data?.data || [];
+    for (const ev of events) {
+      if (ev.slug) {
+        routes.push({
+          url: `${siteUrl}/event/${ev.slug}`,
+          lastModified: new Date(ev.start_time || Date.now()),
+          changeFrequency: 'daily',
+          priority: 0.8,
+        });
+        routes.push({
+          url: `${siteUrl}/event/${ev.slug}/results`,
+          lastModified: new Date(ev.end_time || ev.start_time || Date.now()),
+          changeFrequency: 'daily',
+          priority: 0.7,
+        });
       }
     }
   } catch (err) {
     console.error('Failed to generate dynamic events sitemap:', err);
+    if (process.env.NODE_ENV === 'production') {
+      console.warn('[sitemap] Incomplete production sitemap: dynamic public events could not be fetched.');
+    }
   }
 
   // 2. Dynamic Published Projects
@@ -71,22 +88,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       next: { revalidate: 1800 },
       signal: AbortSignal.timeout(3000),
     });
-    if (res.ok) {
-      const data = await res.json();
-      const projects = data?.items || data?.data || [];
-      for (const proj of projects) {
-        if (proj.slug) {
-          routes.push({
-            url: `${siteUrl}/projects/${proj.slug}`,
-            lastModified: new Date(proj.published_at || Date.now()),
-            changeFrequency: 'weekly',
-            priority: 0.8,
-          });
-        }
+    if (!res.ok) {
+      throw new Error(`Projects endpoint returned HTTP ${res.status} (${res.statusText})`);
+    }
+    const data = await res.json();
+    const projects = data?.items || data?.data || [];
+    for (const proj of projects) {
+      if (proj.slug) {
+        routes.push({
+          url: `${siteUrl}/projects/${proj.slug}`,
+          lastModified: new Date(proj.published_at || Date.now()),
+          changeFrequency: 'weekly',
+          priority: 0.8,
+        });
       }
     }
   } catch (err) {
     console.error('Failed to generate dynamic projects sitemap:', err);
+    if (process.env.NODE_ENV === 'production') {
+      console.warn('[sitemap] Incomplete production sitemap: dynamic published projects could not be fetched.');
+    }
   }
 
   // 3. Dynamic Public Student Profiles & Directory
@@ -95,22 +116,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       next: { revalidate: 1800 },
       signal: AbortSignal.timeout(3000),
     });
-    if (res.ok) {
-      const data = await res.json();
-      const students = data?.data || data?.items || [];
-      for (const st of students) {
-        if (st.slug) {
-          routes.push({
-            url: `${siteUrl}/students/${st.slug}`,
-            lastModified: new Date(),
-            changeFrequency: 'weekly',
-            priority: 0.7,
-          });
-        }
+    if (!res.ok) {
+      throw new Error(`Students endpoint returned HTTP ${res.status} (${res.statusText})`);
+    }
+    const data = await res.json();
+    const students = data?.data || data?.items || [];
+    for (const st of students) {
+      if (st.slug) {
+        routes.push({
+          url: `${siteUrl}/students/${st.slug}`,
+          lastModified: new Date(),
+          changeFrequency: 'weekly',
+          priority: 0.7,
+        });
       }
     }
   } catch (err) {
     console.error('Failed to generate dynamic students sitemap:', err);
+    if (process.env.NODE_ENV === 'production') {
+      console.warn('[sitemap] Incomplete production sitemap: dynamic student profiles could not be fetched.');
+    }
   }
 
   return routes;

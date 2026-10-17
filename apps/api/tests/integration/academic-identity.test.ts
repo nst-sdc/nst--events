@@ -39,6 +39,7 @@ test('Phase UI-14D Academic Identity Integration', async (t) => {
       await adminPrisma.attendanceRecord.deleteMany({ where: { userId: { in: userIdsToDelete } } });
       await adminPrisma.clubMembership.deleteMany({ where: { userId: { in: userIdsToDelete } } });
       await adminPrisma.team.deleteMany({ where: { leaderId: { in: userIdsToDelete } } });
+      await adminPrisma.leaderboardScore.deleteMany({ where: { userId: { in: userIdsToDelete } } });
       await adminPrisma.event.deleteMany({ where: { createdBy: { in: userIdsToDelete } } });
     }
     await adminPrisma.user.deleteMany({
@@ -204,7 +205,7 @@ test('Phase UI-14D Academic Identity Integration', async (t) => {
     // Override precedence (Login again shouldn't overwrite)
     sinon.stub(googleOAuth, 'exchangeCodeForTokens').resolves({ id_token: 'mock_id_token' } as any);
     sinon.stub(googleOAuth, 'verifyIdToken').resolves({
-      sub: 'google-st',
+      sub: 'google-sub-ai-st',
       email: 'student@adypu.edu.in', // Wait, this doesn't match a batch anyway.
       name: 'Student',
     } as any);
