@@ -24,6 +24,19 @@ router.get('/:id',
   }
 );
 
+router.get('/:id/invitations',
+  authenticate,
+  validate(ParamTeamIdSchema),
+  async (req, res, next) => {
+    try {
+      const result = await teamsService.getSentTeamInvitations(req.user!.id, req.params.id);
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 router.post('/:id/join',
   authenticate,
   validate(JoinTeamSchema),

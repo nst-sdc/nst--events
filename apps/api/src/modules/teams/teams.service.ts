@@ -10,6 +10,14 @@ import { mapDatabaseError } from '../../lib/errors/database-error-mapper';
 
 export const listTeams = async (userId: string, eventId: string, limit: number = 50, cursor?: string) => {
   return withUserContext(userId, async (tx) => {
+    const event = await tx.event.findUnique({
+      where: { id: eventId },
+      select: { id: true, deletedAt: true },
+    });
+    if (!event || event.deletedAt) {
+      throw new NotFoundError('Event not found');
+    }
+
     const take = limit + 1;
     const teams = await tx.team.findMany({
       where: {
@@ -42,7 +50,7 @@ export const listTeams = async (userId: string, eventId: string, limit: number =
 
     const data = teams.map((t) => {
       let below_minimum = false;
-      const metadata = t.event.metadata as any;
+      const metadata = t.event?.metadata as any;
       if (t.status === 'REGISTERED' && metadata && typeof metadata.minimum_team_size === 'number') {
         below_minimum = t.eventRegistrations.length < metadata.minimum_team_size;
       }
@@ -69,47 +77,74 @@ export const listTeams = async (userId: string, eventId: string, limit: number =
 
 export const getTeamById = async (userId: string, teamId: string) => {
   return withUserContext(userId, async (tx) => {
-    const team = await tx.team.findUnique({
-      where: { id: teamId, deletedAt: null },
-      include: {
-        leader: { select: { fullName: true } },
-        event: { select: { metadata: true } },
-        eventRegistrations: {
-          where: { deletedAt: null },
-          select: {
-            userId: true,
-            registrationStatus: true,
-            user: { select: { fullName: true } }
+    try {
+      const team = await tx.team.findUnique({
+        where: { id: teamId, deletedAt: null },
+        include: {
+          leader: { select: { fullName: true } },
+          event: { select: { metadata: true } },
+          eventRegistrations: {
+            where: { deletedAt: null },
+            select: {
+              userId: true,
+              registrationStatus: true,
+              user: { select: { fullName: true } }
+            }
           }
         }
+      });
+
+      if (!team || !team.event) {
+        throw new NotFoundError('Team not found');
       }
+
+      let below_minimum = false;
+      const metadata = team.event?.metadata as any;
+      if (team.status === 'REGISTERED' && metadata && typeof metadata.minimum_team_size === 'number') {
+        below_minimum = team.eventRegistrations.length < metadata.minimum_team_size;
+      }
+
+      return {
+        id: team.id,
+        event_id: team.eventId,
+        name: team.name,
+        leader_id: team.leaderId,
+        status: team.status,
+        below_minimum,
+        leader_name: team.leader?.fullName || 'Unknown',
+        member_count: team.eventRegistrations.length,
+        members: team.eventRegistrations.map((m) => ({
+          user_id: m.userId,
+          full_name: m.user?.fullName || 'Unknown',
+          registration_status: m.registrationStatus
+        }))
+      };
+    } catch (err: any) {
+      if (err instanceof NotFoundError) throw err;
+      if (err.message?.includes('Inconsistent query result') || err.message?.includes('Field leader is required')) {
+        throw new NotFoundError('Team not found');
+      }
+      mapDatabaseError(err);
+    }
+  });
+};
+
+export const getSentTeamInvitations = async (userId: string, teamId: string) => {
+  return withUserContext(userId, async (tx) => {
+    const team = await tx.team.findUnique({
+      where: { id: teamId, deletedAt: null },
+      select: { id: true, leaderId: true, eventId: true }
     });
 
     if (!team) {
       throw new NotFoundError('Team not found');
     }
 
-    let below_minimum = false;
-    const metadata = team.event.metadata as any;
-    if (team.status === 'REGISTERED' && metadata && typeof metadata.minimum_team_size === 'number') {
-      below_minimum = team.eventRegistrations.length < metadata.minimum_team_size;
+    if (team.leaderId !== userId) {
+      throw new ForbiddenError('Only the team leader can view sent invitations');
     }
 
-    return {
-      id: team.id,
-      event_id: team.eventId,
-      name: team.name,
-      leader_id: team.leaderId,
-      status: team.status,
-      below_minimum,
-      leader_name: team.leader?.fullName || 'Unknown',
-      member_count: team.eventRegistrations.length,
-      members: team.eventRegistrations.map((m) => ({
-        user_id: m.userId,
-        full_name: m.user?.fullName || 'Unknown',
-        registration_status: m.registrationStatus
-      }))
-    };
+    return [];
   });
 };
 
@@ -129,7 +164,17 @@ export const createTeam = async (
       if (tx.user) {
         const user = await tx.user.findUnique({
           where: { id: userId },
-          select: { id: true, email: true, googleSub: true, deletedAt: true },
+          select: {
+            id: true,
+            email: true,
+            googleSub: true,
+            deletedAt: true,
+            globalRole: true,
+            clubMemberships: {
+              where: { deletedAt: null },
+              select: { role: true, deletedAt: true },
+            },
+          },
         });
         validateRegistrationEligibility(user);
       }
@@ -167,7 +212,17 @@ export const joinTeam = async (
     if (tx.user) {
       const user = await tx.user.findUnique({
         where: { id: userId },
-        select: { id: true, email: true, googleSub: true, deletedAt: true },
+        select: {
+          id: true,
+          email: true,
+          googleSub: true,
+          deletedAt: true,
+          globalRole: true,
+          clubMemberships: {
+            where: { deletedAt: null },
+            select: { role: true, deletedAt: true },
+          },
+        },
       });
       validateRegistrationEligibility(user);
     }
@@ -313,6 +368,7 @@ export const removeMember = async (userId: string, teamId: string, targetUserId:
     const team = await tx.team.findUnique({ where: { id: teamId } });
     if (!team) throw new NotFoundError('Team not found');
     if (team.leaderId !== userId) throw new BadRequestError('Only the leader can remove members');
+    if (targetUserId === userId) throw new BadRequestError('Leader cannot be removed. Transfer leadership or leave team instead.');
 
     try {
       const result = await tx.$queryRaw<{ leave_team: string[] }[]>`

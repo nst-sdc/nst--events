@@ -243,6 +243,13 @@ export async function deleteEventForm(userId: string, eventId: string, formId: s
     const existing = await tx.eventForm.findFirst({ where: { id: formId, eventId } });
     if (!existing) throw new NotFoundError('Form not found');
 
+    const responseCount = await tx.eventRegistrationResponse.count({
+      where: { formId },
+    });
+    if (responseCount > 0) {
+      throw new BadRequestError('Cannot delete a form that already has responses. Unpublish or archive the form to preserve historical responses.');
+    }
+
     await tx.eventForm.delete({ where: { id: formId } });
   });
 }
@@ -412,8 +419,15 @@ export async function submitEventFormResponses(
       }
     }
 
+    // Deduplicate responses by fieldDefinitionId (latest value takes precedence)
+    const dedupedMap = new Map<string, { fieldDefinitionId: string; value: string }>();
+    for (const r of responses || []) {
+      dedupedMap.set(r.fieldDefinitionId, r);
+    }
+    const dedupedResponses = Array.from(dedupedMap.values());
+
     const savedResponses = [];
-    for (const r of responses) {
+    for (const r of dedupedResponses) {
       const field = form.fields.find(f => f.fieldDefinitionId === r.fieldDefinitionId);
       if (!field) {
         throw new BadRequestError(`Field ${r.fieldDefinitionId} is not part of this form`);
