@@ -162,7 +162,12 @@ export function ResultReportModal({
                 REPORT INACCURACY // DISPUTE
               </MonoLabel>
             </View>
-            <TouchableOpacity onPress={handleResetAndClose}>
+            <TouchableOpacity
+              onPress={handleResetAndClose}
+              hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+              style={{ minWidth: 44, minHeight: 44, justifyContent: 'center', alignItems: 'center' }}
+              accessibilityLabel="Close report dialog"
+            >
               <MaterialIcons name="close" size={20} color={theme.colors.onSurfaceVariant} />
             </TouchableOpacity>
           </View>

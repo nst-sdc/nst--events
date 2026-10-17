@@ -32,7 +32,7 @@ export interface AttendanceHistoryResponse {
   nextCursor?: string | null;
 }
 
-export function useAttendanceHistory(eventId?: string) {
+export function useAttendanceHistory(eventId?: string, options?: { enabled?: boolean }) {
   return useInfiniteQuery<AttendanceHistoryResponse, Error>({
     queryKey: ['my-attendance', eventId],
     queryFn: ({ pageParam }) => {
@@ -42,6 +42,7 @@ export function useAttendanceHistory(eventId?: string) {
     },
     initialPageParam: undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor || undefined,
+    enabled: options?.enabled ?? true,
     staleTime: 2 * 60 * 1000,
   });
 }

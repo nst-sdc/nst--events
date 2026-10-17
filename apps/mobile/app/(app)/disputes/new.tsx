@@ -172,7 +172,7 @@ export default function SubmitDisputeScreen() {
         if (router.canGoBack()) {
           router.back();
         } else {
-          router.replace('/(app)/history');
+          router.replace('/(app)/(tabs)/activity?tab=attendance');
         }
       }}
       scrollable={false}
