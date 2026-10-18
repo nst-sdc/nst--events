@@ -3,6 +3,7 @@ import rateLimit from 'express-rate-limit';
 import { authenticate } from '../../middleware/authenticate';
 import { canManageEvent, requireRole } from '../../middleware/authorize';
 import { validate } from '../../middleware/validate';
+import { NotFoundError } from '../../lib/errors';
 import { 
   generateQrSchema, markAttendanceSchema, syncOfflineSchema,
   getEventAttendanceSchema, getMeAttendanceSchema, manualMarkSchema,
@@ -41,7 +42,7 @@ const syncOfflineRateLimit = rateLimit({
  * Helper to fetch event_id from session_id for authorization.
  */
 const getEventIdFromSession = async (req: any): Promise<string> => {
-  const sessionId = req.body.session_id;
+  const sessionId = req.body?.session_id || req.params?.sessionId || req.params?.id;
   if (!sessionId) return '';
   const userId = req.user?.id;
   if (!userId) return '';
@@ -51,7 +52,10 @@ const getEventIdFromSession = async (req: any): Promise<string> => {
       select: { eventId: true },
     });
   });
-  return session?.eventId || '';
+  if (!session) {
+    throw new NotFoundError('Session not found');
+  }
+  return session.eventId;
 };
 
 // POST /attendance/generate-qr
@@ -172,8 +176,9 @@ attendanceRouter.post(
   async (req, res, next) => {
     try {
       const userId = req.user!.id;
+      const eventId = req.params.id;
       const payload = req.body;
-      const { is_new, attendance_record } = await attendanceService.manualMarkAttendance(userId, payload);
+      const { is_new, attendance_record } = await attendanceService.manualMarkAttendance(userId, eventId, payload);
       res.status(is_new ? 201 : 200).json(attendance_record);
     } catch (error) {
       next(error);

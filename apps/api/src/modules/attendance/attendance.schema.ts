@@ -33,7 +33,7 @@ export const syncOfflineSchema = z.object({
         gps_lng: z.number().min(-180).max(180),
         gps_accuracy: z.number().min(0, 'GPS accuracy must be non-negative'),
         mock_location_detected: z.boolean(),
-        offline_seq: z.number().int().min(1),
+        offline_seq: z.number().int().min(1).optional(),
       })
     ).max(1000, 'Maximum 1000 records per batch'),
   }),

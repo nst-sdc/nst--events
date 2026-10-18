@@ -17,19 +17,19 @@ export class AttendanceService {
         where: { id: sessionId },
         select: { 
           qrSecret: true,
-          event: { select: { isLocked: true, endTime: true } }
+          event: { select: { state: true, isLocked: true, endTime: true } }
         },
       });
 
-      if (!session) {
-        throw new Error('Session not found');
+      if (!session || !session.event) {
+        throw new NotFoundError('Session not found');
       }
 
       const dbTimeResult = await tx.$queryRaw<{ now: Date }[]>`SELECT now() as now`;
       const dbNow = dbTimeResult[0].now;
       const finalDeadline = new Date(session.event.endTime.getTime() + 24 * 60 * 60 * 1000);
       
-      if (session.event.isLocked || dbNow >= finalDeadline) {
+      if (session.event.state !== 'PUBLISHED' || session.event.isLocked || dbNow >= finalDeadline) {
         throw new UnprocessableEntityError('EVENT_LOCKED');
       }
 
@@ -192,10 +192,16 @@ export class AttendanceService {
       await tx.$executeRaw`SELECT set_config('app.user_id', ${userId}, true)`;
       return tx.attendanceSession.findMany({
         where: { id: { in: sessionIds } },
-        select: { id: true, qrSecret: true },
+        select: { id: true, qrSecret: true, openAt: true, closeAt: true },
       });
     });
-    const sessionSecretMap = new Map(sessions.map((s) => [s.id, s.qrSecret]));
+    const sessionMap = new Map(sessions.map((s) => [s.id, s]));
+
+    const recordsWithIndex = payload.records.map((r, idx) => ({
+      ...r,
+      batch_index: idx,
+      user_id: r.user_id || userId,
+    }));
 
     const validRecords: Array<{
       user_id: string;
@@ -207,9 +213,16 @@ export class AttendanceService {
       gps_lng: number;
       gps_accuracy: number;
       mock_location_detected: boolean;
-      offline_seq: number;
+      offline_seq?: number;
+      batch_index: number;
     }> = [];
-    const errors: Array<{ user_id: string; error_code: string }> = [];
+    const errors: Array<{
+      user_id: string;
+      error_code: string;
+      session_id?: string;
+      offline_seq?: number;
+      batch_index?: number;
+    }> = [];
     const offlineAttempts: Array<{
       sessionId: string;
       userId: string;
@@ -223,17 +236,24 @@ export class AttendanceService {
     }> = [];
     let skipped = 0;
 
-    for (const record of payload.records) {
-      const secret = sessionSecretMap.get(record.session_id);
-      if (!secret) {
+    const DRIFT_TOLERANCE_MS = 30_000;
+    const nowMs = Date.now();
+
+    for (const record of recordsWithIndex) {
+      const recordUserId = record.user_id;
+      const session = sessionMap.get(record.session_id);
+      if (!session || !session.qrSecret) {
         skipped++;
         errors.push({
-          user_id: userId,
+          user_id: recordUserId,
           error_code: 'SESSION_CLOSED',
+          session_id: record.session_id,
+          offline_seq: record.offline_seq,
+          batch_index: record.batch_index,
         });
         offlineAttempts.push({
           sessionId: record.session_id,
-          userId,
+          userId: recordUserId,
           isSuccess: false,
           failureReason: 'SESSION_CLOSED',
           latitude: record.gps_lat,
@@ -246,17 +266,72 @@ export class AttendanceService {
       }
 
       const scanTimeMs = new Date(record.scan_timestamp).getTime();
-      const isValid = verifyQrPayload(record.session_id, record.scanned_token, secret, scanTimeMs);
+
+      // Check future timestamp (> 5 minutes clock skew)
+      if (isNaN(scanTimeMs) || scanTimeMs > nowMs + 5 * 60 * 1000) {
+        skipped++;
+        errors.push({
+          user_id: recordUserId,
+          error_code: 'FUTURE_TIMESTAMP',
+          session_id: record.session_id,
+          offline_seq: record.offline_seq,
+          batch_index: record.batch_index,
+        });
+        offlineAttempts.push({
+          sessionId: record.session_id,
+          userId: recordUserId,
+          isSuccess: false,
+          failureReason: 'FUTURE_TIMESTAMP',
+          latitude: record.gps_lat,
+          longitude: record.gps_lng,
+          gpsAccuracy: record.gps_accuracy,
+          deviceId: record.device_id,
+          isOfflineSync: true,
+        });
+        continue;
+      }
+
+      // Check session open_at / close_at window bounds
+      if (
+        (session.openAt && scanTimeMs < session.openAt.getTime() - DRIFT_TOLERANCE_MS) ||
+        (session.closeAt && scanTimeMs > session.closeAt.getTime() + DRIFT_TOLERANCE_MS)
+      ) {
+        skipped++;
+        errors.push({
+          user_id: recordUserId,
+          error_code: 'SESSION_CLOSED',
+          session_id: record.session_id,
+          offline_seq: record.offline_seq,
+          batch_index: record.batch_index,
+        });
+        offlineAttempts.push({
+          sessionId: record.session_id,
+          userId: recordUserId,
+          isSuccess: false,
+          failureReason: 'SESSION_CLOSED',
+          latitude: record.gps_lat,
+          longitude: record.gps_lng,
+          gpsAccuracy: record.gps_accuracy,
+          deviceId: record.device_id,
+          isOfflineSync: true,
+        });
+        continue;
+      }
+
+      const isValid = verifyQrPayload(record.session_id, record.scanned_token, session.qrSecret, scanTimeMs);
       
       if (!isValid) {
         skipped++;
         errors.push({
-          user_id: userId,
+          user_id: recordUserId,
           error_code: 'INVALID_SIGNATURE',
+          session_id: record.session_id,
+          offline_seq: record.offline_seq,
+          batch_index: record.batch_index,
         });
         offlineAttempts.push({
           sessionId: record.session_id,
-          userId,
+          userId: recordUserId,
           isSuccess: false,
           failureReason: 'INVALID_SIGNATURE',
           latitude: record.gps_lat,
@@ -294,12 +369,26 @@ export class AttendanceService {
     const dbResult = result;
 
     const sanitizedDbErrors = (dbResult.errors || []).map(
-      (e: { user_id: string; error_code: string }) => sanitizeOfflineError(e)
+      (e: { user_id: string; error_code: string; session_id?: string; offline_seq?: number; batch_index?: number }) => sanitizeOfflineError(e)
     );
 
     // Correlate database errors with validRecords, avoiding fallback misattribution
     for (const errItem of sanitizedDbErrors) {
-      const matchingRecord = validRecords.find((r) => r.user_id === errItem.user_id);
+      const matchingRecord =
+        (typeof errItem.batch_index === 'number' ? recordsWithIndex[errItem.batch_index] : undefined) ||
+        validRecords.find(
+          (r) =>
+            r.session_id === errItem.session_id &&
+            r.offline_seq !== undefined &&
+            r.offline_seq === errItem.offline_seq
+        ) ||
+        validRecords.find(
+          (r) =>
+            r.user_id === errItem.user_id &&
+            r.session_id === errItem.session_id
+        ) ||
+        validRecords.find((r) => r.user_id === errItem.user_id);
+
       if (matchingRecord) {
         offlineAttempts.push({
           sessionId: matchingRecord.session_id,
@@ -313,7 +402,6 @@ export class AttendanceService {
           isOfflineSync: true,
         });
       }
-      // If matching record is not found, skip row to prevent misattributing location data
     }
 
     if (offlineAttempts.length > 0) {
@@ -324,10 +412,18 @@ export class AttendanceService {
       });
     }
 
+    const responseDbErrors = sanitizedDbErrors.map((e: { user_id: string; error_code: string; session_id?: string; offline_seq?: number; batch_index?: number }) => ({
+      user_id: e.user_id,
+      error_code: e.error_code,
+      session_id: e.session_id,
+      offline_seq: e.offline_seq,
+      batch_index: e.batch_index,
+    }));
+
     return {
       processed: dbResult.processed,
       skipped: dbResult.skipped + skipped,
-      errors: [...errors, ...sanitizedDbErrors],
+      errors: [...errors, ...responseDbErrors],
     };
   }
 
@@ -382,7 +478,21 @@ export class AttendanceService {
     });
   }
 
-  async manualMarkAttendance(userId: string, payload: { session_id: string; user_id: string }) {
+  async manualMarkAttendance(
+    userId: string,
+    eventIdOrPayload: string | { session_id: string; user_id: string },
+    maybePayload?: { session_id: string; user_id: string }
+  ) {
+    let eventId: string | undefined;
+    let payload: { session_id: string; user_id: string };
+
+    if (typeof eventIdOrPayload === 'string') {
+      eventId = eventIdOrPayload;
+      payload = maybePayload!;
+    } else {
+      payload = eventIdOrPayload;
+    }
+
     try {
       const result = await withUserContext(userId, async (tx) => {
         const session = await tx.attendanceSession.findUnique({
@@ -390,11 +500,14 @@ export class AttendanceService {
           select: { eventId: true },
         });
 
-        if (!session) throw new UnprocessableEntityError('SESSION_CLOSED');
+        if (!session) throw new NotFoundError('Session not found');
+        if (eventId && session.eventId !== eventId) {
+          throw new NotFoundError('Session not found in this event');
+        }
         
         const event = await tx.event.findUnique({
           where: { id: session.eventId },
-          select: { isLocked: true, endTime: true }
+          select: { state: true, isLocked: true, endTime: true }
         });
         
         if (event) {
@@ -402,8 +515,8 @@ export class AttendanceService {
           const dbNow = dbTimeResult[0].now;
           const finalDeadline = new Date(event.endTime.getTime() + 24 * 60 * 60 * 1000);
           
-          if (event.isLocked || dbNow >= finalDeadline) {
-            throw new Error('EVENT_LOCKED');
+          if (event.state !== 'PUBLISHED' || event.isLocked || dbNow >= finalDeadline) {
+            throw new UnprocessableEntityError('EVENT_LOCKED');
           }
         }
 
@@ -468,7 +581,7 @@ export class AttendanceService {
             }
           });
           if (!membership) {
-            throw new Error('Unauthorized to view disputes for this club');
+            throw new ForbiddenError('Unauthorized to view disputes for this club');
           }
         }
       }
