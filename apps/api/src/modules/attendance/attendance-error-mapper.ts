@@ -12,8 +12,8 @@ import { SQLSTATE_MAP } from '../../lib/errors/database-error-mapper';
  * Never exposes raw SQLSTATE for unknown errors.
  */
 export function sanitizeOfflineError(
-  record: { user_id: string; error_code: string }
-): { user_id: string; error_code: string } {
+  record: { user_id: string; error_code: string; session_id?: string; offline_seq?: number; batch_index?: number }
+): { user_id: string; error_code: string; session_id?: string; offline_seq?: number; batch_index?: number } {
   const mapping = SQLSTATE_MAP[record.error_code];
 
   if (mapping) {
@@ -29,6 +29,33 @@ export function sanitizeOfflineError(
     return {
       user_id: record.user_id,
       error_code: semanticCode,
+      session_id: record.session_id,
+      offline_seq: record.offline_seq,
+      batch_index: record.batch_index,
+    };
+  }
+
+  // Known semantic codes returned directly by offline sync logic
+  const KNOWN_SEMANTIC_CODES = new Set([
+    'SESSION_CLOSED',
+    'FUTURE_TIMESTAMP',
+    'INVALID_SIGNATURE',
+    'DUPLICATE',
+    'LOCATION_VERIFICATION_FAILED',
+    'NOT_REGISTERED',
+    'REGISTRATION_NOT_ELIGIBLE',
+    'EVENT_LOCKED',
+    'WAITLISTED',
+    'SIGNATURE_ALREADY_CONSUMED',
+  ]);
+
+  if (KNOWN_SEMANTIC_CODES.has(record.error_code)) {
+    return {
+      user_id: record.user_id,
+      error_code: record.error_code,
+      session_id: record.session_id,
+      offline_seq: record.offline_seq,
+      batch_index: record.batch_index,
     };
   }
 
@@ -40,5 +67,8 @@ export function sanitizeOfflineError(
   return {
     user_id: record.user_id,
     error_code: 'ATTENDANCE_ERROR',
+    session_id: record.session_id,
+    offline_seq: record.offline_seq,
+    batch_index: record.batch_index,
   };
 }
