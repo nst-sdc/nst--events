@@ -44,11 +44,9 @@ export async function executePush(tx: any, job: any) {
   // Chunk messages
   const chunks = expo.chunkPushNotifications(messages);
   const ticketMap: Record<string, string> = {};
-  const errors: string[] = [];
-  let isRateExceeded = false;
-  let isMessageTooBig = false;
-  let isInvalidCredentials = false;
-  let isDeviceNotRegistered = false;
+  const transientErrors: string[] = [];
+  const permanentJobErrors: string[] = [];
+  const invalidTokens: string[] = [];
 
   // Send chunks
   for (const chunk of chunks) {
@@ -61,49 +59,37 @@ export async function executePush(tx: any, job: any) {
         if (ticket.status === 'ok') {
           ticketMap[ticket.id] = token;
         } else {
-          expoApiErrorsTotal.labels({ error_code: ticket.details?.error || 'Unknown' }).inc();
-          // Expo returned error in ticket (e.g. DeviceNotRegistered)
-          // But wait, ticket errors in push send are rare, usually they come in receipts.
-          // Still, we record them.
-          errors.push(ticket.message || ticket.details?.error || 'Unknown ticket error');
+          const errCode = ticket.details?.error || 'Unknown';
+          expoApiErrorsTotal.labels({ error_code: errCode }).inc();
           
-          // Check for permanent errors returned synchronously
-          if (ticket.details?.error === 'DeviceNotRegistered') {
-            isDeviceNotRegistered = true;
-          } else if (ticket.details?.error === 'MessageTooBig') {
-            isMessageTooBig = true;
-          } else if (ticket.details?.error === 'InvalidCredentials') {
-            isInvalidCredentials = true;
+          if (errCode === 'DeviceNotRegistered') {
+            invalidTokens.push(token);
+            logger.info({ job_id: job.id, token_snippet: token.slice(-8) }, `🗑️ Stale token detected on send: DeviceNotRegistered. Purging token.`);
+            await tx.$executeRaw`DELETE FROM push_tokens WHERE expo_token = ${token}`;
+          } else if (errCode === 'MessageTooBig' || errCode === 'InvalidCredentials') {
+            permanentJobErrors.push(errCode);
+          } else {
+            transientErrors.push(ticket.message || errCode);
           }
         }
       }
     } catch (error: any) {
       expoApiErrorsTotal.labels({ error_code: 'network_timeout' }).inc();
       logger.error({ job_id: job.id, error: { failure_reason: 'ExpoSendError', stack: error.stack } }, `Expo send error for job ${job.id}`);
-      errors.push(error.message);
-      if (error.code === 'PUSH_TOO_MANY_EXPERIENCE_IDS') {
-         // Not explicitly documented in failure matrix, treat as transient
-      }
+      transientErrors.push(error.message);
     }
   }
 
-  if (isDeviceNotRegistered) {
-    return handlePermanentError(tx, job, 'DeviceNotRegistered');
-  }
-  if (isMessageTooBig) {
-    return handlePermanentError(tx, job, 'MessageTooBig');
-  }
-  if (isInvalidCredentials) {
-    return handlePermanentError(tx, job, 'InvalidCredentials');
+  // 1. Permanent fatal payload/credential error
+  if (permanentJobErrors.length > 0) {
+    return handlePermanentError(tx, job, permanentJobErrors.join(', '));
   }
 
+  // 2. At least one ticket was accepted by Expo
   if (Object.keys(ticketMap).length > 0) {
-    // Partial or total success. Store ticket map and transition to WAITING_FOR_RECEIPTS
     logger.info({ job_id: job.id, status: 'WAITING_FOR_RECEIPTS', tickets_count: Object.keys(ticketMap).length }, `✅ Sent push for job ${job.id}, received ${Object.keys(ticketMap).length} tickets. Transitioning to WAITING_FOR_RECEIPTS.`);
     
-    // We stringify the tickets JSON
     const ticketsJson = JSON.stringify(ticketMap);
-
     await tx.$executeRaw`
       UPDATE notification_jobs
       SET status = 'WAITING_FOR_RECEIPTS', 
@@ -112,16 +98,20 @@ export async function executePush(tx: any, job: any) {
           updated_at = now()
       WHERE id = ${job.id}::uuid
     `;
-  } else if (errors.length > 0) {
-    // Total failure (Transient)
-    const errString = errors.join(', ');
-    if (errString.includes('network') || errString.includes('timeout') || errString.includes('429') || errString.includes('500') || errString.includes('502')) {
-      return handleTransientError(tx, job, errString);
-    }
-    // Default to transient for unknown network errors from Expo
-    return handleTransientError(tx, job, errString);
-  } else {
-    // Edge case: no tickets, no errors, but tokens existed? Should not happen.
-    return handlePermanentError(tx, job, 'Unknown failure: No tickets and no errors returned.');
+    return;
   }
+
+  // 3. No tickets accepted: check if all tokens were invalid vs transient errors
+  if (invalidTokens.length > 0 && invalidTokens.length === tokens.length) {
+    logger.warn({ job_id: job.id, invalid_count: invalidTokens.length }, `❌ All registered devices for user ${userId} are unregistered (DeviceNotRegistered).`);
+    return handlePermanentError(tx, job, 'DeviceNotRegistered: All registered devices are invalid');
+  }
+
+  // 4. Transient failure (network/timeout/rate limit)
+  if (transientErrors.length > 0) {
+    return handleTransientError(tx, job, transientErrors.join(', '));
+  }
+
+  // 5. Fallback edge case
+  return handlePermanentError(tx, job, 'Unknown failure: No tickets accepted and no errors returned.');
 }
