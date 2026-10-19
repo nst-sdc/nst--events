@@ -45,6 +45,16 @@ export async function handlePermanentError(tx: any, job: any, errorMsg: string) 
     SET status = 'FAILED', last_error = ${errorMsg}, ticket_ids = NULL, updated_at = now()
     WHERE id = ${job.id}::uuid
   `;
+
+  if (job.payload?.notification_id) {
+    await tx.$executeRaw`
+      UPDATE notifications
+      SET delivery_failed_at = now(),
+          delivery_error = ${errorMsg}
+      WHERE id = ${job.payload.notification_id}::uuid
+        AND delivered_at IS NULL
+    `;
+  }
 }
 
 export async function handleArchived(tx: any, job: any, reason: string) {
@@ -65,4 +75,14 @@ export async function handleDeadLetter(tx: any, job: any, errorMsg: string) {
     SET status = 'DEAD_LETTER', last_error = ${errorMsg}, ticket_ids = NULL, updated_at = now()
     WHERE id = ${job.id}::uuid
   `;
+
+  if (job.payload?.notification_id) {
+    await tx.$executeRaw`
+      UPDATE notifications
+      SET delivery_failed_at = now(),
+          delivery_error = ${errorMsg}
+      WHERE id = ${job.payload.notification_id}::uuid
+        AND delivered_at IS NULL
+    `;
+  }
 }

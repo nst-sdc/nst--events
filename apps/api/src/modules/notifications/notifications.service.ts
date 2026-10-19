@@ -1,11 +1,24 @@
 import { withUserContext } from '@nst/database';
 import { Prisma } from '@nst/database';
+import { projectsService } from '../projects/projects.service';
 
 export const getNotifications = async (
   userId: string,
   query: { cursor?: string; limit: number; filter_read?: boolean }
 ) => {
   return withUserContext(userId, async (tx) => {
+    try {
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        select: { email: true },
+      });
+      if (user?.email) {
+        await projectsService.reconcilePendingInvitations(tx, userId, user.email);
+      }
+    } catch {
+      // Non-blocking
+    }
+
     const where: Prisma.NotificationWhereInput = {
       userId,
     };
@@ -53,6 +66,18 @@ export const getNotifications = async (
 
 export const getUnreadCount = async (userId: string) => {
   return withUserContext(userId, async (tx) => {
+    try {
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        select: { email: true },
+      });
+      if (user?.email) {
+        await projectsService.reconcilePendingInvitations(tx, userId, user.email);
+      }
+    } catch {
+      // Non-blocking
+    }
+
     const count = await tx.notification.count({
       where: { userId, readAt: null },
     });
