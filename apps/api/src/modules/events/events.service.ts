@@ -1,12 +1,13 @@
 import { withUserContext } from '@nst/database';
 import { mapDatabaseError } from '../../lib/errors/database-error-mapper';
 import { prisma } from '../../lib/prisma';
+import { logger } from '../../lib/logger';
 import { NotFoundError, UnprocessableEntityError, ForbiddenError, BadRequestError, UnauthorizedError } from '../../lib/errors';
-// Removed GLOBAL_ADMIN_ROLES
 import { Prisma, Event, AttendanceSession } from '@nst/database';
 import crypto from 'crypto';
 import {
   CreateEventInput,
+  EventClubInput,
   ListEventsQuery,
   UpdateEventInput,
   CreateSessionInput,
@@ -24,6 +25,8 @@ export interface UserForEligibilityCheck {
   email?: string | null;
   googleSub?: string | null;
   deletedAt?: Date | null;
+  globalRole?: string | null;
+  clubMemberships?: Array<{ role: string; deletedAt?: Date | null }>;
 }
 
 export function isInstitutionalEmail(email?: string | null): boolean {
@@ -38,7 +41,7 @@ export function isInstitutionalEmail(email?: string | null): boolean {
   return false;
 }
 
-export function validateRegistrationEligibility(user?: UserForEligibilityCheck | null): void {
+export function validateVerifiedUser(user?: UserForEligibilityCheck | null): void {
   if (!user) {
     throw new ForbiddenError('User not found');
   }
@@ -50,6 +53,17 @@ export function validateRegistrationEligibility(user?: UserForEligibilityCheck |
   }
   if (!user.googleSub || user.googleSub.trim() === '' || user.googleSub.startsWith('unverified')) {
     throw new ForbiddenError('Registration requires a verified institutional email account');
+  }
+}
+
+export function validateRegistrationEligibility(user?: UserForEligibilityCheck | null): void {
+  validateVerifiedUser(user);
+  if (
+    user?.globalRole === 'PLATFORM_ADMIN' ||
+    user?.globalRole === 'FACULTY_ADMIN' ||
+    user?.clubMemberships?.some((m) => m.role === 'CLUB_ADMIN' && !m.deletedAt)
+  ) {
+    throw new ForbiddenError('Administrator accounts cannot register for events');
   }
 }
 
@@ -183,16 +197,37 @@ export const calculateLockState = (isLocked: boolean, endTime: Date, dbNow: Date
   return isLocked ? 'MANUALLY_LOCKED' : 'UNLOCKED';
 };
 
-export const calculateRegistrationStatus = (dbNow: Date, start: Date | null, end: Date | null): 'UPCOMING' | 'OPEN' | 'CLOSED' => {
+export type CanonicalRegistrationStatus = 'UPCOMING' | 'OPEN' | 'CLOSING_SOON' | 'CLOSED';
+
+export const calculateRegistrationStatus = (
+  dbNow: Date,
+  start: Date | null,
+  end: Date | null,
+  closingSoonThresholdMs?: number
+): CanonicalRegistrationStatus => {
   if (!start || !end || start >= end) return 'CLOSED';
   if (dbNow < start) return 'UPCOMING';
   if (dbNow >= end) return 'CLOSED';
+
+  const totalDuration = end.getTime() - start.getTime();
+  const remainingMs = end.getTime() - dbNow.getTime();
+
+  // If explicit threshold is provided, use it. Otherwise, default to 24 hours (or up to 25% of total window for short events <= 24h)
+  const defaultThreshold = totalDuration > 24 * 60 * 60 * 1000
+    ? 24 * 60 * 60 * 1000
+    : Math.min(totalDuration * 0.25, 2 * 60 * 60 * 1000);
+  const threshold = closingSoonThresholdMs !== undefined ? closingSoonThresholdMs : defaultThreshold;
+
+  if (remainingMs <= threshold) {
+    return 'CLOSING_SOON';
+  }
+
   return 'OPEN';
 };
 
 export const createEvent = async (callerId: string, data: CreateEventInput): Promise<any> => {
   return withUserContext(callerId, async (tx) => {
-    const primaryClubs = data.club_ids.filter((c) => c.is_primary);
+    const primaryClubs = data.club_ids.filter((c: EventClubInput) => c.is_primary);
     if (primaryClubs.length !== 1) {
       throw new UnprocessableEntityError('Exactly one club must be marked as primary');
     }
@@ -204,7 +239,10 @@ export const createEvent = async (callerId: string, data: CreateEventInput): Pro
     });
     if (!user) throw new ForbiddenError('User not found');
 
-    if (!['PLATFORM_ADMIN', 'FACULTY_ADMIN'].includes(user.globalRole)) {
+    const isGlobalAdmin = ['PLATFORM_ADMIN', 'FACULTY_ADMIN'].includes(user.globalRole);
+    let isClubAdmin = false;
+
+    if (!isGlobalAdmin) {
       for (const clubItem of data.club_ids) {
         const membership = await tx.clubMembership.findFirst({
           where: { clubId: clubItem.club_id, userId: callerId, deletedAt: null },
@@ -213,6 +251,24 @@ export const createEvent = async (callerId: string, data: CreateEventInput): Pro
         if (!membership || !['CLUB_ADMIN', 'CORE_MEMBER'].includes(membership.role)) {
           throw new ForbiddenError(`Insufficient club role for club ${clubItem.club_id}`);
         }
+        if (membership.role === 'CLUB_ADMIN') {
+          isClubAdmin = true;
+        }
+      }
+    }
+
+    const regMode = data.registration_mode || 'REQUIRED';
+    if (isClubAdmin && regMode === 'REQUIRED') {
+      if (!data.registration_start_time || !data.registration_end_time) {
+        throw new UnprocessableEntityError('Registration window (opening and closing date/time) is mandatory for Club Admins');
+      }
+      const regStart = new Date(data.registration_start_time).getTime();
+      const regEnd = new Date(data.registration_end_time).getTime();
+      if (isNaN(regStart) || isNaN(regEnd)) {
+        throw new UnprocessableEntityError('Invalid registration window timestamps');
+      }
+      if (regStart >= regEnd) {
+        throw new UnprocessableEntityError('Registration closing time must be later than opening time');
       }
     }
 
@@ -234,8 +290,9 @@ export const createEvent = async (callerId: string, data: CreateEventInput): Pro
         description: data.description,
         startTime: data.start_time,
         endTime: data.end_time,
-        registrationStartTime: data.registration_start_time,
-        registrationEndTime: data.registration_end_time,
+        registrationMode: regMode,
+        registrationStartTime: regMode === 'NOT_REQUIRED' ? null : data.registration_start_time,
+        registrationEndTime: regMode === 'NOT_REQUIRED' ? null : data.registration_end_time,
         locationName: data.location_name,
         eventType: data.event_type,
         visibility: data.visibility || null,
@@ -247,7 +304,7 @@ export const createEvent = async (callerId: string, data: CreateEventInput): Pro
         maxParticipants: data.max_participants,
         audience: data.audience,
         eventClubs: {
-          create: data.club_ids.map((c) => ({
+          create: data.club_ids.map((c: EventClubInput) => ({
             clubId: c.club_id,
             isPrimary: c.is_primary,
           })),
@@ -267,7 +324,7 @@ export const createEvent = async (callerId: string, data: CreateEventInput): Pro
       }
 
       await tx.eventAudienceBatch.createMany({
-        data: data.audience_batch_ids.map(batchId => ({
+        data: data.audience_batch_ids.map((batchId: string) => ({
           eventId: event.id,
           batchId
         }))
@@ -378,6 +435,8 @@ export const listEvents = async (callerId: string, query: ListEventsQuery): Prom
           lock_deadline: new Date(item.endTime.getTime() + 24 * 60 * 60 * 1000).toISOString(),
           lock_state: calculateLockState(item.isLocked, item.endTime, dbNow),
           registrationStatus: calculateRegistrationStatus(dbNow, item.registrationStartTime, item.registrationEndTime),
+          registration_mode: item.registrationMode,
+          registrationMode: item.registrationMode,
           below_minimum_team_count: attentionMap.get(item.id) || 0,
         };
       });
@@ -396,12 +455,16 @@ type GetEventByIdResponse = Prisma.EventGetPayload<{
 }> & {
   location_geofence: any;
   lock_deadline: string;
+  lockDeadline: string;
   lock_state: EventLockState;
-  registrationStatus: 'UPCOMING' | 'OPEN' | 'CLOSED';
+  registrationStatus: CanonicalRegistrationStatus;
   audienceBatchIds?: string[];
   below_minimum_team_count: number;
   participantCount: number;
   participant_count: number;
+  registrationCount: number;
+  registeredParticipantCount: number;
+  registeredTeamCount: number | null;
 };
 
 export const getEventById = async (callerId: string, eventId: string): Promise<GetEventByIdResponse> => {
@@ -411,7 +474,7 @@ export const getEventById = async (callerId: string, eventId: string): Promise<G
       include: {
         eventClubs: { include: { club: true } },
         attendanceSessions: { where: { deletedAt: null } },
-        _count: { select: { eventRegistrations: { where: { deletedAt: null, registrationStatus: { not: 'CANCELLED' } } } } },
+        _count: { select: { eventRegistrations: { where: { deletedAt: null, registrationStatus: 'REGISTERED' } } } },
         eventAudienceBatches: true,
       },
     });
@@ -446,17 +509,27 @@ export const getEventById = async (callerId: string, eventId: string): Promise<G
     const dbNow = timeResult[0].now;
 
     const { eventAudienceBatches, ...eventRest } = event;
-    const participantCount = eventRest._count?.eventRegistrations ?? 0;
+    const countResult = await tx.$queryRaw<{ count: number }[]>`
+      SELECT get_event_participant_count(${eventId}::uuid) as count
+    `;
+    const participantCount = countResult[0]?.count ?? 0;
+    const lockDeadlineToISO = new Date(event.endTime.getTime() + 24 * 60 * 60 * 1000).toISOString();
     
     return {
       ...eventRest,
       participantCount,
       participant_count: participantCount,
+      registeredParticipantCount: participantCount,
+      registrationCount: eventRest.registrationCount,
+      registeredTeamCount: event.registrationType === 'TEAM' ? eventRest.registrationCount : null,
       audienceBatchIds: eventAudienceBatches.map(b => b.batchId),
       location_geofence: geo[0]?.geojson ? JSON.parse(geo[0].geojson) : null,
-      lock_deadline: new Date(event.endTime.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+      lock_deadline: lockDeadlineToISO,
+      lockDeadline: lockDeadlineToISO,
       lock_state: calculateLockState(event.isLocked, event.endTime, dbNow),
       registrationStatus: calculateRegistrationStatus(dbNow, event.registrationStartTime, event.registrationEndTime),
+      registration_mode: eventRest.registrationMode,
+      registrationMode: eventRest.registrationMode,
       below_minimum_team_count: attentionResult[0]?.below_minimum_team_count || 0,
     };
   });
@@ -483,7 +556,7 @@ export const updateEvent = async (callerId: string, eventId: string, data: Updat
   return withUserContext(callerId, async (tx) => {
     const existing = await tx.event.findUnique({
       where: { id: eventId },
-      select: { state: true, deletedAt: true, startTime: true, endTime: true, registrationStartTime: true, registrationEndTime: true, slug: true },
+      select: { state: true, deletedAt: true, startTime: true, endTime: true, registrationStartTime: true, registrationEndTime: true, slug: true, registrationMode: true },
     });
 
     if (!existing || existing.deletedAt) {
@@ -499,6 +572,20 @@ export const updateEvent = async (callerId: string, eventId: string, data: Updat
         throw new UnprocessableEntityError('Event end time can only be extended once published');
       }
     }
+
+    if (data.registration_mode === 'NOT_REQUIRED' && existing.registrationMode !== 'NOT_REQUIRED') {
+      const activeRegCount = await tx.eventRegistration.count({
+        where: { eventId, deletedAt: null },
+      });
+      const activeTeamCount = await tx.team.count({
+        where: { eventId, deletedAt: null },
+      });
+      if (activeRegCount > 0 || activeTeamCount > 0) {
+        throw new UnprocessableEntityError('Cannot change registration mode to NOT_REQUIRED when registrations or teams already exist');
+      }
+    }
+
+    const effectiveRegMode = data.registration_mode || existing.registrationMode;
 
     const mergedStart = data.start_time !== undefined ? new Date(data.start_time).getTime() : existing.startTime.getTime();
     const mergedEnd = data.end_time !== undefined ? new Date(data.end_time).getTime() : existing.endTime.getTime();
@@ -519,14 +606,53 @@ export const updateEvent = async (callerId: string, eventId: string, data: Updat
     }
 
     if (mergedStart >= mergedEnd) throw new UnprocessableEntityError('start_time must be before end_time');
-    if (mergedRegStart !== undefined && mergedRegEnd !== undefined && mergedRegStart >= mergedRegEnd) {
-      throw new UnprocessableEntityError('registration_start_time must be before registration_end_time');
+    if (effectiveRegMode === 'REQUIRED') {
+      if (existing.state === 'PUBLISHED') {
+        if (mergedRegStart === undefined || mergedRegEnd === undefined || isNaN(mergedRegStart) || isNaN(mergedRegEnd)) {
+          throw new UnprocessableEntityError('Published events in REQUIRED registration mode must have a valid registration window');
+        }
+      }
+      if (mergedRegStart !== undefined && mergedRegEnd !== undefined && mergedRegStart >= mergedRegEnd) {
+        throw new UnprocessableEntityError('registration_start_time must be before registration_end_time');
+      }
+      if (mergedRegStart !== undefined && mergedRegStart >= mergedEnd) {
+        throw new UnprocessableEntityError('registration_start_time must be before event end_time');
+      }
+      if (mergedRegEnd !== undefined && mergedRegEnd > mergedEnd) {
+        throw new UnprocessableEntityError('registration_end_time must be less than or equal to event end_time');
+      }
     }
-    if (mergedRegStart !== undefined && mergedRegStart >= mergedEnd) {
-      throw new UnprocessableEntityError('registration_start_time must be before event end_time');
+
+    const user = await tx.user.findUnique({
+      where: { id: callerId },
+      select: { globalRole: true },
+    });
+    if (!user) throw new ForbiddenError('User not found');
+    const isGlobalAdmin = ['PLATFORM_ADMIN', 'FACULTY_ADMIN'].includes(user.globalRole);
+    let isClubAdmin = false;
+    if (!isGlobalAdmin) {
+      const eventClubs = await tx.eventClub.findMany({
+        where: { eventId },
+        select: { clubId: true },
+      });
+      const clubIds = eventClubs.map((ec) => ec.clubId);
+      const memberships = await tx.clubMembership.findMany({
+        where: { clubId: { in: clubIds }, userId: callerId, deletedAt: null },
+        select: { role: true },
+      });
+      isClubAdmin = memberships.some((m) => m.role === 'CLUB_ADMIN');
     }
-    if (mergedRegEnd !== undefined && mergedRegEnd > mergedEnd) {
-      throw new UnprocessableEntityError('registration_end_time must be less than or equal to event end_time');
+
+    if (isClubAdmin && effectiveRegMode === 'REQUIRED') {
+      if (mergedRegStart === undefined || mergedRegEnd === undefined || data.registration_start_time === null || data.registration_end_time === null) {
+        throw new UnprocessableEntityError('Registration window (opening and closing date/time) is mandatory for Club Admins');
+      }
+      if (isNaN(mergedRegStart) || isNaN(mergedRegEnd)) {
+        throw new UnprocessableEntityError('Invalid registration window timestamps');
+      }
+      if (mergedRegStart >= mergedRegEnd) {
+        throw new UnprocessableEntityError('Registration closing time must be later than opening time');
+      }
     }
 
     let slugToUpdate: string | undefined = undefined;
@@ -563,8 +689,9 @@ export const updateEvent = async (callerId: string, eventId: string, data: Updat
         description: data.description,
         startTime: data.start_time,
         endTime: data.end_time,
-        registrationStartTime: data.registration_start_time,
-        registrationEndTime: data.registration_end_time,
+        registrationMode: data.registration_mode !== undefined ? data.registration_mode : undefined,
+        registrationStartTime: data.registration_mode === 'NOT_REQUIRED' ? null : data.registration_start_time,
+        registrationEndTime: data.registration_mode === 'NOT_REQUIRED' ? null : data.registration_end_time,
         locationName: data.location_name,
         eventType: data.event_type,
         visibility: data.visibility !== undefined ? data.visibility : undefined,
@@ -593,7 +720,7 @@ export const updateEvent = async (callerId: string, eventId: string, data: Updat
 
         await tx.eventAudienceBatch.deleteMany({ where: { eventId } });
         await tx.eventAudienceBatch.createMany({
-          data: data.audience_batch_ids.map(batchId => ({
+          data: data.audience_batch_ids.map((batchId: string) => ({
             eventId,
             batchId
           }))
@@ -620,21 +747,146 @@ export const updateEvent = async (callerId: string, eventId: string, data: Updat
 
 export const deleteEvent = async (callerId: string, eventId: string) => {
   return withUserContext(callerId, async (tx) => {
+    try {
+      const rows: any[] = await tx.$queryRaw`
+        SELECT id, state, deleted_at FROM delete_event(${eventId}::uuid)
+      `;
+      return rows[0];
+    } catch (err: any) {
+      mapDatabaseError(err);
+    }
+  });
+};
+
+export const cancelEvent = async (callerId: string, eventId: string, reason: string) => {
+  return withUserContext(callerId, async (tx) => {
     const existing = await tx.event.findUnique({
       where: { id: eventId },
-      select: { deletedAt: true },
+      select: { id: true, title: true, state: true, deletedAt: true },
     });
 
     if (!existing || existing.deletedAt) {
       throw new NotFoundError('Event not found');
     }
 
-    await tx.event.update({
-      where: { id: eventId },
-      data: { deletedAt: new Date() },
-    });
+    if (existing.state === 'CANCELLED') {
+      return {
+        id: existing.id,
+        state: existing.state,
+        message: 'Event is already cancelled',
+      };
+    }
+
+    if (existing.state === 'DRAFT') {
+      throw new UnprocessableEntityError('Draft events cannot be cancelled; delete the draft instead.');
+    }
+
+    if (existing.state === 'ARCHIVED') {
+      throw new UnprocessableEntityError('Archived events cannot be cancelled.');
+    }
+
+    const previousState = existing.state;
+
+    let updatedEvent: any;
+    try {
+      const rows: any[] = await tx.$queryRaw`
+        SELECT id, state, metadata FROM cancel_event(${eventId}::uuid, ${reason}::text)
+      `;
+      updatedEvent = rows[0];
+    } catch (err: any) {
+      mapDatabaseError(err);
+    }
+
+    // If event was published, notify registered/waitlisted attendees
+    if (previousState === 'PUBLISHED') {
+      const attendees = await tx.eventRegistration.findMany({
+        where: {
+          eventId,
+          deletedAt: null,
+          registrationStatus: { in: ['REGISTERED', 'WAITLISTED'] },
+        },
+        select: { userId: true },
+      });
+
+      const uniqueUserIds = Array.from(new Set(attendees.map((a: any) => a.userId)));
+
+      for (const uid of uniqueUserIds) {
+        try {
+          await enqueueNotification({
+            tx,
+            userId: uid,
+            type: 'EVENT_CANCELLED',
+            title: `Event Cancelled: ${existing.title}`,
+            body: reason || `The event "${existing.title}" has been cancelled.`,
+            metadata: {
+              schema_version: 1,
+              routing: {
+                target: 'event_details',
+                fallback: `/student/events/${eventId}`,
+                params: { eventId },
+              },
+              entity_ids: {
+                event_id: eventId,
+              },
+            },
+            preferenceGate: 'event_reminders',
+            priority: 'HIGH',
+            idempotencyString: `event-cancelled-${eventId}`,
+          });
+        } catch (notifErr) {
+          logger.error({ err: notifErr, userId: uid, eventId }, 'Failed to enqueue cancellation notification for recipient');
+        }
+      }
+    }
+
+    return updatedEvent;
   });
 };
+
+export const archiveEvent = async (callerId: string, eventId: string) => {
+  return withUserContext(callerId, async (tx) => {
+    const existing = await tx.event.findUnique({
+      where: { id: eventId },
+      select: { id: true, title: true, state: true, endTime: true, deletedAt: true },
+    });
+
+    if (!existing || existing.deletedAt) {
+      throw new NotFoundError('Event not found');
+    }
+
+    if (existing.state === 'ARCHIVED') {
+      return {
+        id: existing.id,
+        state: existing.state,
+        message: 'Event is already archived',
+      };
+    }
+
+    if (existing.state === 'DRAFT' || existing.state === 'PENDING_APPROVAL') {
+      throw new UnprocessableEntityError('Only completed or cancelled events can be archived.');
+    }
+
+    const dbNowRes = await tx.$queryRaw<{ now: Date }[]>`SELECT NOW() as now`;
+    const dbNow = dbNowRes[0]?.now || new Date();
+
+    if (existing.state === 'PUBLISHED' && dbNow < new Date(existing.endTime)) {
+      throw new UnprocessableEntityError('Cannot archive an event before its scheduled end time.');
+    }
+
+    let updatedEvent: any;
+    try {
+      const rows: any[] = await tx.$queryRaw`
+        SELECT id, state, metadata FROM archive_event(${eventId}::uuid)
+      `;
+      updatedEvent = rows[0];
+    } catch (err: any) {
+      mapDatabaseError(err);
+    }
+
+    return updatedEvent;
+  });
+};
+
 
 export const submitForApproval = async (callerId: string, eventId: string) => {
   return withUserContext(callerId, async (tx) => {
@@ -696,6 +948,12 @@ export const approveEvent = async (callerId: string, eventId: string) => {
 
     if (!event.visibility || !['PUBLIC', 'UNLISTED', 'RESTRICTED'].includes(event.visibility)) {
       throw new UnprocessableEntityError('Event visibility must be selected before publication');
+    }
+
+    if (event.registrationMode === 'REQUIRED') {
+      if (!event.registrationStartTime || !event.registrationEndTime || event.registrationStartTime >= event.registrationEndTime) {
+        throw new UnprocessableEntityError('Registration window must be configured before publication for registration-required events');
+      }
     }
 
     try {
@@ -824,12 +1082,12 @@ export const createSession = async (
       throw new NotFoundError('Event not found');
     }
 
-    if (event.attendanceType === 'SINGLE' && event._count.attendanceSessions > 0) {
-      throw new UnprocessableEntityError('Event is configured for a single attendance session only.');
+    if (event.state !== 'PUBLISHED') {
+      throw new UnprocessableEntityError('Cannot add sessions to non-published events');
     }
 
-    if (event.state === 'ARCHIVED') {
-      throw new UnprocessableEntityError('Cannot add sessions to archived events');
+    if (event.attendanceType === 'SINGLE' && event._count.attendanceSessions > 0) {
+      throw new UnprocessableEntityError('Event is configured for a single attendance session only.');
     }
 
     const dbTimeResult = await tx.$queryRaw<{ now: Date }[]>`SELECT now() as now`;
@@ -897,10 +1155,14 @@ export const updateSession = async (
 
     const event = await tx.event.findUnique({
       where: { id: eventId },
-      select: { isLocked: true, endTime: true },
+      select: { state: true, isLocked: true, endTime: true },
     });
 
     if (event) {
+      if (event.state !== 'PUBLISHED') {
+        throw new UnprocessableEntityError('EVENT_LOCKED');
+      }
+
       const dbTimeResult = await tx.$queryRaw<{ now: Date }[]>`SELECT now() as now`;
       const dbNow = dbTimeResult[0].now;
       const finalDeadline = new Date(event.endTime.getTime() + 24 * 60 * 60 * 1000);
@@ -1122,8 +1384,8 @@ export const listPublicEvents = async (query: PublicEventsQuery) => {
 
     const where: Prisma.EventWhereInput = {
       deletedAt: null,
-      state: 'PUBLISHED',
       visibility: 'PUBLIC',
+      state: query.time_filter === 'past' ? { in: ['PUBLISHED', 'ARCHIVED'] } : 'PUBLISHED',
     };
 
     const eventType = query.filter_event_type || (query as any).event_type;
@@ -1144,7 +1406,7 @@ export const listPublicEvents = async (query: PublicEventsQuery) => {
       const fts = await tx.$queryRaw<{ id: string }[]>`
         SELECT id FROM events 
         WHERE deleted_at IS NULL
-          AND state = 'PUBLISHED'
+          AND state IN ('PUBLISHED', 'ARCHIVED')
           AND visibility = 'PUBLIC'
           AND search_vector @@ plainto_tsquery('english', ${query.q})
         LIMIT 1000
@@ -1209,6 +1471,8 @@ export const listPublicEvents = async (query: PublicEventsQuery) => {
           banner_url: primaryClub.club.bannerUrl,
         } : null,
         registration_status: regStatus,
+        registration_mode: item.registrationMode,
+        registrationMode: item.registrationMode,
       };
     });
 
@@ -1278,7 +1542,7 @@ export const getPublicEventBySlug = async (slugParam: string, callerId?: string)
       });
 
       if (history && !history.event.deletedAt) {
-        if (history.event.state !== 'PUBLISHED') {
+        if (!['PUBLISHED', 'ARCHIVED', 'CANCELLED'].includes(history.event.state)) {
           throw new NotFoundError('Event not found');
         }
         if (history.event.visibility === 'RESTRICTED') {
@@ -1304,7 +1568,7 @@ export const getPublicEventBySlug = async (slugParam: string, callerId?: string)
     }
 
     // Active event matched
-    if (event.state !== 'PUBLISHED') {
+    if (!['PUBLISHED', 'ARCHIVED', 'CANCELLED'].includes(event.state)) {
       throw new NotFoundError('Event not found');
     }
 
@@ -1322,7 +1586,9 @@ export const getPublicEventBySlug = async (slugParam: string, callerId?: string)
     }
 
     const metadata = (event.metadata || {}) as Record<string, any>;
-    const regStatus = calculateRegistrationStatus(dbNow, event.registrationStartTime, event.registrationEndTime);
+    const regStatus = (event.state === 'CANCELLED' || event.state === 'ARCHIVED')
+      ? 'CLOSED'
+      : calculateRegistrationStatus(dbNow, event.registrationStartTime, event.registrationEndTime);
     const primaryClub = event.eventClubs.find((c) => c.isPrimary) || event.eventClubs[0];
 
     return {
@@ -1340,6 +1606,7 @@ export const getPublicEventBySlug = async (slugParam: string, callerId?: string)
       registration_type: event.registrationType,
       visibility: event.visibility,
       state: event.state,
+      cancellation_reason: event.state === 'CANCELLED' ? (metadata.cancellation_reason || null) : null,
       clubs: event.eventClubs.map((ec) => ({
         id: ec.club.id,
         name: ec.club.name,
@@ -1352,6 +1619,8 @@ export const getPublicEventBySlug = async (slugParam: string, callerId?: string)
         banner_url: primaryClub.club.bannerUrl,
       } : null,
       registration_status: regStatus,
+      registration_mode: event.registrationMode,
+      registrationMode: event.registrationMode,
     };
   });
 };

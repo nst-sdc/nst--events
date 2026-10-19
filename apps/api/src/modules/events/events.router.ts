@@ -10,6 +10,7 @@ import {
   CreateEventSchema,
   UpdateEventSchema,
   RejectEventSchema,
+  CancelEventSchema,
   CreateSessionSchema,
   UpdateSessionSchema,
   UpdateEventFormFieldsSchema,
@@ -273,6 +274,41 @@ router.post(
   async (req, res, next) => {
     try {
       const result = await eventsService.unlockEvent(req.user!.id, req.params.id);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.post(
+  '/:id/cancel',
+  authenticate,
+  validate(ParamIdSchema),
+  canManageEvent((req: Request) => req.params.id, ['CLUB_ADMIN']),
+  validate(CancelEventSchema),
+  async (req, res, next) => {
+    try {
+      const result = await eventsService.cancelEvent(
+        req.user!.id,
+        req.params.id,
+        req.body.reason
+      );
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.post(
+  '/:id/archive',
+  authenticate,
+  validate(ParamIdSchema),
+  canManageEvent((req: Request) => req.params.id, ['CLUB_ADMIN']),
+  async (req, res, next) => {
+    try {
+      const result = await eventsService.archiveEvent(req.user!.id, req.params.id);
       res.json(result);
     } catch (err) {
       next(err);

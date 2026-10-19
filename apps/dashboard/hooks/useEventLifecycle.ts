@@ -54,6 +54,20 @@ export function useEventLifecycle() {
     }
   });
 
+  const cancelMutation = useMutation({
+    mutationFn: ({ eventId, reason }: { eventId: string; reason: string }) =>
+      apiClient(`/v1/events/${eventId}/cancel`, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
+      }),
+    onSuccess: (_, { eventId }) => onSuccess(_, eventId),
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: (eventId: string) => apiClient(`/v1/events/${eventId}/archive`, { method: 'POST' }),
+    onSuccess,
+  });
+
   return {
     submitMutation,
     approveMutation,
@@ -61,5 +75,7 @@ export function useEventLifecycle() {
     lockMutation,
     unlockMutation,
     deleteMutation,
+    cancelMutation,
+    archiveMutation,
   };
 }
