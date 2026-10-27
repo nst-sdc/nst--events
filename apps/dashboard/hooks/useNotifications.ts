@@ -99,6 +99,7 @@ export function useReadNotification() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
     },
   });
 }
@@ -110,6 +111,7 @@ export function useReadAllNotifications() {
     mutationFn: () => apiClient(`/v1/notifications/read-all`, { method: 'PATCH' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
     },
   });
 }

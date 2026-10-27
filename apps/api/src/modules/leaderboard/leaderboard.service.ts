@@ -17,7 +17,10 @@ export class LeaderboardService {
       WITH Ranked AS (
         SELECT 
           user_id, 
-          display_name, 
+          CASE
+            WHEN is_student_identity_hidden(user_id) THEN 'Anonymous Student'
+            ELSE display_name
+          END as display_name,
           total_points, 
           attendance_points, 
           contribution_points, 
@@ -90,8 +93,14 @@ export class LeaderboardService {
         WITH Scored AS (
           SELECT 
             u.id as user_id, 
-            u.full_name as display_name, 
-            COALESCE(SUM(ls.points), 0)::integer as total_points
+            CASE
+              WHEN is_student_identity_hidden(u.id) THEN 'Anonymous Student'
+              ELSE u.full_name
+            END as display_name,
+            COALESCE(SUM(ls.points), 0)::integer as total_points,
+            COALESCE(SUM(CASE WHEN classify_leaderboard_score_category(ls.reason) = 'ATTENDANCE' THEN ls.points ELSE 0 END), 0)::integer as attendance_points,
+            COALESCE(SUM(CASE WHEN classify_leaderboard_score_category(ls.reason) = 'CONTRIBUTION' THEN ls.points ELSE 0 END), 0)::integer as contribution_points,
+            COALESCE(SUM(CASE WHEN classify_leaderboard_score_category(ls.reason) = 'COMPETITION' THEN ls.points ELSE 0 END), 0)::integer as competition_points
           FROM leaderboard_scores ls
           JOIN users u ON u.id = ls.user_id
           WHERE ls.club_id = ${clubId}::uuid

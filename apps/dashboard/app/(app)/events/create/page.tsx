@@ -90,6 +90,7 @@ export default function CreateEventPage() {
     slug?: string;
     description?: string;
     banner_url: string;
+    registration_mode?: 'REQUIRED' | 'NOT_REQUIRED';
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     dateRange: [any, any];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -130,13 +131,17 @@ export default function CreateEventPage() {
         const regStart = values.registration_start_time;
         const regEnd = values.registration_end_time;
 
-        if (regStart && regEnd && dayjs(regStart).isAfter(dayjs(regEnd))) {
-          setErrorMessage('Registration Opens At must be before Registration Closes At.');
-          return;
-        }
-        if (regEnd && end && dayjs(regEnd).isAfter(dayjs(end))) {
-          setErrorMessage('Registration Closes At must be before or at event end time.');
-          return;
+        const regMode = values.registration_mode || 'REQUIRED';
+
+        if (regMode === 'REQUIRED') {
+          if (regStart && regEnd && dayjs(regStart).isAfter(dayjs(regEnd))) {
+            setErrorMessage('Registration Opens At must be before Registration Closes At.');
+            return;
+          }
+          if (regEnd && end && dayjs(regEnd).isAfter(dayjs(end))) {
+            setErrorMessage('Registration Closes At must be before or at event end time.');
+            return;
+          }
         }
 
         const payload: CreateEventPayload = {
@@ -144,8 +149,9 @@ export default function CreateEventPage() {
           description: values.description,
           start_time: start.toISOString(),
           end_time: end.toISOString(),
-          registration_start_time: regStart ? dayjs(regStart).toISOString() : undefined,
-          registration_end_time: regEnd ? dayjs(regEnd).toISOString() : undefined,
+          registration_mode: regMode,
+          registration_start_time: regMode === 'NOT_REQUIRED' ? undefined : (regStart ? dayjs(regStart).toISOString() : undefined),
+          registration_end_time: regMode === 'NOT_REQUIRED' ? undefined : (regEnd ? dayjs(regEnd).toISOString() : undefined),
           location_name: values.location_name,
           event_type: values.event_type,
           visibility: values.visibility,
@@ -430,6 +436,7 @@ export default function CreateEventPage() {
                   extra="Date and time when registration becomes available."
                   dependencies={['registration_end_time', 'dateRange']}
                   rules={[
+                    { required: !isGlobalAdmin, message: 'Registration opening date and time is required for Club Admins' },
                     ({ getFieldValue }) => ({
                       validator(_, value) {
                         const regEnd = getFieldValue('registration_end_time');
@@ -460,6 +467,7 @@ export default function CreateEventPage() {
                   extra="Date and time when registration stops accepting registrations."
                   dependencies={['registration_start_time', 'dateRange']}
                   rules={[
+                    { required: !isGlobalAdmin, message: 'Registration closing date and time is required for Club Admins' },
                     ({ getFieldValue }) => ({
                       validator(_, value) {
                         const regStart = getFieldValue('registration_start_time');

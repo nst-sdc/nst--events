@@ -21,7 +21,7 @@ test('OAuth Callback Redirect Tests', async (t) => {
     sinon.restore();
   });
 
-  await t.test('Successful callback establishes session and redirects to WEB_APP_URL/dashboard', async () => {
+  await t.test('Successful callback establishes session and redirects to WEB_APP_URL/dashboard for faculty mentor', async () => {
     const googleSub = `sub-redirect-${Date.now()}`;
     const testEmail = `redirect-${Date.now()}@newtonschool.co`;
 
@@ -50,12 +50,53 @@ test('OAuth Callback Redirect Tests', async (t) => {
     const hasRefreshTokenCookie = setCookies.some((c: string) => c.startsWith(`${REFRESH_TOKEN_COOKIE_NAME}=`) && c.includes('HttpOnly'));
     assert.ok(hasRefreshTokenCookie, 'Should establish HttpOnly refresh token cookie');
 
+    const hasUserRoleCookie = setCookies.some((c: string) => c.startsWith('user_role=') && c.includes('FACULTY_MENTOR'));
+    assert.ok(hasUserRoleCookie, 'Should set user_role cookie for Next.js route guarding');
+
     // Validate state cookie is cleared
     const hasClearStateCookie = setCookies.some((c: string) => c.startsWith(`${OAUTH_STATE_COOKIE_NAME}=;`) || c.includes('Max-Age=0') || c.includes('Expires=Thu, 01 Jan 1970'));
     assert.ok(hasClearStateCookie, 'Should clear the OAuth state cookie');
 
     // Clean up
     await adminPrisma.user.deleteMany({ where: { email: testEmail } });
+  });
+
+  await t.test('Successful callback establishes session and redirects to WEB_APP_URL/student/home for student', async () => {
+    const googleSub = `sub-student-${Date.now()}`;
+    const testEmail = `s${Date.now()}@adypu.edu.in`;
+
+    // Authorize student in directory
+    await adminPrisma.authorizedStudent.create({
+      data: {
+        normalizedEmail: testEmail,
+        status: 'ACTIVE',
+      },
+    });
+
+    sinon.stub(googleOAuth, 'exchangeCodeForTokens').resolves({ id_token: 'mock_student_id_token' });
+    sinon.stub(googleOAuth, 'verifyIdToken').resolves({
+      sub: googleSub,
+      email: testEmail,
+      name: 'Student Redirect User',
+    });
+
+    const res = await request(app)
+      .get(`/auth/google/callback?code=mock_auth_code&state=${mockState}`)
+      .set('Cookie', `${OAUTH_STATE_COOKIE_NAME}=${signedStateCookie}`);
+
+    assert.strictEqual(res.status, 303, 'Should return HTTP 303 See Other');
+    assert.strictEqual(res.header.location, `${env.WEB_APP_URL}/student/home`, 'Students must land on /student/home');
+
+    const setCookies = res.header['set-cookie'] || [];
+    const hasRefreshTokenCookie = setCookies.some((c: string) => c.startsWith(`${REFRESH_TOKEN_COOKIE_NAME}=`) && c.includes('HttpOnly'));
+    assert.ok(hasRefreshTokenCookie, 'Should establish HttpOnly refresh token cookie');
+
+    const hasUserRoleCookie = setCookies.some((c: string) => c.startsWith('user_role=') && c.includes('STUDENT'));
+    assert.ok(hasUserRoleCookie, 'Should set user_role=STUDENT cookie for server-side route guarding');
+
+    // Clean up
+    await adminPrisma.user.deleteMany({ where: { email: testEmail } });
+    await adminPrisma.authorizedStudent.deleteMany({ where: { normalizedEmail: testEmail } });
   });
 
   await t.test('Failed callback (invalid state) redirects to WEB_APP_URL/login?error=...', async () => {

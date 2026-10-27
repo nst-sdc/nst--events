@@ -40,8 +40,8 @@ export function ProjectReportModal({ projectId, projectTitle }: ProjectReportMod
         setIsOpen(false);
         setDetails('');
       }, 2500);
-    } catch (err: any) {
-      setError(err.message || 'Failed to submit report');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to submit report');
     } finally {
       setIsSubmitting(false);
     }

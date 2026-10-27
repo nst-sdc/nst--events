@@ -25,6 +25,10 @@ export function resolveNotificationTarget(notification: Notification): string | 
   if (target === 'admin_queues') return `/admin/queues`;
   if (target === 'admin_users' && userId) return `/admin/users/${userId}`;
   if (target === 'admin_audit') return `/admin/audit-logs`;
+  if (target === 'project_invitation') return `/my/projects`;
+  if (target === 'project_details' && (routing.params?.id || entityIds.project_id)) {
+    return `/projects/${routing.params?.id || entityIds.project_id}`;
+  }
 
   // 2. Derive based on type and entity_ids
   const type = notification.type;
@@ -74,6 +78,11 @@ export function resolveNotificationTarget(notification: Notification): string | 
 
 export function getNotificationIcon(type: string): React.ReactNode {
   switch (type) {
+    case 'PROJECT_INVITATION':
+      return <TeamOutlined style={{ color: '#fa8c16' }} />;
+    case 'PROJECT_COLLABORATION_ACCEPTED':
+      return <CheckCircleOutlined style={{ color: '#52c41a' }} />;
+
     case 'EVENT_APPROVED':
     case 'WAITLIST_PROMOTED':
       return <CheckCircleOutlined style={{ color: '#52c41a' }} />;

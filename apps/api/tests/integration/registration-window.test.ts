@@ -3,10 +3,15 @@ import assert from 'node:assert';
 import { adminPrisma } from '../helpers/adminDb';
 import { registerEvent } from '../../src/modules/registrations/registrations.service';
 import { createTeam, joinTeam } from '../../src/modules/teams/teams.service';
-import { calculateRegistrationStatus } from '../../src/modules/events/events.service';
+import {
+  calculateRegistrationStatus,
+  createEvent,
+  updateEvent,
+} from '../../src/modules/events/events.service';
 
 describe('Registration Window Edge Cases & Authoritative Enforcement', () => {
   let organizerId: string;
+  let platformAdminId: string;
   let studentAId: string;
   let studentBId: string;
   let studentCId: string;
@@ -18,6 +23,16 @@ describe('Registration Window Edge Cases & Authoritative Enforcement', () => {
       data: { email: `org_win_${Date.now()}@adypu.edu.in`, googleSub: `sub_org_${Date.now()}`, fullName: 'Org Win' },
     });
     organizerId = org.id;
+
+    const admin = await adminPrisma.user.create({
+      data: {
+        email: `plat_admin_${Date.now()}@adypu.edu.in`,
+        googleSub: `sub_admin_${Date.now()}`,
+        fullName: 'Plat Admin',
+        globalRole: 'PLATFORM_ADMIN',
+      },
+    });
+    platformAdminId = admin.id;
 
     const sA = await adminPrisma.user.create({
       data: { email: `studentA_win_${Date.now()}@adypu.edu.in`, googleSub: `sub_sA_${Date.now()}`, fullName: 'Student A' },
@@ -53,10 +68,10 @@ describe('Registration Window Edge Cases & Authoritative Enforcement', () => {
       await adminPrisma.event.deleteMany({ where: { id: { in: eventIds } } });
     }
     await adminPrisma.$executeRaw`DELETE FROM notification_jobs;`;
-    await adminPrisma.notification.deleteMany({ where: { userId: { in: [organizerId, studentAId, studentBId, studentCId] } } });
+    await adminPrisma.notification.deleteMany({ where: { userId: { in: [organizerId, platformAdminId, studentAId, studentBId, studentCId] } } });
     await adminPrisma.clubMembership.deleteMany({ where: { clubId } });
     await adminPrisma.club.delete({ where: { id: clubId } });
-    await adminPrisma.user.deleteMany({ where: { id: { in: [organizerId, studentAId, studentBId, studentCId] } } });
+    await adminPrisma.user.deleteMany({ where: { id: { in: [organizerId, platformAdminId, studentAId, studentBId, studentCId] } } });
   });
 
   async function createTestEvent(overrides: {
@@ -336,5 +351,170 @@ describe('Registration Window Edge Cases & Authoritative Enforcement', () => {
     // Since 2026-11-01 is in the future relative to test execution, status must be UPCOMING
     const futureStatus = calculateRegistrationStatus(new Date(), testEv.registrationStartTime, testEv.registrationEndTime);
     assert.strictEqual(futureStatus, 'UPCOMING', 'Future DST-spanning registration window must report UPCOMING');
+  });
+
+  it('15. Canonical registration status: comprehensive contract evaluation (UPCOMING, OPEN, CLOSING_SOON, CLOSED)', () => {
+    const start = new Date('2026-10-20T10:00:00Z');
+    const end = new Date('2026-10-27T10:00:00Z'); // 7-day window
+
+    // Before start: UPCOMING
+    const beforeStart = new Date('2026-10-20T09:59:59Z');
+    assert.strictEqual(calculateRegistrationStatus(beforeStart, start, end), 'UPCOMING');
+
+    // Early in window (48 hours remaining > 24 hours): OPEN
+    const earlyInWindow = new Date('2026-10-25T10:00:00Z');
+    assert.strictEqual(calculateRegistrationStatus(earlyInWindow, start, end), 'OPEN');
+
+    // Closing soon (12 hours remaining <= 24 hours default threshold): CLOSING_SOON
+    const closingSoon = new Date('2026-10-26T22:00:00Z');
+    assert.strictEqual(calculateRegistrationStatus(closingSoon, start, end), 'CLOSING_SOON');
+
+    // Custom threshold: 2 hours
+    const customThresholdMs = 2 * 60 * 60 * 1000;
+    const threeHoursLeft = new Date('2026-10-27T07:00:00Z');
+    assert.strictEqual(calculateRegistrationStatus(threeHoursLeft, start, end, customThresholdMs), 'OPEN');
+    const oneHourLeft = new Date('2026-10-27T09:00:00Z');
+    assert.strictEqual(calculateRegistrationStatus(oneHourLeft, start, end, customThresholdMs), 'CLOSING_SOON');
+
+    // Exactly at end time: CLOSED
+    assert.strictEqual(calculateRegistrationStatus(end, start, end), 'CLOSED');
+
+    // After end time: CLOSED
+    const afterEnd = new Date('2026-10-27T10:00:01Z');
+    assert.strictEqual(calculateRegistrationStatus(afterEnd, start, end), 'CLOSED');
+
+    // Null or invalid start/end timestamps: CLOSED
+    assert.strictEqual(calculateRegistrationStatus(earlyInWindow, null, end), 'CLOSED');
+    assert.strictEqual(calculateRegistrationStatus(earlyInWindow, start, null), 'CLOSED');
+    assert.strictEqual(calculateRegistrationStatus(earlyInWindow, null, null), 'CLOSED');
+    assert.strictEqual(calculateRegistrationStatus(earlyInWindow, end, start), 'CLOSED');
+  });
+
+  it('16. Exact boundary conditions: register permitted at opening millisecond, rejected at closing millisecond', async () => {
+    // 16a. Opens exactly now
+    const openNowEvent = await createTestEvent({
+      registrationStartTime: new Date(Date.now() - 50),
+      registrationEndTime: new Date(Date.now() + 3600000),
+    });
+    const regRes = await registerEvent(studentBId, openNowEvent.id);
+    assert.strictEqual(regRes.status, 'REGISTERED', 'Registration must succeed at start boundary');
+
+    // 16b. Closed 1 millisecond ago
+    const closedNowEvent = await createTestEvent({
+      registrationStartTime: new Date(Date.now() - 3600000),
+      registrationEndTime: new Date(Date.now() - 1),
+    });
+    await assert.rejects(
+      registerEvent(studentCId, closedNowEvent.id),
+      /REGISTRATION_CLOSED|Registration is closed/i
+    );
+  });
+
+  it('17. Club Admin event creation strictly requires both registration start and end timestamps', async () => {
+    const eventStartTime = new Date(Date.now() + 86400000).toISOString();
+    const eventEndTime = new Date(Date.now() + 172800000).toISOString();
+
+    // 17a. Missing both registration timestamps
+    await assert.rejects(
+      createEvent(organizerId, {
+        title: 'Club Event Missing Window',
+        start_time: eventStartTime,
+        end_time: eventEndTime,
+        event_type: 'WORKSHOP',
+        club_ids: [{ club_id: clubId, is_primary: true }],
+      }),
+      (err: any) => {
+        return err.statusCode === 422 && /Registration window.*is mandatory for Club Admins/i.test(err.message);
+      }
+    );
+
+    // 17b. Provided valid window succeeds
+    const created = await createEvent(organizerId, {
+      title: 'Club Event With Valid Window',
+      start_time: eventStartTime,
+      end_time: eventEndTime,
+      registration_start_time: new Date(Date.now() + 3600000).toISOString(),
+      registration_end_time: new Date(Date.now() + 7200000).toISOString(),
+      event_type: 'WORKSHOP',
+      club_ids: [{ club_id: clubId, is_primary: true }],
+    });
+    assert.ok(created.id, 'Club Admin can create event with valid window');
+    eventIds.push(created.id);
+  });
+
+  it('18. Club Admin cannot update existing event to remove registration window', async () => {
+    const eventStartTime = new Date(Date.now() + 86400000);
+    const eventEndTime = new Date(Date.now() + 172800000);
+    const regStartTime = new Date(Date.now() + 3600000);
+    const regEndTime = new Date(Date.now() + 7200000);
+
+    const initial = await adminPrisma.event.create({
+      data: {
+        title: 'Club Event To Update',
+        state: 'DRAFT',
+        visibility: 'PUBLIC',
+        audience: 'ALL_STUDENTS',
+        eventType: 'WORKSHOP',
+        registrationType: 'INDIVIDUAL',
+        startTime: eventStartTime,
+        endTime: eventEndTime,
+        registrationStartTime: regStartTime,
+        registrationEndTime: regEndTime,
+        createdBy: organizerId,
+        eventClubs: {
+          create: [{ clubId, isPrimary: true }],
+        },
+      },
+    });
+    eventIds.push(initial.id);
+
+    // Attempt to set registration_start_time to null
+    await assert.rejects(
+      updateEvent(organizerId, initial.id, {
+        registration_start_time: null as any,
+      }),
+      (err: any) => {
+        return err.statusCode === 422 && /Registration window.*is mandatory for Club Admins/i.test(err.message);
+      }
+    );
+  });
+
+  it('19. Platform/Faculty Admin may create administrative event without registration window, which evaluates as CLOSED', async () => {
+    const eventStartTime = new Date(Date.now() + 86400000).toISOString();
+    const eventEndTime = new Date(Date.now() + 172800000).toISOString();
+
+    // Platform Admin creates an informational event with NO registration window (NOT_REQUIRED mode)
+    const adminEvent = await createEvent(platformAdminId, {
+      title: 'Administrative Assembly',
+      description: 'University-wide assembly (no registration needed)',
+      start_time: eventStartTime,
+      end_time: eventEndTime,
+      event_type: 'SEMINAR',
+      visibility: 'PUBLIC',
+      registration_mode: 'NOT_REQUIRED',
+      club_ids: [{ club_id: clubId, is_primary: true }],
+    });
+    assert.ok(adminEvent.id);
+    eventIds.push(adminEvent.id);
+
+    // Publish the event directly
+    await adminPrisma.event.update({
+      where: { id: adminEvent.id },
+      data: { state: 'PUBLISHED' },
+    });
+
+    // 19a. Verify calculateRegistrationStatus reports CLOSED
+    const status = calculateRegistrationStatus(
+      new Date(),
+      adminEvent.registrationStartTime,
+      adminEvent.registrationEndTime
+    );
+    assert.strictEqual(status, 'CLOSED', 'Events without registration timestamps must report CLOSED status');
+
+    // 19b. Verify database strictly rejects student registration attempt
+    await assert.rejects(
+      registerEvent(studentAId, adminEvent.id),
+      /REGISTRATION_CLOSED|Registration is closed|Registration is not open|Registration is not required/i
+    );
   });
 });

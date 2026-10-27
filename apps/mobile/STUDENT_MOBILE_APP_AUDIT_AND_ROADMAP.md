@@ -125,7 +125,7 @@ The following items are defined in `docs/mobile/17-final-student-app-specificati
        - Primary Action: `[ SWITCH ACCOUNT ]`
        - Secondary Action: `[ Contact Academic Coordinator ]` opening a structured `mailto:` link:
          ```
-         mailto:events-support@adypu.edu.in?subject=Student%20Directory%20Inquiry%20-%20[email]&body=Student%20Name:%0AProgram:%0ABatch%20Year:%0AStudent%20ID:%0AProblem:%20Institutional%20account%20not%20authorized%20in%20NST%20Events.
+         mailto:support@nstsdc.com?subject=Student%20Directory%20Inquiry%20-%20[email]&body=Student%20Name:%0AProgram:%0ABatch%20Year:%0AStudent%20ID:%0AProblem:%20Institutional%20account%20not%20authorized%20in%20NST%20Events.
          ```
 
 ### Gap 3: Online-Only Attendance Guard in `scan.tsx` & `AttendanceFailureView.tsx`
@@ -271,7 +271,7 @@ In compliance with repository operating principles, the following documentation 
 * **Citation A:** `nst-events-student-ux-spec.md:198-200`
   - *"Domain-rejected support path → single CTA, no live support channel... No 'Contact Admin' link — a login screen is the wrong place to open a support ticket flow..."*
 * **Citation B:** `docs/mobile/17-final-student-app-specification.md:155-176`
-  - State B provides `[ Contact Academic Coordinator ]` opening a structured `mailto:` link to `events-support@adypu.edu.in`.
+  - State B provides `[ Contact Academic Coordinator ]` opening a structured `mailto:` link to `support@nstsdc.com`.
 * **Code Reality:** `(auth)/index.tsx` currently displays Citation A (single "Try a different account" CTA).
 
 ### Specification Gaps

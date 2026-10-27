@@ -11,6 +11,7 @@ import {
   ArrowLeft,
   Building2,
   Trophy,
+  AlertTriangle,
 } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/api';
 import { EventRegistrationHandoff } from '@/components/public/EventRegistrationHandoff';
@@ -116,7 +117,7 @@ export default async function PublicEventPage({ params }: PageProps) {
       <div className="min-h-screen bg-[#050505] text-[#F5F5F2] flex flex-col justify-between selection:bg-[#C8FF00] selection:text-black">
         <header className="border-b border-zinc-800 px-6 py-4">
           <div className="max-w-6xl mx-auto flex items-center justify-between">
-            <Link href="/" className="font-mono font-bold text-xl text-[#F5F5F2] hover:text-[#0057FF]">
+            <Link href="/student/home" className="font-mono font-bold text-xl text-[#F5F5F2] hover:text-[#0057FF]">
               NST_EVENTS
             </Link>
             <Link href="/projects" className="text-[#a0a4b8] hover:text-[#0057FF] font-['JetBrains_Mono',monospace] text-xs font-bold uppercase tracking-wider transition-colors">
@@ -146,7 +147,7 @@ export default async function PublicEventPage({ params }: PageProps) {
               Sign In With Google
             </Link>
             <Link
-              href="/"
+              href="/student/campus/discover"
               className="px-6 py-3 bg-zinc-900 border border-zinc-700 text-zinc-300 font-mono font-bold text-xs uppercase tracking-wider rounded-xl hover:text-white transition-colors"
             >
               Back to Events
@@ -178,11 +179,11 @@ export default async function PublicEventPage({ params }: PageProps) {
       />
 
       {/* Navigation Header */}
-      <header className="relative z-10 border-b border-zinc-800/80 bg-[#050505]/90 backdrop-blur-md sticky top-0 px-6 py-4">
+      <header className="z-10 border-b border-zinc-800/80 bg-[#050505]/90 backdrop-blur-md sticky top-0 px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-6">
             <Link
-              href="/"
+              href="/student/campus/discover"
               className="flex items-center space-x-2 text-zinc-400 hover:text-[#0057FF] font-mono text-xs uppercase tracking-wider transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -238,6 +239,16 @@ export default async function PublicEventPage({ params }: PageProps) {
                 <span>{event.primary_club.name}</span>
               </span>
             )}
+            {event.state === 'CANCELLED' && (
+              <span className="px-3 py-1 text-xs font-mono font-bold tracking-wider uppercase bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-md">
+                CANCELLED
+              </span>
+            )}
+            {event.state === 'ARCHIVED' && (
+              <span className="px-3 py-1 text-xs font-mono font-bold tracking-wider uppercase bg-zinc-800 text-zinc-400 border border-zinc-700 rounded-md">
+                ARCHIVED
+              </span>
+            )}
             <Link
               href={`/event/${event.slug || slug}/results`}
               className="ml-auto px-3.5 py-1 text-xs font-mono font-black tracking-wider uppercase bg-[#C8FF00] text-black hover:bg-[#b8eb00] rounded-md flex items-center gap-1.5 shadow-[2px_2px_0px_#000] transition-all"
@@ -246,6 +257,34 @@ export default async function PublicEventPage({ params }: PageProps) {
               <span>Official Results</span>
             </Link>
           </div>
+
+          {event.state === 'CANCELLED' && (
+            <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-start space-x-3">
+              <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-sm font-mono font-bold uppercase tracking-wider text-rose-400">
+                  EVENT CANCELLED
+                </h3>
+                <p className="text-xs text-rose-200/80 mt-1">
+                  {event.cancellation_reason || 'This event has been cancelled by the organizers.'}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {event.state === 'ARCHIVED' && (
+            <div className="mb-6 p-4 rounded-xl bg-zinc-900 border border-zinc-800 flex items-start space-x-3">
+              <Clock className="w-5 h-5 text-zinc-400 shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-sm font-mono font-bold uppercase tracking-wider text-zinc-300">
+                  ARCHIVED EVENT
+                </h3>
+                <p className="text-xs text-zinc-400 mt-1">
+                  This event has concluded and its records are preserved for historical reference.
+                </p>
+              </div>
+            </div>
+          )}
 
           <h1 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-[#F5F5F2] leading-tight">
             {event.title}
@@ -288,6 +327,7 @@ export default async function PublicEventPage({ params }: PageProps) {
             eventSlug={event.slug}
             eventTitle={event.title}
             registrationStatus={event.registration_status}
+            registrationMode={event.registration_mode || event.registrationMode}
             registrationType={event.registration_type}
           />
         </section>
@@ -310,7 +350,7 @@ export default async function PublicEventPage({ params }: PageProps) {
             <span>NST Events &copy; {new Date().getFullYear()} &mdash; Newton School of Technology</span>
           </div>
           <div className="flex items-center space-x-4">
-            <Link href="/" className="hover:text-zinc-300 transition-colors">
+            <Link href="/student/campus/discover" className="hover:text-zinc-300 transition-colors">
               Browse More Events
             </Link>
             <Link href="/privacy-policy" className="hover:text-zinc-300 transition-colors">

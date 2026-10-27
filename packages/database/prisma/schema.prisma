@@ -60,6 +60,7 @@ model User {
   resultRevisionsRestored   EventResultRevision[]       @relation("ResultRevisionRestoredBy")
   awardRecipients           AwardRecipient[]            @relation("RecipientUser")
   awardRecipientMembers     AwardRecipientMember[]      @relation("RecipientMemberUser")
+  awardExceptionsAuthorized AwardRecipient[]            @relation("ExceptionAuthorizedBy")
   resultAuditLogs           ResultAuditLog[]
   resultOutboxNotifications ResultNotificationOutbox[]
   studentAchievements       StudentAchievement[]
@@ -148,6 +149,7 @@ model Event {
   state                 EventState                @default(DRAFT)
   visibility            EventVisibility?
   slug                  String?                   @unique
+  registrationMode      RegistrationMode          @default(REQUIRED) @map("registration_mode")
   registrationType      RegistrationType          @default(INDIVIDUAL) @map("registration_type")
   attendanceType        AttendanceType            @default(SINGLE) @map("attendance_type")
   isLocked              Boolean                   @default(false) @map("is_locked")
@@ -355,6 +357,7 @@ model Notification {
   deliveredAt      DateTime? @map("delivered_at") @db.Timestamptz(6)
   deliveryFailedAt DateTime? @map("delivery_failed_at") @db.Timestamptz(6)
   deliveryError    String?   @map("delivery_error")
+  idempotencyKey   String?   @unique @map("idempotency_key")
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   user             User      @relation(fields: [userId], references: [id])
 
@@ -705,15 +708,19 @@ enum EventVisibility {
 }
 
 model EventSlugHistory {
-  id        String   @id @default(uuid()) @db.Uuid
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   eventId   String   @map("event_id") @db.Uuid
   slug      String   @unique
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
-  @@index([slug])
   @@index([eventId])
   @@map("event_slug_history")
+}
+
+enum RegistrationMode {
+  REQUIRED
+  NOT_REQUIRED
 }
 
 /// Whether an event accepts individual or team registrations.
@@ -897,7 +904,7 @@ model EventFormField {
   order             Int
 
   event           Event           @relation(fields: [eventId], references: [id])
-  eventForm       EventForm?      @relation(fields: [formId], references: [id])
+  eventForm       EventForm?      @relation(fields: [formId], references: [id], onDelete: Cascade)
   fieldDefinition FieldDefinition @relation(fields: [fieldDefinitionId], references: [id])
 
   // Legacy forms will use a raw SQL partial index: @@unique([eventId, fieldDefinitionId]) WHERE form_id IS NULL
@@ -915,7 +922,7 @@ model EventRegistrationResponse {
   createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   eventRegistration EventRegistration @relation(fields: [eventRegistrationId], references: [id], onDelete: Cascade)
-  eventForm         EventForm?        @relation(fields: [formId], references: [id])
+  eventForm         EventForm?        @relation(fields: [formId], references: [id], onDelete: Restrict)
   fieldDefinition   FieldDefinition   @relation(fields: [fieldDefinitionId], references: [id])
 
   // Legacy forms will use a raw SQL partial index: @@unique([eventRegistrationId, fieldDefinitionId]) WHERE form_id IS NULL
@@ -994,7 +1001,7 @@ enum ModerationActionType {
 }
 
 model Project {
-  id                    String                    @id @default(uuid()) @db.Uuid
+  id                    String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   ownerId               String                    @map("owner_id") @db.Uuid
   title                 String
   slug                  String                    @unique
@@ -1037,7 +1044,7 @@ model Project {
 }
 
 model ProjectLink {
-  id        String          @id @default(uuid()) @db.Uuid
+  id        String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   projectId String          @map("project_id") @db.Uuid
   type      ProjectLinkType
   label     String?
@@ -1052,7 +1059,7 @@ model ProjectLink {
 }
 
 model ProjectContributor {
-  id           String            @id @default(uuid()) @db.Uuid
+  id           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   projectId    String            @map("project_id") @db.Uuid
   userId       String?           @map("user_id") @db.Uuid
   invitedEmail String?           @map("invited_email")
@@ -1072,7 +1079,7 @@ model ProjectContributor {
 }
 
 model ProjectLike {
-  id        String   @id @default(uuid()) @db.Uuid
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   projectId String   @map("project_id") @db.Uuid
   userId    String   @map("user_id") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -1087,7 +1094,7 @@ model ProjectLike {
 }
 
 model ProjectReport {
-  id              String        @id @default(uuid()) @db.Uuid
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   projectId       String        @map("project_id") @db.Uuid
   reporterId      String?       @map("reporter_id") @db.Uuid
   reason          ReportReason
@@ -1108,7 +1115,7 @@ model ProjectReport {
 }
 
 model ProjectModerationAction {
-  id        String               @id @default(uuid()) @db.Uuid
+  id        String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   projectId String               @map("project_id") @db.Uuid
   actorId   String               @map("actor_id") @db.Uuid
   action    ModerationActionType
@@ -1125,7 +1132,7 @@ model ProjectModerationAction {
 }
 
 model ProjectSlugHistory {
-  id        String   @id @default(uuid()) @db.Uuid
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   projectId String   @map("project_id") @db.Uuid
   slug      String   @unique
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -1193,7 +1200,7 @@ enum ResultNotificationStatus {
 }
 
 model EventResultSet {
-  id                        String                @id @default(uuid()) @db.Uuid
+  id                        String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   eventId                   String                @unique @map("event_id") @db.Uuid
   status                    ResultLifecycleState  @default(NOT_CONFIGURED)
   currentDraftRevisionId    String?               @map("current_draft_revision_id") @db.Uuid
@@ -1212,7 +1219,7 @@ model EventResultSet {
 }
 
 model EventResultRevision {
-  id               String               @id @default(uuid()) @db.Uuid
+  id               String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   resultSetId      String               @map("result_set_id") @db.Uuid
   revisionNumber   Int                  @map("revision_number")
   status           ResultRevisionStatus @default(DRAFT)
@@ -1246,7 +1253,7 @@ model EventResultRevision {
 }
 
 model EventAward {
-  id             String          @id @default(uuid()) @db.Uuid
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   revisionId     String          @map("revision_id") @db.Uuid
   title          String
   awardType      AwardType       @default(RANKED_PLACEMENT) @map("award_type")
@@ -1269,7 +1276,7 @@ model EventAward {
 }
 
 model AwardRecipient {
-  id                    String              @id @default(uuid()) @db.Uuid
+  id                    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   awardId               String              @map("award_id") @db.Uuid
   recipientType         AwardRecipientType  @map("recipient_type")
   userId                String?             @map("user_id") @db.Uuid
@@ -1284,6 +1291,7 @@ model AwardRecipient {
 
   award                 EventAward          @relation(fields: [awardId], references: [id], onDelete: Cascade)
   user                  User?               @relation("RecipientUser", fields: [userId], references: [id], onDelete: SetNull)
+  exceptionAuthorizer   User?               @relation("ExceptionAuthorizedBy", fields: [exceptionAuthorizedBy], references: [id], onDelete: SetNull)
   registration          EventRegistration?  @relation(fields: [registrationId], references: [id], onDelete: SetNull)
   team                  Team?               @relation(fields: [teamId], references: [id], onDelete: SetNull)
   members               AwardRecipientMember[]
@@ -1296,7 +1304,7 @@ model AwardRecipient {
 }
 
 model AwardRecipientMember {
-  id                    String             @id @default(uuid()) @db.Uuid
+  id                    String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   recipientId           String             @map("recipient_id") @db.Uuid
   userId                String?            @map("user_id") @db.Uuid
   registrationId        String?            @map("registration_id") @db.Uuid
@@ -1318,7 +1326,7 @@ model AwardRecipientMember {
 }
 
 model AwardProjectLink {
-  id                   String     @id @default(uuid()) @db.Uuid
+  id                   String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   awardId              String     @map("award_id") @db.Uuid
   projectId            String?    @map("project_id") @db.Uuid
   externalProjectUrl   String?    @map("external_project_url")
@@ -1334,7 +1342,7 @@ model AwardProjectLink {
 }
 
 model ResultAuditLog {
-  id          String               @id @default(uuid()) @db.Uuid
+  id          String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   resultSetId String               @map("result_set_id") @db.Uuid
   revisionId  String?              @map("revision_id") @db.Uuid
   actorId     String               @map("actor_id") @db.Uuid
@@ -1353,7 +1361,7 @@ model ResultAuditLog {
 }
 
 model ResultNotificationOutbox {
-  id               String                   @id @default(uuid()) @db.Uuid
+  id               String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   resultSetId      String                   @map("result_set_id") @db.Uuid
   revisionId       String                   @map("revision_id") @db.Uuid
   recipientUserId  String                   @map("recipient_user_id") @db.Uuid
@@ -1373,13 +1381,13 @@ model ResultNotificationOutbox {
   revision         EventResultRevision      @relation(fields: [revisionId], references: [id], onDelete: Cascade)
   recipientUser    User                     @relation(fields: [recipientUserId], references: [id], onDelete: Cascade)
 
-  @@index([deliveryStatus, attemptCount])
+  @@index([deliveryStatus, attemptCount], map: "result_notification_outbox_status_attempt_idx")
   @@index([resultSetId])
   @@map("result_notification_outbox")
 }
 
 model StudentAchievement {
-  id                     String              @id @default(uuid()) @db.Uuid
+  id                     String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId                 String              @map("user_id") @db.Uuid
   eventId                String              @map("event_id") @db.Uuid
   resultSetId            String              @map("result_set_id") @db.Uuid
@@ -1408,14 +1416,14 @@ model StudentAchievement {
   team                   Team?               @relation(fields: [teamId], references: [id], onDelete: SetNull)
   linkedProject          Project?            @relation(fields: [linkedProjectId], references: [id], onDelete: SetNull)
 
-  @@unique([userId, awardId, revisionId])
+  @@unique([userId, awardId, revisionId], map: "student_achievements_user_award_revision_key")
   @@index([userId, isActive])
   @@index([eventId, isActive])
   @@map("student_achievements")
 }
 
 model ResultReport {
-  id              String               @id @default(uuid()) @db.Uuid
+  id              String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   resultSetId     String               @map("result_set_id") @db.Uuid
   revisionId      String               @map("revision_id") @db.Uuid
   reporterId      String?              @map("reporter_id") @db.Uuid
@@ -1444,7 +1452,7 @@ enum ProfileItemType {
 }
 
 model StudentProfile {
-  id                String    @id @default(uuid()) @db.Uuid
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId            String    @unique @map("user_id") @db.Uuid
   slug              String    @unique
   headline          String?
@@ -1460,13 +1468,12 @@ model StudentProfile {
 
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([slug])
   @@index([directoryListed])
   @@map("student_profiles")
 }
 
 model StudentProfileCuratedItem {
-  id           String          @id @default(uuid()) @db.Uuid
+  id           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId       String          @map("user_id") @db.Uuid
   itemType     ProfileItemType @map("item_type")
   sourceId     String          @map("source_id")
@@ -1484,7 +1491,7 @@ model StudentProfileCuratedItem {
 }
 
 model StudentSlugHistory {
-  id        String   @id @default(uuid()) @db.Uuid
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId    String   @map("user_id") @db.Uuid
   slug      String   @unique
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -1494,4 +1501,3 @@ model StudentSlugHistory {
   @@index([userId])
   @@map("student_slug_history")
 }
-

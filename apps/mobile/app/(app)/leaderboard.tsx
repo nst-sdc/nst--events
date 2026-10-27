@@ -130,7 +130,8 @@ export default function CampusLeaderboardScreen() {
     },
     tabButton: {
       flex: 1,
-      paddingVertical: 10,
+      minHeight: 48,
+      paddingVertical: 12,
       alignItems: 'center',
       justifyContent: 'center',
     },

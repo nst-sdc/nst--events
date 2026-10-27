@@ -94,6 +94,7 @@ describe('NST Event Results & Recognition Integration Suite', { concurrency: fal
       await adminPrisma.club.deleteMany({ where: { id: { in: allClubIds } } });
       await adminPrisma.userAcademicProfile.deleteMany({ where: { userId: { in: allUserIds } } });
       await adminPrisma.notification.deleteMany({ where: { userId: { in: allUserIds } } });
+      await adminPrisma.leaderboardScore.deleteMany({ where: { userId: { in: allUserIds } } });
       await adminPrisma.user.deleteMany({ where: { id: { in: allUserIds } } });
     } catch (e) {
       console.error('Cleanup error:', e);

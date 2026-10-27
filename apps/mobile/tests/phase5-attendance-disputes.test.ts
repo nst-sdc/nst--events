@@ -71,9 +71,9 @@ describe('Phase 5 — Attendance History & Disputes Contract Tests', () => {
   });
 
   describe('3. Attendance Detail Screen (history/[id].tsx)', () => {
-    it('has title="SESSION DETAILS" and provides onBackPress fallback to /(app)/history', () => {
+    it('has title="SESSION DETAILS" and provides onBackPress fallback to /(app)/(tabs)/activity?tab=attendance', () => {
       expect(historyDetailContent).toContain('MobileShell title="SESSION DETAILS"');
-      expect(historyDetailContent).toContain("router.replace('/(app)/history')");
+      expect(historyDetailContent).toContain("router.replace('/(app)/(tabs)/activity?tab=attendance')");
     });
 
     it('handles event loading, not-found, and error states', () => {
@@ -96,9 +96,9 @@ describe('Phase 5 — Attendance History & Disputes Contract Tests', () => {
   });
 
   describe('4. My Disputes Screen (disputes/index.tsx)', () => {
-    it('sets title="MY DISPUTES" and provides onBackPress fallback to /(app)/history', () => {
+    it('sets title="MY DISPUTES" and provides onBackPress fallback to /(app)/(tabs)/activity?tab=attendance', () => {
       expect(disputesIndexContent).toContain('title="MY DISPUTES"');
-      expect(disputesIndexContent).toContain("router.replace('/(app)/history')");
+      expect(disputesIndexContent).toContain("router.replace('/(app)/(tabs)/activity?tab=attendance')");
     });
 
     it('renders status summary bar with PENDING, APPROVED, and REJECTED counts', () => {
@@ -113,7 +113,7 @@ describe('Phase 5 — Attendance History & Disputes Contract Tests', () => {
       expect(disputesIndexContent).toContain('FAILED TO LOAD DISPUTES');
       expect(disputesIndexContent).toContain('RETRY FETCH');
       expect(disputesIndexContent).toContain('NO DISPUTES RECORDED');
-      expect(disputesIndexContent).toContain("router.navigate('/(app)/history')");
+      expect(disputesIndexContent).toContain("router.navigate('/(app)/(tabs)/activity?tab=attendance')");
     });
 
     it('navigates to /(app)/disputes/[id] on dispute item press', () => {
@@ -130,9 +130,9 @@ describe('Phase 5 — Attendance History & Disputes Contract Tests', () => {
       expect(disputesNewContent).toContain('Reason must be at least 10 characters long.');
     });
 
-    it('provides onBackPress fallback to /(app)/history', () => {
+    it('provides onBackPress fallback to /(app)/(tabs)/activity?tab=attendance', () => {
       expect(disputesNewContent).toContain('title="SUBMIT DISPUTE"');
-      expect(disputesNewContent).toContain("router.replace('/(app)/history')");
+      expect(disputesNewContent).toContain("router.replace('/(app)/(tabs)/activity?tab=attendance')");
     });
 
     it('maps known backend dispute rejection codes to human-readable guidance', () => {

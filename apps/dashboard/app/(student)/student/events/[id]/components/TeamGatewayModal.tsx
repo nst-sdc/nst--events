@@ -10,6 +10,8 @@ import { DynamicFieldInput } from '../../../../../../components/forms/DynamicFie
 import { Modal } from '../../../../../../components/ui/Modal';
 import { useRouter } from 'next/navigation';
 import { Users, UserPlus, ArrowRight, AlertCircle } from 'lucide-react';
+import { useCurrentUser } from '../../../../../../hooks/useCurrentUser';
+import { isAdministratorAccount } from '../../../../../../lib/auth-helpers';
 
 interface TeamGatewayModalProps {
   eventId: string;
@@ -45,6 +47,8 @@ export function TeamGatewayModal({
   const { mutate: joinTeam, isPending: isJoining } = useJoinTeam(eventId);
   
   const { data: teamsData, isLoading: isLoadingTeams } = useTeamsList(eventId);
+  const { data: currentUser } = useCurrentUser();
+  const isAdmin = isAdministratorAccount(currentUser);
 
   // Pre-fill profile values derived synchronously via useMemo
   const preFilledFields = useMemo(() => {
@@ -99,6 +103,10 @@ export function TeamGatewayModal({
   };
 
   const handleCreate = () => {
+    if (isAdmin) {
+      setRegistrationError('Administrator accounts cannot register for events or squads.');
+      return;
+    }
     if (isParticipantCapacityFull) {
       setRegistrationError('Event participant capacity is full.');
       return;
@@ -156,6 +164,10 @@ export function TeamGatewayModal({
   };
 
   const handleJoin = () => {
+    if (isAdmin) {
+      setRegistrationError('Administrator accounts cannot register for events or squads.');
+      return;
+    }
     if (isParticipantCapacityFull) {
       setRegistrationError('Event participant capacity is full.');
       return;
@@ -211,6 +223,22 @@ export function TeamGatewayModal({
   };
 
   if (!isOpen) return null;
+
+  if (isAdmin) {
+    return (
+      <Modal isOpen={isOpen} onClose={handleClose} title="ACCESS RESTRICTED">
+        <div className="p-6 pt-2 font-mono text-center">
+          <div className="text-[#FF3B30] font-bold text-sm tracking-wider mb-2">ADMINISTRATOR ACCOUNT</div>
+          <p className="text-[#a0a4b8] text-xs leading-relaxed mb-6 font-sans">
+            Administrator accounts cannot register for events or join squads. Please use an eligible student account.
+          </p>
+          <button onClick={handleClose} className="ed-cta-btn w-full">
+            DISMISS
+          </button>
+        </div>
+      </Modal>
+    );
+  }
 
   const hasQuestions = eventFormFields && eventFormFields.length > 0;
 

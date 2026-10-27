@@ -1,21 +1,33 @@
 'use client';
 
 import { useState } from 'react';
-import { Table, Button, Modal, Form, Input, Tag, App } from 'antd';
+import { Table, Button, Modal, Form, Input, Tag, App, Result } from 'antd';
 import { EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useAdminAcademicPrograms, AdminAcademicProgram } from '../../../../hooks/useAdminAcademicPrograms';
 import { useCurrentUser } from '../../../../hooks/useCurrentUser';
-import { canManageAcademicCatalog } from '../../../../lib/auth-helpers';
+import { canManageAcademicCatalog, canViewAcademicCatalog } from '../../../../lib/auth-helpers';
 import { AdminPageHeader } from '../../../../components/admin/AdminPageHeader';
 
 export default function AcademicProgramsPage() {
   const { message } = App.useApp();
-  const { data: currentUser } = useCurrentUser();
+  const { data: currentUser, isLoading: isUserLoading } = useCurrentUser();
   const { data, isLoading, isError, createProgram, updateProgram } = useAdminAcademicPrograms();
   const canManage = canManageAcademicCatalog(currentUser);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingProgram, setEditingProgram] = useState<AdminAcademicProgram | null>(null);
   const [form] = Form.useForm();
+
+  if (!isUserLoading && currentUser && !canViewAcademicCatalog(currentUser)) {
+    return (
+      <div className="max-w-6xl mx-auto py-12">
+        <Result
+          status="403"
+          title="Permission Denied"
+          subTitle="You do not have permission to view Academic Programs."
+        />
+      </div>
+    );
+  }
 
   const handleOpenCreate = () => {
     setEditingProgram(null);

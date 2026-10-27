@@ -467,6 +467,12 @@ export default function ClubDetailPage() {
                         key={event.id}
                         href={`/student/events/${event.id}`}
                         className="cd-event-card"
+                        scroll={true}
+                        onClick={() => {
+                          if (typeof window !== 'undefined') {
+                            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                          }
+                        }}
                       >
                         <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 900, textTransform: 'uppercase', marginBottom: '8px' }}>
                           {event.title}

@@ -73,7 +73,10 @@ export const FlatList = ({ data = [], renderItem, ListEmptyComponent, ListHeader
     ...(data || []).map((item: any, index: number) => renderItem ? renderItem({ item, index }) : null),
   ]);
 };
-export const Image = (props: any) => React.createElement('img', cleanProps(props));
+export const Image = ({ source, ...props }: any) => {
+  const src = typeof source === 'string' ? source : source?.uri;
+  return React.createElement('img', { ...cleanProps(props), src, 'data-src': src });
+};
 export const TextInput = (props: any) => React.createElement('input', cleanProps(props));
 export const Switch = ({ value, onValueChange, ...props }: any) =>
   React.createElement('input', {
@@ -85,6 +88,12 @@ export const Switch = ({ value, onValueChange, ...props }: any) =>
 export const KeyboardAvoidingView = ({ children, ...props }: any) => React.createElement('div', cleanProps(props), children);
 export const Share = {
   share: async () => ({ action: 'sharedAction' }),
+};
+export const TouchableWithoutFeedback = ({ children, onPress, ...props }: any) =>
+  React.createElement('div', { onClick: onPress, ...cleanProps(props) }, children);
+export const Keyboard = {
+  dismiss: () => {},
+  addListener: () => ({ remove: () => {} }),
 };
 export const Linking = {
   openURL: async () => {},
@@ -113,6 +122,8 @@ export default {
   TextInput,
   Switch,
   KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Keyboard,
   Share,
   Linking,
 };

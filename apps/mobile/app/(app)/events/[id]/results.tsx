@@ -22,6 +22,7 @@ import {
   AwardRecipientData,
 } from '../../../../src/hooks/use-event-results';
 import { ResultReportModal } from '../../../../src/ui/ResultReportModal';
+import { openProjectShowcase } from '../../../../src/lib/project-showcase';
 
 export default function MobileEventResultsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -216,6 +217,7 @@ export default function MobileEventResultsScreen() {
       borderWidth: 1,
       borderColor: theme.colors.outlineVariant,
       padding: 8,
+      minHeight: 48,
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
@@ -352,7 +354,7 @@ export default function MobileEventResultsScreen() {
                     if (pl.external_url) {
                       Linking.openURL(pl.external_url).catch(() => {});
                     } else if (hasProject) {
-                      Linking.openURL(`https://events.nstsdc.org/projects/${pl.project?.slug}`).catch(() => {});
+                      openProjectShowcase(pl.project?.slug);
                     }
                   }}
                 >
@@ -387,8 +389,10 @@ export default function MobileEventResultsScreen() {
       title="RESULTS & WINNERS"
       showBackButton
       onBackPress={handleReturnToEvent}
+      scrollable={false}
     >
       <ScrollView
+        style={{ flex: 1 }}
         contentContainerStyle={styles.container}
         refreshControl={
           <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
@@ -481,13 +485,13 @@ export default function MobileEventResultsScreen() {
                   title="[ SHARE RESULTS ↗ ]"
                   variant="secondary"
                   onPress={handleShare}
-                  style={{ flex: 1, minHeight: 36, height: 36 }}
+                  style={{ flex: 1, minHeight: 48, height: 48 }}
                 />
                 <Button
                   title="[ REPORT INACCURACY ]"
                   variant="secondary"
                   onPress={() => setShowReportModal(true)}
-                  style={{ flex: 1, minHeight: 36, height: 36 }}
+                  style={{ flex: 1, minHeight: 48, height: 48 }}
                 />
               </View>
             </View>
@@ -521,7 +525,11 @@ export default function MobileEventResultsScreen() {
               <Body style={styles.noticeText}>
                 Results are certified by event organizers and verified on the NST institutional ledger.
               </Body>
-              <TouchableOpacity onPress={() => setShowReportModal(true)}>
+              <TouchableOpacity
+                onPress={() => setShowReportModal(true)}
+                style={{ minHeight: 48, justifyContent: 'center' }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
                 <Mono style={{ fontSize: 11, color: theme.colors.primary, textDecorationLine: 'underline' }}>
                   Report a discrepancy or missing member attribution
                 </Mono>

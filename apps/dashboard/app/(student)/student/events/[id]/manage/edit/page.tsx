@@ -235,26 +235,29 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
       return;
     }
 
-    let registration_start_time: string | undefined = undefined;
-    let registration_end_time: string | undefined = undefined;
-
-    if (formData.registrationStartDate) {
-      const regStartIso = toIsoDateTime(formData.registrationStartDate, formData.registrationStartTime || '00:00');
-      if (!regStartIso) {
-        setSaveError('Invalid registration start date or time.');
-        return;
-      }
-      registration_start_time = regStartIso;
+    if (!formData.registrationStartDate || !formData.registrationStartTime) {
+      setSaveError('Registration start date and time are required for Club Admins.');
+      return;
     }
 
-    if (formData.registrationEndDate) {
-      const regEndIso = toIsoDateTime(formData.registrationEndDate, formData.registrationEndTime || '23:59');
-      if (!regEndIso) {
-        setSaveError('Invalid registration end date or time.');
-        return;
-      }
-      registration_end_time = regEndIso;
+    if (!formData.registrationEndDate || !formData.registrationEndTime) {
+      setSaveError('Registration end date and time are required for Club Admins.');
+      return;
     }
+
+    const regStartIso = toIsoDateTime(formData.registrationStartDate, formData.registrationStartTime);
+    if (!regStartIso) {
+      setSaveError('Invalid registration start date or time.');
+      return;
+    }
+    const registration_start_time = regStartIso;
+
+    const regEndIso = toIsoDateTime(formData.registrationEndDate, formData.registrationEndTime);
+    if (!regEndIso) {
+      setSaveError('Invalid registration end date or time.');
+      return;
+    }
+    const registration_end_time = regEndIso;
 
     if (registration_start_time && registration_end_time) {
       if (new Date(registration_start_time).getTime() >= new Date(registration_end_time).getTime()) {
@@ -601,8 +604,9 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Registration Start Date (Optional)</label>
+              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Registration Start Date *</label>
               <input 
+                required
                 type="date"
                 name="registrationStartDate"
                 value={formData.registrationStartDate}
@@ -611,8 +615,9 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
               />
             </div>
             <div>
-              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Registration Start Time</label>
+              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Registration Start Time *</label>
               <input 
+                required
                 type="time"
                 name="registrationStartTime"
                 value={formData.registrationStartTime}
@@ -624,8 +629,9 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Registration End Date (Optional)</label>
+              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Registration End Date *</label>
               <input 
+                required
                 type="date"
                 name="registrationEndDate"
                 value={formData.registrationEndDate}
@@ -634,8 +640,9 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
               />
             </div>
             <div>
-              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Registration End Time</label>
+              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Registration End Time *</label>
               <input 
+                required
                 type="time"
                 name="registrationEndTime"
                 value={formData.registrationEndTime}

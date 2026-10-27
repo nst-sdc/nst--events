@@ -47,6 +47,23 @@ export function render(ui: React.ReactElement, options?: any) {
   };
 }
 
+export function renderHook<Result, Props = any>(
+  renderCallback: (props: Props) => Result,
+  options?: { wrapper?: React.ComponentType<{ children: React.ReactNode }> }
+) {
+  const result = { current: undefined as unknown as Result };
+  function TestComponent(props: any) {
+    result.current = renderCallback(props);
+    return null;
+  }
+  const rendered = render(React.createElement(TestComponent), options);
+  return {
+    result,
+    unmount: rendered.unmount,
+  };
+}
+
+
 function getTextContent(element: HTMLElement): string {
   return element.textContent || '';
 }
@@ -94,7 +111,17 @@ export const screen = {
   },
   getAllByTestId: (testId: string) => {
     if (!currentContainer) return [];
-    return Array.from(currentContainer.querySelectorAll(`[data-testid="${testId}"]`)) as HTMLElement[];
+    return Array.from(currentContainer.querySelectorAll(`[data-testid="${testId}"], [testid="${testId}"]`)) as HTMLElement[];
+  },
+  getByTestId: (testId: string) => {
+    if (!currentContainer) throw new Error('No component rendered');
+    const el = currentContainer.querySelector(`[data-testid="${testId}"], [testid="${testId}"]`) as HTMLElement;
+    if (!el) throw new Error(`Unable to find element with testID: ${testId}`);
+    return el;
+  },
+  queryByTestId: (testId: string) => {
+    if (!currentContainer) return null;
+    return (currentContainer.querySelector(`[data-testid="${testId}"], [testid="${testId}"]`) as HTMLElement) || null;
   },
   findByText: async (matcher: string | RegExp | ((text: string) => boolean), _options?: any, waitOptions?: { timeout?: number }) => {
     const timeout = waitOptions?.timeout || 3000;

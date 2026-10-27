@@ -95,6 +95,7 @@ export default function LoginGatewayScreen() {
       });
 
       if (!exchangeRes?.access_token || !exchangeRes?.refresh_token) {
+        useAuthStore.getState().setPendingDeepLink(null);
         setAuthError({
           type: 'GENERIC',
           title: 'AUTHENTICATION FAILED',
@@ -123,6 +124,7 @@ export default function LoginGatewayScreen() {
         }
         return;
       } else {
+        useAuthStore.getState().setPendingDeepLink(null);
         setAuthError({
           type: 'GENERIC',
           title: 'AUTHENTICATION FAILED',
@@ -131,6 +133,7 @@ export default function LoginGatewayScreen() {
         return;
       }
     } catch (err: any) {
+      useAuthStore.getState().setPendingDeepLink(null);
       if (typeof __DEV__ !== 'undefined' && __DEV__) {
         console.error('[Auth] OAuth initiation error:', err);
       }
@@ -222,6 +225,7 @@ export default function LoginGatewayScreen() {
         router.replace('/(app)');
       }
     } catch (e: any) {
+      useAuthStore.getState().setPendingDeepLink(null);
       setAuthError({
         type: 'GENERIC',
         title: 'DEV LOGIN FAILED',

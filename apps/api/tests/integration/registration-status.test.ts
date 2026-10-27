@@ -12,6 +12,11 @@ describe('Participant Registration Status', () => {
   let eventId: string;
 
   before(async () => {
+    const emails = ['org_status@example.com', 'partA_status@example.com', 'partB_status@example.com'];
+    await adminPrisma.eventRegistration.deleteMany({ where: { user: { email: { in: emails } } } });
+    await adminPrisma.clubMembership.deleteMany({ where: { user: { email: { in: emails } } } });
+    await adminPrisma.event.deleteMany({ where: { creator: { email: { in: emails } } } });
+    await adminPrisma.user.deleteMany({ where: { email: { in: emails } } });
     const org = await adminPrisma.user.create({
       data: { email: 'org_status@example.com', googleSub: 'google_org_status', fullName: 'Org' },
     });
@@ -28,7 +33,7 @@ describe('Participant Registration Status', () => {
     participantBId = pB.id;
 
     const club = await adminPrisma.club.create({
-      data: { name: 'Status Test Club' },
+      data: { name: 'Status Test Club ' + Date.now() },
     });
     clubId = club.id;
 
@@ -36,10 +41,13 @@ describe('Participant Registration Status', () => {
       data: { userId: organizerId, clubId, role: 'CLUB_ADMIN' },
     });
 
+    const now = Date.now();
     const event = await createEvent(organizerId, {
       title: 'Status Test Event',
-      start_time: new Date(),
-      end_time: new Date(Date.now() + 3600000),
+      start_time: new Date(now + 3600000),
+      end_time: new Date(now + 7200000),
+      registration_start_time: new Date(now - 3600000),
+      registration_end_time: new Date(now + 1800000),
       event_type: 'WORKSHOP',
       visibility: 'PUBLIC',
       registration_type: 'INDIVIDUAL',

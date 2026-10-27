@@ -150,6 +150,16 @@ export function resolveManagementActions(source: ManagementActionSource): Manage
 
     // Map notification types to Priority & Standard Labels
     switch (notif.type) {
+      case 'PROJECT_INVITATION':
+        priority = 'HIGH';
+        label = 'View Invitation';
+        break;
+
+      case 'PROJECT_COLLABORATION_ACCEPTED':
+        priority = 'MEDIUM';
+        label = 'View Project';
+        break;
+
       case 'APPROVAL_REQUEST':
       case 'SYSTEM_ALERT':
       case 'ATTENDANCE_ALERT':

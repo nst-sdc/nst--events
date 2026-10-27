@@ -36,10 +36,11 @@ describe('NST Projects Showcase & Discovery Integration Suite', { concurrency: f
   ];
 
   const cleanup = async () => {
+    await adminPrisma.$executeRaw`DELETE FROM notifications WHERE user_id IN (SELECT id FROM users WHERE email = ANY(${testEmails}))`;
     await adminPrisma.$executeRaw`DELETE FROM project_moderation_actions WHERE actor_id IN (SELECT id FROM users WHERE email = ANY(${testEmails}))`;
     await adminPrisma.$executeRaw`DELETE FROM project_reports WHERE reporter_id IN (SELECT id FROM users WHERE email = ANY(${testEmails}))`;
     await adminPrisma.$executeRaw`DELETE FROM project_likes WHERE user_id IN (SELECT id FROM users WHERE email = ANY(${testEmails}))`;
-    await adminPrisma.$executeRaw`DELETE FROM project_contributors WHERE user_id IN (SELECT id FROM users WHERE email = ANY(${testEmails}))`;
+    await adminPrisma.$executeRaw`DELETE FROM project_contributors WHERE user_id IN (SELECT id FROM users WHERE email = ANY(${testEmails})) OR project_id IN (SELECT id FROM projects WHERE owner_id IN (SELECT id FROM users WHERE email = ANY(${testEmails})))`;
     await adminPrisma.$executeRaw`DELETE FROM project_slug_history WHERE project_id IN (SELECT id FROM projects WHERE owner_id IN (SELECT id FROM users WHERE email = ANY(${testEmails})))`;
     await adminPrisma.$executeRaw`DELETE FROM project_links WHERE project_id IN (SELECT id FROM projects WHERE owner_id IN (SELECT id FROM users WHERE email = ANY(${testEmails})))`;
     await adminPrisma.$executeRaw`DELETE FROM projects WHERE owner_id IN (SELECT id FROM users WHERE email = ANY(${testEmails}))`;
@@ -371,9 +372,45 @@ describe('NST Projects Showcase & Discovery Integration Suite', { concurrency: f
   });
 
   // =========================================================================
-  // 5. Contributors Workflow
+  // 5. Contributors Workflow (Two-Account End-to-End Suite)
   // =========================================================================
-  it('allows project owner to invite another student collaborator', async () => {
+  it('Validation: rejects collaborator invitation with non-institutional email with 400', async () => {
+    const res = await request(app)
+      .post(`/v1/projects/${createdProjectId}/contributors`)
+      .set('Authorization', `Bearer ${student1Token}`)
+      .send({
+        email: 'outsider@gmail.com',
+        role: 'Frontend Developer',
+      });
+
+    assert.strictEqual(res.status, 400);
+  });
+
+  it('Validation: rejects self-invitation by project owner with 400', async () => {
+    const res = await request(app)
+      .post(`/v1/projects/${createdProjectId}/contributors`)
+      .set('Authorization', `Bearer ${student1Token}`)
+      .send({
+        email: 'alice.student@adypu.edu.in',
+        role: 'Lead Architect',
+      });
+
+    assert.strictEqual(res.status, 400);
+  });
+
+  it('Authorization: non-owner student cannot invite collaborators to someone else project', async () => {
+    const res = await request(app)
+      .post(`/v1/projects/${createdProjectId}/contributors`)
+      .set('Authorization', `Bearer ${student2Token}`)
+      .send({
+        email: 'carol.unverified@adypu.edu.in',
+        role: 'Designer',
+      });
+
+    assert.strictEqual(res.status, 403);
+  });
+
+  it('invitation workflow: owner (Student A) invites collaborator (Student B)', async () => {
     const res = await request(app)
       .post(`/v1/projects/${createdProjectId}/contributors`)
       .set('Authorization', `Bearer ${student1Token}`)
@@ -387,12 +424,86 @@ describe('NST Projects Showcase & Discovery Integration Suite', { concurrency: f
     assert.strictEqual(res.body.role, 'Mobile Lead & Frontend Developer');
     contributorRecordId = res.body.id;
 
-    // Pending contributor should NOT be displayed on public project page
+    // Check notification was enqueued for Student B (Bob)
+    const notifications = await adminPrisma.$queryRaw<any[]>`
+      SELECT * FROM notifications WHERE user_id = ${student2Id}::uuid AND type = 'PROJECT_INVITATION'
+    `;
+    assert.ok(notifications.length >= 1);
+    assert.match(notifications[0].title, /Project Collaboration Invitation/i);
+  });
+
+  it('pending invitations must NOT appear on public project screen', async () => {
     const detailRes = await request(app).get(`/v1/projects/${createdProjectSlug}`);
     assert.strictEqual(detailRes.body.contributors.length, 0);
   });
 
-  it('collaborator can accept invitation and is then credited publicly', async () => {
+  it('owner immediately sees PENDING invitation in GET /v1/projects/:id/contributors under RLS', async () => {
+    // Owner sees pending invitation with full details
+    const ownerRes = await request(app)
+      .get(`/v1/projects/${createdProjectId}/contributors`)
+      .set('Authorization', `Bearer ${student1Token}`);
+
+    assert.strictEqual(ownerRes.status, 200);
+    assert.strictEqual(ownerRes.body.length, 1);
+    assert.strictEqual(ownerRes.body[0].id, contributorRecordId);
+    assert.strictEqual(ownerRes.body[0].status, 'PENDING');
+    assert.strictEqual(ownerRes.body[0].email, 'bob.student@newtonschool.co');
+    assert.strictEqual(ownerRes.body[0].role, 'Mobile Lead & Frontend Developer');
+
+    // Anonymous visitor gets 0 contributors because invitation is still PENDING
+    const publicRes = await request(app).get(`/v1/projects/${createdProjectId}/contributors`);
+    assert.strictEqual(publicRes.status, 200);
+    assert.strictEqual(publicRes.body.length, 0);
+  });
+
+  it('recipient inbox: Student B sees the pending invitation in /v1/projects/my and receives in-app notification', async () => {
+    // 1. In-app notification inbox
+    const notifRes = await request(app)
+      .get('/v1/notifications')
+      .set('Authorization', `Bearer ${student2Token}`);
+    assert.strictEqual(notifRes.status, 200);
+    assert.ok(notifRes.body.data.length >= 1);
+    const inviteNotif = notifRes.body.data.find((n: any) => n.type === 'PROJECT_INVITATION');
+    assert.ok(inviteNotif);
+    assert.strictEqual(inviteNotif.metadata.entity_ids.project_id, createdProjectId);
+    assert.strictEqual(inviteNotif.metadata.entity_ids.contributor_id, contributorRecordId);
+
+    // 2. /v1/projects/my contributing list
+    const res = await request(app)
+      .get('/v1/projects/my')
+      .set('Authorization', `Bearer ${student2Token}`);
+
+    assert.strictEqual(res.status, 200);
+    assert.ok(Array.isArray(res.body.contributing));
+    const inv = res.body.contributing.find((c: any) => c.id === contributorRecordId || c.contributor_id === contributorRecordId);
+    assert.ok(inv);
+    assert.strictEqual(inv.status, 'PENDING');
+    assert.strictEqual(inv.role, 'Mobile Lead & Frontend Developer');
+    assert.strictEqual(inv.project.id, createdProjectId);
+  });
+
+  it('duplicate protection: rejects repeated invitation to same collaborator with 409 Conflict', async () => {
+    const res = await request(app)
+      .post(`/v1/projects/${createdProjectId}/contributors`)
+      .set('Authorization', `Bearer ${student1Token}`)
+      .send({
+        email: 'bob.student@newtonschool.co',
+        role: 'Duplicate Lead Attempt',
+      });
+
+    assert.strictEqual(res.status, 409);
+  });
+
+  it('BOLA: unauthorized third party (Student C) cannot respond to Bob invitation', async () => {
+    const res = await request(app)
+      .post(`/v1/projects/contributors/${contributorRecordId}/respond`)
+      .set('Authorization', `Bearer ${unverifiedStudentToken}`)
+      .send({ status: 'ACCEPTED' });
+
+    assert.ok(res.status === 403 || res.status === 404);
+  });
+
+  it('acceptance: Student B accepts invitation and is credited publicly', async () => {
     const res = await request(app)
       .post(`/v1/projects/contributors/${contributorRecordId}/respond`)
       .set('Authorization', `Bearer ${student2Token}`)
@@ -401,11 +512,203 @@ describe('NST Projects Showcase & Discovery Integration Suite', { concurrency: f
     assert.strictEqual(res.status, 200);
     assert.strictEqual(res.body.status, 'ACCEPTED');
 
+    // Verify owner (Student A) receives an in-app notification of acceptance
+    const ownerNotifications = await adminPrisma.$queryRaw<any[]>`
+      SELECT * FROM notifications WHERE user_id = ${student1Id}::uuid AND type = 'PROJECT_COLLABORATION_ACCEPTED'
+    `;
+    assert.ok(ownerNotifications.length >= 1);
+
     // Now public detail should display accepted contributor
     const detailRes = await request(app).get(`/v1/projects/${createdProjectSlug}`);
     assert.strictEqual(detailRes.body.contributors.length, 1);
     assert.strictEqual(detailRes.body.contributors[0].name, 'Bob Collaborator');
     assert.strictEqual(detailRes.body.contributors[0].role, 'Mobile Lead & Frontend Developer');
+  });
+
+  it('replay protection: cannot accept or decline an already accepted invitation', async () => {
+    const resAcceptAgain = await request(app)
+      .post(`/v1/projects/contributors/${contributorRecordId}/respond`)
+      .set('Authorization', `Bearer ${student2Token}`)
+      .send({ status: 'ACCEPTED' });
+
+    assert.strictEqual(resAcceptAgain.status, 400);
+
+    const resDecline = await request(app)
+      .post(`/v1/projects/contributors/${contributorRecordId}/respond`)
+      .set('Authorization', `Bearer ${student2Token}`)
+      .send({ status: 'DECLINED' });
+
+    assert.strictEqual(resDecline.status, 400);
+  });
+
+  it('conflict protection: cannot invite an already accepted collaborator', async () => {
+    const res = await request(app)
+      .post(`/v1/projects/${createdProjectId}/contributors`)
+      .set('Authorization', `Bearer ${student1Token}`)
+      .send({
+        email: 'bob.student@newtonschool.co',
+        role: 'Re-Invite Attempt',
+      });
+
+    assert.strictEqual(res.status, 409);
+  });
+
+  it('permissions: accepted collaborator cannot delete, publish, change slug, or invite others', async () => {
+    // Bob cannot delete
+    const delRes = await request(app)
+      .delete(`/v1/projects/${createdProjectId}`)
+      .set('Authorization', `Bearer ${student2Token}`);
+    assert.strictEqual(delRes.status, 403);
+
+    // Bob cannot publish
+    const pubRes = await request(app)
+      .post(`/v1/projects/${createdProjectId}/publish`)
+      .set('Authorization', `Bearer ${student2Token}`)
+      .send({ rightsConfirmed: true });
+    assert.strictEqual(pubRes.status, 403);
+
+    // Bob cannot unpublish
+    const unpubRes = await request(app)
+      .post(`/v1/projects/${createdProjectId}/unpublish`)
+      .set('Authorization', `Bearer ${student2Token}`);
+    assert.strictEqual(unpubRes.status, 403);
+
+    // Bob cannot change slug
+    const slugRes = await request(app)
+      .post(`/v1/projects/${createdProjectId}/slug`)
+      .set('Authorization', `Bearer ${student2Token}`)
+      .send({ slug: 'hacked-slug-by-collaborator' });
+    assert.strictEqual(slugRes.status, 403);
+
+    // Bob cannot invite others
+    const invRes = await request(app)
+      .post(`/v1/projects/${createdProjectId}/contributors`)
+      .set('Authorization', `Bearer ${student2Token}`)
+      .send({ email: 'carol.unverified@adypu.edu.in', role: 'Tester' });
+    assert.strictEqual(invRes.status, 403);
+  });
+
+  it('contributor management endpoint: GET /v1/projects/:id/contributors returns full details for owner, but accepted only for public', async () => {
+    // Owner sees list with email and status
+    const ownerRes = await request(app)
+      .get(`/v1/projects/${createdProjectId}/contributors`)
+      .set('Authorization', `Bearer ${student1Token}`);
+    assert.strictEqual(ownerRes.status, 200);
+    assert.ok(ownerRes.body.length >= 1);
+    assert.strictEqual(ownerRes.body[0].email, 'bob.student@newtonschool.co');
+
+    // Public / non-owner sees only accepted and does not leak private email
+    const publicRes = await request(app)
+      .get(`/v1/projects/${createdProjectId}/contributors`);
+    assert.strictEqual(publicRes.status, 200);
+    assert.ok(publicRes.body.length >= 1);
+    assert.strictEqual(publicRes.body[0].email, undefined);
+  });
+
+  it('decline & reopen workflow: Carol declines invitation, re-inviting reopens to PENDING', async () => {
+    // 1. Owner invites Carol
+    const invRes = await request(app)
+      .post(`/v1/projects/${createdProjectId}/contributors`)
+      .set('Authorization', `Bearer ${student1Token}`)
+      .send({
+        email: 'carol.unverified@adypu.edu.in',
+        role: 'Data Scientist',
+      });
+    assert.strictEqual(invRes.status, 201);
+    const carolRecordId = invRes.body.id;
+
+    // 2. Carol declines
+    const declineRes = await request(app)
+      .post(`/v1/projects/contributors/${carolRecordId}/respond`)
+      .set('Authorization', `Bearer ${unverifiedStudentToken}`)
+      .send({ status: 'DECLINED' });
+    assert.strictEqual(declineRes.status, 200);
+    assert.strictEqual(declineRes.body.status, 'DECLINED');
+
+    // 3. Re-inviting Carol reopens the record to PENDING
+    const reopenRes = await request(app)
+      .post(`/v1/projects/${createdProjectId}/contributors`)
+      .set('Authorization', `Bearer ${student1Token}`)
+      .send({
+        email: 'carol.unverified@adypu.edu.in',
+        role: 'Senior Data Scientist',
+      });
+    assert.strictEqual(reopenRes.status, 201);
+    assert.strictEqual(reopenRes.body.status, 'PENDING');
+    assert.strictEqual(reopenRes.body.role, 'Senior Data Scientist');
+    assert.strictEqual(reopenRes.body.id, carolRecordId);
+
+    // 4. Owner revokes/cancels Carol's pending invitation
+    const delRes = await request(app)
+      .delete(`/v1/projects/${createdProjectId}/contributors/${carolRecordId}`)
+      .set('Authorization', `Bearer ${student1Token}`);
+    assert.strictEqual(delRes.status, 200);
+    assert.strictEqual(delRes.body.success, true);
+
+    // 5. Cancelled invitation cannot be responded to (404)
+    const respCancelled = await request(app)
+      .post(`/v1/projects/contributors/${carolRecordId}/respond`)
+      .set('Authorization', `Bearer ${unverifiedStudentToken}`)
+      .send({ status: 'ACCEPTED' });
+    assert.strictEqual(respCancelled.status, 404);
+  });
+
+  it('revocation authorization: non-owner student cannot delete another owner collaborator', async () => {
+    const res = await request(app)
+      .delete(`/v1/projects/${createdProjectId}/contributors/${contributorRecordId}`)
+      .set('Authorization', `Bearer ${unverifiedStudentToken}`);
+    assert.strictEqual(res.status, 403);
+  });
+
+  it('reconciliation: invitation sent to unregistered institutional email is linked upon login or project list', async () => {
+    // 1. Owner invites an institutional email that has no user record yet
+    const orphanEmail = 'future.student@adypu.edu.in';
+    const invRes = await request(app)
+      .post(`/v1/projects/${createdProjectId}/contributors`)
+      .set('Authorization', `Bearer ${student1Token}`)
+      .send({
+        email: orphanEmail,
+        role: 'Research Assistant',
+      });
+    assert.strictEqual(invRes.status, 201);
+    assert.strictEqual(invRes.body.status, 'PENDING');
+    assert.strictEqual(invRes.body.userId, null);
+    const orphanRecordId = invRes.body.id;
+
+    // 2. Now user signs up / gets created
+    const newUser = await adminPrisma.user.create({
+      data: {
+        email: orphanEmail,
+        googleSub: 'gsub_future_student',
+        fullName: 'Future Student',
+        globalRole: 'STUDENT',
+        securityVersion: 1,
+      },
+    });
+
+    const newJwt = signJwt(newUser.id, 1);
+
+    // 3. User accesses /v1/projects/my -> triggers automatic reconciliation
+    const myProjectsRes = await request(app)
+      .get('/v1/projects/my')
+      .set('Authorization', `Bearer ${newJwt}`);
+    assert.strictEqual(myProjectsRes.status, 200);
+    const found = myProjectsRes.body.contributing.find((c: any) => c.id === orphanRecordId || c.contributor_id === orphanRecordId);
+    assert.ok(found);
+    assert.strictEqual(found.status, 'PENDING');
+
+    // 4. Verify in-app notification is enqueued for the newly registered user
+    const notifRes = await request(app)
+      .get('/v1/notifications')
+      .set('Authorization', `Bearer ${newJwt}`);
+    assert.strictEqual(notifRes.status, 200);
+    assert.ok(notifRes.body.data.length >= 1);
+    assert.strictEqual(notifRes.body.data[0].type, 'PROJECT_INVITATION');
+
+    // 5. Clean up
+    await adminPrisma.projectContributor.delete({ where: { id: orphanRecordId } });
+    await adminPrisma.notification.deleteMany({ where: { userId: newUser.id } });
+    await adminPrisma.user.delete({ where: { id: newUser.id } });
   });
 
   // =========================================================================
@@ -630,5 +933,226 @@ describe('NST Projects Showcase & Discovery Integration Suite', { concurrency: f
       return tx.projectReport.findMany();
     });
     assert.ok(adminReportQuery.length > 0, 'RLS must allow platform admin to query reports');
+  });
+
+  // =========================================================================
+  // 9. Project Editing & Persistence Regression Suite
+  // =========================================================================
+  it('Project Edit: student owner can successfully edit all fields via PUT /v1/projects/:id and persist', async () => {
+    const updatePayload = {
+      title: 'Autonomous Shuttle Tracker v2',
+      tagline: 'Next-gen live bus tracker with low-latency WebSockets',
+      description: 'Updated comprehensive technical overview with deep architecture details.',
+      category: 'Cloud / DevOps',
+      tags: ['websockets', 'nextjs', 'kafka'],
+      projectType: 'OPEN_SOURCE',
+      developmentStatus: 'LIVE',
+      coverImageUrl: 'https://images.unsplash.com/photo-shuttle-updated',
+      problemStatement: 'Tracking buses in rural campus areas with intermittent network.',
+      solution: 'Offline-first queue with opportunistic WebSocket sync.',
+      implementationDetails: 'Rust telemetry daemon feeding into Kafka cluster.',
+      personalContribution: 'Built the core telemetry sync engine.',
+      whatsNext: 'Hardware sensor integration.',
+      links: [
+        { type: 'DEMO', url: 'https://shuttle-v2.nst.dev', label: 'Live v2', order: 0 },
+        { type: 'REPOSITORY', url: 'https://github.com/nst/shuttle-v2', label: 'Source', order: 1 },
+      ],
+    };
+
+    const res = await request(app)
+      .put(`/v1/projects/${createdProjectId}`)
+      .set('Authorization', `Bearer ${student1Token}`)
+      .send(updatePayload);
+
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.body.title, 'Autonomous Shuttle Tracker v2');
+    assert.strictEqual(res.body.tagline, 'Next-gen live bus tracker with low-latency WebSockets');
+    assert.strictEqual(res.body.category, 'Cloud / DevOps');
+    assert.strictEqual(res.body.links.length, 2);
+
+    // Verify persistence via GET
+    const getRes = await request(app)
+      .get(`/v1/projects/${createdProjectId}`)
+      .set('Authorization', `Bearer ${student1Token}`);
+
+    assert.strictEqual(getRes.status, 200);
+    assert.strictEqual(getRes.body.title, 'Autonomous Shuttle Tracker v2');
+    assert.strictEqual(getRes.body.problem_statement, 'Tracking buses in rural campus areas with intermittent network.');
+    assert.strictEqual(getRes.body.solution, 'Offline-first queue with opportunistic WebSocket sync.');
+    assert.strictEqual(getRes.body.implementation_details, 'Rust telemetry daemon feeding into Kafka cluster.');
+    assert.strictEqual(getRes.body.is_owner, true);
+    assert.strictEqual(getRes.body.owner_id, student1Id);
+  });
+
+  it('Project Edit Validation: rejects PUT with missing or empty title with 400', async () => {
+    const res = await request(app)
+      .put(`/v1/projects/${createdProjectId}`)
+      .set('Authorization', `Bearer ${student1Token}`)
+      .send({
+        title: '',
+        tagline: 'Valid tagline',
+        description: 'Valid description',
+      });
+
+    assert.strictEqual(res.status, 400);
+  });
+
+  it('Project Edit Validation: rejects PUT with invalid link URLs with 400', async () => {
+    const res = await request(app)
+      .put(`/v1/projects/${createdProjectId}`)
+      .set('Authorization', `Bearer ${student1Token}`)
+      .send({
+        title: 'Title',
+        links: [{ type: 'DEMO', url: 'ftp://not-an-http-link' }],
+      });
+
+    assert.strictEqual(res.status, 400);
+  });
+
+  it('Project Edit Authorization: non-owner student cannot edit via PUT /v1/projects/:id (403 Forbidden)', async () => {
+    const res = await request(app)
+      .put(`/v1/projects/${createdProjectId}`)
+      .set('Authorization', `Bearer ${student2Token}`)
+      .send({
+        title: 'Malicious Overwrite Attempt',
+      });
+
+    assert.strictEqual(res.status, 403);
+  });
+
+  it('Project Edit Visibility: editing draft project does not silently publish it', async () => {
+    // 1. Create a draft project
+    const draftRes = await request(app)
+      .post('/v1/projects')
+      .set('Authorization', `Bearer ${student1Token}`)
+      .send({
+        title: 'Secret Draft Project',
+        tagline: 'Work in progress stealth project',
+        description: 'Detailed stealth plan that is not yet ready for public release.',
+        category: 'Research',
+        coverImageUrl: 'https://images.unsplash.com/photo-draft',
+        publishNow: false,
+      });
+
+    assert.strictEqual(draftRes.status, 201);
+    assert.strictEqual(draftRes.body.visibility, 'DRAFT');
+    const draftId = draftRes.body.id;
+    const draftSlug = draftRes.body.slug;
+
+    // 2. Edit draft project without publishNow
+    const editRes = await request(app)
+      .put(`/v1/projects/${draftId}`)
+      .set('Authorization', `Bearer ${student1Token}`)
+      .send({
+        title: 'Secret Draft Project v2',
+        description: 'Updated draft notes.',
+      });
+
+    assert.strictEqual(editRes.status, 200);
+    assert.strictEqual(editRes.body.visibility, 'DRAFT');
+
+    // 3. Anonymous visitor should NOT be able to view draft (404)
+    const publicRes = await request(app).get(`/v1/projects/${draftSlug}`);
+    assert.strictEqual(publicRes.status, 404);
+
+    // 4. Other student should NOT be able to view draft (404)
+    const otherStudentRes = await request(app)
+      .get(`/v1/projects/${draftSlug}`)
+      .set('Authorization', `Bearer ${student2Token}`);
+    assert.strictEqual(otherStudentRes.status, 404);
+
+    // 5. Project owner CAN view their draft (200)
+    const ownerRes = await request(app)
+      .get(`/v1/projects/${draftSlug}`)
+      .set('Authorization', `Bearer ${student1Token}`);
+    assert.strictEqual(ownerRes.status, 200);
+    assert.strictEqual(ownerRes.body.title, 'Secret Draft Project v2');
+    assert.strictEqual(ownerRes.body.is_owner, true);
+
+    // Clean up draft project
+    await request(app)
+      .delete(`/v1/projects/${draftId}`)
+      .set('Authorization', `Bearer ${student1Token}`);
+  });
+
+  it('Project Edit Concurrency & Deletion: cannot edit deleted project (404)', async () => {
+    // Create and immediately delete a project
+    const newProj = await request(app)
+      .post('/v1/projects')
+      .set('Authorization', `Bearer ${student1Token}`)
+      .send({
+        title: 'To Be Deleted Project',
+        tagline: 'Short lived project',
+        description: 'Will be deleted immediately',
+        category: 'Other',
+        coverImageUrl: 'https://images.unsplash.com/photo-delete',
+      });
+
+    const toDeleteId = newProj.body.id;
+
+    await request(app)
+      .delete(`/v1/projects/${toDeleteId}`)
+      .set('Authorization', `Bearer ${student1Token}`);
+
+    // Attempt to edit deleted project
+    const editDeletedRes = await request(app)
+      .put(`/v1/projects/${toDeleteId}`)
+      .set('Authorization', `Bearer ${student1Token}`)
+      .send({
+        title: 'Revival Attempt',
+      });
+
+    assert.strictEqual(editDeletedRes.status, 404);
+  });
+
+  it('Project Edit Moderation: cannot edit project that has been REMOVED by moderators (403)', async () => {
+    // Admin removes project for violation
+    await request(app)
+      .post(`/v1/admin/projects/${createdProjectId}/moderate`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ action: 'REMOVE', reason: 'Terms of service violation' });
+
+    // Student tries to edit removed project (soft-deleted -> 404)
+    const editRes = await request(app)
+      .put(`/v1/projects/${createdProjectId}`)
+      .set('Authorization', `Bearer ${student1Token}`)
+      .send({
+        title: 'Bypass Moderation Attempt',
+      });
+
+    assert.strictEqual(editRes.status, 404);
+
+    // Admin restores project
+    const restoreRes = await request(app)
+      .post(`/v1/admin/projects/${createdProjectId}/moderate`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ action: 'RESTORE', reason: 'Reinstated on appeal' });
+    assert.strictEqual(restoreRes.status, 200);
+  });
+
+  it('Project Edit Slug: editing customSlug updates slug and retains 301 history redirect', async () => {
+    const oldSlug = createdProjectSlug;
+    const newCustomSlug = `shuttle-renamed-${Date.now().toString().slice(-6)}`;
+
+    const res = await request(app)
+      .put(`/v1/projects/${createdProjectId}`)
+      .set('Authorization', `Bearer ${student1Token}`)
+      .send({
+        customSlug: newCustomSlug,
+      });
+
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.body.slug, newCustomSlug);
+
+    // 1. New slug resolves directly with 200
+    const newSlugRes = await request(app).get(`/v1/projects/${newCustomSlug}`);
+    assert.strictEqual(newSlugRes.status, 200);
+    assert.strictEqual(newSlugRes.body.title, 'Autonomous Shuttle Tracker v2');
+
+    // 2. Old slug redirects to new slug
+    const oldSlugRes = await request(app).get(`/v1/projects/${oldSlug}`);
+    assert.strictEqual(oldSlugRes.status, 200);
+    assert.strictEqual(oldSlugRes.body.redirect, true);
+    assert.strictEqual(oldSlugRes.body.canonical_slug, newCustomSlug);
   });
 });

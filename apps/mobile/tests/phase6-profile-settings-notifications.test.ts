@@ -92,7 +92,7 @@ describe('Phase 6 — Profile, Settings & Notifications UI & Contract Tests', ()
   it('4. Profile provides secondary navigation links to settings, notifications, history, and disputes', () => {
     expect(profileContent).toContain("router.push('/(app)/settings')");
     expect(profileContent).toContain("router.push('/(app)/notifications')");
-    expect(profileContent).toContain("router.navigate('/(app)/history')");
+    expect(profileContent).toContain("router.navigate('/(app)/(tabs)/activity?tab=attendance')");
     expect(profileContent).toContain("router.push('/(app)/disputes')");
   });
 

@@ -275,11 +275,21 @@ describe('Phase 20 Security Audit', () => {
     const t = await createTeam(studentDId, eventAId, 'Max Size Race Team');
     const tId = (t as any).team_id;
 
+    // Create fresh eligible student accounts for team join race
+    const s1 = await prisma.user.create({ data: { email: `s1_${Date.now()}@adypu.edu.in`, fullName: 'S1', globalRole: 'STUDENT', googleSub: `sub_s1_${Date.now()}` } });
+    const s2 = await prisma.user.create({ data: { email: `s2_${Date.now()}@adypu.edu.in`, fullName: 'S2', globalRole: 'STUDENT', googleSub: `sub_s2_${Date.now()}` } });
+    await prisma.userAcademicProfile.createMany({
+      data: [
+        { userId: s1.id, batchId: batchXId, assignmentSource: AssignmentSource.ADMIN_OVERRIDE },
+        { userId: s2.id, batchId: batchXId, assignmentSource: AssignmentSource.ADMIN_OVERRIDE },
+      ],
+    });
+
     // Concurrently join 3 members (but max size is 3, including leader, so only 2 should succeed)
     const accepts = await Promise.allSettled([
       joinTeam(studentEId, tId),
-      joinTeam(clubAdminAId, tId),
-      joinTeam(clubAdminBId, tId)
+      joinTeam(s1.id, tId),
+      joinTeam(s2.id, tId)
     ]);
 
     const acceptedCount = accepts.filter(r => r.status === 'fulfilled').length;

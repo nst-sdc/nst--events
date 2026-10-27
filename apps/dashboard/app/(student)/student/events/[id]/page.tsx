@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any, @next/next/no-img-element */
 
-import { use, useState } from 'react';
+import { use, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEventDetail, useMyRegistration } from '../../../../../hooks/useEventDetail';
@@ -23,6 +23,7 @@ import {
   validateFormResponses,
   toResponsePayload,
 } from '../../../../../lib/form-utils';
+import { isAdministratorAccount } from '../../../../../lib/auth-helpers';
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 const timeFormatter = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
@@ -321,8 +322,24 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
   const router = useRouter();
   const { setClubAdminMode, setActiveClubId } = useClubAdmin();
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      const rAF = requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      });
+      return () => cancelAnimationFrame(rAF);
+    }
+  }, [eventId]);
+
   const { data: event, isLoading: isLoadingEvent, isError: isErrorEvent } = useEventDetail(eventId);
   const { data: registration, isLoading: isLoadingReg } = useMyRegistration(eventId);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !isLoadingEvent) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+  }, [isLoadingEvent]);
 
   const { mutate: register, isPending: isRegistering } = useRegisterForEvent(eventId);
   const { mutate: cancel, isPending: isCanceling } = useCancelRegistration(eventId);
@@ -426,6 +443,9 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
     !(event.audienceBatchIds ?? []).includes(studentBatchId);
 
   const handleOpenRegisterModal = () => {
+    if (isAdministratorAccount(currentUser)) {
+      return;
+    }
     const initial: Record<string, string> = {};
     const preFilled: Record<string, string> = {};
     if (eventFormFields && profileValues) {
@@ -460,6 +480,10 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
   };
 
   const handleRegisterConfirm = () => {
+    if (isAdministratorAccount(currentUser)) {
+      setRegistrationError('Administrator accounts cannot register for events.');
+      return;
+    }
     // Validate required fields and field formats
     const validation = validateFormResponses(eventFormFields, formResponses);
     if (!validation.isValid) {
@@ -501,6 +525,19 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
   };
 
   const renderRegistrationAction = () => {
+    if (isAdministratorAccount(currentUser)) {
+      return (
+        <div>
+          <div className="ed-status-badge" style={{ borderColor: 'var(--warm-red)', color: 'var(--warm-red)' }}>
+            ACCESS RESTRICTED // ADMINISTRATOR ACCOUNT
+          </div>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: '#a0a4b8', margin: '14px 0 0 0', lineHeight: 1.5 }}>
+            Administrator accounts cannot register for events. Please use an eligible student account to participate.
+          </p>
+        </div>
+      );
+    }
+
     if (isEnded) {
       return (
         <div className="ed-status-badge">
@@ -525,6 +562,19 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
           </div>
           <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: '#a0a4b8', margin: '14px 0 0 0', lineHeight: 1.5 }}>
             Your batch cannot register for this event. It is limited to selected batches only.
+          </p>
+        </div>
+      );
+    }
+
+    if (event.registration_mode === 'NOT_REQUIRED' || event.registrationMode === 'NOT_REQUIRED') {
+      return (
+        <div>
+          <div className="ed-status-badge" style={{ borderColor: 'var(--acid-green)', color: 'var(--acid-green)' }}>
+            SYSTEM NOTICE // NO REGISTRATION REQUIRED — OPEN TO ALL ATTENDEES
+          </div>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: '#a0a4b8', marginTop: '10px', lineHeight: 1.5 }}>
+            This event does not require advance registration. All students are welcome to attend directly.
           </p>
         </div>
       );

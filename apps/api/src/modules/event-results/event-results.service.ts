@@ -1,6 +1,7 @@
 import { prisma } from '../../lib/prisma';
 import { withUserContext } from '@nst/database';
 import { NotFoundError, BadRequestError, ConflictError } from '../../lib/errors';
+import { calculateAwardPoints } from './scoring-policy';
 
 interface AwardInput {
   id?: string;
@@ -82,7 +83,7 @@ export async function getPublicResultsBySlug(slug: string, viewerUserId?: string
     }
 
     // 2. Event state & visibility check
-    if (event.state !== 'PUBLISHED') {
+    if (event.state !== 'PUBLISHED' && event.state !== 'ARCHIVED') {
       throw new NotFoundError('Event results are not accessible');
     }
 
@@ -752,10 +753,19 @@ export async function saveDraft(
       throw new BadRequestError('No active draft found. Please create a correction draft if results are published.');
     }
 
-    // Optimistic concurrency check
-    if (draft.version !== data.version) {
+    // Optimistic concurrency check and lock: conditionally bump version atomically
+    const updatedCount = await tx.eventResultRevision.updateMany({
+      where: { id: draft.id, version: data.version },
+      data: {
+        version: { increment: 1 },
+      },
+    });
+
+    if (updatedCount.count === 0) {
       throw new ConflictError('Draft was modified concurrently by another organizer. Please refresh and review.');
     }
+
+    const nextVersion = data.version + 1;
 
     // 3. Clear existing awards for this draft and re-insert atomically
     await tx.eventAward.deleteMany({
@@ -830,14 +840,6 @@ export async function saveDraft(
       }
     }
 
-    // 4. Update draft version
-    const updatedDraft = await tx.eventResultRevision.update({
-      where: { id: draft.id },
-      data: {
-        version: { increment: 1 },
-      },
-    });
-
     // 5. Audit log
     await tx.resultAuditLog.create({
       data: {
@@ -847,7 +849,7 @@ export async function saveDraft(
         action: 'DRAFT_SAVED',
         metadata: {
           awards_count: data.awards.length,
-          version: updatedDraft.version,
+          version: nextVersion,
         },
       },
     });
@@ -855,7 +857,7 @@ export async function saveDraft(
     return {
       success: true,
       revision_id: draft.id,
-      version: updatedDraft.version,
+      version: nextVersion,
     };
   });
 }
@@ -887,6 +889,10 @@ export async function publishRevision(
 
     if (!event || event.deletedAt) {
       throw new NotFoundError('Event not found');
+    }
+
+    if (event.state === 'CANCELLED') {
+      throw new BadRequestError('Cannot publish results for a cancelled event.');
     }
 
     const resultSet = await tx.eventResultSet.findUnique({
@@ -995,15 +1001,23 @@ export async function publishRevision(
       },
     });
 
-    // B. Publish this revision
-    await tx.eventResultRevision.update({
-      where: { id: revision.id },
+    // B. Publish this revision conditionally
+    const publishedCount = await tx.eventResultRevision.updateMany({
+      where: {
+        id: revision.id,
+        status: 'DRAFT',
+        version: options.version,
+      },
       data: {
         status: 'PUBLISHED',
         publishedAt: now,
         publishedBy: userId,
       },
     });
+
+    if (publishedCount.count === 0) {
+      throw new ConflictError('Revision has already been published or modified concurrently.');
+    }
 
     // C. Update ResultSet
     await tx.eventResultSet.update({
@@ -1109,6 +1123,54 @@ export async function publishRevision(
                 awardTitle: award.title,
                 placement: award.placement,
               });
+            }
+          }
+        }
+      }
+    }
+
+    // 5B. Reconcile Competition Leaderboard Scores
+    // Revoke previous awards for this result set to ensure idempotency and accurate corrections
+    const previousAwards = await tx.eventAward.findMany({
+      where: { revision: { resultSetId: resultSet.id } },
+      select: { id: true },
+    });
+    const previousAwardIds = previousAwards.map((a: any) => a.id);
+    if (previousAwardIds.length > 0) {
+      await tx.leaderboardScore.deleteMany({
+        where: { sourceId: { in: previousAwardIds } },
+      });
+    }
+
+    // Award leaderboard points according to the centralized scoring policy
+    const primaryClubId = event.eventClubs.find((c: any) => c.isPrimary)?.clubId || null;
+    for (const award of revision.awards) {
+      const points = calculateAwardPoints(award.awardType, award.placement);
+      if (points > 0) {
+        for (const rec of award.recipients) {
+          if (rec.recipientType === 'INDIVIDUAL' && rec.userId) {
+            await tx.leaderboardScore.create({
+              data: {
+                userId: rec.userId,
+                clubId: primaryClubId,
+                points,
+                reason: `COMPETITION: ${award.title}`,
+                sourceId: award.id,
+              },
+            });
+          } else if (rec.recipientType === 'TEAM' && rec.teamId) {
+            for (const member of rec.members) {
+              if (member.userId) {
+                await tx.leaderboardScore.create({
+                  data: {
+                    userId: member.userId,
+                    clubId: primaryClubId,
+                    points,
+                    reason: `COMPETITION: ${award.title}`,
+                    sourceId: award.id,
+                  },
+                });
+              }
             }
           }
         }
@@ -1387,10 +1449,18 @@ export async function withdrawResults(eventId: string, userId: string, reason: s
       },
     });
 
-    await tx.eventResultSet.update({
-      where: { id: resultSet.id },
+    const withdrawnCount = await tx.eventResultSet.updateMany({
+      where: {
+        id: resultSet.id,
+        status: 'PUBLISHED',
+        activePublishedRevisionId: resultSet.activePublishedRevisionId,
+      },
       data: { status: 'WITHDRAWN' },
     });
+
+    if (withdrawnCount.count === 0) {
+      throw new ConflictError('Results are not currently published or were modified concurrently.');
+    }
 
     // Deactivate achievements
     await tx.studentAchievement.updateMany({
@@ -1402,6 +1472,18 @@ export async function withdrawResults(eventId: string, userId: string, reason: s
         isActive: false,
       },
     });
+
+    // Reconcile/remove leaderboard awards for this result set
+    const allResultAwards = await tx.eventAward.findMany({
+      where: { revision: { resultSetId: resultSet.id } },
+      select: { id: true },
+    });
+    const awardIds = allResultAwards.map((a: any) => a.id);
+    if (awardIds.length > 0) {
+      await tx.leaderboardScore.deleteMany({
+        where: { sourceId: { in: awardIds } },
+      });
+    }
 
     await tx.resultAuditLog.create({
       data: {
@@ -1441,10 +1523,18 @@ export async function restoreResults(eventId: string, userId: string, reason: st
       },
     });
 
-    await tx.eventResultSet.update({
-      where: { id: resultSet.id },
+    const restoredCount = await tx.eventResultSet.updateMany({
+      where: {
+        id: resultSet.id,
+        status: 'WITHDRAWN',
+        activePublishedRevisionId: resultSet.activePublishedRevisionId,
+      },
       data: { status: 'PUBLISHED' },
     });
+
+    if (restoredCount.count === 0) {
+      throw new ConflictError('Results are not in WITHDRAWN status or were modified concurrently.');
+    }
 
     // Reactivate achievements for the active revision
     await tx.studentAchievement.updateMany({
@@ -1455,6 +1545,74 @@ export async function restoreResults(eventId: string, userId: string, reason: st
         isActive: true,
       },
     });
+
+    // Re-apply leaderboard scores idempotently for active revision
+    const activeRevision = await tx.eventResultRevision.findUnique({
+      where: { id: resultSet.activePublishedRevisionId },
+      include: {
+        awards: {
+          include: {
+            recipients: {
+              include: {
+                members: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (activeRevision) {
+      const allResultAwards = await tx.eventAward.findMany({
+        where: { revision: { resultSetId: resultSet.id } },
+        select: { id: true },
+      });
+      const activeAwardIds = allResultAwards.map((a: any) => a.id);
+      if (activeAwardIds.length > 0) {
+        await tx.leaderboardScore.deleteMany({
+          where: { sourceId: { in: activeAwardIds } },
+        });
+      }
+
+      const event = await tx.event.findUnique({
+        where: { id: eventId },
+        include: { eventClubs: { where: { isPrimary: true } } },
+      });
+      const primaryClubId = event?.eventClubs[0]?.clubId || null;
+
+      for (const award of activeRevision.awards) {
+        const points = calculateAwardPoints(award.awardType, award.placement);
+        if (points > 0) {
+          for (const rec of award.recipients) {
+            if (rec.recipientType === 'INDIVIDUAL' && rec.userId) {
+              await tx.leaderboardScore.create({
+                data: {
+                  userId: rec.userId,
+                  clubId: primaryClubId,
+                  points,
+                  reason: `COMPETITION: ${award.title}`,
+                  sourceId: award.id,
+                },
+              });
+            } else if (rec.recipientType === 'TEAM' && rec.teamId) {
+              for (const member of rec.members) {
+                if (member.userId) {
+                  await tx.leaderboardScore.create({
+                    data: {
+                      userId: member.userId,
+                      clubId: primaryClubId,
+                      points,
+                      reason: `COMPETITION: ${award.title}`,
+                      sourceId: award.id,
+                    },
+                  });
+                }
+              }
+            }
+          }
+        }
+      }
+    }
 
     await tx.resultAuditLog.create({
       data: {
@@ -1550,7 +1708,7 @@ export async function getStudentAchievements(userId: string, viewerId?: string) 
   // Filter based on event visibility
   return achievements
     .filter((a) => {
-      if (a.event.state !== 'PUBLISHED') return false;
+      if (a.event.state !== 'PUBLISHED' && a.event.state !== 'ARCHIVED') return false;
       if (a.event.visibility === 'PUBLIC' || a.event.visibility === 'UNLISTED') return true;
       if (a.event.visibility === 'RESTRICTED') return !!viewerId;
       return false;

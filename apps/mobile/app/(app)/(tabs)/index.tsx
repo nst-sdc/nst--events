@@ -47,16 +47,26 @@ function EventRow({
 }) {
   const router = useRouter();
   const theme = useAppTheme();
-  const { data: sessions, isLoading: sessionsLoading } = useEventSessions(event.id);
-  const { data: attendanceHistory, isLoading: historyLoading } = useAttendanceHistory(event.id);
+  const userReg = userRegistrations.find((r) => r.eventId === event.id);
+  const regStatus = userReg?.registrationStatus || 'NOT_REGISTERED';
+  const isRegistered = regStatus === 'REGISTERED';
+  const isWaitlisted = regStatus === 'WAITLISTED';
+
+  // Only ongoing events require per-event session windows and attendance verification.
+  // Upcoming events render cards based on static event timing and registration status,
+  // preventing unnecessary request fan-out on initial feed render.
+  const shouldFetchDetails = mode === 'ongoing' || mode === 'all';
+  const { data: sessions, isLoading: sessionsLoading } = useEventSessions(event.id, {
+    enabled: shouldFetchDetails,
+  });
+  const { data: attendanceHistory, isLoading: historyLoading } = useAttendanceHistory(event.id, {
+    enabled: shouldFetchDetails && isRegistered,
+  });
 
   const primaryClubId = event.eventClubs?.find((ec) => ec.isPrimary)?.clubId;
   const isPrimaryClubAdmin = userClubMemberships.some(
     (cm) => (cm.role === 'CLUB_ADMIN' || cm.role === 'CORE_MEMBER') && cm.club_id === primaryClubId
   );
-
-  const userReg = userRegistrations.find((r) => r.eventId === event.id);
-  const regStatus = userReg?.registrationStatus || 'NOT_REGISTERED';
 
   const now = new Date();
   const activeSession = findActiveAttendanceSession(
@@ -72,8 +82,6 @@ function EventRow({
   );
 
   const isSessionActive = !!activeSession;
-  const isRegistered = regStatus === 'REGISTERED';
-  const isWaitlisted = regStatus === 'WAITLISTED';
   const canScan = isSessionActive && isRegistered && !isPrimaryClubAdmin && !hasAttendanceForActiveSession && !event.isLocked;
 
   const dateStr = new Date(event.startTime).toLocaleDateString([], { month: 'short', day: 'numeric' });
@@ -83,10 +91,10 @@ function EventRow({
   const bannerUrl = event.metadata?.banner_url as string | undefined;
 
   React.useEffect(() => {
-    if (onLiveStatus && !sessionsLoading && !historyLoading) {
+    if (onLiveStatus && shouldFetchDetails && !sessionsLoading && !historyLoading) {
       onLiveStatus(event.id, isLive);
     }
-  }, [event.id, isLive, onLiveStatus, sessionsLoading, historyLoading]);
+  }, [event.id, isLive, onLiveStatus, sessionsLoading, historyLoading, shouldFetchDetails]);
 
   // Render ONGOING (ActiveAttendanceCard if scan available or already marked, otherwise EventCard with LIVE badge)
   if (mode === 'ongoing') {
@@ -548,7 +556,7 @@ export default function HomeAttendanceScreen() {
       {invitations.length > 0 && (
         <TouchableOpacity
           style={styles.alertBanner}
-          onPress={() => router.push('/(app)/invitations')}
+          onPress={() => router.push('/(app)/(tabs)/activity?tab=invites')}
           activeOpacity={0.8}
         >
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>

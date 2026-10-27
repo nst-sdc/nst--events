@@ -65,6 +65,9 @@ export const refreshToken = async (): Promise<RefreshResult> => {
         try {
           const data = await res.json();
           if (data?.access_token) {
+            if (typeof document !== 'undefined' && data?.user?.global_role) {
+              document.cookie = `user_role=${data.user.global_role}; path=/; max-age=2592000; SameSite=Lax`;
+            }
             return { status: 'SUCCESS' as const, token: data.access_token };
           }
           return { status: 'SESSION_DEAD' as const };

@@ -1,44 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../lib/api';
 
-export type EventLockState = 'UNLOCKED' | 'MANUALLY_LOCKED' | 'PERMANENTLY_LOCKED';
+import type {
+  EventListItem,
+  EventLockState,
+  CanonicalRegistrationStatus,
+  EventsResponse,
+} from '@nst/shared';
 
-export interface Event {
-  id: string;
-  title: string;
-  description?: string | null;
-  startTime: string;
-  endTime: string;
-  registrationStartTime: string | null;
-  registrationEndTime: string | null;
-  registrationStatus: 'UPCOMING' | 'OPEN' | 'CLOSED';
-  locationName: string | null;
-  state: string;
-  maxCapacity: number | null;
-  maxParticipants?: number | null;
-  registrationCount: number;
-  participantCount?: number;
-  isLocked: boolean;
-  attendanceType: 'SINGLE' | 'MULTI_SESSION';
-  eventType: 'HACKATHON' | 'WORKSHOP' | 'SEMINAR' | 'SOCIAL' | 'COMPETITION' | 'OTHER';
-  visibility: 'PUBLIC' | 'PRIVATE' | 'UNLISTED';
-  registrationType: 'INDIVIDUAL' | 'TEAM';
-  audience: 'ALL_STUDENTS' | 'SPECIFIC_BATCHES';
-  audienceBatchIds?: string[];
-  lock_deadline: string;
-  lock_state: EventLockState;
-  below_minimum_team_count?: number;
-  metadata?: Record<string, unknown>;
-  eventClubs?: { clubId: string; isPrimary: boolean; club: { id: string; name: string } }[];
-}
+export type { EventLockState };
 
-export interface EventsResponse {
-  data: Event[];
-  pagination: {
-    next_cursor?: string;
-    has_more: boolean;
-  };
-}
+export type Event = EventListItem;
+
+export type { EventsResponse };
 
 export interface EventsQueryParams {
   q?: string;

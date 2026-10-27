@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { safeSecureStore } from '../lib/secure-storage';
 import { API_BASE_URL } from '../infrastructure/config';
+import { queryClient } from '../providers/QueryProvider';
 
 interface AuthState {
   userId: string | null;
@@ -69,6 +70,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   setSession: async (userId, accessToken, refreshToken) => {
+    const prevUserId = get().userId;
+    if (prevUserId && prevUserId !== userId) {
+      try {
+        queryClient.clear();
+      } catch {}
+    }
     await safeSecureStore.setItemAsync('access_token', accessToken);
     await safeSecureStore.setItemAsync('user_id', userId);
     await safeSecureStore.setItemAsync('refresh_token', refreshToken);

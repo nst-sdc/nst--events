@@ -1,7 +1,7 @@
 'use client';
 
 import { ReactNode, useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { getWebAuthStore } from '../../lib/auth-store';
 import { AppShell } from '../../components/layout/AppShell';
 import { apiClient } from '../../lib/api';
@@ -13,7 +13,6 @@ let refreshPromise: Promise<string | null> | null = null;
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const pathname = usePathname();
   const store = getWebAuthStore();
   const [isHydrating, setIsHydrating] = useState(!store.accessToken);
   const [isAuthenticated, setIsAuthenticated] = useState(!!store.accessToken);
@@ -41,10 +40,22 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           setIsAuthenticated(true);
         } else {
           setIsAuthenticated(false);
+          if (typeof document !== 'undefined') {
+            document.cookie = 'user_role=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax';
+          }
+          if (typeof window !== 'undefined') {
+            window.sessionStorage?.removeItem('return_to');
+          }
           router.push('/login');
         }
       } catch {
         setIsAuthenticated(false);
+        if (typeof document !== 'undefined') {
+          document.cookie = 'user_role=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax';
+        }
+        if (typeof window !== 'undefined') {
+          window.sessionStorage?.removeItem('return_to');
+        }
         router.push('/login');
       } finally {
         setIsHydrating(false);
@@ -55,22 +66,37 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     bootstrap();
   }, [router, store]);
 
+  const isStudent = user?.global_role === 'STUDENT';
+  const isAuthorizedAdmin = user && ['PLATFORM_ADMIN', 'FACULTY_ADMIN', 'FACULTY_MENTOR'].includes(user.global_role);
+
   useEffect(() => {
-    // If authenticated and user is loaded, check role
+    // If authenticated and user is loaded, enforce role-appropriate routing
     if (isAuthenticated && user) {
+      // Reconcile client-controlled cookie with authoritative role from backend
+      if (typeof document !== 'undefined' && user.global_role) {
+        document.cookie = `user_role=${user.global_role}; path=/; max-age=2592000; SameSite=Lax`;
+      }
+
+      // 1. Students are strictly barred from operations dashboard and admin routes
+      if (isStudent) {
+        if (typeof window !== 'undefined') {
+          window.sessionStorage?.removeItem('return_to');
+        }
+        router.replace('/student/home');
+        return;
+      }
+
+      // 2. Handle returnTo for authorized administrators
       if (typeof window !== 'undefined') {
-        const returnTo = window.sessionStorage.getItem('return_to');
+        const returnTo = window.sessionStorage?.getItem('return_to');
         if (returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//')) {
-          window.sessionStorage.removeItem('return_to');
+          window.sessionStorage?.removeItem('return_to');
           router.replace(returnTo);
           return;
         }
       }
-      if (user.global_role === 'STUDENT' && !pathname.startsWith('/student')) {
-        router.replace('/student/home');
-      }
     }
-  }, [isAuthenticated, user, router, pathname]);
+  }, [isAuthenticated, user, isStudent, router]);
 
   if (isHydrating || (isAuthenticated && isUserLoading)) {
     return (
@@ -93,8 +119,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  const isStudent = user?.global_role === 'STUDENT';
-  if (!isAuthenticated || isStudent) {
+  // Reject unauthenticated access, student access, or unauthorized roles from rendering AppShell
+  if (!isAuthenticated || isStudent || !isAuthorizedAdmin) {
     return null;
   }
 

@@ -24,6 +24,10 @@ import {
   isSessionAttendancePresent, 
   isEventCurrentlyLive 
 } from '../../../../src/lib/home-events';
+import {
+  isAdministratorAccount,
+  calculateRegistrationWindowStatus,
+} from '../../../../src/lib/auth-helpers';
 
 export default function EventScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -311,6 +315,20 @@ export default function EventScreen() {
   }), [theme]);
 
   const handleConfirmRegister = async () => {
+    if (isAdministratorAccount(profile)) {
+      setShowRegisterModal(false);
+      return;
+    }
+    const regWindowStatus = calculateRegistrationWindowStatus(
+      now,
+      registrationOpensAt,
+      registrationClosesAt,
+      (event as any)?.registrationStatus || (event as any)?.registration_status
+    );
+    if (regWindowStatus !== 'OPEN' && regWindowStatus !== 'CLOSING_SOON') {
+      setShowRegisterModal(false);
+      return;
+    }
     try {
       await registerAsync(undefined);
     } catch {
@@ -348,6 +366,19 @@ export default function EventScreen() {
       );
     }
 
+    if (isAdministratorAccount(profile)) {
+      return (
+        <View style={[styles.restrictedTray, { borderColor: theme.colors.error }]}>
+          <MonoLabel style={[styles.restrictedText, { color: theme.colors.error }]}>
+            ACCESS RESTRICTED // ADMINISTRATOR ACCOUNT
+          </MonoLabel>
+          <MonoLabel style={[styles.restrictedText, { fontSize: 10, marginTop: 4, color: theme.colors.onSurfaceVariant }]}>
+            ADMINISTRATOR ACCOUNTS CANNOT REGISTER FOR EVENTS
+          </MonoLabel>
+        </View>
+      );
+    }
+
     const lockDeadline = (event as any)?.lock_deadline
       ? new Date((event as any).lock_deadline)
       : event?.endTime
@@ -369,8 +400,9 @@ export default function EventScreen() {
     }
 
     const status = registration?.status || (registration as any)?.registrationStatus || 'NOT_REGISTERED';
+    const isUnregistered = status === 'NOT_REGISTERED' || status === 'CANCELLED';
 
-    if (isBatchIneligible && (status === 'NOT_REGISTERED' || status === 'CANCELLED')) {
+    if (isBatchIneligible && isUnregistered) {
       return (
         <View style={[styles.restrictedTray, { borderColor: theme.colors.error, gap: 6 }]}>
           <MonoLabel style={[styles.restrictedText, { color: theme.colors.error }]}>
@@ -379,6 +411,48 @@ export default function EventScreen() {
           <MonoLabel style={styles.restrictedText}>
             RESTRICTED TO SELECTED BATCHES
           </MonoLabel>
+        </View>
+      );
+    }
+
+    const regMode = (event as any)?.registration_mode || (event as any)?.registrationMode;
+    if (regMode === 'NOT_REQUIRED') {
+      return (
+        <View style={styles.restrictedTray}>
+          <MonoLabel style={[styles.restrictedText, { color: theme.colors.primary }]}>
+            OPEN EVENT — NO REGISTRATION REQUIRED
+          </MonoLabel>
+        </View>
+      );
+    }
+
+    const regWindowStatus = calculateRegistrationWindowStatus(
+      now,
+      registrationOpensAt,
+      registrationClosesAt,
+      (event as any)?.registrationStatus || (event as any)?.registration_status
+    );
+
+    if (isUnregistered && regWindowStatus !== 'OPEN' && regWindowStatus !== 'CLOSING_SOON') {
+      if (regWindowStatus === 'UPCOMING') {
+        const openTime = registrationOpensAt
+          ? new Intl.DateTimeFormat('en-US', {
+              dateStyle: 'medium',
+              timeStyle: 'short',
+            }).format(new Date(registrationOpensAt))
+          : 'SOON';
+        return (
+          <View style={styles.restrictedTray}>
+            <MonoLabel style={styles.restrictedText}>
+              REGISTRATION OPENS {openTime.toUpperCase()}
+            </MonoLabel>
+          </View>
+        );
+      }
+
+      return (
+        <View style={styles.restrictedTray}>
+          <MonoLabel style={styles.restrictedText}>REGISTRATION CLOSED</MonoLabel>
         </View>
       );
     }
@@ -422,7 +496,17 @@ export default function EventScreen() {
               ? '[ JOIN SQUAD (TEAMS FULL) ]'
               : '[ CREATE OR JOIN SQUAD ]'
           }
-          onPress={() => setShowTeamGatewayModal(true)}
+          onPress={() => {
+            if (isAdministratorAccount(profile)) return;
+            const currentRegStatus = calculateRegistrationWindowStatus(
+              now,
+              registrationOpensAt,
+              registrationClosesAt,
+              (event as any)?.registrationStatus || (event as any)?.registration_status
+            );
+            if (currentRegStatus !== 'OPEN' && currentRegStatus !== 'CLOSING_SOON') return;
+            setShowTeamGatewayModal(true);
+          }}
           variant="primary"
           disabled={isParticipantCapacityFull}
           style={styles.actionBtn}
@@ -501,6 +585,14 @@ export default function EventScreen() {
       <Button
         title={isFull ? "[ JOIN EVENT WAITLIST ]" : "[ REGISTER FOR EVENT ]"}
         onPress={() => {
+          if (isAdministratorAccount(profile)) return;
+          const currentRegStatus = calculateRegistrationWindowStatus(
+            now,
+            registrationOpensAt,
+            registrationClosesAt,
+            (event as any)?.registrationStatus || (event as any)?.registration_status
+          );
+          if (currentRegStatus !== 'OPEN' && currentRegStatus !== 'CLOSING_SOON') return;
           if (eventFormFields && eventFormFields.length > 0) {
             router.push(`/(app)/events/${id}/register`);
           } else {

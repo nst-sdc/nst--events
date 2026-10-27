@@ -53,6 +53,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify Schema-to-Migration Parity (Drift Check)
+        env:
+          SHADOW_DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/nst_events_shadow"
+        run: |
+          # Prepare dedicated, isolated shadow database on disposable CI PostgreSQL instance
+          PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d nst_events -c "DROP DATABASE IF EXISTS nst_events_shadow;"
+          PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d nst_events -c "CREATE DATABASE nst_events_shadow;"
+          ./scripts/check-schema-drift.sh "${SHADOW_DATABASE_URL}"
+
       - name: CI Environment Setup (Database Preparation)
         run: |
           pnpm --filter @nst/database db:validate

@@ -62,6 +62,9 @@ export function MobileShell({
     backBtn: {
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 48,
+      minWidth: 48,
       marginRight: theme.spacing.md,
     },
     backText: {
@@ -74,8 +77,11 @@ export function MobileShell({
       color: theme.colors.onSurfaceVariant,
     },
     notifBtn: {
-      paddingVertical: 4,
-      paddingHorizontal: 8,
+      paddingVertical: 6,
+      paddingHorizontal: 10,
+      minHeight: 36,
+      justifyContent: 'center',
+      alignItems: 'center',
       borderWidth: 1,
       borderColor: theme.colors.borderHairline,
       backgroundColor: theme.colors.surfaceContainerLow,
@@ -117,7 +123,14 @@ export function MobileShell({
       
       <View style={styles.header}>
         {showBackButton ? (
-          <TouchableOpacity onPress={handleBack} style={styles.backBtn} activeOpacity={0.8}>
+          <TouchableOpacity
+            onPress={handleBack}
+            style={styles.backBtn}
+            activeOpacity={0.8}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
             <MonoLabel style={styles.backText}>← BACK</MonoLabel>
           </TouchableOpacity>
         ) : null}
@@ -135,6 +148,9 @@ export function MobileShell({
             onPress={() => router.push('/(app)/notifications')}
             style={[styles.notifBtn, unreadCount > 0 && styles.notifBtnActive]}
             activeOpacity={0.8}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityRole="button"
+            accessibilityLabel="Notifications inbox"
           >
             <MonoLabel style={unreadCount > 0 ? styles.notifBadgeActive : styles.notifBadge}>
               {unreadCount > 0 ? `[INBOX: ${unreadCount}]` : '[INBOX]'}

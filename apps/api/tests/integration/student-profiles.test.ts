@@ -554,11 +554,9 @@ describe('NST Student Profiles & Directory Integration Suite', { concurrency: fa
     assert.strictEqual(searchRes.status, 200);
     assert.strictEqual(searchRes.body.data.length, 0);
 
-    // Historical slug redirect is preserved
+    // Historical slug redirect is blocked when identity is hidden to prevent deanonymization
     const redirectRes = await request(app).get('/v1/students/dana-secretive');
-    assert.strictEqual(redirectRes.status, 200);
-    assert.strictEqual(redirectRes.body.redirect, true);
-    assert.strictEqual(redirectRes.body.canonical_slug, slug);
+    assert.strictEqual(redirectRes.status, 404);
   });
 
   it('Scenario D: Hidden content is excluded from public API responses', async () => {

@@ -2,14 +2,29 @@
 
 import { useState } from 'react';
 
-import { Table, Tag, Button, Modal } from 'antd';
+import { Table, Tag, Button, Modal, Result } from 'antd';
 import { useAuditLogs, AuditLog } from '../../../../hooks/useAuditLogs';
 import { AdminPageHeader } from '../../../../components/admin/AdminPageHeader';
 import { EyeOutlined } from '@ant-design/icons';
+import { useCurrentUser } from '../../../../hooks/useCurrentUser';
+import { isPlatformAdmin } from '../../../../lib/auth-helpers';
 
 export default function AuditLogsPage() {
+  const { data: currentUser, isLoading: isUserLoading } = useCurrentUser();
   const { data, isLoading, isError } = useAuditLogs();
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
+
+  if (!isUserLoading && currentUser && !isPlatformAdmin(currentUser)) {
+    return (
+      <div className="max-w-6xl mx-auto py-12">
+        <Result
+          status="403"
+          title="Permission Denied"
+          subTitle="You do not have permission to view Audit Logs."
+        />
+      </div>
+    );
+  }
 
   const columns = [
     {

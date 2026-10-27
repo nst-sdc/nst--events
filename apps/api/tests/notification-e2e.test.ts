@@ -9,7 +9,7 @@ import { adminPrisma } from './helpers/adminDb';
 import { Expo } from 'expo-server-sdk';
 
 // MUST set worker URL before importing worker!
-process.env.WORKER_DATABASE_URL = 'postgresql://nst_worker:worker_password@localhost:5440/nst_events?schema=public';
+process.env.WORKER_DATABASE_URL = process.env.WORKER_DATABASE_URL || 'postgresql://nst_worker:worker_password@127.0.0.1:5440/nst_events_clean_test?schema=public';
 import { processBatch } from '../../worker/src/worker';
 import { expo } from '../../worker/src/index';
 
@@ -267,6 +267,7 @@ async function runTests() {
 
   await runTest('Idempotency Verification', async () => {
     await adminPrisma.notificationJob.deleteMany();
+    await adminPrisma.notification.deleteMany();
     // Call ROLE_CHANGED twice
     await updateMemberRole(testUserId, testClubId, testUserId, 'CLUB_ADMIN');
     await updateMemberRole(testUserId, testClubId, testUserId, 'CLUB_ADMIN');
@@ -274,6 +275,9 @@ async function runTests() {
     const allJobs = await adminPrisma.notificationJob.findMany();
     const jobs = allJobs.filter(j => (j.payload as any).notification_type === 'ROLE_CHANGED' && (j.payload as any).user_id === testUserId);
     assert.strictEqual(jobs.length, 1, 'Only one job should be created due to idempotency');
+
+    const notifs = await adminPrisma.notification.findMany({ where: { type: 'ROLE_CHANGED', userId: testUserId } });
+    assert.strictEqual(notifs.length, 1, 'Only one inbox notification should be created due to idempotency');
   });
 
   console.log(`\n========================================`);

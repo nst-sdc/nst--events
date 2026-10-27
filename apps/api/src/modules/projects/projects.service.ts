@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma';
 import { withUserContext } from '@nst/database';
+import { enqueueNotification } from '@nst/shared';
 import {
   BadRequestError,
   ForbiddenError,
@@ -8,7 +9,7 @@ import {
   ConflictError,
 } from '../../lib/errors';
 import { generateSlug, isValidSlug, isReservedSlug } from '../../utils/slug-utils';
-import { validateRegistrationEligibility } from '../events/events.service';
+import { validateVerifiedUser, isInstitutionalEmail } from '../events/events.service';
 import {
   CONTROLLED_PROJECT_CATEGORIES,
   QueryProjectsSchema,
@@ -218,9 +219,11 @@ export class ProjectsService {
       }
     }
 
-    // 2. Query project
+    // 2. Query project (by slug or UUID ID)
     let project: any;
     let hasLiked = false;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(normalizedSlug);
+    const projectWhere = isUuid ? { id: normalizedSlug } : { slug: normalizedSlug };
 
     const includeClause = {
       owner: {
@@ -259,7 +262,7 @@ export class ProjectsService {
     if (callerUserId) {
       await withUserContext(callerUserId, async (tx) => {
         project = await tx.project.findUnique({
-          where: { slug: normalizedSlug },
+          where: projectWhere,
           include: includeClause,
         });
 
@@ -277,7 +280,7 @@ export class ProjectsService {
       });
     } else {
       project = await prisma.project.findUnique({
-        where: { slug: normalizedSlug },
+        where: projectWhere,
         include: includeClause,
       });
     }
@@ -293,6 +296,7 @@ export class ProjectsService {
       }
 
       let isOwner = false;
+      let isAcceptedCollaborator = false;
       let isAdmin = false;
 
       await withUserContext(callerUserId, async (tx) => {
@@ -302,10 +306,11 @@ export class ProjectsService {
         });
 
         isOwner = project.ownerId === callerUserId;
+        isAcceptedCollaborator = (project.contributors || []).some((c: any) => c.userId === callerUserId);
         isAdmin = caller?.globalRole === 'PLATFORM_ADMIN' || caller?.globalRole === 'FACULTY_ADMIN';
       });
 
-      if (!isOwner && !isAdmin) {
+      if (!isOwner && !isAcceptedCollaborator && !isAdmin) {
         throw new NotFoundError('Project not found');
       }
     }
@@ -336,6 +341,7 @@ export class ProjectsService {
       view_count: project.viewCount,
       has_liked: hasLiked,
       is_owner: callerUserId === project.ownerId,
+      owner_id: project.ownerId,
       author: {
         name: project.owner.fullName,
         avatar_url: project.owner.avatarUrl,
@@ -382,7 +388,7 @@ export class ProjectsService {
       if (!user) throw new NotFoundError('User not found');
 
       // Enforce verified institutional email
-      validateRegistrationEligibility(user);
+      validateVerifiedUser(user);
 
       let slug = input.customSlug ? input.customSlug.toLowerCase().trim() : null;
 
@@ -461,6 +467,11 @@ export class ProjectsService {
       if (existing.ownerId !== userId && !isAdmin) {
         throw new ForbiddenError('You do not have permission to edit this project');
       }
+
+      if (existing.visibility === 'REMOVED' && !isAdmin) {
+        throw new ForbiddenError('This project has been removed by platform moderation and cannot be edited');
+      }
+
       const updateData: Prisma.ProjectUpdateInput = {};
 
       if (input.title !== undefined) updateData.title = input.title.trim();
@@ -478,10 +489,45 @@ export class ProjectsService {
       if (input.coverImageUrl !== undefined) updateData.coverImageUrl = input.coverImageUrl;
       if (input.galleryImageUrls !== undefined) updateData.galleryImageUrls = input.galleryImageUrls;
 
+      // Handle custom slug update if provided
+      if (input.customSlug !== undefined && input.customSlug.trim()) {
+        const normalizedNewSlug = input.customSlug.toLowerCase().trim();
+        if (normalizedNewSlug !== existing.slug) {
+          if (!isValidSlug(normalizedNewSlug) || isReservedSlug(normalizedNewSlug)) {
+            throw new BadRequestError('Invalid or reserved slug format');
+          }
+          const collision = await tx.project.findUnique({ where: { slug: normalizedNewSlug } });
+          if (collision) {
+            throw new ConflictError('Slug is already in use by another project');
+          }
+          await tx.projectSlugHistory.upsert({
+            where: { slug: existing.slug },
+            create: { projectId, slug: existing.slug },
+            update: { projectId },
+          });
+          updateData.slug = normalizedNewSlug;
+        }
+      }
+
       if (input.publishNow) {
         if (!input.rightsConfirmed && existing.visibility !== 'PUBLISHED') {
           throw new BadRequestError('You must confirm ownership rights to publish this project');
         }
+
+        const effectiveTitle = input.title !== undefined ? input.title.trim() : existing.title;
+        const effectiveTagline = input.tagline !== undefined ? input.tagline.trim() : existing.tagline;
+        const effectiveDesc = input.description !== undefined ? input.description.trim() : existing.description;
+        const effectiveCover = input.coverImageUrl !== undefined ? input.coverImageUrl : existing.coverImageUrl;
+
+        if (!effectiveTitle || !effectiveTagline || !effectiveDesc || !effectiveCover) {
+          throw new BadRequestError('Project basics (title, tagline, description, and cover image) must be complete before publishing');
+        }
+
+        const effectiveLinks = input.links !== undefined ? input.links : existing.links;
+        if (!effectiveLinks || effectiveLinks.length === 0) {
+          throw new BadRequestError('At least one public showcase artifact (Demo, GitHub, Video, Documentation) is required before publishing');
+        }
+
         updateData.visibility = 'PUBLISHED';
         if (!existing.publishedAt) {
           updateData.publishedAt = new Date();
@@ -660,7 +706,7 @@ export class ProjectsService {
     return withUserContext(userId, async (tx) => {
       const user = await tx.user.findUnique({ where: { id: userId } });
       if (!user) throw new NotFoundError('User not found');
-      validateRegistrationEligibility(user);
+      validateVerifiedUser(user);
 
       const project = await tx.project.findUnique({ where: { id: projectId } });
       if (!project || project.deletedAt !== null || project.visibility !== 'PUBLISHED') {
@@ -725,10 +771,24 @@ export class ProjectsService {
   }
 
   /**
-   * Retrieves verified student's own projects (drafts, published, unpublished).
+   * Retrieves verified student's own projects (drafts, published, unpublished) and collaborations.
    */
   async listMyProjects(userId: string) {
     return withUserContext(userId, async (tx) => {
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        select: { email: true },
+      });
+      const userEmail = user?.email?.toLowerCase();
+
+      if (userEmail) {
+        try {
+          await this.reconcilePendingInvitations(tx, userId, userEmail);
+        } catch {
+          // Non-blocking
+        }
+      }
+
       const projects = await tx.project.findMany({
         where: {
           ownerId: userId,
@@ -739,8 +799,9 @@ export class ProjectsService {
           links: true,
           contributors: {
             include: {
-              user: { select: { fullName: true, email: true } },
+              user: { select: { fullName: true, email: true, avatarUrl: true } },
             },
+            orderBy: { createdAt: 'desc' },
           },
           moderationActions: {
             orderBy: { createdAt: 'desc' },
@@ -752,16 +813,20 @@ export class ProjectsService {
 
       const contributing = await tx.projectContributor.findMany({
         where: {
-          userId,
+          OR: [
+            { userId },
+            ...(userEmail ? [{ invitedEmail: userEmail }] : []),
+          ],
           project: { deletedAt: null },
         },
         include: {
           project: {
             include: {
-              owner: { select: { fullName: true } },
+              owner: { select: { fullName: true, email: true } },
             },
           },
         },
+        orderBy: { createdAt: 'desc' },
       });
 
       const ownedMapped = projects.map((p) => ({
@@ -781,16 +846,30 @@ export class ProjectsService {
         links_count: p.links.length,
         contributors_count: p.contributors.length,
         latest_moderation: p.moderationActions[0] || null,
+        contributors: p.contributors.map((c) => ({
+          id: c.id,
+          role: c.role,
+          status: c.status,
+          invited_email: c.invitedEmail,
+          user_id: c.userId,
+          name: c.user?.fullName || c.invitedEmail || 'Collaborator',
+          email: c.user?.email || c.invitedEmail,
+          avatar_url: c.user?.avatarUrl || null,
+          created_at: c.createdAt,
+        })),
       }));
 
       const contributingMapped = contributing.map((c) => ({
+        id: c.id,
         contributor_id: c.id,
         role: c.role,
         status: c.status,
+        created_at: c.createdAt,
         project: {
           id: c.project.id,
           title: c.project.title,
           slug: c.project.slug,
+          tagline: c.project.tagline,
           visibility: c.project.visibility,
           owner_name: c.project.owner.fullName,
         },
@@ -804,6 +883,8 @@ export class ProjectsService {
           published: ownedMapped.filter((p) => p.visibility === 'PUBLISHED').length,
           drafts: ownedMapped.filter((p) => p.visibility === 'DRAFT').length,
           unpublished: ownedMapped.filter((p) => p.visibility === 'UNPUBLISHED').length,
+          totalLikes: ownedMapped.reduce((sum, p) => sum + p.like_count, 0),
+          totalViews: ownedMapped.reduce((sum, p) => sum + p.view_count, 0),
           likes: ownedMapped.reduce((sum, p) => sum + p.like_count, 0),
         },
       };
@@ -811,21 +892,112 @@ export class ProjectsService {
   }
 
   /**
+   * Reconciles unlinked or missing notifications for pending invitations matching a user's institutional email.
+   * Atomically links userId and enqueues actionable in-app notifications if not already present.
+   */
+  async reconcilePendingInvitations(tx: Prisma.TransactionClient, userId: string, email: string) {
+    if (!email) return;
+    const cleanEmail = email.toLowerCase().trim();
+
+    // 1. Link any unlinked invitations for this email
+    await tx.projectContributor.updateMany({
+      where: {
+        invitedEmail: cleanEmail,
+        userId: null,
+      },
+      data: {
+        userId,
+      },
+    });
+
+    // 2. Ensure in-app notification exists for all pending invitations
+    const pendingInvitations = await tx.projectContributor.findMany({
+      where: {
+        OR: [
+          { userId },
+          { invitedEmail: cleanEmail },
+        ],
+        status: 'PENDING',
+        project: { deletedAt: null },
+      },
+      include: {
+        project: { select: { id: true, title: true } },
+      },
+    });
+
+    for (const invite of pendingInvitations) {
+      try {
+        await enqueueNotification({
+          tx,
+          userId,
+          type: 'PROJECT_INVITATION',
+          title: 'Project Collaboration Invitation',
+          body: `You were invited to collaborate on "${invite.project.title}" as ${invite.role}.`,
+          metadata: {
+            schema_version: 1,
+            routing: {
+              target: 'project_invitation',
+              fallback: '/my/projects',
+              params: { id: invite.project.id },
+            },
+            entity_ids: {
+              project_id: invite.project.id,
+              contributor_id: invite.id,
+            },
+          },
+          preferenceGate: 'push_enabled',
+          idempotencyString: `PROJECT_INVITATION:${invite.id}`,
+        });
+      } catch {
+        // Enqueue is idempotent and safe
+      }
+    }
+  }
+
+  /**
    * Invites a student collaborator by institutional email.
+   * Enforces domain checks, role limits, self-invitation guards, duplicate safety, and in-app notifications.
    */
   async inviteContributor(userId: string, projectId: string, invitedEmail: string, role: string) {
+    const cleanEmail = invitedEmail.toLowerCase().trim();
+    const cleanRole = role.trim();
+
+    if (!isInstitutionalEmail(cleanEmail)) {
+      throw new BadRequestError('Only institutional email addresses (@adypu.edu.in or @newtonschool.co) are permitted');
+    }
+
+    if (!cleanRole || cleanRole.length < 2 || cleanRole.length > 60) {
+      throw new BadRequestError('Role description must be between 2 and 60 characters');
+    }
+
     return withUserContext(userId, async (tx) => {
-      const project = await tx.project.findUnique({ where: { id: projectId } });
-      if (!project || project.deletedAt !== null) throw new NotFoundError('Project not found');
-      if (project.ownerId !== userId) throw new ForbiddenError('Only project owner can invite contributors');
+      const project = await tx.project.findUnique({
+        where: { id: projectId },
+        include: {
+          owner: { select: { id: true, email: true, fullName: true } },
+        },
+      });
 
-      const cleanEmail = invitedEmail.toLowerCase().trim();
-      const invitedUser = await tx.user.findUnique({ where: { email: cleanEmail } });
+      if (!project || project.deletedAt !== null || project.visibility === 'REMOVED') {
+        throw new NotFoundError('Project not found');
+      }
 
-      if (invitedUser && invitedUser.id === userId) {
+      if (project.ownerId !== userId) {
+        throw new ForbiddenError('Only project owner can invite contributors');
+      }
+
+      // Safely resolve registered student identity via SECURITY DEFINER function
+      const userRows = await tx.$queryRaw<{ id: string; email: string; full_name: string; avatar_url: string | null }[]>`
+        SELECT * FROM find_user_by_institutional_email(${cleanEmail});
+      `;
+      const invitedUser = userRows[0] ? { id: userRows[0].id, email: userRows[0].email, fullName: userRows[0].full_name } : null;
+
+      // Prohibit self-invitation by email or user ID
+      if (cleanEmail === project.owner.email.toLowerCase() || (invitedUser && invitedUser.id === userId)) {
         throw new BadRequestError('Owner cannot be added as a collaborator');
       }
 
+      // Check existing contributor records for this project
       const existing = await tx.projectContributor.findFirst({
         where: {
           projectId,
@@ -836,24 +1008,74 @@ export class ProjectsService {
         },
       });
 
+      let contributorRecord: any;
+
       if (existing) {
-        throw new ConflictError('Contributor has already been invited to this project');
+        if (existing.status === 'ACCEPTED') {
+          throw new ConflictError('Contributor has already accepted an invitation to this project');
+        }
+        if (existing.status === 'PENDING') {
+          throw new ConflictError('A pending invitation has already been sent to this contributor');
+        }
+        // Reopen DECLINED invitation with new role
+        contributorRecord = await tx.projectContributor.update({
+          where: { id: existing.id },
+          data: {
+            status: 'PENDING',
+            role: cleanRole,
+            userId: invitedUser?.id || existing.userId,
+            invitedEmail: cleanEmail,
+            updatedAt: new Date(),
+          },
+        });
+      } else {
+        contributorRecord = await tx.projectContributor.create({
+          data: {
+            projectId,
+            userId: invitedUser?.id || null,
+            invitedEmail: cleanEmail,
+            role: cleanRole,
+            status: 'PENDING',
+          },
+        });
       }
 
-      return tx.projectContributor.create({
-        data: {
-          projectId,
-          userId: invitedUser?.id || null,
-          invitedEmail: cleanEmail,
-          role: role.trim(),
-          status: 'PENDING',
-        },
-      });
+      // Notify the invited student via existing in-app notification infrastructure
+      if (invitedUser) {
+        try {
+          await enqueueNotification({
+            tx,
+            userId: invitedUser.id,
+            type: 'PROJECT_INVITATION',
+            title: 'Project Collaboration Invitation',
+            body: `You were invited to collaborate on "${project.title}" as ${cleanRole}.`,
+            metadata: {
+              schema_version: 1,
+              routing: {
+                target: 'project_invitation',
+                fallback: '/my/projects',
+                params: { id: project.id },
+              },
+              entity_ids: {
+                project_id: project.id,
+                contributor_id: contributorRecord.id,
+              },
+            },
+            preferenceGate: 'push_enabled',
+            idempotencyString: `PROJECT_INVITATION:${contributorRecord.id}`,
+          });
+        } catch (err) {
+          console.error('INVITE ENQUEUE ERROR:', err);
+        }
+      }
+
+      return contributorRecord;
     });
   }
 
   /**
    * Responds to a collaborator invitation (accept or decline).
+   * Atomically verifies authenticated identity, guards against replays, and notifies the project owner.
    */
   async respondToContributor(userId: string, contributorId: string, status: 'ACCEPTED' | 'DECLINED') {
     return withUserContext(userId, async (tx) => {
@@ -862,23 +1084,200 @@ export class ProjectsService {
 
       const contributor = await tx.projectContributor.findUnique({
         where: { id: contributorId },
+        include: {
+          project: {
+            select: { id: true, title: true, ownerId: true, deletedAt: true, visibility: true },
+          },
+        },
       });
 
-      if (!contributor) throw new NotFoundError('Invitation not found');
+      if (!contributor) {
+        throw new NotFoundError('Invitation not found');
+      }
 
-      // Verify user owns invitation
-      const matchesUser = contributor.userId === userId || contributor.invitedEmail?.toLowerCase() === user.email.toLowerCase();
+      if (contributor.project.deletedAt !== null || contributor.project.visibility === 'REMOVED') {
+        throw new NotFoundError('Project is no longer available');
+      }
+
+      // Verify recipient identity strictly against authenticated session
+      const matchesUser =
+        (contributor.userId && contributor.userId === userId) ||
+        (contributor.invitedEmail && contributor.invitedEmail.toLowerCase() === user.email.toLowerCase());
+
       if (!matchesUser) {
         throw new ForbiddenError('You do not have permission to respond to this invitation');
       }
 
-      return tx.projectContributor.update({
-        where: { id: contributorId },
+      // Guard against replay / repeated response
+      if (contributor.status === 'ACCEPTED') {
+        throw new BadRequestError('Invitation has already been accepted');
+      }
+      if (contributor.status === 'DECLINED') {
+        throw new BadRequestError('Invitation has already been declined');
+      }
+
+      // Expiry check: invitations older than 30 days cannot be accepted
+      const ageMs = Date.now() - contributor.createdAt.getTime();
+      if (ageMs > 30 * 24 * 60 * 60 * 1000) {
+        throw new BadRequestError('Invitation has expired');
+      }
+
+      const updatedCount = await tx.projectContributor.updateMany({
+        where: { id: contributorId, status: 'PENDING' },
         data: {
           userId,
           status,
+          updatedAt: new Date(),
         },
       });
+
+      if (updatedCount.count === 0) {
+        throw new ConflictError('Invitation status was updated concurrently. Please refresh.');
+      }
+
+      const updated = await tx.projectContributor.findUnique({
+        where: { id: contributorId },
+      });
+
+      // If accepted, notify the project owner atomically
+      if (status === 'ACCEPTED') {
+        try {
+          await enqueueNotification({
+            tx,
+            userId: contributor.project.ownerId,
+            type: 'PROJECT_COLLABORATION_ACCEPTED',
+            title: 'Collaborator Joined',
+            body: `${user.fullName || user.email} accepted the invitation for "${contributor.project.title}".`,
+            metadata: {
+              schema_version: 1,
+              routing: {
+                target: 'project_details',
+                fallback: '/my/projects',
+                params: { id: contributor.project.id },
+              },
+              entity_ids: {
+                project_id: contributor.project.id,
+                contributor_id: contributor.id,
+              },
+            },
+            preferenceGate: 'push_enabled',
+            idempotencyString: `PROJECT_COLLABORATION_ACCEPTED:${contributor.id}`,
+          });
+        } catch {
+          // Non-blocking notification delivery
+        }
+      }
+
+      return updated;
+    });
+  }
+
+  /**
+   * Lists contributors for a project.
+   * If caller is project owner or admin, returns all invitations (PENDING, ACCEPTED, DECLINED).
+   * For other users and public visitors, returns only ACCEPTED contributors on published projects.
+   */
+  async listProjectContributors(callerUserId: string | null, projectId: string) {
+    return withUserContext(callerUserId, async (tx) => {
+      const project = await tx.project.findUnique({
+        where: { id: projectId },
+        select: { id: true, ownerId: true, deletedAt: true, visibility: true },
+      });
+
+      if (!project || project.deletedAt !== null) {
+        throw new NotFoundError('Project not found');
+      }
+
+      let isOwnerOrAdmin = false;
+      if (callerUserId) {
+        if (project.ownerId === callerUserId) {
+          isOwnerOrAdmin = true;
+        } else {
+          const caller = await tx.user.findUnique({
+            where: { id: callerUserId },
+            select: { globalRole: true },
+          });
+          isOwnerOrAdmin = caller?.globalRole === 'PLATFORM_ADMIN' || caller?.globalRole === 'FACULTY_ADMIN';
+        }
+      }
+
+      if (!isOwnerOrAdmin && project.visibility !== 'PUBLISHED') {
+        throw new NotFoundError('Project not found');
+      }
+
+      const whereClause: Prisma.ProjectContributorWhereInput = {
+        projectId,
+        ...(isOwnerOrAdmin ? {} : { status: 'ACCEPTED' }),
+      };
+
+      const contributors = await tx.projectContributor.findMany({
+        where: whereClause,
+        include: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              avatarUrl: true,
+              email: true,
+              studentProfile: { select: { slug: true } },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return contributors.map((c) => ({
+        id: c.id,
+        role: c.role,
+        status: c.status,
+        created_at: c.createdAt,
+        invited_email: isOwnerOrAdmin ? c.invitedEmail : undefined,
+        user_id: c.userId,
+        name: c.user?.fullName || (isOwnerOrAdmin ? c.invitedEmail : 'Collaborator'),
+        email: isOwnerOrAdmin ? (c.user?.email || c.invitedEmail) : undefined,
+        avatar_url: c.user?.avatarUrl || null,
+        slug: c.user?.studentProfile?.slug || null,
+      }));
+    });
+  }
+
+  /**
+   * Revokes or cancels a collaborator invitation or existing membership.
+   * Allowed for project owners, admins, or the contributor themselves (leaving the project).
+   */
+  async removeContributor(userId: string, projectId: string, contributorId: string, isAdmin = false) {
+    return withUserContext(userId, async (tx) => {
+      const user = await tx.user.findUnique({ where: { id: userId } });
+      if (!user) throw new NotFoundError('User not found');
+
+      const contributor = await tx.projectContributor.findUnique({
+        where: { id: contributorId },
+        include: {
+          project: { select: { id: true, ownerId: true, deletedAt: true } },
+        },
+      });
+
+      if (!contributor || contributor.projectId !== projectId) {
+        throw new NotFoundError('Contributor invitation or record not found');
+      }
+
+      const isOwner = contributor.project.ownerId === userId;
+      const isSelf =
+        (contributor.userId && contributor.userId === userId) ||
+        (contributor.invitedEmail && contributor.invitedEmail.toLowerCase() === user.email.toLowerCase());
+
+      if (!isOwner && !isSelf && !isAdmin) {
+        throw new ForbiddenError('You do not have permission to manage this contributor');
+      }
+
+      await tx.projectContributor.delete({
+        where: { id: contributorId },
+      });
+
+      return {
+        success: true,
+        message: isSelf ? 'You have left the project' : 'Contributor removed successfully',
+      };
     });
   }
 
@@ -960,6 +1359,7 @@ export class ProjectsService {
         nextVisibility = 'UNPUBLISHED';
       } else if (input.action === 'RESTORE') {
         nextVisibility = 'PUBLISHED';
+        deletedAt = null;
       } else if (input.action === 'REMOVE') {
         nextVisibility = 'REMOVED';
         deletedAt = new Date();

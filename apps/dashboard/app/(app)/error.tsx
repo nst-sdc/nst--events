@@ -6,7 +6,7 @@ import { ReloadOutlined, HomeOutlined, MailOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { formatErrorMessage } from '../../lib/error-utils';
 
-const SUPPORT_EMAIL = 'events-support@adypu.edu.in';
+const SUPPORT_EMAIL = 'support@nstsdc.com';
 
 export default function ErrorPage({
   error,

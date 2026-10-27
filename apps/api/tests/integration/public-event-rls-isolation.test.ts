@@ -37,7 +37,7 @@ describe('Public Event RLS & Anonymous Isolation Integration', () => {
   before(async () => {
     // 1. Connect application client using nst_app (which is subject to RLS)
     appClient = new Client({
-      connectionString: 'postgresql://nst_app:nst_app_password@localhost:5440/nst_events?schema=public',
+      connectionString: process.env.DATABASE_URL || 'postgresql://nst_app:nst_app_password@127.0.0.1:5440/nst_events_clean_test?schema=public',
     });
     await appClient.connect();
 

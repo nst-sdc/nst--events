@@ -57,6 +57,13 @@ const RespondContributorWrapper = z.object({
   body: RespondContributorSchema,
 });
 
+const RemoveContributorWrapper = z.object({
+  params: z.object({
+    id: z.string().uuid(),
+    contributorId: z.string().uuid(),
+  }),
+});
+
 const SubmitReportWrapper = z.object({
   params: z.object({ id: z.string().uuid() }),
   body: SubmitReportSchema,
@@ -323,7 +330,51 @@ projectsRouter.post(
   }
 );
 
-// 14. POST /v1/projects/contributors/:id/respond — Respond to invitation
+// 14. GET /v1/projects/:id/contributors — List project contributors & invitations
+projectsRouter.get(
+  '/:id/contributors',
+  optionalAuthenticate,
+  validate(ParamIdSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await projectsService.listProjectContributors(
+        req.user?.id || null,
+        req.params.id
+      );
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// 15. DELETE /v1/projects/:id/contributors/:contributorId — Remove contributor or cancel invitation
+projectsRouter.delete(
+  '/:id/contributors/:contributorId',
+  authenticate,
+  validate(RemoveContributorWrapper),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: req.user!.id },
+        select: { globalRole: true },
+      });
+      const isAdmin = user?.globalRole === 'PLATFORM_ADMIN' || user?.globalRole === 'FACULTY_ADMIN';
+
+      const result = await projectsService.removeContributor(
+        req.user!.id,
+        req.params.id,
+        req.params.contributorId,
+        isAdmin
+      );
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// 16. POST /v1/projects/contributors/:id/respond — Respond to invitation
 projectsRouter.post(
   '/contributors/:id/respond',
   authenticate,

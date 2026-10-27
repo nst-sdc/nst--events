@@ -2,6 +2,7 @@ import Constants from 'expo-constants';
 import { useAuthStore, type RefreshResult } from '../store/auth';
 import { useAppVersionStore } from '../store/app-version-store';
 import { API_BASE_URL } from './config';
+import { teardownSession } from '../services/session';
 
 export { API_BASE_URL };
 
@@ -95,7 +96,7 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
 
     // Refresh failed — check if session is dead
     if (refreshResult?.status === 'SESSION_DEAD') {
-      await useAuthStore.getState().clearSession();
+      await teardownSession({ notifyServer: false });
       throw { status: 401, message: 'Session expired' };
     }
     

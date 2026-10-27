@@ -991,15 +991,41 @@ export default function CreateEventPage() {
       return;
     }
 
-    let registration_start_time;
-    let registration_end_time;
-    
-    if (formData.registrationStartDate && formData.registrationStartTime) {
-      registration_start_time = new Date(`${formData.registrationStartDate}T${formData.registrationStartTime}`).toISOString();
+    if (!formData.registrationStartDate || !formData.registrationStartTime) {
+      setFormError('Registration opening date and time are required for Club Admins.');
+      return;
     }
-    if (formData.registrationEndDate && formData.registrationEndTime) {
-      registration_end_time = new Date(`${formData.registrationEndDate}T${formData.registrationEndTime}`).toISOString();
+
+    if (!formData.registrationEndDate || !formData.registrationEndTime) {
+      setFormError('Registration closing date and time are required for Club Admins.');
+      return;
     }
+
+    const regStartDate = new Date(`${formData.registrationStartDate}T${formData.registrationStartTime}`);
+    const regEndDate = new Date(`${formData.registrationEndDate}T${formData.registrationEndTime}`);
+
+    if (isNaN(regStartDate.getTime()) || isNaN(regEndDate.getTime())) {
+      setFormError('Invalid registration window date or time.');
+      return;
+    }
+
+    if (regEndDate.getTime() <= regStartDate.getTime()) {
+      setFormError('Registration closing time must be strictly after registration opening time.');
+      return;
+    }
+
+    if (regStartDate.getTime() >= new Date(end_time).getTime()) {
+      setFormError('Registration opening time must be before event end time.');
+      return;
+    }
+
+    if (regEndDate.getTime() > new Date(end_time).getTime()) {
+      setFormError('Registration closing time must be less than or equal to event end time.');
+      return;
+    }
+
+    const registration_start_time = regStartDate.toISOString();
+    const registration_end_time = regEndDate.toISOString();
 
     const payload: any = {
       title: formData.title.trim(),
@@ -1235,23 +1261,23 @@ export default function CreateEventPage() {
 
                   <div className="ce-form-row" style={{ marginBottom: 16 }}>
                     <div>
-                      <label className="ce-label">REGISTRATION START DATE (OPTIONAL)</label>
-                      <input type="date" name="registrationStartDate" value={formData.registrationStartDate} onChange={handleChange} className="ce-input" />
+                      <label className="ce-label">REGISTRATION START DATE *</label>
+                      <input required type="date" name="registrationStartDate" value={formData.registrationStartDate} onChange={handleChange} className="ce-input" />
                     </div>
                     <div>
-                      <label className="ce-label">REGISTRATION START TIME</label>
-                      <input type="time" name="registrationStartTime" value={formData.registrationStartTime} onChange={handleChange} className="ce-input" />
+                      <label className="ce-label">REGISTRATION START TIME *</label>
+                      <input required type="time" name="registrationStartTime" value={formData.registrationStartTime} onChange={handleChange} className="ce-input" />
                     </div>
                   </div>
 
                   <div className="ce-form-row" style={{ marginBottom: 16 }}>
                     <div>
-                      <label className="ce-label">REGISTRATION END DATE (OPTIONAL)</label>
-                      <input type="date" name="registrationEndDate" value={formData.registrationEndDate} onChange={handleChange} className="ce-input" />
+                      <label className="ce-label">REGISTRATION END DATE *</label>
+                      <input required type="date" name="registrationEndDate" value={formData.registrationEndDate} onChange={handleChange} className="ce-input" />
                     </div>
                     <div>
-                      <label className="ce-label">REGISTRATION END TIME</label>
-                      <input type="time" name="registrationEndTime" value={formData.registrationEndTime} onChange={handleChange} className="ce-input" />
+                      <label className="ce-label">REGISTRATION END TIME *</label>
+                      <input required type="time" name="registrationEndTime" value={formData.registrationEndTime} onChange={handleChange} className="ce-input" />
                     </div>
                   </div>
 

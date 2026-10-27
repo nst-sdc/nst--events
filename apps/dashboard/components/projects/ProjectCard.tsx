@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Heart, Eye, ArrowRight, ExternalLink, GitBranch, Video, BookOpen, Layers } from 'lucide-react';
+import { Heart, Eye, ArrowRight, ExternalLink, GitBranch, Video, BookOpen } from 'lucide-react';
 import { ProjectCardItem } from '../../lib/projects-api';
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
@@ -38,7 +38,13 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string }
   },
 };
 
+import { isWatermarkedStockImage } from './ProjectCoverBanner';
+
 export function ProjectCard({ project }: { project: ProjectCardItem }) {
+  const [imageError, setImageError] = React.useState(false);
+  const isStock = isWatermarkedStockImage(project.cover_image_url);
+  const hasValidImage = project.cover_image_url && !isStock && !imageError;
+
   const status = STATUS_CONFIG[project.development_status] || {
     label: project.development_status,
     bg: '#000000',
@@ -49,6 +55,13 @@ export function ProjectCard({ project }: { project: ProjectCardItem }) {
   const hasRepo = project.links?.some((l) => l.type === 'REPOSITORY');
   const hasVideo = project.links?.some((l) => l.type === 'VIDEO');
   const hasDocs = project.links?.some((l) => l.type === 'DOCUMENTATION');
+
+  const monogram = (project.title || 'PR')
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <Link
@@ -71,16 +84,37 @@ export function ProjectCard({ project }: { project: ProjectCardItem }) {
 
         {/* Photo Frame */}
         <div className="me-photo-frame">
-          {project.cover_image_url ? (
+          {hasValidImage ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={project.cover_image_url}
               alt={project.title}
               loading="lazy"
+              onError={() => setImageError(true)}
             />
           ) : (
-            <div className="me-photo-placeholder">
-              <span className="me-photo-watermark">PROJECT</span>
-              <Layers size={32} style={{ color: '#0057FF', position: 'relative', zIndex: 2 }} />
+            <div className="me-photo-placeholder" style={{ background: 'linear-gradient(135deg, #0d1117, #161b22)' }}>
+              <span className="me-photo-watermark">{project.category?.toUpperCase() || 'PROJECT'}</span>
+              <div style={{ textAlign: 'center', zIndex: 2, padding: '12px' }}>
+                <div
+                  style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '8px',
+                    background: '#0057FF',
+                    color: '#ffffff',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 900,
+                    fontFamily: 'var(--font-display, "Syne", sans-serif)',
+                    fontSize: '18px',
+                    boxShadow: '0 4px 12px rgba(0,87,255,0.4)',
+                  }}
+                >
+                  {monogram}
+                </div>
+              </div>
             </div>
           )}
 

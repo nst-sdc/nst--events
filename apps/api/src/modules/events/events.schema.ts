@@ -3,6 +3,7 @@ import {
   EventState,
   EventType,
   EventVisibility,
+  RegistrationMode,
   RegistrationType,
   AttendanceType,
   EventAudience,
@@ -22,6 +23,7 @@ const EventBodySchema = z.object({
   event_type: z.nativeEnum(EventType),
   visibility: z.nativeEnum(EventVisibility).optional().nullable(),
   slug: z.string().min(3).max(100).optional(),
+  registration_mode: z.nativeEnum(RegistrationMode).default('REQUIRED'),
   registration_type: z.nativeEnum(RegistrationType).default('INDIVIDUAL'),
   attendance_type: z.nativeEnum(AttendanceType).default('SINGLE'),
   audience: z.nativeEnum(EventAudience).default('ALL_STUDENTS'),
@@ -159,6 +161,14 @@ export const RejectEventSchema = z.object({
   }),
 });
 
+export const CancelEventSchema = z.object({
+  body: z.object({
+    reason: z.string().min(5).max(1000),
+  }),
+});
+
+export type CancelEventInput = z.infer<typeof CancelEventSchema>['body'];
+
 const SessionBodySchema = z.object({
   title: z.string().min(3).max(255),
   start_time: z.string().datetime(),
@@ -191,8 +201,36 @@ export const UpdateSessionSchema = z.object({
   body: SessionBodySchema.partial(),
 });
 
-export type CreateEventInput = z.infer<typeof CreateEventSchema>['body'];
-export type UpdateEventInput = z.infer<typeof UpdateEventSchema>['body'];
+export interface EventClubInput {
+  club_id: string;
+  is_primary: boolean;
+}
+
+export interface CreateEventInput {
+  title: string;
+  description?: string;
+  start_time: string;
+  end_time: string;
+  registration_start_time?: string;
+  registration_end_time?: string;
+  location_name?: string;
+  location_lat?: number;
+  location_lng?: number;
+  event_type: EventType;
+  visibility?: EventVisibility | null;
+  slug?: string;
+  registration_mode?: RegistrationMode;
+  registration_type?: RegistrationType;
+  attendance_type?: AttendanceType;
+  audience?: EventAudience;
+  audience_batch_ids?: string[];
+  metadata?: Record<string, unknown>;
+  max_capacity?: number | null;
+  max_participants?: number | null;
+  club_ids: EventClubInput[];
+}
+
+export type UpdateEventInput = Partial<Omit<CreateEventInput, 'club_ids'>>;
 export type ListEventsQuery = z.infer<typeof ListEventsQuerySchema>['query'];
 export type RejectEventInput = z.infer<typeof RejectEventSchema>['body'];
 export type CreateSessionInput = z.infer<typeof CreateSessionSchema>['body'];
