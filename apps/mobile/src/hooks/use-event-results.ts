@@ -1,74 +1,27 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiClient } from '../infrastructure/api';
 
-export type AwardType = 'RANKED_PLACEMENT' | 'SPECIAL_AWARD' | 'HONORABLE_MENTION' | 'CUSTOM';
-export type RecipientType = 'INDIVIDUAL' | 'TEAM' | 'EXTERNAL';
-export type TieRankingType = 'COMPETITION' | 'DENSE';
+import type {
+  AwardType,
+  RecipientType,
+  TieRankingType,
+  StudentWinnerSnapshot,
+  TeamMemberWinnerSnapshot,
+  AwardRecipientData,
+  AwardProjectLinkData,
+  FormattedAward,
+} from '@nst/shared';
 
-export interface StudentWinnerSnapshot {
-  id: string;
-  name: string;
-  avatar_url?: string | null;
-  roll_number?: string | null;
-  program?: string | null;
-  batch?: string | null;
-}
-
-export interface TeamMemberWinnerSnapshot {
-  id?: string;
-  user_id?: string | null;
-  name: string;
-  avatar_url?: string | null;
-  roll_number?: string | null;
-  program?: string | null;
-  batch?: string | null;
-  team_role?: string | null;
-  is_authorized_exception?: boolean;
-}
-
-export interface AwardRecipientData {
-  id?: string;
-  recipient_type: RecipientType;
-  student?: StudentWinnerSnapshot;
-  team?: {
-    id: string;
-    name: string;
-  };
-  members?: TeamMemberWinnerSnapshot[];
-  external?: {
-    name: string;
-    details?: string | null;
-  };
-  is_authorized_exception?: boolean;
-}
-
-export interface AwardProjectLinkData {
-  id?: string;
-  type: 'NST_PROJECT' | 'EXTERNAL_URL';
-  project_id?: string | null;
-  project?: {
-    id: string;
-    title: string;
-    slug: string;
-    tagline?: string | null;
-    cover_image_url?: string | null;
-  } | null;
-  external_url?: string | null;
-  title_snapshot?: string | null;
-}
-
-export interface FormattedAward {
-  id?: string;
-  title: string;
-  award_type: AwardType;
-  placement?: number | null;
-  description?: string | null;
-  display_order: number;
-  is_tied: boolean;
-  tie_ranking_type?: TieRankingType | null;
-  recipients: AwardRecipientData[];
-  project_links?: AwardProjectLinkData[];
-}
+export type {
+  AwardType,
+  RecipientType,
+  TieRankingType,
+  StudentWinnerSnapshot,
+  TeamMemberWinnerSnapshot,
+  AwardRecipientData,
+  AwardProjectLinkData,
+  FormattedAward,
+};
 
 export interface PublicResultsResponse {
   status: 'PUBLISHED' | 'DRAFT' | 'WITHDRAWN' | 'NOT_CONFIGURED' | 'UNAUTHENTICATED_RESTRICTED';

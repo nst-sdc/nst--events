@@ -212,6 +212,9 @@ export default function CampusClubsScreen() {
     },
     modalCloseBtn: {
       padding: 6,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     modalContentScroll: {
       padding: theme.spacing.base,
@@ -337,8 +340,12 @@ export default function CampusClubsScreen() {
         activeOpacity={0.8}
       >
         <View style={styles.bannerContainer}>
-          {club.banner_url ? (
-            <Image source={{ uri: club.banner_url }} style={styles.bannerImage} />
+          {(club.banner_url || club.bannerUrl) ? (
+            <Image
+              testID={`club-banner-${club.id}`}
+              source={{ uri: (club.banner_url || club.bannerUrl)! }}
+              style={styles.bannerImage}
+            />
           ) : (
             <View style={styles.bannerPlaceholder}>
               <Display style={styles.bannerMonogram}>{initials}</Display>
@@ -428,6 +435,7 @@ export default function CampusClubsScreen() {
             <TouchableOpacity
               onPress={() => setSearchQuery('')}
               style={styles.clearButton}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               accessibilityLabel="Clear search input"
             >
               <Text style={styles.clearButtonText}>[CLEAR]</Text>
@@ -494,6 +502,7 @@ export default function CampusClubsScreen() {
               <TouchableOpacity
                 onPress={() => setSelectedClubId(null)}
                 style={styles.modalCloseBtn}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 accessibilityLabel="Close club profile"
               >
                 <MonoLabel>[ CLOSE ✕ ]</MonoLabel>
@@ -503,9 +512,10 @@ export default function CampusClubsScreen() {
             <ScrollView contentContainerStyle={styles.modalContentScroll}>
               {/* Banner */}
               <View style={styles.modalBannerBox}>
-                {selectedClub?.banner_url ? (
+                {(selectedClub?.banner_url || selectedClub?.bannerUrl) ? (
                   <Image
-                    source={{ uri: selectedClub.banner_url }}
+                    testID="club-modal-banner"
+                    source={{ uri: (selectedClub.banner_url || selectedClub.bannerUrl)! }}
                     style={styles.bannerImage}
                   />
                 ) : (

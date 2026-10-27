@@ -7,7 +7,7 @@ import { getWebAuthStore } from '../../../lib/auth-store';
 import { API_BASE_URL } from '../../../lib/api';
 import { DevClubCreditsModal } from '../../../components/brand/DevClubCreditsModal';
 
-const SUPPORT_EMAIL = 'events-support@adypu.edu.in';
+const SUPPORT_EMAIL = 'support@nstsdc.com';
 
 interface AuthErrorInfo {
   type:
@@ -195,11 +195,25 @@ function LoginContent() {
     if (store.accessToken) {
       let returnTo = searchParams.get('return_to');
       if (!returnTo && typeof window !== 'undefined') returnTo = window.sessionStorage.getItem('return_to');
+
+      const userRoleCookie = typeof document !== 'undefined'
+        ? document.cookie.split('; ').find(row => row.startsWith('user_role='))?.split('=')[1]
+        : undefined;
+
+      const isStudent = userRoleCookie === 'STUDENT';
+      const isAdmin = userRoleCookie && ['PLATFORM_ADMIN', 'FACULTY_ADMIN', 'FACULTY_MENTOR'].includes(userRoleCookie);
+
       if (returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//')) {
+        const isAdminRoute = returnTo === '/dashboard' || returnTo.startsWith('/dashboard/') || returnTo.startsWith('/admin') || returnTo.startsWith('/events') || returnTo.startsWith('/clubs');
+        if (isStudent && isAdminRoute) {
+          if (typeof window !== 'undefined') window.sessionStorage.removeItem('return_to');
+          router.push('/student/home');
+          return;
+        }
         if (typeof window !== 'undefined') window.sessionStorage.removeItem('return_to');
         router.push(returnTo);
       } else {
-        router.push('/student/home');
+        router.push(isAdmin ? '/dashboard' : '/student/home');
       }
     }
   }, [store.accessToken, router, searchParams]);

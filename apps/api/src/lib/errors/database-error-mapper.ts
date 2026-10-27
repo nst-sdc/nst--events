@@ -64,6 +64,8 @@ export const SQLSTATE_MAP: Record<string, {
   U0055: { semanticCode: 'TEAM_NAME_TAKEN',            httpStatus: 409, userMessage: 'This team name is already taken for this event', ErrorClass: ConflictError },
   U0056: { semanticCode: 'REGISTRATION_CLOSED',        httpStatus: 400, userMessage: 'Registration is not open for this event',        ErrorClass: BadRequestError },
   U0057: { semanticCode: 'Event participant capacity is full.', httpStatus: 400, userMessage: 'Event participant capacity is full', ErrorClass: BadRequestError },
+  U0058: { semanticCode: 'EVENT_HAS_DEPENDENT_RECORDS', httpStatus: 422, userMessage: 'Cannot delete an event with existing registrations or historical records', ErrorClass: UnprocessableEntityError },
+  U0059: { semanticCode: 'CANNOT_CHANGE_REGISTRATION_MODE', httpStatus: 422, userMessage: 'Cannot change registration mode to NOT_REQUIRED when registrations or teams already exist', ErrorClass: UnprocessableEntityError },
 };
 
 /**
@@ -85,6 +87,15 @@ function extractSqlstate(err: unknown): string | undefined {
     typeof err.meta.code === 'string'
   ) {
     return err.meta.code;
+  }
+  if (
+    err &&
+    typeof err === 'object' &&
+    'code' in err &&
+    typeof (err as any).code === 'string' &&
+    ((err as any).code === 'P0001' || (/^[0-9A-Z]{5}$/.test((err as any).code) && !(err as any).code.startsWith('P2')))
+  ) {
+    return (err as any).code;
   }
   return undefined;
 }
@@ -144,6 +155,10 @@ export function mapDatabaseError(err: unknown): never {
 
   // Handle specific Prisma structured codes
   if (err && typeof err === 'object' && 'code' in err && typeof err.code === 'string') {
+    if (err.code.startsWith('P1')) {
+      logger.error({ errCode: err.code }, 'Prisma connection or infrastructure failure');
+      throw new Error('An unexpected error occurred');
+    }
     if (err.code === 'P2002') {
       throw new ConflictError('A resource with this identifier already exists');
     }
@@ -180,13 +195,66 @@ export function mapDatabaseError(err: unknown): never {
     if (sqlstate === '23505') {
       throw new ConflictError('A resource with this identifier already exists');
     }
+    if (sqlstate === 'U0034') {
+      const msg = typeof (err as any)?.message === 'string' ? (err as any).message : '';
+      if (msg.includes('ALREADY_REGISTERED')) {
+        throw new ConflictError('You are already registered for this event');
+      }
+      throw new NotFoundError('Team not found');
+    }
+    if (sqlstate === 'U0035') {
+      const msg = typeof (err as any)?.message === 'string' ? (err as any).message : '';
+      if (msg.includes('Individual registration is not permitted for team events')) {
+        throw new BadRequestError('Individual registration is not permitted for team events');
+      }
+      throw new UnprocessableEntityError('TEAM_NOT_SUPPORTED');
+    }
     if (sqlstate in SQLSTATE_MAP) {
       const mapping = SQLSTATE_MAP[sqlstate];
       throw new mapping.ErrorClass(mapping.semanticCode);
     }
+    // Fail closed on PostgreSQL system, schema, connection, or internal errors
+    if (
+      sqlstate.startsWith('42') || // Syntax / schema / undefined column or table
+      sqlstate.startsWith('08') || // Connection failure
+      sqlstate.startsWith('28') || // Invalid auth
+      sqlstate.startsWith('40') || // Transaction rollback / deadlock / serialization failure
+      sqlstate.startsWith('53') || // Insufficient resources
+      sqlstate.startsWith('57') || // Operator intervention
+      sqlstate.startsWith('XX')    // Internal error
+    ) {
+      logger.error({ sqlstate, errCode: (err as any)?.code }, 'PostgreSQL system or schema error');
+      throw new Error('An unexpected error occurred');
+    }
   }
 
-  // Unknown SQLSTATE or non-Prisma error: log internally, throw generic 500
+  // Fallback pattern matching ONLY for PostgreSQL PL/pgSQL stored procedure user exceptions (P0001)
+  const isPgUserException =
+    sqlstate === 'P0001' ||
+    (err && typeof err === 'object' && (err as any).code === 'P0001') ||
+    (err && typeof err === 'object' && (err as any).code === 'P2010' && (err as any).meta?.code === 'P0001') ||
+    (err && typeof err === 'object' && typeof (err as any).message === 'string' && /Code:\s*`P0001`/.test((err as any).message));
+
+  if (isPgUserException && err && typeof err === 'object' && 'message' in err && typeof (err as any).message === 'string') {
+    const msg = (err as any).message;
+    if (/(?:^|\b)(?:ERROR:\s*)?(?:UNAUTHORIZED|FORBIDDEN)\b/i.test(msg)) {
+      throw new ForbiddenError('You are not authorized to perform this action');
+    }
+    if (
+      /(?:^|\b)(?:ERROR:\s*)?ATTENDANCE_NOT_FOUND\b/.test(msg) ||
+      /(?:^|\b)(?:ERROR:\s*)?(?:Event|Session|Dispute|Team|Member|Invitation|Registration) not found\b/i.test(msg)
+    ) {
+      throw new NotFoundError('Resource not found');
+    }
+    if (/(?:^|\b)(?:ERROR:\s*)?(?:EVENT_LOCKED|Event is locked)\b/i.test(msg)) {
+      throw new UnprocessableEntityError('EVENT_LOCKED');
+    }
+    if (/(?:^|\b)(?:ERROR:\s*)?SESSION_CLOSED\b/.test(msg)) {
+      throw new UnprocessableEntityError('SESSION_CLOSED');
+    }
+  }
+
+  // Unknown SQLSTATE, schema error, or non-Prisma error: log internally, throw generic 500
   logger.error(
     { 
       sqlstate, 

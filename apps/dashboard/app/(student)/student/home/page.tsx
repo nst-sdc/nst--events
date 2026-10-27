@@ -12,6 +12,7 @@ import { useDashboardSummary } from '../../../../hooks/useDashboardSummary';
 import { useEvents } from '../../../../hooks/useEvents';
 import { Skeleton } from '../../../../components/ui/Skeleton';
 import { ErrorState } from '../../../../components/ui/ErrorState';
+import { isAdministratorAccount } from '../../../../lib/auth-helpers';
 
 dayjs.extend(isBetween);
 dayjs.extend(relativeTime);
@@ -68,12 +69,14 @@ const homeStyles = `
   /* Typography Scale */
   .font-display-hero {
     font-family: var(--font-display);
-    font-size: clamp(52px, 8.5vw, 120px);
+    font-size: clamp(34px, 7.5vw, 110px);
     font-weight: 900;
-    line-height: 0.88;
+    line-height: 0.92;
     letter-spacing: -2px;
     text-transform: uppercase;
     color: var(--bg-paper-white);
+    overflow-wrap: normal;
+    word-break: normal;
   }
 
   .font-display-section {
@@ -141,17 +144,42 @@ const homeStyles = `
     position: relative;
     z-index: 10;
     margin-bottom: 20px;
+    max-width: 100%;
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+
+  .hero-good-word {
+    display: inline-block;
+    white-space: nowrap;
+  }
+
+  .hero-greeting-word {
+    display: inline-block;
+    white-space: nowrap;
+    overflow-wrap: normal;
+    word-break: normal;
+    font-size: clamp(28px, 7vw, 110px);
+    line-height: 0.95;
   }
 
   .hero-headline-group .name-highlight {
     color: var(--electric-blue);
     background: var(--bg-paper-white);
-    padding: 0 12px;
+    padding: 2px 14px 4px 14px;
     display: inline-block;
+    max-width: calc(100% - 12px);
+    box-sizing: border-box;
     transform: rotate(1deg);
+    transform-origin: left center;
     box-shadow: 6px 6px 0px var(--electric-blue);
     position: relative;
     z-index: 12;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    line-height: 1.05;
+    margin-top: 6px;
+    vertical-align: bottom;
   }
 
   /* Offset Editorial Stats */
@@ -476,6 +504,7 @@ const DEFAULT_FEATURED_EVENTS = [
 export default function StudentHomePage() {
   const router = useRouter();
   const { data: user, isLoading: isUserLoading, isError: isUserError, refetch: refetchUser } = useCurrentUser();
+  const isAdmin = isAdministratorAccount(user);
   const { data: registrations, isLoading: isRegLoading, isError: isRegError, refetch: refetchReg } = useMyRegistrations();
   const { data: summary, isLoading: isSummaryLoading, isError: isSummaryError, refetch: refetchSummary } = useDashboardSummary();
   const { data: eventsResponse } = useEvents({ limit: 6 });
@@ -512,6 +541,21 @@ export default function StudentHomePage() {
   const greetingTime = hour < 12 ? 'MORNING' : hour < 17 ? 'AFTERNOON' : 'EVENING';
   const rawFirstName = user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'SHRAVANI';
   const firstNameUpper = rawFirstName.toUpperCase();
+
+  // Dynamic font scaling for student name to stay perfectly framed within hero bounds
+  const nameLength = firstNameUpper.length;
+  const nameStyle: React.CSSProperties = {
+    fontSize:
+      nameLength > 16
+        ? 'clamp(20px, 3.4vw, 44px)'
+        : nameLength > 12
+        ? 'clamp(24px, 4.4vw, 56px)'
+        : nameLength > 9
+        ? 'clamp(30px, 5.6vw, 72px)'
+        : nameLength > 6
+        ? 'clamp(38px, 7.0vw, 92px)'
+        : undefined,
+  };
 
   const now = dayjs();
   
@@ -587,9 +631,9 @@ export default function StudentHomePage() {
 
           {/* Headline */}
           <h1 className="hero-headline-group font-display-hero">
-            GOOD<br />
-            {greetingTime},<br />
-            <span className="name-highlight">{firstNameUpper}.</span>
+            <span className="hero-good-word">GOOD</span><br />
+            <span className="hero-greeting-word">{greetingTime},</span><br />
+            <span className="name-highlight" style={nameStyle}>{firstNameUpper}.</span>
           </h1>
 
           <p style={{
@@ -741,7 +785,10 @@ export default function StudentHomePage() {
               <div 
                 key={evt.id} 
                 className="poster-card-item"
-                onClick={() => router.push(evt.id.startsWith('evt-') ? '/student/campus' : `/student/events/${evt.id}`)}
+                onClick={() => {
+                  if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                  router.push(evt.id.startsWith('evt-') ? '/student/campus' : `/student/events/${evt.id}`);
+                }}
               >
                 <div className="poster-card-header">
                   <span className="poster-date-badge">{evt.dateBadge}</span>
@@ -764,10 +811,11 @@ export default function StudentHomePage() {
                     className="poster-register-btn"
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
                       router.push(evt.id.startsWith('evt-') ? '/student/campus' : `/student/events/${evt.id}`);
                     }}
                   >
-                    REGISTER ↗
+                    {isAdmin ? 'VIEW DETAILS ↗' : 'REGISTER ↗'}
                   </button>
                 </div>
               </div>

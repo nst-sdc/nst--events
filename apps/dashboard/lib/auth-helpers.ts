@@ -1,6 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { CurrentUserResponse, AdminUserItem } from '@nst/shared';
 import { CurrentUser } from '../hooks/useCurrentUser';
 import { Event } from '../hooks/useEvents';
+
+export type AuthUser = CurrentUserResponse | AdminUserItem | (Partial<CurrentUserResponse> & Partial<AdminUserItem>);
 
 export function isPlatformAdmin(user?: CurrentUser | null): boolean {
   return user?.global_role === 'PLATFORM_ADMIN';
@@ -8,6 +10,24 @@ export function isPlatformAdmin(user?: CurrentUser | null): boolean {
 
 export function isFacultyAdmin(user?: CurrentUser | null): boolean {
   return user?.global_role === 'FACULTY_ADMIN';
+}
+
+export function isClubAdmin(user?: AuthUser | null): boolean {
+  if (!user) return false;
+  if ('club_memberships' in user && Array.isArray(user.club_memberships)) {
+    return user.club_memberships.some((m: any) => m.role === 'CLUB_ADMIN' && !m.deletedAt && !m.deleted_at);
+  }
+  if ('clubMemberships' in user && Array.isArray(user.clubMemberships)) {
+    return user.clubMemberships.some((m: any) => m.role === 'CLUB_ADMIN' && !m.deletedAt && !m.deleted_at);
+  }
+  return false;
+}
+
+export function isAdministratorAccount(user?: AuthUser | null): boolean {
+  if (!user) return false;
+  const role = ('global_role' in user ? user.global_role : undefined) ?? ('globalRole' in user ? user.globalRole : undefined);
+  if (role === 'PLATFORM_ADMIN' || role === 'FACULTY_ADMIN' || role === 'FACULTY_MENTOR') return true;
+  return isClubAdmin(user);
 }
 
 export function canManageClubDetails(user: CurrentUser | null | undefined, clubId: string): boolean {

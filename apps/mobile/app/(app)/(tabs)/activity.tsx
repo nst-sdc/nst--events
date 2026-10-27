@@ -1,14 +1,13 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   StyleSheet,
   RefreshControl,
   TouchableOpacity,
   ScrollView,
-  Linking,
   Modal,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAppTheme } from '../../../src/store/theme-store';
 import { ActivityIndicator } from '../../../src/ui/core/ActivityIndicator';
 import { useUserProfile } from '../../../src/hooks/use-user-profile';
@@ -23,18 +22,40 @@ import { useNetworkStatus } from '../../../src/infrastructure/network';
 import { MobileShell } from '../../../src/ui/core/MobileShell';
 import { AttendanceHistoryRow } from '../../../src/ui/AttendanceHistoryRow';
 import { DisputeRow } from '../../../src/ui/DisputeRow';
+import { openProjectShowcase } from '../../../src/lib/project-showcase';
 import { Title, Body, MonoLabel, Mono, Display } from '../../../src/ui/core/Typography';
 import { StatusBadge } from '../../../src/ui/core/StatusBadge';
 import { Button } from '../../../src/ui/Button';
 
 type ActivitySection = 'PASSES' | 'INVITES' | 'ATTENDANCE' | 'DISPUTES' | 'HONORS';
 
+const resolveActivitySection = (param?: string | string[]): ActivitySection | null => {
+  if (!param) return null;
+  const raw = Array.isArray(param) ? param[0] : param;
+  const upper = raw.toUpperCase();
+  if (upper === 'INVITES' || upper === 'INVITATIONS') return 'INVITES';
+  if (upper === 'PASSES') return 'PASSES';
+  if (upper === 'ATTENDANCE') return 'ATTENDANCE';
+  if (upper === 'DISPUTES') return 'DISPUTES';
+  if (upper === 'HONORS') return 'HONORS';
+  return null;
+};
+
 export default function ActivityScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ tab?: string; section?: string }>();
   const theme = useAppTheme();
   const { isOnline } = useNetworkStatus();
-  const [activeSection, setActiveSection] = useState<ActivitySection>('PASSES');
+  const initialSection = resolveActivitySection(params.tab || params.section) || 'PASSES';
+  const [activeSection, setActiveSection] = useState<ActivitySection>(initialSection);
   const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    const matched = resolveActivitySection(params.tab || params.section);
+    if (matched) {
+      setActiveSection(matched);
+    }
+  }, [params.tab, params.section]);
 
   // Data Hooks
   const { data: profile } = useUserProfile();
@@ -57,7 +78,10 @@ export default function ActivityScreen() {
     data: invitations = [],
     isLoading: isInvitesLoading,
     refetch: refetchInvites,
+    error: invitesError,
+    isError: isInvitesError,
   } = usePendingInvitations();
+  const isInvitesUnsupported = isInvitesError && ((invitesError as any)?.status === 404 || (invitesError as any)?.isUnsupported);
   const {
     data: disputesData,
     isLoading: isDisputesLoading,
@@ -130,16 +154,21 @@ export default function ActivityScreen() {
   const styles = useMemo(
     () =>
       StyleSheet.create({
+        segmentedNavScroll: {
+          marginBottom: theme.spacing.md,
+        },
         segmentedNav: {
           flexDirection: 'row',
           backgroundColor: theme.colors.surfaceContainerLowest,
           borderWidth: 1,
           borderColor: theme.colors.outlineVariant,
-          marginBottom: theme.spacing.md,
+          minWidth: '100%',
         },
         segmentTab: {
-          flex: 1,
-          paddingVertical: 10,
+          paddingVertical: 12,
+          paddingHorizontal: 16,
+          minWidth: 92,
+          minHeight: 48,
           alignItems: 'center',
           justifyContent: 'center',
           borderRightWidth: 1,
@@ -150,10 +179,12 @@ export default function ActivityScreen() {
         },
         segmentTabActive: {
           backgroundColor: theme.colors.surfaceContainerHigh,
+          borderBottomWidth: 2,
+          borderBottomColor: theme.colors.primary,
         },
         segmentLabel: {
           fontFamily: theme.typography.monoBold,
-          fontSize: 9,
+          fontSize: 10,
           letterSpacing: 0.5,
           color: theme.colors.onSurfaceVariant,
         },
@@ -318,11 +349,21 @@ export default function ActivityScreen() {
       }
     >
       {/* Top Segmented Navigation */}
-      <View style={styles.segmentedNav}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.segmentedNav}
+        style={styles.segmentedNavScroll}
+        keyboardShouldPersistTaps="handled"
+        accessibilityRole="tablist"
+      >
         <TouchableOpacity
           style={[styles.segmentTab, activeSection === 'PASSES' && styles.segmentTabActive]}
           onPress={() => setActiveSection('PASSES')}
           activeOpacity={0.8}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeSection === 'PASSES' }}
+          accessibilityLabel="Passes and tickets"
         >
           <Mono style={[styles.segmentLabel, activeSection === 'PASSES' && styles.segmentLabelActive]}>
             PASSES
@@ -333,6 +374,9 @@ export default function ActivityScreen() {
           style={[styles.segmentTab, activeSection === 'INVITES' && styles.segmentTabActive]}
           onPress={() => setActiveSection('INVITES')}
           activeOpacity={0.8}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeSection === 'INVITES' }}
+          accessibilityLabel="Squad invitations"
         >
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Mono style={[styles.segmentLabel, activeSection === 'INVITES' && styles.segmentLabelActive]}>
@@ -350,6 +394,9 @@ export default function ActivityScreen() {
           style={[styles.segmentTab, activeSection === 'ATTENDANCE' && styles.segmentTabActive]}
           onPress={() => setActiveSection('ATTENDANCE')}
           activeOpacity={0.8}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeSection === 'ATTENDANCE' }}
+          accessibilityLabel="Attendance ledger"
         >
           <Mono style={[styles.segmentLabel, activeSection === 'ATTENDANCE' && styles.segmentLabelActive]}>
             ATTENDANCE
@@ -360,6 +407,9 @@ export default function ActivityScreen() {
           style={[styles.segmentTab, activeSection === 'DISPUTES' && styles.segmentTabActive]}
           onPress={() => setActiveSection('DISPUTES')}
           activeOpacity={0.8}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeSection === 'DISPUTES' }}
+          accessibilityLabel="Attendance disputes"
         >
           <Mono style={[styles.segmentLabel, activeSection === 'DISPUTES' && styles.segmentLabelActive]}>
             DISPUTES
@@ -370,12 +420,15 @@ export default function ActivityScreen() {
           style={[styles.segmentTab, styles.segmentTabLast, activeSection === 'HONORS' && styles.segmentTabActive]}
           onPress={() => setActiveSection('HONORS')}
           activeOpacity={0.8}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeSection === 'HONORS' }}
+          accessibilityLabel="Competition honors"
         >
           <Mono style={[styles.segmentLabel, activeSection === 'HONORS' && styles.segmentLabelActive]}>
             HONORS
           </Mono>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
 
       {/* SECTION 1: PASSES & REGISTRATIONS */}
       {activeSection === 'PASSES' && (
@@ -483,6 +536,20 @@ export default function ActivityScreen() {
             <View style={styles.loadingBox}>
               <ActivityIndicator size="small" color={theme.colors.primary} />
               <MonoLabel>LOADING PENDING INVITATIONS...</MonoLabel>
+            </View>
+          ) : isInvitesUnsupported ? (
+            <View style={styles.emptyBox}>
+              <Display style={styles.emptyTitle}>FEATURE DEFERRED</Display>
+              <Body style={styles.emptySub}>
+                Direct squad invitations are currently deferred on this server. You can join squads directly from the Event Teams tab.
+              </Body>
+            </View>
+          ) : isInvitesError ? (
+            <View style={styles.emptyBox}>
+              <Display style={styles.emptyTitle}>UNABLE TO LOAD INVITATIONS</Display>
+              <Body style={styles.emptySub}>
+                Could not retrieve squad invitations. Tap refresh to try again.
+              </Body>
             </View>
           ) : invitations.length === 0 ? (
             <View style={styles.emptyBox}>
@@ -728,7 +795,7 @@ export default function ActivityScreen() {
                     {ach.linked_project && (
                       <TouchableOpacity
                         onPress={() =>
-                          Linking.openURL(`https://events.nstsdc.org/projects/${ach.linked_project?.slug}`).catch(() => {})
+                          openProjectShowcase(ach.linked_project?.slug)
                         }
                       >
                         <Mono style={{ fontSize: 10, color: theme.colors.secondary, fontFamily: theme.typography.monoBold }}>

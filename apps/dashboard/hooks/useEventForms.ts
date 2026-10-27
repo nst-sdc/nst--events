@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient, ApiError } from '../lib/api';
+import { apiClient } from '../lib/api';
 
 export interface EventForm {
   id: string;
@@ -29,6 +29,40 @@ export interface EventFormField {
     isReusable: boolean;
     options: string[] | null;
   };
+}
+
+export interface InlineFieldDefinition {
+  key: string;
+  label: string;
+  fieldType: EventFormField['fieldDefinition']['fieldType'];
+  options?: string[] | null;
+  isReusable?: boolean;
+}
+
+export interface UpdateEventFormFieldItem {
+  fieldDefinitionId?: string;
+  definition?: InlineFieldDefinition;
+  isRequired: boolean;
+  order: number;
+}
+
+export interface EventFormResponseItem {
+  id: string;
+  eventRegistrationId: string;
+  formId: string | null;
+  fieldDefinitionId: string;
+  value: string;
+  createdAt?: string;
+  eventRegistration?: {
+    id: string;
+    userId: string;
+    user?: {
+      id: string;
+      fullName: string | null;
+      email: string;
+    };
+  };
+  fieldDefinition?: EventFormField['fieldDefinition'];
 }
 
 export interface EventFormWithFields extends EventForm {
@@ -146,7 +180,7 @@ export const useUpdateEventFormFields = (eventId: string) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ formId, fields }: { formId: string, fields: Array<{ fieldDefinitionId?: string; definition?: any; isRequired: boolean; order: number }> }) => {
+    mutationFn: async ({ formId, fields }: { formId: string; fields: UpdateEventFormFieldItem[] }) => {
       const res = await apiClient<{ data: EventFormField[] }>(`/v1/events/${eventId}/forms/${formId}/fields`, {
         method: 'PATCH',
         body: JSON.stringify({ fields }),
@@ -201,7 +235,7 @@ export const useEventFormResponses = (eventId: string, formId: string | null) =>
     queryKey: ['event-form-responses', eventId, formId],
     queryFn: async () => {
       if (!formId) return null;
-      const res = await apiClient<{ data: any[] }>(`/v1/events/${eventId}/forms/${formId}/responses`);
+      const res = await apiClient<{ data: EventFormResponseItem[] }>(`/v1/events/${eventId}/forms/${formId}/responses`);
       return res.data;
     },
     enabled: !!eventId && !!formId,
@@ -212,15 +246,17 @@ export const useSubmitEventForm = (eventId: string) => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ formId, responses }: { formId: string, responses: Array<{ fieldDefinitionId: string; value: string }> }) => {
-      const res = await apiClient<{ data: any[] }>(`/v1/events/${eventId}/forms/${formId}/responses`, {
+    mutationFn: async ({ formId, responses }: { formId: string; responses: Array<{ fieldDefinitionId: string; value: string }> }) => {
+      const res = await apiClient<{ data: EventFormResponseItem[] }>(`/v1/events/${eventId}/forms/${formId}/responses`, {
         method: 'POST',
         body: JSON.stringify({ responses }),
       });
       return res.data;
     },
     onSuccess: (_, variables) => {
-      // Invalidate specific caches if needed
+      queryClient.invalidateQueries({ queryKey: ['event-form-responses', eventId, variables.formId] });
+      queryClient.invalidateQueries({ queryKey: ['event-forms', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['profileValues'] });
     },
   });
 };

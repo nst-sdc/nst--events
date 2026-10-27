@@ -414,7 +414,7 @@ export default async function StudentDirectoryPage({ searchParams }: PageProps) 
                 <Link href="/projects" className="dir-micro dir-micro-blue hover:underline">
                   [ EXPLORE NST PROJECTS ↗ ]
                 </Link>
-                <Link href="/student/profile" className="dir-micro dir-micro-green hover:underline">
+                <Link href="/my/profile" className="dir-micro dir-micro-green hover:underline">
                   [ MANAGE MY PROFILE & VISIBILITY ⚙ ]
                 </Link>
               </div>

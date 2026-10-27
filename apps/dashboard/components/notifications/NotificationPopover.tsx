@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Popover, Typography, Space, Button, Skeleton, theme, Badge } from 'antd';
+import { Popover, Typography, Button, Skeleton, theme, Badge } from 'antd';
 import { BellOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { useNotifications, useReadNotification, useUnreadCount, Notification } from '../../hooks/useNotifications';
@@ -18,7 +18,7 @@ export function NotificationPopover() {
   const { mutate: markAsRead } = useReadNotification();
   const { data: unreadData, isError: isUnreadError } = useUnreadCount();
 
-  const notifications = data?.pages[0]?.data.slice(0, 5) || [];
+  const notifications = data?.pages?.[0]?.data.slice(0, 5) || [];
 
   const handleNotificationClick = (notification: Notification, targetHref?: string | null) => {
     if (!notification.readAt) {

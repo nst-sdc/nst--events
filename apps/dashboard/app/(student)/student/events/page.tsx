@@ -679,7 +679,10 @@ export default function StudentEventsPage() {
                     <div
                       key={reg.id}
                       className={`me-poster-card ${isPast ? 'is-past' : ''}`}
-                      onClick={() => router.push(`/student/events/${reg.eventId}`)}
+                      onClick={() => {
+                        if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                        router.push(`/student/events/${reg.eventId}`);
+                      }}
                     >
                       <div>
                         <div className="me-card-header">

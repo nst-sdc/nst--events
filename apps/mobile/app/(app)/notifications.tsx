@@ -78,9 +78,9 @@ export default function NotificationsScreen() {
       color: theme.colors.onSurfaceVariant,
     },
     markAllBtn: {
-      minHeight: 36,
-      height: 36,
-      paddingHorizontal: 12,
+      minHeight: 48,
+      height: 48,
+      paddingHorizontal: 14,
     },
     listContent: {
       paddingHorizontal: theme.spacing.base,

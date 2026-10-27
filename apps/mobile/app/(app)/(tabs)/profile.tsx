@@ -4,7 +4,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Modal,
-  Linking,
 } from 'react-native';
 import { ActivityIndicator } from '../../../src/ui/core/ActivityIndicator';
 import { useRouter } from 'expo-router';
@@ -22,6 +21,7 @@ import { Title, Body, MonoLabel, Mono, Display } from '../../../src/ui/core/Typo
 import { DevClubBadge } from '../../../src/ui/brand/DevClubBadge';
 import { DevClubCreditsModal } from '../../../src/ui/brand/DevClubCreditsModal';
 import { MOBILE_APP_VERSION } from '../../../src/infrastructure/brand-config';
+import { openProjectShowcase } from '../../../src/lib/project-showcase';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -377,7 +377,7 @@ export default function ProfileScreen() {
 
                           {ach.linked_project && (
                             <TouchableOpacity
-                              onPress={() => Linking.openURL(`https://events.nstsdc.org/projects/${ach.linked_project?.slug}`).catch(() => {})}
+                              onPress={() => openProjectShowcase(ach.linked_project?.slug)}
                               style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
                             >
                               <Mono style={{ fontSize: 10, color: theme.colors.secondary, fontWeight: 'bold' }}>
@@ -484,7 +484,7 @@ export default function ProfileScreen() {
 
                 <TouchableOpacity
                   style={styles.menuRow}
-                  onPress={() => router.navigate('/(app)/history')}
+                  onPress={() => router.navigate('/(app)/(tabs)/activity?tab=attendance')}
                   activeOpacity={0.7}
                 >
                   <View style={styles.menuRowLeft}>

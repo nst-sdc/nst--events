@@ -59,8 +59,30 @@ export default function EventRegisterScreen() {
     try {
       await registerAsync({ responses: toResponsePayload(responses) });
       handleBack();
-    } catch {
-      // Error toast is surfaced by useRegistration.
+    } catch (err: any) {
+      let message = 'Registration failed. Please check your answers and try again.';
+      if (err?.status === 0 || err?.message === 'Offline') {
+        message = 'You appear to be offline. Please check your connection and try again.';
+      } else if (err?.status === 401) {
+        message = 'Your session has expired. Please log in again.';
+      } else if (err?.status >= 500) {
+        message = 'A server error occurred. Please try again later.';
+      } else {
+        const candidate = err?.message || err?.detail;
+        if (
+          typeof candidate === 'string' &&
+          candidate.trim() &&
+          !candidate.includes('Internal') &&
+          !candidate.includes('Prisma') &&
+          !candidate.includes('SQL') &&
+          !candidate.includes('database') &&
+          !candidate.includes('stack') &&
+          !candidate.includes('at ')
+        ) {
+          message = candidate;
+        }
+      }
+      setErrorMsg(message);
     }
   };
 
@@ -96,6 +118,8 @@ export default function EventRegisterScreen() {
 
       {errorMsg ? (
         <View
+          testID="registration-error-banner"
+          accessibilityRole="alert"
           style={{
             borderWidth: 1,
             borderColor: theme.colors.error,

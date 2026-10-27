@@ -2,30 +2,16 @@
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api';
 
-export interface TeamMember {
-  user_id: string;
-  full_name: string;
-  registration_status: string;
-}
+import type {
+  TeamMemberItem as TeamMember,
+  TeamDetail as Team,
+  TeamsResponse,
+  JoinTeamPayload,
+  CreateTeamResponse,
+  CreateTeamPayload,
+} from '@nst/shared';
 
-export interface Team {
-  id: string;
-  name: string;
-  leader_id: string;
-  leader_name: string;
-  member_count: number;
-  status?: string;
-  below_minimum?: boolean;
-  members: TeamMember[];
-}
-
-export interface TeamsResponse {
-  data: Team[];
-  pagination: {
-    next_cursor: string | null;
-    has_more: boolean;
-  };
-}
+export type { TeamMember, Team, TeamsResponse, JoinTeamPayload, CreateTeamResponse, CreateTeamPayload };
 
 export function useTeamsList(eventId: string) {
   return useInfiniteQuery<TeamsResponse, Error>({
@@ -36,7 +22,7 @@ export function useTeamsList(eventId: string) {
       return apiClient<TeamsResponse>(`/v1/events/${eventId}/teams?${params.toString()}`);
     },
     initialPageParam: null,
-    getNextPageParam: (lastPage) => lastPage.pagination.next_cursor,
+    getNextPageParam: (lastPage) => lastPage.pagination?.nextCursor || undefined,
     enabled: !!eventId,
   });
 }
@@ -47,11 +33,6 @@ export function useTeamLookup(teamId?: string | null) {
     queryFn: () => apiClient<Team>(`/v1/teams/${teamId}`),
     enabled: !!teamId,
   });
-}
-
-export interface JoinTeamPayload {
-  teamId: string;
-  responses?: Array<{ fieldDefinitionId: string; value: string }>;
 }
 
 export function useJoinTeam(eventId: string) {
@@ -95,19 +76,6 @@ export function useLeaveTeam(eventId: string) {
       queryClient.invalidateQueries({ queryKey: ['team', teamId] });
     },
   });
-}
-
-export interface CreateTeamResponse {
-  team_id: string;
-  name: string;
-  leader_id: string;
-  status: string;
-  registration_id: string;
-}
-
-export interface CreateTeamPayload {
-  name: string;
-  responses?: Array<{ fieldDefinitionId: string; value: string }>;
 }
 
 export function useCreateTeam(eventId: string) {

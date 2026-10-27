@@ -3,33 +3,14 @@ import { apiClient } from '../lib/api';
 import { getWebAuthStore } from '../lib/auth-store';
 
 
-export interface ClubMembership {
-  club_id: string;
-  club_name: string;
-  role: string;
-}
+import type {
+  CurrentUserResponse,
+  CurrentUserClubMembership as ClubMembership,
+  CurrentUserAcademicProfile,
+} from '@nst/shared';
 
-export interface CurrentUser {
-  id: string;
-  email: string;
-  full_name: string | null;
-  avatar_url: string | null;
-  global_role: 'STUDENT' | 'FACULTY_MENTOR' | 'FACULTY_ADMIN' | 'PLATFORM_ADMIN';
-  club_memberships: ClubMembership[];
-  academic_profile: {
-    batch: {
-      id: string;
-      program: {
-        id: string;
-        name: string;
-        code: string;
-      };
-      admission_year: number;
-      graduation_year: number;
-    };
-    assignment_source: string;
-  } | null;
-}
+export type { ClubMembership, CurrentUserAcademicProfile };
+export type CurrentUser = CurrentUserResponse;
 
 export function useCurrentUser() {
   const authStore = getWebAuthStore();

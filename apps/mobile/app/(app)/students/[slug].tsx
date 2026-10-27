@@ -235,7 +235,7 @@ export default function PublicStudentProfileScreen() {
 
   if (isLoading) {
     return (
-      <MobileShell title="STUDENT PROFILE" showBackButton={true} onBackPress={handleBackToDirectory}>
+      <MobileShell title="STUDENT PROFILE" showBackButton={true} onBackPress={handleBackToDirectory} scrollable={false}>
         <View style={styles.errorBox}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <MonoLabel>LOADING VERIFIED DOSSIER...</MonoLabel>
@@ -246,7 +246,7 @@ export default function PublicStudentProfileScreen() {
 
   if (student?.redirect && student.canonical_slug) {
     return (
-      <MobileShell title="REDIRECTING..." showBackButton={true} onBackPress={handleBackToDirectory}>
+      <MobileShell title="REDIRECTING..." showBackButton={true} onBackPress={handleBackToDirectory} scrollable={false}>
         <View style={styles.errorBox}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <MonoLabel>REDIRECTING TO @{student.canonical_slug}...</MonoLabel>
@@ -257,7 +257,7 @@ export default function PublicStudentProfileScreen() {
 
   if (isError || !student) {
     return (
-      <MobileShell title="STUDENT PROFILE" showBackButton={true} onBackPress={handleBackToDirectory}>
+      <MobileShell title="STUDENT PROFILE" showBackButton={true} onBackPress={handleBackToDirectory} scrollable={false}>
         <View style={styles.errorBox}>
           <MaterialIcons name="person-off" size={48} color={theme.colors.error} />
           <Title>Profile Not Found</Title>
@@ -286,6 +286,7 @@ export default function PublicStudentProfileScreen() {
       title={`@${student.slug}`}
       showBackButton={true}
       onBackPress={handleBackToDirectory}
+      scrollable={false}
     >
       <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
         {/* Header Dossier */}

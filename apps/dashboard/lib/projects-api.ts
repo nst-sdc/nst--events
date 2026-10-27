@@ -1,73 +1,20 @@
 import { apiClient, API_BASE_URL } from './api';
 
-export interface ProjectAuthor {
-  name: string;
-  avatar_url: string | null;
-  slug?: string | null;
-}
+import type {
+  ProjectAuthor,
+  ProjectLinkItem,
+  ProjectContributorItem,
+  ProjectCardItem,
+  ProjectDetail,
+} from '@nst/shared';
 
-export interface ProjectLinkItem {
-  id?: string;
-  type: 'DEMO' | 'REPOSITORY' | 'VIDEO' | 'DOCUMENTATION' | 'OTHER';
-  url: string;
-  label?: string | null;
-  order?: number;
-}
-
-export interface ProjectContributorItem {
-  id: string;
-  role: string;
-  name: string;
-  avatar_url: string | null;
-  slug?: string | null;
-}
-
-export interface ProjectCardItem {
-  id: string;
-  title: string;
-  slug: string;
-  tagline: string;
-  category: string;
-  tags: string[];
-  project_type: string;
-  development_status: string;
-  cover_image_url: string;
-  like_count: number;
-  view_count: number;
-  published_at: string | null;
-  author: ProjectAuthor;
-  links?: ProjectLinkItem[];
-}
-
-export interface ProjectDetail {
-  id: string;
-  title: string;
-  slug: string;
-  tagline: string;
-  description: string;
-  problem_statement?: string | null;
-  solution?: string | null;
-  implementation_details?: string | null;
-  personal_contribution?: string | null;
-  whats_next?: string | null;
-  category: string;
-  tags: string[];
-  project_type: string;
-  development_status: string;
-  visibility: 'DRAFT' | 'PUBLISHED' | 'UNPUBLISHED' | 'REMOVED';
-  published_at: string | null;
-  cover_image_url: string;
-  gallery_image_urls: string[];
-  like_count: number;
-  view_count: number;
-  has_liked?: boolean;
-  is_owner?: boolean;
-  author: ProjectAuthor;
-  links: ProjectLinkItem[];
-  contributors: ProjectContributorItem[];
-  redirect?: boolean;
-  canonical_slug?: string;
-}
+export type {
+  ProjectAuthor,
+  ProjectLinkItem,
+  ProjectContributorItem,
+  ProjectCardItem,
+  ProjectDetail,
+};
 
 export interface ProjectCategoryItem {
   category: string;
@@ -89,12 +36,15 @@ export interface MyProjectsResponse {
   owned: Array<ProjectDetail & {
     stats?: { reportsCount: number };
     latest_moderation?: { action: string; reason: string; createdAt: string } | null;
+    contributors?: ProjectContributorItem[];
   }>;
   contributing: Array<{
     id: string;
+    contributor_id?: string;
     role: string;
     status: string;
-    project: ProjectCardItem;
+    created_at?: string;
+    project: ProjectCardItem & { owner_name?: string };
   }>;
   stats: {
     total: number;
@@ -103,6 +53,7 @@ export interface MyProjectsResponse {
     unpublished: number;
     totalLikes: number;
     totalViews: number;
+    likes?: number;
   };
 }
 
@@ -207,14 +158,14 @@ export const projectsApi = {
   },
 
   // Student Actions
-  async create(data: any): Promise<ProjectDetail> {
+  async create(data: Record<string, unknown>): Promise<ProjectDetail> {
     return apiClient('/v1/projects', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
 
-  async update(id: string, data: any): Promise<ProjectDetail> {
+  async update(id: string, data: Record<string, unknown>): Promise<ProjectDetail> {
     return apiClient(`/v1/projects/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -270,6 +221,16 @@ export const projectsApi = {
     return apiClient(`/v1/projects/contributors/${contributorId}/respond`, {
       method: 'POST',
       body: JSON.stringify({ status }),
+    });
+  },
+
+  async listContributors(id: string): Promise<ProjectContributorItem[]> {
+    return apiClient(`/v1/projects/${id}/contributors`);
+  },
+
+  async removeContributor(id: string, contributorId: string): Promise<{ success: boolean; message: string }> {
+    return apiClient(`/v1/projects/${id}/contributors/${contributorId}`, {
+      method: 'DELETE',
     });
   },
 

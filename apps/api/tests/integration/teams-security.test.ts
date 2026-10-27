@@ -2,7 +2,7 @@ import { describe, it, before } from 'node:test';
 import * as assert from 'node:assert';
 import { prisma } from '../../src/lib/prisma';
 import { adminPrisma } from '../helpers/adminDb';
-import { createTeam } from '../../src/modules/teams/teams.service';
+import { createTeam, getSentTeamInvitations } from '../../src/modules/teams/teams.service';
 
 describe('SECURITY DEFINER Helpers BOLA & Validation Tests', () => {
   let eventId: string;
@@ -81,6 +81,29 @@ describe('SECURITY DEFINER Helpers BOLA & Validation Tests', () => {
       return tx.$queryRaw<{ user_id: string }[]>`SELECT * FROM get_team_member_ids(${eventId}::uuid, ${teamAId}::uuid)`;
     });
     assert.strictEqual(result.length, 0);
+  });
+
+  it('Leader A can view sent invitations for Team A', async () => {
+    const invitations = await getSentTeamInvitations(leaderAId, teamAId);
+    assert.deepStrictEqual(invitations, []);
+  });
+
+  it('BOLA: Leader B cannot view sent invitations for Team A', async () => {
+    await assert.rejects(
+      async () => {
+        await getSentTeamInvitations(leaderBId, teamAId);
+      },
+      (err: any) => err.message === 'Only the team leader can view sent invitations'
+    );
+  });
+
+  it('Cannot view sent invitations for non-existent team', async () => {
+    await assert.rejects(
+      async () => {
+        await getSentTeamInvitations(leaderAId, '00000000-0000-0000-0000-000000000999');
+      },
+      (err: any) => err.message === 'Team not found'
+    );
   });
 
 });

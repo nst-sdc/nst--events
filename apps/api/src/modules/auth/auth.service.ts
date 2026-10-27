@@ -8,6 +8,7 @@ import { generateRefreshToken, hashToken } from '../../lib/hash';
 import { signJwt } from '../../lib/jwt';
 import { googleOAuth } from './google.oauth';
 import { parseAdypuEmail } from './academic-parser';
+import { projectsService } from '../projects/projects.service';
 
 export interface AuthTokenResponse {
   access_token: string;
@@ -186,6 +187,13 @@ export async function loginWithIdToken(
       }
     }
 
+    // 4d. Reconcile any pending collaborator invitations for this institutional email
+    try {
+      await projectsService.reconcilePendingInvitations(tx, mappedUser.id, mappedUser.email);
+    } catch (err) {
+      console.error('Failed to reconcile pending collaborator invitations on login:', err);
+    }
+
     // 5. Issue access JWT & refresh token
     const token = signJwt(mappedUser.id, mappedUser.securityVersion);
     const refresh = generateRefreshToken();
@@ -313,6 +321,12 @@ export async function refreshTokens(
       access_token: accessToken,
       expires_in: 900,
       refreshToken: newRawRefreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        full_name: user.fullName || '',
+        global_role: user.globalRole,
+      },
     };
   });
 }

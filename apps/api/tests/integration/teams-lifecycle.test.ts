@@ -154,7 +154,7 @@ describe('Team Lifecycle Integration Tests', () => {
 
   it('should cancel team by admin', async () => {
     // Admin cancels demoted team (from previous test setup)
-    const t = await createTeam(adminId, eventId, 'Admin Cancel Team');
+    const t = await createTeam(leaderId, eventId, 'Admin Cancel Team');
     const newTeamId = t.team_id;
     await cancelTeam(adminId, newTeamId);
     const team = await prisma.team.findUnique({ where: { id: newTeamId } });

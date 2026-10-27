@@ -1,23 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "../lib/api";
 
-export interface ClubListItem {
-  id: string;
-  name: string;
-  description: string;
-  status: "ACTIVE" | "INACTIVE" | "DISSOLVED";
-  banner_url: string | null;
-  event_count: number;
-  member_count: number;
-}
+import type { ClubListItem, ClubsResponse } from '@nst/shared';
 
-export interface ClubsResponse {
-  data: ClubListItem[];
-  pagination: {
-    next_cursor?: string;
-    has_more: boolean;
-  };
-}
+export type { ClubListItem, ClubsResponse };
 
 export const useClubs = (query: string = "", enabled = true) => {
   return useQuery<ClubsResponse>({

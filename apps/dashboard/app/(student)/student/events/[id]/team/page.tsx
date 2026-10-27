@@ -5,33 +5,67 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, LogOut, Info, Users, ShieldAlert } from 'lucide-react';
 import { useEventDetail, useMyRegistration } from '../../../../../../hooks/useEventDetail';
-import { useTeamLookup, useLeaveTeam } from '../../../../../../hooks/useTeams';
+import { useTeamLookup, useLeaveTeam, useTeamsList } from '../../../../../../hooks/useTeams';
 import { useCurrentUser } from '../../../../../../hooks/useCurrentUser';
 import { Modal } from '../../../../../../components/ui/Modal';
 import { TransferLeadershipModal } from './components/TransferLeadershipModal';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { isAdministratorAccount } from '../../../../../../lib/auth-helpers';
 
-export default function TeamHubPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id: eventId } = use(params);
+export default function TeamHubPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
+  const { id: eventId } = 'then' in params ? use(params as Promise<{ id: string }>) : params;
   const router = useRouter();
 
   const { data: event, isLoading: isLoadingEvent } = useEventDetail(eventId);
   const { data: registration, isLoading: isLoadingReg } = useMyRegistration(eventId);
   const { data: currentUser } = useCurrentUser();
 
-  // Redirect to event detail if not a team event
-  if (event && event.registrationType !== 'TEAM') {
-    router.push(`/student/events/${eventId}`);
-  }
+  // Determine team ID to lookup (with fallback to event teams list if team_id not directly on registration)
+  const teamsListResult = useTeamsList(eventId);
+  const fallbackTeamId = teamsListResult?.data?.pages
+    ?.flatMap((p) => p.data)
+    ?.find((t) => t.leader_id === currentUser?.id || t.members?.some((m) => m.user_id === currentUser?.id))?.id;
+  const effectiveTeamId = registration?.team_id || fallbackTeamId;
 
-  // Determine team ID to lookup
-  const teamId = registration?.team_id;
-
-  const { data: team, isLoading: isLoadingTeam } = useTeamLookup(teamId);
+  const { data: team, isLoading: isLoadingTeam } = useTeamLookup(effectiveTeamId);
   const { mutate: leaveTeam, isPending: isLeaving } = useLeaveTeam(eventId);
 
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+
+  // Redirect to event detail if not a team event
+  useEffect(() => {
+    if (event && event.registrationType !== 'TEAM') {
+      router.push(`/student/events/${eventId}`);
+    }
+  }, [event, eventId, router]);
+
+  // Block direct URL access for administrator accounts
+  if (isAdministratorAccount(currentUser)) {
+    return (
+      <div className="w-full flex-grow flex justify-center items-center min-h-[60vh] bg-[#050505] p-6 text-center">
+        <div className="max-w-md mx-auto">
+          <div className="inline-block border border-[#FF3B30] bg-[#FF3B30]/10 text-[#FF3B30] font-mono font-bold tracking-widest text-xs px-3 py-1.5 mb-4">
+            ACCESS RESTRICTED // ADMINISTRATOR ACCOUNT
+          </div>
+          <p className="text-[#a0a4b8] text-xs font-mono leading-relaxed mb-6">
+            Administrator accounts cannot register for events or access squad registration command. Please use an eligible student account.
+          </p>
+          <Link
+            href={`/student/events/${eventId}`}
+            className="inline-flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-black bg-[#F5F5F2] hover:bg-white px-4 py-2.5 transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" /> Return to Event Dossier
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // If not a team event, render nothing while redirecting
+  if (event && event.registrationType !== 'TEAM') {
+    return null;
+  }
 
   // Grouped loading
   if (isLoadingEvent || isLoadingReg || isLoadingTeam) {

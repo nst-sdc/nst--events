@@ -2,44 +2,12 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../lib/api';
 import { Event } from './useEvents';
 
-export interface EventDetail extends Event {
-  description: string;
-  eventClubs?: {
-    clubId: string;
-    isPrimary: boolean;
-    club: {
-      id: string;
-      name: string;
-      bannerUrl: string | null;
-    };
-  }[];
-  metadata?: {
-    minimum_team_size?: number;
-    maximum_team_size?: number;
-    agenda?: {
-      time: string;
-      title: string;
-      description?: string;
-    }[];
-  };
-  attendanceSessions?: {
-    id: string;
-    eventId: string;
-    title: string | null;
-    startTime: string | null;
-    endTime: string | null;
-    openAt: string | null;
-    closeAt: string | null;
-  }[];
-}
+import type { EventDetail, MyRegistrationResponse, MyRegistrationStatus } from '@nst/shared';
 
-export type RegistrationStatus = 'REGISTERED' | 'WAITLISTED' | 'CANCELLED' | 'NOT_REGISTERED';
+export type { EventDetail };
 
-export interface MyRegistration {
-  status: RegistrationStatus;
-  team_id?: string | null;
-  waitlist_position?: number | null;
-}
+export type RegistrationStatus = MyRegistrationStatus;
+export type MyRegistration = MyRegistrationResponse;
 
 export function useEventDetail(eventId: string) {
   return useQuery<EventDetail>({

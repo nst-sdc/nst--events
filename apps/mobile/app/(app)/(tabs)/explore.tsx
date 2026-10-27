@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAppTheme } from '../../../src/store/theme-store';
@@ -21,6 +20,7 @@ import { Button } from '../../../src/ui/Button';
 import { StatusBadge } from '../../../src/ui/core/StatusBadge';
 import { StudentCalendarView } from '../../../src/ui/StudentCalendarView';
 import { useAttendanceHistory } from '../../../src/hooks/use-attendance-history';
+import { openProjectShowcase } from '../../../src/lib/project-showcase';
 import {
   classifyAndSortHomeEvents,
   findActiveAttendanceSession,
@@ -545,7 +545,7 @@ export default function ExploreScreen() {
 
         <TouchableOpacity
           style={styles.shortcutChip}
-          onPress={() => Linking.openURL('https://events.nstsdc.org/projects').catch(() => {})}
+          onPress={() => openProjectShowcase()}
           activeOpacity={0.8}
         >
           <Mono style={styles.shortcutText}>[ 🚀 PROJECTS ↗ ]</Mono>

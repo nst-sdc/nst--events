@@ -1,68 +1,25 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../infrastructure/api';
 
-export interface PublicProfileProject {
-  id: string;
-  title: string;
-  slug: string;
-  tagline: string;
-  category: string;
-  tags: string[];
-  cover_image_url: string;
-  role: string;
-  is_owner: boolean;
-  published_at: string | null;
-  featured: boolean;
-  display_order: number;
-}
+import {
+  PublicProfileProject,
+  PublicProfileAchievement,
+  PublicProfileClub,
+  PublicStudentProfile,
+  PublicStudentProfileTransportDto,
+  PublicStudentProfileRedirectTransportDto,
+  normalizePublicStudentProfile,
+} from '@nst/shared';
 
-export interface PublicProfileAchievement {
-  id: string;
-  award_name: string;
-  placement: string | null;
-  tier: string | null;
-  certificate_url: string | null;
-  awarded_at: string;
-  event: {
-    id: string;
-    title: string;
-    slug: string;
-  };
-}
-
-export interface PublicProfileClub {
-  id: string;
-  club_id: string;
-  club_name: string;
-  role: string;
-  joined_at: string;
-}
-
-export interface PublicStudentProfile {
-  id: string;
-  fullName: string;
-  slug: string;
-  avatarUrl: string | null;
-  headline: string | null;
-  bio: string | null;
-  batch: string | null;
-  program: string | null;
-  campus: string | null;
-  skills: string[];
-  interests: string[];
-  externalLinks: {
-    github?: string;
-    linkedin?: string;
-    portfolio?: string;
-    other?: string;
-  };
-  projects: PublicProfileProject[];
-  achievements: PublicProfileAchievement[];
-  clubs: PublicProfileClub[];
-  isMinimal: boolean;
-  redirect?: boolean;
-  canonical_slug?: string;
-}
+export type {
+  PublicProfileProject,
+  PublicProfileAchievement,
+  PublicProfileClub,
+  PublicStudentProfile,
+  PublicStudentProfileTransportDto,
+  PublicStudentProfileRedirectTransportDto,
+};
+export { normalizePublicStudentProfile };
 
 export interface PublicStudentCard {
   id: string;
@@ -197,7 +154,7 @@ export function useStudentDirectory(params: {
     queryKey: ['student-directory', params],
     queryFn: async () => {
       const res = await apiClient(`/v1/students?${query.toString()}`);
-      return res.json();
+      return res as StudentDirectoryResponse;
     },
     staleTime: 30 * 1000,
   });
@@ -208,10 +165,7 @@ export function usePublicStudentProfile(slug: string, enabled = true) {
     queryKey: ['public-student-profile', slug],
     queryFn: async () => {
       const res = await apiClient(`/v1/students/${encodeURIComponent(slug)}`);
-      if (res.status === 404) {
-        throw new Error('NOT_FOUND');
-      }
-      return res.json();
+      return normalizePublicStudentProfile(res);
     },
     enabled: enabled && !!slug,
     staleTime: 15 * 1000,
@@ -223,7 +177,7 @@ export function useMyStudentProfile() {
     queryKey: ['my-student-profile'],
     queryFn: async () => {
       const res = await apiClient('/v1/students/me/profile');
-      return res.json();
+      return res as EditableProfileData;
     },
   });
 }
@@ -239,7 +193,7 @@ export function useUpdateMyVisibility() {
         method: 'PATCH',
         body: JSON.stringify(payload),
       });
-      return res.json();
+      return res;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-student-profile'] });
@@ -262,7 +216,7 @@ export function useCurateItem() {
         method: 'POST',
         body: JSON.stringify(payload),
       });
-      return res.json();
+      return res;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-student-profile'] });
@@ -278,11 +232,7 @@ export function useChangeHandle() {
         method: 'POST',
         body: JSON.stringify({ handle }),
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || 'Failed to update handle');
-      }
-      return res.json();
+      return res;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-student-profile'] });
@@ -310,7 +260,7 @@ export function useUpdateMyProfileContent() {
         method: 'PATCH',
         body: JSON.stringify(payload),
       });
-      return res.json();
+      return res;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-student-profile'] });

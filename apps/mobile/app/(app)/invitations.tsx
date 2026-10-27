@@ -13,7 +13,8 @@ import { Button } from '../../src/ui/Button';
 
 export default function InvitationsScreen() {
   const { invitationId } = useLocalSearchParams<{ invitationId: string }>();
-  const { data: invitations, isLoading, refetch, isRefetching } = usePendingInvitations();
+  const { data: invitations, isLoading, refetch, isRefetching, error, isError } = usePendingInvitations();
+  const isUnsupported = isError && ((error as any)?.status === 404 || (error as any)?.isUnsupported);
   const { isOnline } = useNetworkStatus();
   const router = useRouter();
   const theme = useAppTheme();
@@ -169,6 +170,23 @@ export default function InvitationsScreen() {
           <View style={styles.loadingCard}>
             <ActivityIndicator size="small" color={theme.colors.primary} />
             <MonoLabel style={styles.loadingText}>FETCHING PENDING INVITATIONS...</MonoLabel>
+          </View>
+        ) : isUnsupported ? (
+          <View style={styles.emptyCard}>
+            <StatusBadge status="[ DEFERRED ]" type="warning" />
+            <Title style={styles.emptyTitle}>INVITATIONS UNAVAILABLE</Title>
+            <Body style={styles.emptyDesc}>
+              Squad invitations are currently deferred in this release. Join squads directly through the event teams tab.
+            </Body>
+          </View>
+        ) : isError ? (
+          <View style={styles.emptyCard}>
+            <StatusBadge status="[ ERROR ]" type="error" />
+            <Title style={styles.emptyTitle}>FAILED TO LOAD INVITATIONS</Title>
+            <Body style={styles.emptyDesc}>
+              Unable to retrieve squad invitations. Please check your network and try again.
+            </Body>
+            <Button title="RETRY" variant="secondary" onPress={() => refetch()} />
           </View>
         ) : filteredInvitations.length === 0 ? (
           <View style={styles.emptyCard}>

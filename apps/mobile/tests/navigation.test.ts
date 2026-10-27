@@ -74,15 +74,15 @@ describe('NST-Events Mobile V1 Navigation Architecture Tests', () => {
   });
 
   describe('3. Tab Switching Contracts', () => {
-    it('uses router.navigate(\'/(app)/history\') in Profile tab for tab switching', () => {
+    it('uses router.navigate(\'/(app)/(tabs)/activity?tab=attendance\') in Profile tab for tab switching', () => {
       const profileContent = fs.readFileSync(path.join(tabsDir, 'profile.tsx'), 'utf-8');
-      expect(profileContent).toContain("router.navigate('/(app)/history')");
+      expect(profileContent).toContain("router.navigate('/(app)/(tabs)/activity?tab=attendance')");
       expect(profileContent).not.toContain("router.push('/history')");
     });
 
-    it('uses router.navigate(\'/(app)/history\') in Disputes empty state CTA', () => {
+    it('uses router.navigate(\'/(app)/(tabs)/activity?tab=attendance\') in Disputes empty state CTA', () => {
       const disputesIndexContent = fs.readFileSync(path.join(appDir, 'disputes/index.tsx'), 'utf-8');
-      expect(disputesIndexContent).toContain("router.navigate('/(app)/history')");
+      expect(disputesIndexContent).toContain("router.navigate('/(app)/(tabs)/activity?tab=attendance')");
       expect(disputesIndexContent).not.toContain("router.push('/history')");
     });
   });

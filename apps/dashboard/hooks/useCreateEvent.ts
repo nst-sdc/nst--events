@@ -15,6 +15,7 @@ export interface CreateEventPayload {
   event_type: string;
   visibility?: 'PUBLIC' | 'UNLISTED' | 'RESTRICTED' | string;
   slug?: string;
+  registration_mode?: 'REQUIRED' | 'NOT_REQUIRED';
   registration_type: string;
   attendance_type: string;
   audience?: 'ALL_STUDENTS' | 'SPECIFIC_BATCHES';

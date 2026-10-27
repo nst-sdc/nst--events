@@ -133,8 +133,17 @@ export const QueryProjectsSchema = z.object({
 });
 
 export const InviteContributorSchema = z.object({
-  email: z.string().email(),
-  role: z.string().min(2, 'Role must be at least 2 characters').max(50, 'Role cannot exceed 50 characters'),
+  email: z
+    .string()
+    .email('Invalid email address')
+    .refine(
+      (email) => {
+        const lower = email.toLowerCase().trim();
+        return lower.endsWith('@adypu.edu.in') || lower.endsWith('@newtonschool.co');
+      },
+      { message: 'Collaborator must have a verified institutional email (@adypu.edu.in or @newtonschool.co)' }
+    ),
+  role: z.string().min(2, 'Role must be at least 2 characters').max(60, 'Role cannot exceed 60 characters'),
 });
 
 export const RespondContributorSchema = z.object({
@@ -155,4 +164,9 @@ export const ModerateProjectSchema = z.object({
 export const ResolveReportSchema = z.object({
   status: z.enum(['RESOLVED', 'DISMISSED']),
   resolutionNotes: z.string().max(1000).optional(),
+});
+
+export const RemoveContributorParamSchema = z.object({
+  id: z.string().uuid(),
+  contributorId: z.string().uuid(),
 });

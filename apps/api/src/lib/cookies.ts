@@ -33,3 +33,24 @@ export function getOAuthStateCookieOptions(): CookieOptions {
     signed: true,
   };
 }
+
+export const USER_ROLE_COOKIE_NAME = 'user_role';
+
+export function getUserRoleCookieOptions(): CookieOptions {
+  return {
+    httpOnly: false,
+    secure: !env.ALLOW_INSECURE_COOKIES_LOCAL_DEV,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+  };
+}
+
+export function getClearUserRoleCookieOptions(): CookieOptions {
+  return {
+    httpOnly: false,
+    secure: !env.ALLOW_INSECURE_COOKIES_LOCAL_DEV,
+    sameSite: 'lax',
+    path: '/',
+  };
+}

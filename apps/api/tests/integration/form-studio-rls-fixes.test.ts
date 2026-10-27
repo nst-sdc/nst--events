@@ -171,6 +171,7 @@ describe('Form Studio RLS Fixes: Registration Fields Context & Scheduled Forms L
     await adminPrisma.$executeRaw`DELETE FROM club_memberships WHERE club_id = ${clubId}::uuid;`;
     await adminPrisma.$executeRaw`DELETE FROM clubs WHERE id = ${clubId}::uuid;`;
     await adminPrisma.$executeRaw`DELETE FROM user_academic_profiles WHERE user_id IN (${student1Id}::uuid, ${student2Id}::uuid);`;
+    await adminPrisma.$executeRaw`DELETE FROM notifications WHERE user_id IN (${adminId}::uuid, ${organizerId}::uuid, ${student1Id}::uuid, ${student2Id}::uuid);`;
     await adminPrisma.$executeRaw`DELETE FROM users WHERE id IN (${adminId}::uuid, ${organizerId}::uuid, ${student1Id}::uuid, ${student2Id}::uuid);`;
     await adminPrisma.$executeRaw`DELETE FROM academic_batches WHERE id IN (${batch1Id}::uuid, ${batch2Id}::uuid);`;
     await adminPrisma.$executeRaw`DELETE FROM academic_programs WHERE id = ${programId}::uuid;`;

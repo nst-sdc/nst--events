@@ -3,29 +3,32 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Compass, Calendar, User, Bell, ChevronDown } from 'lucide-react';
+import { Home, Compass, Calendar, User, Users } from 'lucide-react';
 import clsx from 'clsx';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
-import { useUnreadCount } from '../../hooks/useNotifications';
 import { BackButton } from '../ui/BackButton';
 import { StudentNotificationPopover } from '../notifications/StudentNotificationPopover';
 import { useClubAdmin } from './ClubAdminProvider';
 import { ClubAdminToggle } from './ClubAdminToggle';
 import { NstLogoMark } from '../brand/NstLogo';
+import { isPlatformAdmin, isFacultyAdmin } from '../../lib/auth-helpers';
 import { StudentFooter } from '../brand/StudentFooter';
+import { useRealtimeNotifications } from '../../hooks/useRealtimeNotifications';
 
 const studentNavItems = [
   { label: 'Home', href: '/student/home', icon: Home },
-  { label: 'Events', href: '/', icon: Calendar },
+  { label: 'Events', href: '/student/campus/discover', icon: Calendar, exactMatch: false },
   { label: 'Campus', href: '/student/campus', icon: Compass, exactMatch: false },
   { label: 'My Events', href: '/student/events', icon: Calendar },
   { label: 'Projects', href: '/projects', icon: Compass, exactMatch: false },
-  { label: 'Profile', href: '/student/profile', icon: User, exactMatch: false },
+  { label: 'Students', href: '/students', icon: Users, exactMatch: false },
+  { label: 'Profile', href: '/my/profile', icon: User, exactMatch: false },
 ];
 
 const publicNavItems = [
-  { label: 'Events', href: '/', icon: Calendar },
+  { label: 'Events', href: '/student/campus/discover', icon: Calendar, exactMatch: false },
   { label: 'Projects', href: '/projects', icon: Compass, exactMatch: false },
+  { label: 'Students', href: '/students', icon: Users, exactMatch: false },
   { label: 'Sign In', href: '/login', icon: User },
 ];
 
@@ -34,19 +37,30 @@ const adminNavItems = [
   { label: 'Events', href: '/student/manage/events', icon: Calendar, exactMatch: false },
 ];
 
-import { useRealtimeNotifications } from '../../hooks/useRealtimeNotifications';
-
 export function StudentAppShell({ children }: { children: React.ReactNode }) {
   useRealtimeNotifications();
-  const pathname = (typeof usePathname === 'function' ? usePathname() : '') || '';
-  const { data: user, isLoading: isUserLoading } = useCurrentUser();
+  const pathname = usePathname() || '';
+  const { data: user } = useCurrentUser();
   const { isClubAdminMode } = useClubAdmin();
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      const rAF = requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      });
+      return () => cancelAnimationFrame(rAF);
+    }
+  }, [pathname]);
 
   const navItems = isClubAdminMode ? adminNavItems : (user ? studentNavItems : publicNavItems);
 
   const isActive = (item: { href: string; exactMatch?: boolean }) => {
-    if (item.href === '/') {
-      return pathname === '/' || pathname.startsWith('/event/');
+    if (item.href === '/student/campus/discover') {
+      return pathname === '/student/campus/discover' || pathname.startsWith('/student/campus/discover') || pathname.startsWith('/event/');
+    }
+    if (item.href === '/student/campus') {
+      return pathname === '/student/campus' || (pathname.startsWith('/student/campus/') && !pathname.startsWith('/student/campus/discover'));
     }
     if (item.exactMatch === false) {
       return pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -58,11 +72,11 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
   const isDeepRoute = segments.length > (segments[1] === 'campus' || segments[1] === 'manage' ? 3 : 2);
 
   const isCampusActive = !isClubAdminMode && isActive({ href: '/student/campus', exactMatch: false });
-  const isEditorial = pathname.startsWith('/student');
+  const isEditorial = pathname.startsWith('/student') || pathname.startsWith('/my') || pathname.startsWith('/projects') || pathname.startsWith('/students');
   const rawFirstName = user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'STUDENT';
   const displayFirstName = rawFirstName.toUpperCase();
 
-  const logoTargetHref = isClubAdminMode ? '/student/manage/club' : (user ? '/student/home' : '/');
+  const logoTargetHref = isClubAdminMode ? '/student/manage/club' : (user ? '/student/home' : '/login');
 
   return (
     <div className="min-h-screen flex flex-col font-sans pb-[64px] md:pb-0 bg-[#050505] text-[#F5F5F2]">
@@ -84,7 +98,7 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
                 isDeepRoute ? "hidden md:flex" : "flex"
               )}
             >
-              <div className="w-8 h-8 bg-[#0057FF] flex items-center justify-center shadow-[3px_3px_0px_#ffffff] flex-shrink-0">
+              <div className="w-8 h-8 bg-[#0057FF] flex items-center justify-center shadow-[3px_3px_0px_#ffffff] shrink-0">
                 <NstLogoMark size={20} color="#ffffff" />
               </div>
               <div className="flex flex-col leading-none">
@@ -117,17 +131,6 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
                       HOME
                     </Link>
 
-                    <Link
-                      aria-current={isActive({ href: '/' }) ? 'page' : undefined}
-                      href="/"
-                      className={clsx(
-                        "transition-colors duration-200", 
-                        isActive({ href: '/' }) ? "text-[#0057FF]" : "text-[#a0a4b8] hover:text-[#0057FF]"
-                      )}
-                    >
-                      EVENTS
-                    </Link>
-                    
                     {/* Campus Dropdown */}
                     <div className="relative group">
                       <Link 
@@ -175,11 +178,11 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
                 ) : (
                   <>
                     <Link
-                      aria-current={isActive({ href: '/' }) ? 'page' : undefined}
-                      href="/"
+                      aria-current={isActive({ href: '/student/campus/discover' }) ? 'page' : undefined}
+                      href="/student/campus/discover"
                       className={clsx(
                         "transition-colors duration-200", 
-                        isActive({ href: '/' }) ? "text-[#0057FF]" : "text-[#a0a4b8] hover:text-[#0057FF]"
+                        isActive({ href: '/student/campus/discover' }) ? "text-[#0057FF]" : "text-[#a0a4b8] hover:text-[#0057FF]"
                       )}
                     >
                       EVENTS
@@ -216,6 +219,14 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
             </nav>
 
             <div className="flex items-center gap-4">
+              {user && (isPlatformAdmin(user) || isFacultyAdmin(user)) && (
+                <Link
+                  href="/dashboard"
+                  className="hidden md:inline-flex items-center text-[10px] font-mono font-bold text-[#a0a4b8] hover:text-[#0057FF] border border-white/20 px-2.5 py-1 uppercase tracking-wider transition-colors"
+                >
+                  ADMIN OPS &rarr;
+                </Link>
+              )}
               <ClubAdminToggle />
 
               {/* Notifications */}
@@ -223,8 +234,11 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
 
               {/* User Badge or Sign In button */}
               {user ? (
-                <Link aria-label="User Profile" href="/student/profile" className="hidden md:flex items-center gap-2 group">
-                  <div className="font-['JetBrains_Mono',monospace] text-[11px] font-bold tracking-wider text-[#ffffff] bg-[#0057FF] px-3.5 py-1.5 uppercase shadow-[3px_3px_0px_#ffffff] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5">
+                <Link aria-label="User Profile" href="/my/profile" className="hidden md:flex items-center gap-2 group">
+                  <div
+                    title={displayFirstName}
+                    className="font-['JetBrains_Mono',monospace] text-[11px] font-bold tracking-wider text-[#ffffff] bg-[#0057FF] px-3.5 py-1.5 uppercase shadow-[3px_3px_0px_#ffffff] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 max-w-[140px] truncate"
+                  >
                     {displayFirstName}
                   </div>
                 </Link>
@@ -241,7 +255,7 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Main Content Area */}
-      <div className={clsx("flex-grow flex flex-col w-full", isEditorial ? "" : "max-w-[1440px] mx-auto")}>
+      <div className={clsx("grow flex flex-col w-full", isEditorial ? "" : "max-w-[1440px] mx-auto")}>
         {children}
       </div>
 
@@ -272,7 +286,7 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
                   {item.label}
                 </span>
                 {active && (
-                  <div className="absolute top-0 w-1/2 h-[2px] bg-[#0057FF]"></div>
+                  <div className="absolute top-0 w-1/2 h-0.5 bg-[#0057FF]"></div>
                 )}
               </Link>
             );

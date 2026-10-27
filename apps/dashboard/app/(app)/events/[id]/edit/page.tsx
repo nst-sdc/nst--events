@@ -146,9 +146,10 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
     );
   }
 
+  const isGlobalAdmin = currentUser?.global_role === 'PLATFORM_ADMIN' || currentUser?.global_role === 'FACULTY_ADMIN';
   let isAuthorizedToEdit = false;
   if (currentUser) {
-    if (currentUser.global_role === 'PLATFORM_ADMIN' || currentUser.global_role === 'FACULTY_ADMIN') {
+    if (isGlobalAdmin) {
       isAuthorizedToEdit = true;
     } else {
       const userAdminClubs = currentUser.club_memberships
@@ -178,6 +179,7 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
     slug?: string;
     description?: string;
     banner_url: string;
+    registration_mode?: 'REQUIRED' | 'NOT_REQUIRED';
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     dateRange: [any, any];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -202,14 +204,20 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
       const [start, end] = values.dateRange;
       const regStart = values.registration_start_time;
       const regEnd = values.registration_end_time;
+      const rawEvent = event as unknown as Record<string, unknown> | undefined;
+      const rawMode = rawEvent?.registrationMode ?? rawEvent?.registration_mode;
+      const regMode: 'REQUIRED' | 'NOT_REQUIRED' =
+        values.registration_mode || (rawMode === 'NOT_REQUIRED' ? 'NOT_REQUIRED' : 'REQUIRED');
 
-      if (regStart && regEnd && dayjs(regStart).isAfter(dayjs(regEnd))) {
-        setErrorMessage('Registration Opens At must be before Registration Closes At.');
-        return;
-      }
-      if (regEnd && end && dayjs(regEnd).isAfter(dayjs(end))) {
-        setErrorMessage('Registration Closes At must be before or at event end time.');
-        return;
+      if (regMode === 'REQUIRED') {
+        if (regStart && regEnd && dayjs(regStart).isAfter(dayjs(regEnd))) {
+          setErrorMessage('Registration Opens At must be before Registration Closes At.');
+          return;
+        }
+        if (regEnd && end && dayjs(regEnd).isAfter(dayjs(end))) {
+          setErrorMessage('Registration Closes At must be before or at event end time.');
+          return;
+        }
       }
 
       const payload: UpdateEventInput = {
@@ -218,8 +226,9 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
         description: values.description,
         start_time: start.toISOString(),
         end_time: end.toISOString(),
-        registration_start_time: regStart ? dayjs(regStart).toISOString() : undefined,
-        registration_end_time: regEnd ? dayjs(regEnd).toISOString() : undefined,
+        registration_mode: regMode,
+        registration_start_time: regMode === 'NOT_REQUIRED' ? undefined : (regStart ? dayjs(regStart).toISOString() : undefined),
+        registration_end_time: regMode === 'NOT_REQUIRED' ? undefined : (regEnd ? dayjs(regEnd).toISOString() : undefined),
         location_name: values.location_name,
         event_type: values.event_type,
         visibility: values.visibility,
@@ -517,6 +526,7 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
                   extra="Date and time when registration becomes available."
                   dependencies={['registration_end_time', 'dateRange']}
                   rules={[
+                    { required: !isGlobalAdmin, message: 'Registration opening date and time is required for Club Admins' },
                     ({ getFieldValue }) => ({
                       validator(_, value) {
                         const regEnd = getFieldValue('registration_end_time');
@@ -547,6 +557,7 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
                   extra="Date and time when registration stops accepting registrations."
                   dependencies={['registration_start_time', 'dateRange']}
                   rules={[
+                    { required: !isGlobalAdmin, message: 'Registration closing date and time is required for Club Admins' },
                     ({ getFieldValue }) => ({
                       validator(_, value) {
                         const regStart = getFieldValue('registration_start_time');

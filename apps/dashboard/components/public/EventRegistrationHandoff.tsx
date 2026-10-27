@@ -18,7 +18,8 @@ interface EventRegistrationHandoffProps {
   eventId: string;
   eventSlug: string;
   eventTitle: string;
-  registrationStatus: 'NOT_STARTED' | 'OPEN' | 'CLOSING_SOON' | 'CLOSED';
+  registrationStatus: 'UPCOMING' | 'NOT_STARTED' | 'OPEN' | 'CLOSING_SOON' | 'CLOSED';
+  registrationMode?: 'REQUIRED' | 'NOT_REQUIRED';
   registrationType?: string;
   isRestricted?: boolean;
 }
@@ -28,6 +29,7 @@ export function EventRegistrationHandoff({
   eventSlug,
   eventTitle,
   registrationStatus,
+  registrationMode,
   registrationType,
   isRestricted = false,
 }: EventRegistrationHandoffProps) {
@@ -78,6 +80,18 @@ export function EventRegistrationHandoff({
     }, 2000);
   };
 
+  if (registrationMode === 'NOT_REQUIRED') {
+    return (
+      <div className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-6 text-center">
+        <span className="inline-block px-3 py-1 rounded text-xs font-mono font-bold tracking-wider uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 mb-3">
+          NO REGISTRATION REQUIRED
+        </span>
+        <h4 className="text-base font-bold text-zinc-300">Open Event &mdash; Walk-ins Welcome</h4>
+        <p className="text-xs text-zinc-500 mt-1">This is an open informational event. You do not need to register in advance.</p>
+      </div>
+    );
+  }
+
   if (registrationStatus === 'CLOSED') {
     return (
       <div className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-6 text-center">
@@ -90,7 +104,7 @@ export function EventRegistrationHandoff({
     );
   }
 
-  if (registrationStatus === 'NOT_STARTED') {
+  if (registrationStatus === 'NOT_STARTED' || registrationStatus === 'UPCOMING') {
     return (
       <div className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-6 text-center">
         <span className="inline-block px-3 py-1 rounded text-xs font-mono font-bold tracking-wider uppercase bg-[#0057FF]/10 text-[#0057FF] border border-[#0057FF]/30 mb-3">
@@ -102,17 +116,30 @@ export function EventRegistrationHandoff({
     );
   }
 
+  const isClosingSoon = registrationStatus === 'CLOSING_SOON';
+
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 sm:p-8 relative overflow-hidden">
       {/* Subtle background glow */}
-      <div className="absolute -top-24 -right-24 w-48 h-48 bg-[#C8FF00]/10 rounded-full blur-3xl pointer-events-none" />
+      <div
+        className={`absolute -top-24 -right-24 w-48 h-48 rounded-full blur-3xl pointer-events-none ${
+          isClosingSoon ? 'bg-[#FF9500]/10' : 'bg-[#C8FF00]/10'
+        }`}
+      />
 
       <div className="relative z-10 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-6">
         <div>
-          <div className="flex items-center space-x-2 text-xs font-mono text-[#C8FF00] font-bold tracking-widest uppercase mb-2">
-            <Sparkles className="w-4 h-4" />
-            <span>OFFICIAL REGISTRATION</span>
-          </div>
+          {isClosingSoon ? (
+            <div className="flex items-center space-x-2 text-xs font-mono text-[#FF9500] font-bold tracking-widest uppercase mb-2">
+              <AlertTriangle className="w-4 h-4 text-[#FF9500]" />
+              <span>REGISTRATION CLOSING SOON</span>
+            </div>
+          ) : (
+            <div className="flex items-center space-x-2 text-xs font-mono text-[#C8FF00] font-bold tracking-widest uppercase mb-2">
+              <Sparkles className="w-4 h-4" />
+              <span>OFFICIAL REGISTRATION</span>
+            </div>
+          )}
           <h3 className="text-2xl font-black uppercase tracking-tight text-[#F5F5F2]">
             SECURE YOUR PASS
           </h3>

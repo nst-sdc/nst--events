@@ -1,24 +1,36 @@
 'use client';
 
 import { useState } from 'react';
-import { Table, Button, Modal, Form, InputNumber, Select, Tag, App } from 'antd';
+import { Table, Button, Modal, Form, InputNumber, Select, Tag, App, Result } from 'antd';
 import { EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useAdminAcademicBatches } from '../../../../hooks/useAdminAcademicBatches';
 import { useAdminAcademicPrograms } from '../../../../hooks/useAdminAcademicPrograms';
 import { AcademicBatch } from '../../../../hooks/useAcademicBatches';
 import { useCurrentUser } from '../../../../hooks/useCurrentUser';
-import { canManageAcademicCatalog } from '../../../../lib/auth-helpers';
+import { canManageAcademicCatalog, canViewAcademicCatalog } from '../../../../lib/auth-helpers';
 import { AdminPageHeader } from '../../../../components/admin/AdminPageHeader';
 
 export default function AcademicBatchesPage() {
   const { message } = App.useApp();
-  const { data: currentUser } = useCurrentUser();
+  const { data: currentUser, isLoading: isUserLoading } = useCurrentUser();
   const { data, isLoading, isError, createBatch, updateBatch } = useAdminAcademicBatches();
   const { data: programsData, isLoading: isProgramsLoading } = useAdminAcademicPrograms();
   const canManage = canManageAcademicCatalog(currentUser);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingBatch, setEditingBatch] = useState<AcademicBatch | null>(null);
   const [form] = Form.useForm();
+
+  if (!isUserLoading && currentUser && !canViewAcademicCatalog(currentUser)) {
+    return (
+      <div className="max-w-6xl mx-auto py-12">
+        <Result
+          status="403"
+          title="Permission Denied"
+          subTitle="You do not have permission to view Academic Batches."
+        />
+      </div>
+    );
+  }
 
   const handleOpenCreate = () => {
     setEditingBatch(null);

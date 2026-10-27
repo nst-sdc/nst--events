@@ -14,6 +14,7 @@ export interface UpdateEventInput {
   event_type?: string;
   visibility?: 'PUBLIC' | 'UNLISTED' | 'RESTRICTED';
   slug?: string;
+  registration_mode?: 'REQUIRED' | 'NOT_REQUIRED';
   registration_type?: 'INDIVIDUAL' | 'TEAM';
   attendance_type?: 'SINGLE' | 'MULTI_SESSION';
   audience?: 'ALL_STUDENTS' | 'SPECIFIC_BATCHES';

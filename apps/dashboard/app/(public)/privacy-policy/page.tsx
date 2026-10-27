@@ -106,7 +106,7 @@ export default function PrivacyPolicyPage() {
         <section className="space-y-4">
           <h2 className="text-2xl font-semibold mt-8">7. Children's Privacy</h2>
           <p>
-            Our Service is intended exclusively for enrolled university students, faculty, and authorized staff of Newton School of Technology (NST), Pune and Ajeenkya DY Patil University (typically ages 17 and above). We do not knowingly collect or solicit personal information from children under the age of 13. If you believe that a child under 13 has provided us with personal information, please contact us immediately at <a href="mailto:events-support@adypu.edu.in" className="text-blue-600 underline">events-support@adypu.edu.in</a> so that we can take appropriate measures.
+            Our Service is intended exclusively for enrolled university students, faculty, and authorized staff of Newton School of Technology (NST), Pune and Ajeenkya DY Patil University (typically ages 17 and above). We do not knowingly collect or solicit personal information from children under the age of 13. If you believe that a child under 13 has provided us with personal information, please contact us immediately at <a href="mailto:support@nstsdc.com" className="text-blue-600 underline">support@nstsdc.com</a> so that we can take appropriate measures.
           </p>
         </section>
 
@@ -120,7 +120,7 @@ export default function PrivacyPolicyPage() {
           <p>If you have questions about this policy or wish to exercise your data rights, contact:</p>
           <address className="not-italic bg-gray-50 p-4 rounded-md border">
             <strong>NST Student Developer Club (nst-sdc)</strong><br />
-            Email: <a href="mailto:events-support@adypu.edu.in" className="text-blue-600 underline">events-support@adypu.edu.in</a><br />
+            Email: <a href="mailto:support@nstsdc.com" className="text-blue-600 underline">support@nstsdc.com</a><br />
             Newton School of Technology (NST), Pune
           </address>
         </section>

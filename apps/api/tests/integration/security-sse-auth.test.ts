@@ -20,7 +20,7 @@ describe('Phase 16A: SSE Authorization Security', () => {
   let tokenA: string;
   let tokenB: string;
 
-  const pgClient = new Client({ connectionString: "postgresql://postgres:postgres@localhost:5440/nst_events?schema=public" });
+  const pgClient = new Client({ connectionString: process.env.ADMIN_DATABASE_URL || "postgresql://postgres:postgres@127.0.0.1:5440/nst_events_clean_test?schema=public" });
 
   before(async () => {
     await pgClient.connect();

@@ -24,8 +24,6 @@ export interface TeamsResponse {
   data: Team[];
   pagination: {
     nextCursor?: string | null;
-    next_cursor?: string | null;
-    has_more?: boolean;
   };
 }
 
@@ -89,6 +87,8 @@ export const useTeams = (eventId: string) => {
       }
       queryClient.invalidateQueries({ queryKey: ['events', eventId] });
       queryClient.invalidateQueries({ queryKey: ['events', eventId, 'registration'] });
+      queryClient.invalidateQueries({ queryKey: ['my-registration', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['event-my-registration', eventId] });
       queryClient.invalidateQueries({ queryKey: ['teams', eventId] });
       queryClient.invalidateQueries({ queryKey: ['event-teams', eventId] });
       queryClient.invalidateQueries({ queryKey: ['users', 'me', 'registrations'] });
@@ -121,6 +121,8 @@ export const useTeams = (eventId: string) => {
       );
       queryClient.invalidateQueries({ queryKey: ['events', eventId] });
       queryClient.invalidateQueries({ queryKey: ['events', eventId, 'registration'] });
+      queryClient.invalidateQueries({ queryKey: ['my-registration', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['event-my-registration', eventId] });
       queryClient.invalidateQueries({ queryKey: ['teams', eventId] });
       queryClient.invalidateQueries({ queryKey: ['event-teams', eventId] });
       queryClient.invalidateQueries({ queryKey: ['users', 'me', 'registrations'] });
@@ -145,6 +147,8 @@ export const useTeams = (eventId: string) => {
       );
       queryClient.invalidateQueries({ queryKey: ['events', eventId] });
       queryClient.invalidateQueries({ queryKey: ['events', eventId, 'registration'] });
+      queryClient.invalidateQueries({ queryKey: ['my-registration', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['event-my-registration', eventId] });
       queryClient.invalidateQueries({ queryKey: ['teams', eventId] });
       queryClient.invalidateQueries({ queryKey: ['event-teams', eventId] });
       queryClient.invalidateQueries({ queryKey: ['users', 'me', 'registrations'] });

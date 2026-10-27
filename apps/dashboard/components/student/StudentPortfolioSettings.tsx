@@ -147,8 +147,12 @@ export function StudentPortfolioSettings() {
     );
   }
 
-  const { profile, curatedItems, availableProjects, availableAchievements, availableClubs } = data;
-  const visibility = profile.sectionVisibility || {};
+  const profile = data?.profile || { slug: '', directoryListed: true, sectionVisibility: {} as any };
+  const curatedItems = data?.curatedItems || [];
+  const availableProjects = data?.availableProjects || [];
+  const availableAchievements = data?.availableAchievements || [];
+  const availableClubs = data?.availableClubs || [];
+  const visibility = profile?.sectionVisibility || {};
 
   const toggleSection = (key: keyof SectionVisibility) => {
     updateVisibilityMutation.mutate({
@@ -774,7 +778,7 @@ export function StudentPortfolioSettings() {
                       )}
                     </div>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#a0a4b8', marginTop: '2px' }}>
-                      {ach.event.title} · {new Date(ach.awarded_at).getFullYear()}
+                      {ach.event?.title || 'Event'} · {ach.awarded_at ? new Date(ach.awarded_at).getFullYear() : '—'}
                     </div>
                   </div>
 

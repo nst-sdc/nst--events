@@ -2,10 +2,13 @@ import crypto from 'crypto';
 import { NextFunction, Request, Response, Router } from 'express';
 import {
   getClearRefreshTokenCookieOptions,
+  getClearUserRoleCookieOptions,
   getOAuthStateCookieOptions,
   getRefreshTokenCookieOptions,
+  getUserRoleCookieOptions,
   OAUTH_STATE_COOKIE_NAME,
   REFRESH_TOKEN_COOKIE_NAME,
+  USER_ROLE_COOKIE_NAME,
 } from '../../lib/cookies';
 import { UnauthorizedError } from '../../lib/errors';
 import { googleCallbackQuerySchema } from './auth.schema';
@@ -94,7 +97,18 @@ authRouter.get(
           result.refreshToken,
           getRefreshTokenCookieOptions()
         );
-        res.redirect(303, `${env.WEB_APP_URL}/dashboard`);
+
+        if (result.user?.global_role) {
+          res.cookie(
+            USER_ROLE_COOKIE_NAME,
+            result.user.global_role,
+            getUserRoleCookieOptions()
+          );
+        }
+
+        const isStudent = result.user?.global_role === 'STUDENT';
+        const targetUrl = isStudent ? `${env.WEB_APP_URL}/student/home` : `${env.WEB_APP_URL}/dashboard`;
+        res.redirect(303, targetUrl);
       }
     } catch (err: any) {
       console.error('Login Error:', err);
@@ -189,10 +203,19 @@ authRouter.post(
         getRefreshTokenCookieOptions()
       );
 
+      if (result.user?.global_role) {
+        res.cookie(
+          USER_ROLE_COOKIE_NAME,
+          result.user.global_role,
+          getUserRoleCookieOptions()
+        );
+      }
+
       res.status(200).json({
         access_token: result.access_token,
         expires_in: result.expires_in,
         refresh_token: result.refreshToken,
+        user: result.user,
       });
     } catch (err) {
       next(err);
@@ -209,13 +232,18 @@ authRouter.post(
         req.cookies?.[REFRESH_TOKEN_COOKIE_NAME] ||
         req.cookies?.refresh_token ||
         req.signedCookies?.[REFRESH_TOKEN_COOKIE_NAME] ||
-        req.signedCookies?.refresh_token;
+        req.signedCookies?.refresh_token ||
+        req.body?.refresh_token;
 
       await authService.logout(rawRefreshToken);
 
       res.clearCookie(
         REFRESH_TOKEN_COOKIE_NAME,
         getClearRefreshTokenCookieOptions()
+      );
+      res.clearCookie(
+        USER_ROLE_COOKIE_NAME,
+        getClearUserRoleCookieOptions()
       );
       res.status(204).json({});
     } catch (err) {

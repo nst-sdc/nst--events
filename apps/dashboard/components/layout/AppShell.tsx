@@ -104,8 +104,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const isPlatformAdmin = currentUser?.global_role === 'PLATFORM_ADMIN';
   const isFacultyAdmin = currentUser?.global_role === 'FACULTY_ADMIN';
-  const isFacultyMentor = currentUser?.club_memberships?.some(m => m.role === 'FACULTY_MENTOR') ?? false;
-  const isClubAdmin = currentUser?.club_memberships?.some(m => m.role === 'CLUB_ADMIN') ?? false;
+  const isFacultyMentor = currentUser?.global_role === 'FACULTY_MENTOR' || (currentUser?.club_memberships?.some(m => m.role === 'FACULTY_MENTOR') ?? false);
   const isAdmin = isPlatformAdmin || isFacultyAdmin;
   const canApprove = isAdmin || isFacultyMentor;
 
@@ -130,10 +129,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   ];
 
   // ADMINISTRATION GROUP
-  if (isAdmin || canApprove || isClubAdmin) {
+  if (isAdmin || canApprove) {
     const adminChildren: { key: string; icon: React.ReactNode; label: string }[] = [];
     
-    if (isAdmin || isClubAdmin) {
+    if (isAdmin) {
       adminChildren.push({ key: '/admin/analytics', icon: <BarChartOutlined />, label: 'Analytics' });
     }
 

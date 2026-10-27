@@ -17,6 +17,10 @@ permissions:
   contents: read
   packages: write
 
+concurrency:
+  group: nst-events-deploy
+  cancel-in-progress: false
+
 jobs:
   deploy:
     name: Build, Deploy & Rollout Gate
@@ -153,25 +157,7 @@ jobs:
         run: |
           JOB_NAME="nst-db-migrate-${{ steps.vars.outputs.short_sha }}"
           API_IMAGE="ghcr.io/nst-sdc/nst-api:${{ steps.vars.outputs.target_sha }}"
-
-          echo "Running Prisma migrations with ${API_IMAGE}..."
-          kubectl create job "${JOB_NAME}" \
-            --image="${API_IMAGE}" \
-            --dry-run=client \
-            --output=json -- \
-            /app/node_modules/.bin/prisma migrate deploy --schema=packages/database/prisma/schema.prisma | \
-            jq \
-              '.spec.backoffLimit = 1
-              | .spec.template.metadata.labels.app = "nst-migration"
-              | .spec.template.spec.containers[0].envFrom = [{"secretRef": {"name": "nst-api-secrets"}}]' | \
-            kubectl apply --namespace=nst-events --filename=-
-
-          if ! kubectl wait --for=condition=complete "job/${JOB_NAME}" --namespace=nst-events --timeout=300s; then
-            kubectl logs "job/${JOB_NAME}" --namespace=nst-events || true
-            exit 1
-          fi
-
-          kubectl logs "job/${JOB_NAME}" --namespace=nst-events
+          ./scripts/deploy-migration.sh "${JOB_NAME}" "${API_IMAGE}" nst-events 300s
 
       - name: Deploy & Rollout Gate - API
         if: steps.filter.outputs.build_api == 'true'
@@ -179,7 +165,7 @@ jobs:
           TAG="ghcr.io/nst-sdc/nst-api:${{ steps.vars.outputs.target_sha }}"
           echo "Patching nst-api image to ${TAG}..."
           kubectl set image deployment/nst-api api="${TAG}" -n nst-events
-          ./scripts/deploy-rollout.sh nst-api nst-events 300s
+          ./scripts/deploy-rollout.sh nst-api nst-events 300s --migration-applied
 
       - name: Deploy & Rollout Gate - Worker
         if: steps.filter.outputs.build_worker == 'true'
@@ -187,7 +173,11 @@ jobs:
           TAG="ghcr.io/nst-sdc/nst-worker:${{ steps.vars.outputs.target_sha }}"
           echo "Patching nst-worker image to ${TAG}..."
           kubectl set image deployment/nst-worker worker="${TAG}" -n nst-events
-          ./scripts/deploy-rollout.sh nst-worker nst-events 300s
+          MIGRATION_FLAG=""
+          if [ "${{ steps.filter.outputs.build_api }}" = "true" ]; then
+            MIGRATION_FLAG="--migration-applied"
+          fi
+          ./scripts/deploy-rollout.sh nst-worker nst-events 300s ${MIGRATION_FLAG}
 
       - name: Deploy & Rollout Gate - Dashboard
         if: steps.filter.outputs.build_dashboard == 'true'
@@ -195,7 +185,11 @@ jobs:
           TAG="ghcr.io/nst-sdc/nst-dashboard:${{ steps.vars.outputs.target_sha }}"
           echo "Patching nst-dashboard image to ${TAG}..."
           kubectl set image deployment/nst-dashboard dashboard="${TAG}" -n nst-events
-          ./scripts/deploy-rollout.sh nst-dashboard nst-events 300s
+          MIGRATION_FLAG=""
+          if [ "${{ steps.filter.outputs.build_api }}" = "true" ]; then
+            MIGRATION_FLAG="--migration-applied"
+          fi
+          ./scripts/deploy-rollout.sh nst-dashboard nst-events 300s ${MIGRATION_FLAG}
 
       - name: Notification & Summary
         if: always()

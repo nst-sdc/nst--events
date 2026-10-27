@@ -1,7 +1,14 @@
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { apiClient } from '../infrastructure/api';
 
-export interface EventResponse {
+import type {
+  EventListItem,
+  AttendanceSessionItem,
+} from '@nst/shared';
+
+export type { AttendanceSessionItem };
+
+export interface EventResponse extends Omit<Partial<EventListItem>, 'attendanceType' | 'eventType' | 'visibility' | 'registrationType' | 'audience'> {
   id: string;
   title: string;
   description: string;
@@ -25,17 +32,6 @@ export interface EventResponse {
   lockDeadline?: string;
   eventClubs?: Array<{ eventId: string; clubId: string; isPrimary: boolean; club: { id: string; name: string } }>;
   audienceBatchIds?: string[];
-}
-
-export interface AttendanceSessionItem {
-  id: string;
-  eventId: string;
-  title: string;
-  startTime: string;
-  endTime: string;
-  openAt: string;
-  closeAt: string;
-  geofenceRadius: number;
 }
 
 export interface EventsResponse {
@@ -86,11 +82,11 @@ export function useEvent(id: string) {
   });
 }
 
-export function useEventSessions(eventId: string) {
+export function useEventSessions(eventId: string, options?: { enabled?: boolean }) {
   return useQuery<AttendanceSessionItem[], Error>({
     queryKey: ['events', eventId, 'sessions'],
     queryFn: () => apiClient(`/v1/events/${eventId}/sessions`),
-    enabled: !!eventId,
+    enabled: !!eventId && (options?.enabled ?? true),
     staleTime: 60 * 1000,
   });
 }

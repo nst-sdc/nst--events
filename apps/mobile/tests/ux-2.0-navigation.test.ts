@@ -68,7 +68,7 @@ describe('NST Events Mobile UX 2.0 — Navigation & Architecture Verification Su
 
     it('includes context-aware pending squad invitations alert banner', () => {
       expect(homeTabContent).toContain('PENDING SQUAD INVITATION');
-      expect(homeTabContent).toContain("router.push('/(app)/invitations')");
+      expect(homeTabContent).toContain("router.push('/(app)/(tabs)/activity?tab=invites')");
     });
 
     it('supports live attendance auto-elevation with ActiveAttendanceCard', () => {
@@ -149,7 +149,7 @@ describe('NST Events Mobile UX 2.0 — Navigation & Architecture Verification Su
 
     it('connects official honors to results and showcase project URLs', () => {
       expect(activityTabContent).toContain("router.push(`/(app)/events/${ach.event.id}/results`)");
-      expect(activityTabContent).toContain('https://events.nstsdc.org/projects/');
+      expect(activityTabContent).toContain('openProjectShowcase(ach.linked_project?.slug)');
     });
   });
 

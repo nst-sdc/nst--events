@@ -59,7 +59,28 @@ test('Blocker 3: Correct Reusable Student Profile Synchronization', async (t) =>
 
   function createMockTx() {
     return {
-      $executeRaw: async () => {},
+      $executeRaw: async (strings: any, ...values: any[]) => {
+        const sqlText = Array.isArray(strings) ? strings.join(" ") : String(strings);
+        if (sqlText.includes("event_registration_responses") && values.length >= 3) {
+          const [eventRegistrationId, fieldDefinitionId, value] = values;
+          const existingIdx = inMemoryResponses.findIndex(
+            (r) =>
+              r.eventRegistrationId === eventRegistrationId &&
+              r.formId === null &&
+              r.fieldDefinitionId === fieldDefinitionId
+          );
+          if (existingIdx >= 0) {
+            inMemoryResponses[existingIdx].value = value;
+          } else {
+            inMemoryResponses.push({
+              eventRegistrationId,
+              formId: null,
+              fieldDefinitionId,
+              value,
+            });
+          }
+        }
+      },
       $queryRaw: async (query: any) => {
         // SELECT register_event(...)
         return [{ register_event: { success: true } }];

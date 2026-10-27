@@ -734,7 +734,7 @@ function ChangeRoleModal({ clubId, member, isOpen, onClose }: { clubId: string, 
   const updateRoleMutation = useUpdateClubMemberRole(clubId, member?.user_id || 'unselected');
 
   useEffect(() => {
-    if (member) setRole(member.role);
+    if (member) setRole(member.role as ClubRole);
   }, [member]);
 
   const assignableRoles: { label: string, value: ClubRole }[] = [

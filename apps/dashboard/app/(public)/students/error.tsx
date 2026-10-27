@@ -82,7 +82,7 @@ export default function StudentsDirectoryError({
             TRY AGAIN ↺
           </button>
           <Link
-            href="/"
+            href="/student/home"
             style={{
               background: 'transparent',
               color: '#F5F5F2',
