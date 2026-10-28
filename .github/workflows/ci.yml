@@ -71,7 +71,6 @@ jobs:
           pnpm --filter @nst/database db:generate
           pnpm --filter @nst/database db:migrate:deploy
           PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d nst_events -c "ALTER ROLE nst_app WITH PASSWORD 'nst_app_password'; ALTER ROLE nst_worker WITH PASSWORD 'worker_password';"
-          PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d nst_events -c "DROP DATABASE IF EXISTS nst_events_clean_test; CREATE DATABASE nst_events_clean_test TEMPLATE nst_events;"
           pnpm --filter @nst/database db:seed
           pnpm --filter @nst/database build
 
