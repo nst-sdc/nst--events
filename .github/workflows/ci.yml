@@ -12,7 +12,10 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      ALLOW_DEV_DATABASE_FOR_TESTS: "true"
       DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/nst_events"
+      ADMIN_DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/nst_events?schema=public"
+      WORKER_DATABASE_URL: "postgresql://nst_worker:worker_password@localhost:5432/nst_events?schema=public"
       TZ: "Asia/Kolkata"
       JWT_SECRET: "ci_test_jwt_secret_minimum_32_characters_long_xxxx"
       COOKIE_SECRET: "ci_test_cookie_secret_min_32_characters_long_xx"
@@ -68,6 +71,7 @@ jobs:
           pnpm --filter @nst/database db:generate
           pnpm --filter @nst/database db:migrate:deploy
           PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d nst_events -c "ALTER ROLE nst_app WITH PASSWORD 'nst_app_password'; ALTER ROLE nst_worker WITH PASSWORD 'worker_password';"
+          PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d nst_events -c "DROP DATABASE IF EXISTS nst_events_clean_test; CREATE DATABASE nst_events_clean_test TEMPLATE nst_events;"
           pnpm --filter @nst/database db:seed
           pnpm --filter @nst/database build
 
