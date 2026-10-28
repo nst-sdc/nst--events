@@ -12,7 +12,6 @@ import { useDashboardSummary } from '../../../../hooks/useDashboardSummary';
 import { useEvents } from '../../../../hooks/useEvents';
 import { Skeleton } from '../../../../components/ui/Skeleton';
 import { ErrorState } from '../../../../components/ui/ErrorState';
-import { isAdministratorAccount } from '../../../../lib/auth-helpers';
 
 dayjs.extend(isBetween);
 dayjs.extend(relativeTime);
@@ -69,14 +68,12 @@ const homeStyles = `
   /* Typography Scale */
   .font-display-hero {
     font-family: var(--font-display);
-    font-size: clamp(34px, 7.5vw, 110px);
+    font-size: clamp(52px, 8.5vw, 120px);
     font-weight: 900;
-    line-height: 0.92;
+    line-height: 0.88;
     letter-spacing: -2px;
     text-transform: uppercase;
     color: var(--bg-paper-white);
-    overflow-wrap: normal;
-    word-break: normal;
   }
 
   .font-display-section {
@@ -144,42 +141,17 @@ const homeStyles = `
     position: relative;
     z-index: 10;
     margin-bottom: 20px;
-    max-width: 100%;
-    overflow-wrap: normal;
-    word-break: normal;
-  }
-
-  .hero-good-word {
-    display: inline-block;
-    white-space: nowrap;
-  }
-
-  .hero-greeting-word {
-    display: inline-block;
-    white-space: nowrap;
-    overflow-wrap: normal;
-    word-break: normal;
-    font-size: clamp(28px, 7vw, 110px);
-    line-height: 0.95;
   }
 
   .hero-headline-group .name-highlight {
     color: var(--electric-blue);
     background: var(--bg-paper-white);
-    padding: 2px 14px 4px 14px;
+    padding: 0 12px;
     display: inline-block;
-    max-width: calc(100% - 12px);
-    box-sizing: border-box;
     transform: rotate(1deg);
-    transform-origin: left center;
     box-shadow: 6px 6px 0px var(--electric-blue);
     position: relative;
     z-index: 12;
-    overflow-wrap: break-word;
-    word-break: break-word;
-    line-height: 1.05;
-    margin-top: 6px;
-    vertical-align: bottom;
   }
 
   /* Offset Editorial Stats */
@@ -359,34 +331,6 @@ const homeStyles = `
     filter: contrast(100%) grayscale(0%);
   }
 
-  .poster-photo-placeholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #0d0e12;
-    width: 100%;
-    height: 100%;
-  }
-
-  .poster-photo-placeholder-text {
-    font-family: var(--font-mono);
-    font-size: 28px;
-    font-weight: 900;
-    letter-spacing: 2px;
-    color: rgba(245, 245, 242, 0.2);
-    text-transform: uppercase;
-  }
-
-  .poster-empty-state {
-    background: #f5f5f2;
-    border: 3px solid #000;
-    box-shadow: 8px 8px 0px #000;
-    padding: 56px 32px;
-    text-align: center;
-    max-width: 680px;
-    margin: 20px auto 40px auto;
-  }
-
   .poster-desc-text {
     font-family: var(--font-body);
     font-size: 13.5px;
@@ -487,19 +431,161 @@ const homeStyles = `
     .hero-collage-wrapper { padding: 40px 20px 60px 20px; }
     .poster-wall-section { padding: 60px 20px 80px 20px; }
   }
+
+  /* ==========================================================================
+     LIGHT THEME OVERRIDES (Scoped to html.light)
+     ========================================================================== */
+  html.light .home-editorial-page {
+    background-color: #FFFFFF;
+    color: #050505;
+  }
+
+  html.light .collage-noise-overlay {
+    opacity: 0.12;
+    background-image: radial-gradient(rgba(0, 0, 0, 0.08) 1px, transparent 1px);
+  }
+
+  html.light .hero-bg-text-watermark {
+    color: rgba(0, 0, 0, 0.04);
+  }
+
+  html.light .blue-paper-strip {
+    box-shadow: 4px 4px 0px #000000;
+  }
+
+  html.light .font-display-hero {
+    color: #050505;
+  }
+
+  html.light .hero-headline-group .name-highlight {
+    background: #000000;
+    color: var(--electric-blue);
+    box-shadow: 6px 6px 0px var(--electric-blue);
+  }
+
+  html.light .hero-description-text {
+    color: #555566 !important;
+  }
+
+  html.light .stat-editorial-box {
+    background: #FFFFFF;
+    border: 2px solid #000000;
+    box-shadow: 8px 8px 0px var(--electric-blue);
+  }
+
+  html.light .stat-editorial-box .stat-num-giant {
+    color: #050505;
+  }
+
+  html.light .stat-editorial-box .micro-annotation {
+    color: #050505 !important;
+  }
+
+  html.light .stat-editorial-box .annotation-blue {
+    color: var(--electric-blue) !important;
+  }
+
+  html.light .stat-editorial-box .annotation-green {
+    color: #00875A !important;
+  }
+
+  html.light .empty-poster-container {
+    background: #FFFFFF;
+    border: 3px solid #000000;
+    box-shadow: 12px 12px 0px var(--electric-blue);
+  }
+
+  html.light .empty-poster-watermark {
+    color: rgba(0, 0, 0, 0.04);
+  }
+
+  html.light .empty-poster-container h2 {
+    color: #050505 !important;
+  }
+
+  html.light .empty-poster-container p {
+    color: #555566 !important;
+  }
+
+  html.light .empty-poster-container p strong {
+    color: #050505 !important;
+  }
+
+  html.light .empty-cta-btn {
+    border: 2px solid #000000;
+    box-shadow: 4px 4px 0px #000000;
+  }
+
+  html.light .empty-cta-btn:hover {
+    box-shadow: 6px 6px 0px #000000;
+  }
+
+  html.light .empty-cta-btn-secondary {
+    color: #050505 !important;
+    border: 2px solid #000000 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  html.light .torn-section-divider-black {
+    background-color: #FFFFFF;
+  }
+
+  html.light .home-loading-screen {
+    background-color: #FFFFFF !important;
+  }
 `;
+
+// Flagship Featured Posters
+const DEFAULT_FEATURED_EVENTS = [
+  {
+    id: 'evt-hacknst-2026',
+    dateBadge: '18 SEP • 2026',
+    category: 'HACKATHONS',
+    title: 'HACKNST 2026: AI SYSTEMS FLAGSHIP',
+    image: '/events/hacknst.jpg',
+    description: 'Building next-generation autonomous AI agents, fine-tuned LLM architectures, and spatial developer tools over a 36-hour sprint.',
+    venue: 'Auditorium A1, Main Campus',
+  },
+  {
+    id: 'evt-llm-workshop',
+    dateBadge: '24 SEP • 2026',
+    category: 'WORKSHOPS',
+    title: 'LLM FINE-TUNING & AGENTIC WORKSHOP',
+    image: '/events/llm-workshop.jpg',
+    description: 'Hands-on deep dive into QLoRA fine-tuning, retrieval-augmented generation (RAG) pipelines, and multi-agent coordination.',
+    venue: 'Lab 402, AI Cluster',
+  },
+  {
+    id: 'evt-devops-infra',
+    dateBadge: '02 OCT • 2026',
+    category: 'SEMINARS',
+    title: 'DEVOPS & CLOUD NATIVE INFRASTRUCTURE',
+    image: '/events/devops-matrix.jpg',
+    description: 'Keynotes on Kubernetes orchestration, eBPF kernel observability, GitOps workflows, and production telemetry.',
+    venue: 'Seminar Hall B',
+  },
+  {
+    id: 'evt-algo-speedrun',
+    dateBadge: '10 OCT • 2026',
+    category: 'COMPETITIONS',
+    title: 'ALGORITHMIC SPEED RUN 2026',
+    image: '/events/hacknst.jpg',
+    description: 'Competitive programming sprint testing advanced dynamic programming, graph theory, and algorithmic optimization under strict time constraints.',
+    venue: 'Computing Lab 1',
+  },
+];
 
 export default function StudentHomePage() {
   const router = useRouter();
   const { data: user, isLoading: isUserLoading, isError: isUserError, refetch: refetchUser } = useCurrentUser();
-  const isAdmin = isAdministratorAccount(user);
   const { data: registrations, isLoading: isRegLoading, isError: isRegError, refetch: refetchReg } = useMyRegistrations();
   const { data: summary, isLoading: isSummaryLoading, isError: isSummaryError, refetch: refetchSummary } = useDashboardSummary();
   const { data: eventsResponse } = useEvents({ limit: 6 });
 
   if (isUserLoading || isRegLoading || isSummaryLoading) {
     return (
-      <div className="p-8 max-w-[1320px] mx-auto w-full flex flex-col gap-10 min-h-screen bg-[#050505]">
+      <div className="p-8 max-w-[1320px] mx-auto w-full flex flex-col gap-10 min-h-screen bg-[#050505] home-loading-screen">
         <Skeleton className="h-24 w-72 bg-neutral-900 rounded-none" />
         <Skeleton className="h-96 w-full bg-neutral-900 rounded-none" />
       </div>
@@ -508,7 +594,7 @@ export default function StudentHomePage() {
 
   if (isUserError || isRegError || isSummaryError) {
     return (
-      <div className="p-8 max-w-[1320px] mx-auto w-full min-h-screen bg-[#050505]">
+      <div className="p-8 max-w-[1320px] mx-auto w-full min-h-screen bg-[#050505] home-loading-screen">
         <ErrorState 
           title="Could not load your home page"
           message="We could not retrieve your latest schedule and statistics."
@@ -527,23 +613,8 @@ export default function StudentHomePage() {
 
   const hour = dayjs().hour();
   const greetingTime = hour < 12 ? 'MORNING' : hour < 17 ? 'AFTERNOON' : 'EVENING';
-  const rawFirstName = user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'STUDENT';
+  const rawFirstName = user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'SHRAVANI';
   const firstNameUpper = rawFirstName.toUpperCase();
-
-  // Dynamic font scaling for student name to stay perfectly framed within hero bounds
-  const nameLength = firstNameUpper.length;
-  const nameStyle: React.CSSProperties = {
-    fontSize:
-      nameLength > 16
-        ? 'clamp(20px, 3.4vw, 44px)'
-        : nameLength > 12
-        ? 'clamp(24px, 4.4vw, 56px)'
-        : nameLength > 9
-        ? 'clamp(30px, 5.6vw, 72px)'
-        : nameLength > 6
-        ? 'clamp(38px, 7.0vw, 92px)'
-        : undefined,
-  };
 
   const now = dayjs();
   
@@ -577,20 +648,23 @@ export default function StudentHomePage() {
   const attendedCount = String(summary?.eventsAttendedCount ?? 0).padStart(2, '0');
   const pointsCount = String(summary?.totalPoints ?? 0).padStart(2, '0');
 
-  // Build list of upcoming poster wall events: real backend events only
+  // Build list of upcoming poster wall events: real backend events + defaults
   const backendEvents = eventsResponse?.data || [];
-  const posterEvents = backendEvents.slice(0, 6).map((evt) => {
-    const meta = (evt.metadata as Record<string, string | undefined>) || {};
-    return {
-      id: evt.id,
-      dateBadge: dayjs(evt.startTime).format('DD MMM • YYYY').toUpperCase(),
-      category: evt.eventType || 'EVENT',
-      title: evt.title,
-      image: meta.banner_url || null,
-      description: evt.description || meta.description || '',
-      venue: evt.locationName || 'Campus Venue',
-    };
-  });
+  const posterEvents = backendEvents.length > 0
+    ? backendEvents.slice(0, 6).map((evt, idx) => {
+        const fallbacks = DEFAULT_FEATURED_EVENTS[idx % DEFAULT_FEATURED_EVENTS.length];
+        const meta = (evt.metadata as Record<string, string | undefined>) || {};
+        return {
+          id: evt.id,
+          dateBadge: dayjs(evt.startTime).format('DD MMM • YYYY').toUpperCase(),
+          category: evt.eventType || fallbacks.category,
+          title: evt.title || fallbacks.title,
+          image: meta.banner_url || fallbacks.image,
+          description: evt.description || meta.description || fallbacks.description,
+          venue: evt.locationName || fallbacks.venue,
+        };
+      })
+    : DEFAULT_FEATURED_EVENTS;
 
   return (
     <main className="home-editorial-page">
@@ -616,12 +690,12 @@ export default function StudentHomePage() {
 
           {/* Headline */}
           <h1 className="hero-headline-group font-display-hero">
-            <span className="hero-good-word">GOOD</span><br />
-            <span className="hero-greeting-word">{greetingTime},</span><br />
-            <span className="name-highlight" style={nameStyle}>{firstNameUpper}.</span>
+            GOOD<br />
+            {greetingTime},<br />
+            <span className="name-highlight">{firstNameUpper}.</span>
           </h1>
 
-          <p style={{
+          <p className="hero-description-text" style={{
             fontFamily: 'var(--font-body)',
             fontSize: '18px',
             color: '#a0a4b8',
@@ -701,7 +775,7 @@ export default function StudentHomePage() {
               </button>
               <button 
                 onClick={() => router.push('/student/events')} 
-                className="empty-cta-btn" 
+                className="empty-cta-btn empty-cta-btn-secondary" 
                 style={{ background: 'transparent', boxShadow: 'none' }}
               >
                 ALL REGISTRATIONS &rarr;
@@ -765,84 +839,43 @@ export default function StudentHomePage() {
             </button>
           </div>
 
-          {posterEvents.length > 0 ? (
-            <div className="poster-wall-grid">
-              {posterEvents.map((evt) => (
-                <div
-                  key={evt.id}
-                  className="poster-card-item"
-                  onClick={() => {
-                    if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-                    router.push(`/student/events/${evt.id}`);
-                  }}
-                >
-                  <div className="poster-card-header">
-                    <span className="poster-date-badge">{evt.dateBadge}</span>
-                    <span className="micro-annotation" style={{ color: '#000' }}>{evt.category}</span>
-                  </div>
-
-                  <h3 className="poster-title-text">{evt.title}</h3>
-
-                  <div className="poster-photo-frame">
-                    {evt.image ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img src={evt.image} alt={evt.title} loading="lazy" decoding="async" />
-                    ) : (
-                      <div className="poster-photo-placeholder">
-                        <span className="poster-photo-placeholder-text">
-                          {evt.category?.slice(0, 4) || 'NST'}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <p className="poster-desc-text">{evt.description || 'Join this campus event to learn, collaborate, and compete.'}</p>
-
-                  <div className="poster-meta-footer">
-                    <span style={{ color: '#333' }}>{evt.venue}</span>
-                    <button
-                      type="button"
-                      className="poster-register-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-                        router.push(`/student/events/${evt.id}`);
-                      }}
-                    >
-                      {isAdmin ? 'VIEW DETAILS ↗' : 'REGISTER ↗'}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="poster-empty-state">
-              <span className="micro-annotation" style={{ color: '#000', display: 'block', marginBottom: '8px' }}>
-                CAMPUS POSTER WALL // STATUS: IDLE
-              </span>
-              <h3 className="font-display-section" style={{ color: '#000', fontSize: '32px', marginBottom: '12px' }}>
-                NO UPCOMING EVENTS SCHEDULED
-              </h3>
-              <p style={{
-                fontFamily: 'var(--font-body)',
-                fontSize: '15px',
-                color: '#333',
-                maxWidth: '480px',
-                margin: '0 auto 24px auto',
-                lineHeight: 1.5,
-              }}>
-                There are currently no upcoming events published on campus. Check back soon or explore campus clubs for new activities.
-              </p>
-              <button
-                type="button"
-                onClick={() => router.push('/student/campus')}
-                className="poster-register-btn"
-                style={{ padding: '12px 28px', fontSize: '13px' }}
+          <div className="poster-wall-grid">
+            {posterEvents.map((evt) => (
+              <div 
+                key={evt.id} 
+                className="poster-card-item"
+                onClick={() => router.push(evt.id.startsWith('evt-') ? '/student/campus' : `/student/events/${evt.id}`)}
               >
-                EXPLORE CLUBS & CAMPUS ↗
-              </button>
-            </div>
-          )}
+                <div className="poster-card-header">
+                  <span className="poster-date-badge">{evt.dateBadge}</span>
+                  <span className="micro-annotation" style={{ color: '#000' }}>{evt.category}</span>
+                </div>
+
+                <h3 className="poster-title-text">{evt.title}</h3>
+
+                <div className="poster-photo-frame">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={evt.image} alt={evt.title} loading="lazy" decoding="async" />
+                </div>
+
+                <p className="poster-desc-text">{evt.description}</p>
+
+                <div className="poster-meta-footer">
+                  <span style={{ color: '#333' }}>{evt.venue}</span>
+                  <button 
+                    type="button" 
+                    className="poster-register-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.push(evt.id.startsWith('evt-') ? '/student/campus' : `/student/events/${evt.id}`);
+                    }}
+                  >
+                    REGISTER ↗
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
 
         </div>
       </section>

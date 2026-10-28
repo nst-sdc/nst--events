@@ -150,6 +150,44 @@ const footerStyles = `
       padding-bottom: 72px;
     }
   }
+
+  /* ==========================================================================
+     LIGHT THEME OVERRIDES (Scoped to html.light)
+     ========================================================================== */
+  html.light .sf-footer {
+    background: #FFFFFF;
+    border-top: 3px solid #000000;
+    color: #050505;
+  }
+
+  html.light .sf-brand-name {
+    color: #050505;
+  }
+
+  html.light .sf-brand-sub {
+    color: #555566;
+  }
+
+  html.light .sf-link {
+    color: #555566;
+  }
+
+  html.light .sf-link:hover {
+    color: #0057FF;
+  }
+
+  html.light .sf-link-divider {
+    color: rgba(0, 0, 0, 0.2);
+  }
+
+  html.light .sf-bottom-bar {
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  html.light .sf-version,
+  html.light .sf-credits-tag {
+    color: #666677;
+  }
 `;
 
 export function StudentFooter() {
