@@ -26,7 +26,9 @@ async function fetchPublicEvent(slug: string) {
       ? API_BASE_URL
       : process.env.INTERNAL_API_URL && process.env.INTERNAL_API_URL.startsWith('http')
         ? process.env.INTERNAL_API_URL
-        : '';
+        : process.env.NODE_ENV === 'production'
+          ? (process.env.INTERNAL_SERVICE_URL || 'http://nst-api-service')
+          : '';
   if (!apiBase) return null;
 
   try {
