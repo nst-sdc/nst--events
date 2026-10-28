@@ -29,12 +29,12 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: nst_events_test
+          POSTGRES_DB: nst_events
         ports:
           - 5432:5432
           - 5440:5432
         options: >-
-          --health-cmd "pg_isready -U postgres -d nst_events_test"
+          --health-cmd "pg_isready -U postgres -d nst_events"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 5
@@ -62,6 +62,8 @@ jobs:
           # Prepare dedicated, isolated shadow database on disposable CI PostgreSQL instance
           PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d postgres -c "DROP DATABASE IF EXISTS nst_events_shadow;"
           PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d postgres -c "CREATE DATABASE nst_events_shadow;"
+          PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d postgres -c "DROP DATABASE IF EXISTS nst_events_test;"
+          PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d postgres -c "CREATE DATABASE nst_events_test;"
           ./scripts/check-schema-drift.sh "${SHADOW_DATABASE_URL}"
 
       - name: CI Environment Setup (Database Preparation)
