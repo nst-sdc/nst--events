@@ -281,18 +281,50 @@ export function normalizePublicStudentProfile(raw: unknown): PublicStudentProfil
       const rawKey = String(item.type || item.label || item.platform || '').trim();
       if (rawKey && typeof item.url === 'string' && item.url.trim()) {
         const url = item.url.trim();
-        externalLinks[rawKey.toLowerCase()] = url;
-        externalLinks[rawKey.toUpperCase()] = url;
-        externalLinks[rawKey] = url;
+        const lowerKey = rawKey.toLowerCase();
+        externalLinks[lowerKey] = url;
+        const upperKey = rawKey.toUpperCase();
+        if (upperKey !== lowerKey) {
+          Object.defineProperty(externalLinks, upperKey, {
+            value: url,
+            enumerable: false,
+            configurable: true,
+            writable: true,
+          });
+        }
+        if (rawKey !== lowerKey && rawKey !== upperKey) {
+          Object.defineProperty(externalLinks, rawKey, {
+            value: url,
+            enumerable: false,
+            configurable: true,
+            writable: true,
+          });
+        }
       }
     }
   } else if (rawLinks && typeof rawLinks === 'object') {
     for (const [key, val] of Object.entries(rawLinks)) {
       if (typeof val === 'string' && val.trim()) {
         const url = val.trim();
-        externalLinks[key.toLowerCase()] = url;
-        externalLinks[key.toUpperCase()] = url;
-        externalLinks[key] = url;
+        const lowerKey = key.toLowerCase();
+        externalLinks[lowerKey] = url;
+        const upperKey = key.toUpperCase();
+        if (upperKey !== lowerKey) {
+          Object.defineProperty(externalLinks, upperKey, {
+            value: url,
+            enumerable: false,
+            configurable: true,
+            writable: true,
+          });
+        }
+        if (key !== lowerKey && key !== upperKey) {
+          Object.defineProperty(externalLinks, key, {
+            value: url,
+            enumerable: false,
+            configurable: true,
+            writable: true,
+          });
+        }
       }
     }
   }
