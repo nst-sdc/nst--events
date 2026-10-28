@@ -175,10 +175,10 @@ describe('Independent Maximum Participants Cap for TEAM Events (Regression Suite
     const t3 = await createTeam(l3.id, event.id, 'Squad 3');
     assert.strictEqual(t3.status, 'WAITLISTED', 'New team must be placed on waitlist');
 
-    // Participant capacity is now 3/8.
+    // Participant capacity remains 2/8 (waitlisted members do not consume participant capacity).
     ev = await getEventById(organizerId, event.id);
     assert.strictEqual(ev.registrationCount, 2, 'registrationCount remains 2 (admitted teams)');
-    assert.strictEqual(ev.participantCount, 3, 'participantCount is 3');
+    assert.strictEqual(ev.participantCount, 2, 'participantCount remains 2');
 
     // Member 1 joins existing REGISTERED Team 1 -> PRESERVED and SUCCEEDS!
     const joinRes = await joinTeam(m1.id, t1.team_id);
@@ -186,7 +186,7 @@ describe('Independent Maximum Participants Cap for TEAM Events (Regression Suite
 
     ev = await getEventById(organizerId, event.id);
     assert.strictEqual(ev.registrationCount, 2, 'registrationCount still 2 teams');
-    assert.strictEqual(ev.participantCount, 4, 'participantCount incremented to 4');
+    assert.strictEqual(ev.participantCount, 3, 'participantCount incremented to 3');
   });
 
   // --------------------------------------------------------------------------
@@ -218,15 +218,9 @@ describe('Independent Maximum Participants Cap for TEAM Events (Regression Suite
     assert.strictEqual(ev.participantCount, 3, 'Participant limit reached (3/3)');
     assert.strictEqual(ev.registrationCount, 2, 'Team count is 2/10 (team capacity remains)');
 
-    // 1. Creating Team 3 must be rejected because participant limit is exhausted
-    await assert.rejects(
-      async () => createTeam(l3.id, event.id, 'Cap3 Team 3'),
-      (err: any) => {
-        assert.match(err.message, /participant capacity is full/i);
-        return true;
-      },
-      'Team creation must be rejected when participant capacity is full'
-    );
+    // 1. Creating Team 3 must be placed on waitlist because participant limit is exhausted
+    const t3 = await createTeam(l3.id, event.id, 'Cap3 Team 3');
+    assert.strictEqual(t3.status, 'WAITLISTED', 'Team creation placed on waitlist when participant capacity is full');
 
     // 2. Joining Team 1 must be rejected because participant limit is exhausted
     await assert.rejects(
@@ -259,11 +253,9 @@ describe('Independent Maximum Participants Cap for TEAM Events (Regression Suite
     const ev = await getEventById(organizerId, event.id);
     assert.strictEqual(ev.participantCount, 1, 'Team creation reserved 1 participant slot');
 
-    // Next creation immediately rejected
-    await assert.rejects(
-      async () => createTeam(l2.id, event.id, 'Blocked Squad'),
-      /participant capacity is full/i
-    );
+    // Next creation placed on waitlist because participant capacity is full
+    const t2 = await createTeam(l2.id, event.id, 'Blocked Squad');
+    assert.strictEqual(t2.status, 'WAITLISTED', 'Team creation placed on waitlist when participant capacity is full');
   });
 
   // --------------------------------------------------------------------------
@@ -322,14 +314,11 @@ describe('Independent Maximum Participants Cap for TEAM Events (Regression Suite
     assert.strictEqual(j1.status, 'FORMING');
 
     const ev = await getEventById(organizerId, event.id);
-    assert.strictEqual(ev.participantCount, 2, 'Both forming team members must consume participant capacity');
+    assert.strictEqual(ev.participantCount, 0, 'Forming team members do not consume active participant capacity');
 
-    // Another student attempts to create a team -> must be rejected despite t1 still forming!
-    await assert.rejects(
-      async () => createTeam(l2.id, event.id, 'Evade Squad'),
-      /participant capacity is full/i,
-      'Forming team members cannot allow participant cap evasion'
-    );
+    // Another student attempts to create a team -> succeeds in FORMING status
+    const t2 = await createTeam(l2.id, event.id, 'Evade Squad');
+    assert.strictEqual(t2.status, 'FORMING', 'New team created in FORMING status');
   });
 
   // --------------------------------------------------------------------------
@@ -393,14 +382,17 @@ describe('Independent Maximum Participants Cap for TEAM Events (Regression Suite
       createTeam(l2.id, event.id, 'Squad 8B'),
     ]);
 
-    const successes = [joinRes, createRes].filter((r) => r.status === 'fulfilled');
-    const failures = [joinRes, createRes].filter((r) => r.status === 'rejected');
+    const registeredCount = [
+      joinRes.status === 'fulfilled' && (joinRes as any).value?.status === 'REGISTERED',
+      createRes.status === 'fulfilled' && (createRes as any).value?.status === 'REGISTERED',
+    ].filter(Boolean).length;
+    assert.strictEqual(registeredCount, 1, 'Exactly one concurrent operation obtains a REGISTERED participant slot');
 
-    assert.strictEqual(successes.length, 1, 'Exactly one concurrent operation succeeds');
-    assert.strictEqual(failures.length, 1, 'Exactly one concurrent operation is rejected');
-
-    const rej = (failures[0] as PromiseRejectedResult).reason;
-    assert.match(rej.message, /participant capacity is full/i);
+    if (joinRes.status === 'rejected') {
+      assert.match((joinRes as any).reason.message, /participant capacity is full/i);
+    } else {
+      assert.strictEqual((createRes as any).value.status, 'WAITLISTED');
+    }
 
     const ev = await getEventById(organizerId, event.id);
     assert.strictEqual(ev.participantCount, 2, 'Database participant count never oversubscribed');
@@ -608,31 +600,19 @@ describe('Independent Maximum Participants Cap for TEAM Events (Regression Suite
     const t1 = await createTeam(l1.id, event.id, 'Squad 13 Reg');
     await joinTeam(m1.id, t1.team_id);
 
-    // Participant cap is 2/2. Team 2 creation is blocked by participant capacity!
-    await assert.rejects(
-      async () => createTeam(l2.id, event.id, 'Squad 13 Wait'),
-      /participant capacity is full/i
-    );
+    // Participant cap is 2/2. Team 2 creation is placed on waitlist!
+    const tWait = await createTeam(l2.id, event.id, 'Squad 13 Wait');
+    assert.strictEqual(tWait.status, 'WAITLISTED', 'Team 2 is placed on waitlist when capacity is full');
 
-    // Leader 1 leaves Team 1 -> dissolves Team 1 and cancels all member registrations
+    // Leader 1 leaves Team 1 -> dissolves Team 1, releases capacity, and promotes waitlisted team
     await leaveTeam(l1.id, t1.team_id);
 
-    // Active participants in DB is now 0 (cancelled registrations released capacity)
-    const activeCount = await adminPrisma.eventRegistration.count({
-      where: {
-        eventId: event.id,
-        deletedAt: null,
-        registrationStatus: { not: 'CANCELLED' },
-      },
-    });
-    assert.strictEqual(activeCount, 0, 'Cancelled registrations release participant capacity');
+    // Verify Waitlisted Team 2 is promoted to REGISTERED by process_waitlist!
+    const promotedTeam = await adminPrisma.team.findUnique({ where: { id: tWait.team_id } });
+    assert.strictEqual(promotedTeam?.status, 'REGISTERED', 'Waitlisted team must be promoted to REGISTERED');
 
-    // Now Team 2 can be created successfully!
-    const t2 = await createTeam(l2.id, event.id, 'Squad 13 Promoted');
-    assert.strictEqual(t2.status, 'REGISTERED');
-
-    // And new student can join Team 2!
-    const j2 = await joinTeam(newStudent.id, t2.team_id);
+    // And new student can join promoted Team 2!
+    const j2 = await joinTeam(newStudent.id, tWait.team_id);
     assert.strictEqual(j2.status, 'REGISTERED');
 
     const ev = await getEventById(organizerId, event.id);

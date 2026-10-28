@@ -28,6 +28,10 @@ describe('Phase 20 Security Audit', () => {
 
   beforeAll(async () => {
     // Teardown first
+    await prisma.awardRecipientMember.deleteMany({});
+    await prisma.awardRecipient.deleteMany({});
+    await prisma.eventAward.deleteMany({});
+    await prisma.eventResult.deleteMany({});
     await prisma.eventRegistrationResponse.deleteMany({});
     await prisma.eventFormField.deleteMany({});
     await prisma.eventForm.deleteMany({});
@@ -94,6 +98,10 @@ describe('Phase 20 Security Audit', () => {
 
   afterAll(async () => {
     // Teardown
+    await prisma.awardRecipientMember.deleteMany({});
+    await prisma.awardRecipient.deleteMany({});
+    await prisma.eventAward.deleteMany({});
+    await prisma.eventResult.deleteMany({});
     await prisma.eventRegistrationResponse.deleteMany({});
     await prisma.eventFormField.deleteMany({});
     await prisma.eventForm.deleteMany({});
@@ -118,7 +126,7 @@ describe('Phase 20 Security Audit', () => {
     const event = await createEvent(clubAdminAId, {
       title: 'Audit Event',
       start_time: new Date(Date.now() + 100000).toISOString(),
-      end_time: new Date(Date.now() + 200000).toISOString(),
+      end_time: new Date(Date.now() + 7200000).toISOString(),
       registration_start_time: new Date(Date.now() - 3600000).toISOString(),
       registration_end_time: new Date(Date.now() + 3600000).toISOString(),
       event_type: EventType.HACKATHON,
@@ -174,7 +182,7 @@ describe('Phase 20 Security Audit', () => {
     const ev = await createEvent(adminId, {
       title: 'Race Event',
       start_time: new Date(Date.now() + 100000).toISOString(),
-      end_time: new Date(Date.now() + 200000).toISOString(),
+      end_time: new Date(Date.now() + 7200000).toISOString(),
       registration_start_time: new Date(Date.now() - 3600000).toISOString(),
       registration_end_time: new Date(Date.now() + 3600000).toISOString(),
       event_type: EventType.MEETUP,
@@ -230,7 +238,7 @@ describe('Phase 20 Security Audit', () => {
     const ev = await createEvent(adminId, {
       title: 'Race Event 2',
       start_time: new Date(Date.now() + 100000).toISOString(),
-      end_time: new Date(Date.now() + 200000).toISOString(),
+      end_time: new Date(Date.now() + 7200000).toISOString(),
       registration_start_time: new Date(Date.now() - 3600000).toISOString(),
       registration_end_time: new Date(Date.now() + 3600000).toISOString(),
       event_type: EventType.MEETUP,

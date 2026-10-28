@@ -43,6 +43,8 @@ test('Event Creation Co-Host Authorization Bypass', async (t) => {
     title: 'Test Event ' + Date.now(),
     start_time: new Date(Date.now() + 86400000).toISOString(),
     end_time: new Date(Date.now() + 86400000 * 2).toISOString(),
+    registration_start_time: new Date(Date.now()).toISOString(),
+    registration_end_time: new Date(Date.now() + 86400000).toISOString(),
     event_type: 'WORKSHOP',
     club_ids: clubs
   });

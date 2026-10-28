@@ -84,9 +84,9 @@ describe('ATTENDANCE-07: Offline Attendance 24-Hour Lock Time Correction', () =>
         title: 'Main Session',
         qrSecret: secret,
         openAt: new Date(Date.now() - 35 * 60 * 60 * 1000),
-        closeAt: new Date(Date.now() - 25 * 60 * 60 * 1000),
+        closeAt: new Date(Date.now() - 4 * 60 * 60 * 1000), // 26 hours after event end, covering 24h event lock boundary
         startTime: new Date(Date.now() - 35 * 60 * 60 * 1000),
-        endTime: new Date(Date.now() - 25 * 60 * 60 * 1000),
+        endTime: new Date(Date.now() - 4 * 60 * 60 * 1000),
         geofenceRadius: 50,
         venueLatitude: 10,
         venueLongitude: 10,

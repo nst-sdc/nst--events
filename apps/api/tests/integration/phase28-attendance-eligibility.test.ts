@@ -46,6 +46,7 @@ async function createTestEvent(creatorId: string, audience: 'ALL_STUDENTS' | 'SP
       createdBy: creatorId,
       state: 'PUBLISHED',
       isLocked: false,
+      visibility: 'PUBLIC',
       audience,
     },
   });

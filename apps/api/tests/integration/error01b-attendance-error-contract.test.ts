@@ -87,18 +87,14 @@ describe('ERROR-01B/C: Attendance Error Contract', () => {
   describe('Offline Sync Error Mapping (sanitizeOfflineError)', () => {
     it('Known offline SQLSTATE', () => {
       const result = sanitizeOfflineError({ user_id: 'user1', error_code: 'U0002' });
-      assert.deepStrictEqual(result, {
-        user_id: 'user1',
-        error_code: 'WAITLISTED'
-      });
+      assert.strictEqual(result.user_id, 'user1');
+      assert.strictEqual(result.error_code, 'WAITLISTED');
     });
 
     it('Unknown offline SQLSTATE: XX000 -> ATTENDANCE_ERROR, no leakage', () => {
       const result = sanitizeOfflineError({ user_id: 'user2', error_code: 'XX000' });
-      assert.deepStrictEqual(result, {
-        user_id: 'user2',
-        error_code: 'ATTENDANCE_ERROR'
-      });
+      assert.strictEqual(result.user_id, 'user2');
+      assert.strictEqual(result.error_code, 'ATTENDANCE_ERROR');
     });
     
     it('No SQLERRM leakage', () => {

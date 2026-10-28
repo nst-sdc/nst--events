@@ -133,4 +133,12 @@ test('AUTH-11 Event Lock Clock Authority Tests', async (t) => {
     await assert.rejects(cancelTeam(nonMemberId, teamId), { message: 'UNAUTHORIZED' });
   });
 
+  t.after(async () => {
+    await prisma.notification.deleteMany({ where: { user: { email: { contains: 'auth11' } } } });
+    await prisma.auditLog.deleteMany({ where: { actorId: { in: [adminId, leaderId, memberId, nonMemberId] } } });
+    await prisma.eventRegistration.deleteMany({ where: { user: { email: { contains: 'auth11' } } } });
+    await prisma.team.deleteMany({ where: { event: { title: 'Auth11 Event' } } });
+    await prisma.event.deleteMany({ where: { title: 'Auth11 Event' } });
+    await prisma.user.deleteMany({ where: { email: { contains: 'auth11' } } });
+  });
 });

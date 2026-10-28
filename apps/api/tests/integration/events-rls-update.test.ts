@@ -183,6 +183,8 @@ test('Events RLS and Authorization Policy - Exhaustive Verification', async (t) 
         createdBy: primaryAdminId,
         startTime: baseStart,
         endTime: baseEnd,
+        registrationStartTime: new Date(Date.now() - 3600000),
+        registrationEndTime: baseStart,
       },
     });
     draftEventId = draftEvent.id;
@@ -204,6 +206,8 @@ test('Events RLS and Authorization Policy - Exhaustive Verification', async (t) 
         createdBy: coreMemberId,
         startTime: baseStart,
         endTime: baseEnd,
+        registrationStartTime: new Date(Date.now() - 3600000),
+        registrationEndTime: baseStart,
       },
     });
     coreDraftEventId = coreDraftEvent.id;
@@ -225,6 +229,8 @@ test('Events RLS and Authorization Policy - Exhaustive Verification', async (t) 
         createdBy: primaryAdminId,
         startTime: baseStart,
         endTime: baseEnd,
+        registrationStartTime: new Date(Date.now() - 3600000),
+        registrationEndTime: baseStart,
       },
     });
     publishedEventId = publishedEvent.id;

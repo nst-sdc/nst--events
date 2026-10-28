@@ -30,8 +30,10 @@ describe('AUTH-10 Manual Waitlist Promotion Tests', () => {
     await prisma.notificationJob.deleteMany({});
     await prisma.notification.deleteMany({});
     await prisma.eventAudienceBatch.deleteMany({});
-    await prisma.eventClub.deleteMany({});
-    await prisma.event.deleteMany({ where: { id: { in: ['00000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000006'] } } });
+    await prisma.event.deleteMany({ where: { OR: [
+      { id: { in: ['00000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000006'] } },
+      { createdBy: { in: ['00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002'] } }
+    ] } });
     await prisma.clubMembership.deleteMany({});
     await prisma.club.deleteMany({ where: { id: { in: ['00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-000000000001'] } } });
     await prisma.userAcademicProfile.deleteMany({});
@@ -125,7 +127,10 @@ describe('AUTH-10 Manual Waitlist Promotion Tests', () => {
     await prisma.notification.deleteMany({});
     await prisma.eventAudienceBatch.deleteMany({});
     await prisma.eventClub.deleteMany({});
-    await prisma.event.deleteMany({ where: { id: { in: [eventId, eventId2] } } });
+    await prisma.event.deleteMany({ where: { OR: [
+      { id: { in: [eventId, eventId2] } },
+      { createdBy: { in: [adminId, facultyAdminId] } }
+    ] } });
     await prisma.clubMembership.deleteMany({});
     await prisma.club.deleteMany({ where: { id: { in: ['00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-000000000001'] } } });
     await prisma.userAcademicProfile.deleteMany({});
@@ -189,11 +194,32 @@ describe('AUTH-10 Manual Waitlist Promotion Tests', () => {
     await assert.rejects(manualWaitlistPromotion(adminId, teamId), { message: /Event is locked/ });
     
     // Unlock event1, but set end time to past + 25h
-    await prisma.event.update({ where: { id: eventId }, data: { isLocked: false, endTime: new Date(Date.now() - 25 * 60 * 60 * 1000) } });
+    const pastEnd = new Date(Date.now() - 25 * 60 * 60 * 1000);
+    const pastRegEnd = new Date(Date.now() - 26 * 60 * 60 * 1000);
+    const pastRegStart = new Date(Date.now() - 30 * 60 * 60 * 1000);
+    await prisma.event.update({
+      where: { id: eventId },
+      data: {
+        isLocked: false,
+        endTime: pastEnd,
+        registrationEndTime: pastRegEnd,
+        registrationStartTime: pastRegStart,
+      },
+    });
     await assert.rejects(manualWaitlistPromotion(adminId, teamId), { message: /Event is locked/ });
 
     // Fix event1
-    await prisma.event.update({ where: { id: eventId }, data: { endTime: new Date(Date.now() + 25 * 60 * 60 * 1000) } });
+    const futureEnd = new Date(Date.now() + 25 * 60 * 60 * 1000);
+    const futureRegEnd = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const futureRegStart = new Date(Date.now() - 3600000);
+    await prisma.event.update({
+      where: { id: eventId },
+      data: {
+        endTime: futureEnd,
+        registrationEndTime: futureRegEnd,
+        registrationStartTime: futureRegStart,
+      },
+    });
   });
 
   it('TEST - SNAPSHOT: Create correct per-member snapshots on promotion', async () => {

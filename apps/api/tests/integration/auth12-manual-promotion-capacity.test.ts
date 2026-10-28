@@ -40,6 +40,8 @@ describe('AUTH-12: Manual Waitlist Promotion Capacity Atomicity', () => {
         registrationCount: 0,
         startTime: new Date(Date.now() + 86400000),
         endTime: new Date(Date.now() + 86400000 * 2),
+        registrationStartTime: new Date(Date.now() - 3600000),
+        registrationEndTime: new Date(Date.now() + 86400000),
         state: 'PUBLISHED',
         isLocked: false,
         audience: 'SPECIFIC_BATCHES',
@@ -133,7 +135,17 @@ describe('AUTH-12: Manual Waitlist Promotion Capacity Atomicity', () => {
     await prisma.event.update({ where: { id: eventId }, data: { maxCapacity: null } });
 
     // Move end time to > 24 hours ago
-    await prisma.event.update({ where: { id: eventId }, data: { endTime: new Date(Date.now() - 86400000 - 1000) } });
+    const pastEnd = new Date(Date.now() - 86400000 - 1000);
+    const pastRegEnd = new Date(Date.now() - 86400000 - 2000);
+    const pastRegStart = new Date(Date.now() - 86400000 - 100000);
+    await prisma.event.update({
+      where: { id: eventId },
+      data: {
+        endTime: pastEnd,
+        registrationEndTime: pastRegEnd,
+        registrationStartTime: pastRegStart,
+      },
+    });
     
     const remainingTeamId = (await prisma.team.findUnique({ where: { id: teamAId } }))!.status === 'WAITLISTED' ? teamAId : teamBId;
 
@@ -143,7 +155,17 @@ describe('AUTH-12: Manual Waitlist Promotion Capacity Atomicity', () => {
     );
 
     // Revert time
-    await prisma.event.update({ where: { id: eventId }, data: { endTime: new Date(Date.now() + 86400000) } });
+    const futureEnd = new Date(Date.now() + 86400000 * 2);
+    const futureRegEnd = new Date(Date.now() + 86400000);
+    const futureRegStart = new Date(Date.now() - 3600000);
+    await prisma.event.update({
+      where: { id: eventId },
+      data: {
+        endTime: futureEnd,
+        registrationEndTime: futureRegEnd,
+        registrationStartTime: futureRegStart,
+      },
+    });
   });
 
   it('Promotion handles ATTENDANCE-09 snapshots accurately', async () => {
