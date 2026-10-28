@@ -29,8 +29,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ? API_BASE_URL
       : process.env.INTERNAL_API_URL && process.env.INTERNAL_API_URL.startsWith('http')
         ? process.env.INTERNAL_API_URL
-        : process.env.NODE_ENV === 'production' && siteUrl.startsWith('http')
-          ? siteUrl
+        : process.env.NODE_ENV === 'production'
+          ? (process.env.INTERNAL_SERVICE_URL || 'http://nst-api-service')
           : '';
 
   if (!apiBase) {
