@@ -359,6 +359,34 @@ const homeStyles = `
     filter: contrast(100%) grayscale(0%);
   }
 
+  .poster-photo-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0d0e12;
+    width: 100%;
+    height: 100%;
+  }
+
+  .poster-photo-placeholder-text {
+    font-family: var(--font-mono);
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: rgba(245, 245, 242, 0.2);
+    text-transform: uppercase;
+  }
+
+  .poster-empty-state {
+    background: #f5f5f2;
+    border: 3px solid #000;
+    box-shadow: 8px 8px 0px #000;
+    padding: 56px 32px;
+    text-align: center;
+    max-width: 680px;
+    margin: 20px auto 40px auto;
+  }
+
   .poster-desc-text {
     font-family: var(--font-body);
     font-size: 13.5px;
@@ -461,46 +489,6 @@ const homeStyles = `
   }
 `;
 
-// Flagship Featured Posters
-const DEFAULT_FEATURED_EVENTS = [
-  {
-    id: 'evt-hacknst-2026',
-    dateBadge: '18 SEP • 2026',
-    category: 'HACKATHONS',
-    title: 'HACKNST 2026: AI SYSTEMS FLAGSHIP',
-    image: '/events/hacknst.jpg',
-    description: 'Building next-generation autonomous AI agents, fine-tuned LLM architectures, and spatial developer tools over a 36-hour sprint.',
-    venue: 'Auditorium A1, Main Campus',
-  },
-  {
-    id: 'evt-llm-workshop',
-    dateBadge: '24 SEP • 2026',
-    category: 'WORKSHOPS',
-    title: 'LLM FINE-TUNING & AGENTIC WORKSHOP',
-    image: '/events/llm-workshop.jpg',
-    description: 'Hands-on deep dive into QLoRA fine-tuning, retrieval-augmented generation (RAG) pipelines, and multi-agent coordination.',
-    venue: 'Lab 402, AI Cluster',
-  },
-  {
-    id: 'evt-devops-infra',
-    dateBadge: '02 OCT • 2026',
-    category: 'SEMINARS',
-    title: 'DEVOPS & CLOUD NATIVE INFRASTRUCTURE',
-    image: '/events/devops-matrix.jpg',
-    description: 'Keynotes on Kubernetes orchestration, eBPF kernel observability, GitOps workflows, and production telemetry.',
-    venue: 'Seminar Hall B',
-  },
-  {
-    id: 'evt-algo-speedrun',
-    dateBadge: '10 OCT • 2026',
-    category: 'COMPETITIONS',
-    title: 'ALGORITHMIC SPEED RUN 2026',
-    image: '/events/hacknst.jpg',
-    description: 'Competitive programming sprint testing advanced dynamic programming, graph theory, and algorithmic optimization under strict time constraints.',
-    venue: 'Computing Lab 1',
-  },
-];
-
 export default function StudentHomePage() {
   const router = useRouter();
   const { data: user, isLoading: isUserLoading, isError: isUserError, refetch: refetchUser } = useCurrentUser();
@@ -539,7 +527,7 @@ export default function StudentHomePage() {
 
   const hour = dayjs().hour();
   const greetingTime = hour < 12 ? 'MORNING' : hour < 17 ? 'AFTERNOON' : 'EVENING';
-  const rawFirstName = user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'SHRAVANI';
+  const rawFirstName = user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'STUDENT';
   const firstNameUpper = rawFirstName.toUpperCase();
 
   // Dynamic font scaling for student name to stay perfectly framed within hero bounds
@@ -589,23 +577,20 @@ export default function StudentHomePage() {
   const attendedCount = String(summary?.eventsAttendedCount ?? 0).padStart(2, '0');
   const pointsCount = String(summary?.totalPoints ?? 0).padStart(2, '0');
 
-  // Build list of upcoming poster wall events: real backend events + defaults
+  // Build list of upcoming poster wall events: real backend events only
   const backendEvents = eventsResponse?.data || [];
-  const posterEvents = backendEvents.length > 0
-    ? backendEvents.slice(0, 6).map((evt, idx) => {
-        const fallbacks = DEFAULT_FEATURED_EVENTS[idx % DEFAULT_FEATURED_EVENTS.length];
-        const meta = (evt.metadata as Record<string, string | undefined>) || {};
-        return {
-          id: evt.id,
-          dateBadge: dayjs(evt.startTime).format('DD MMM • YYYY').toUpperCase(),
-          category: evt.eventType || fallbacks.category,
-          title: evt.title || fallbacks.title,
-          image: meta.banner_url || fallbacks.image,
-          description: evt.description || meta.description || fallbacks.description,
-          venue: evt.locationName || fallbacks.venue,
-        };
-      })
-    : DEFAULT_FEATURED_EVENTS;
+  const posterEvents = backendEvents.slice(0, 6).map((evt) => {
+    const meta = (evt.metadata as Record<string, string | undefined>) || {};
+    return {
+      id: evt.id,
+      dateBadge: dayjs(evt.startTime).format('DD MMM • YYYY').toUpperCase(),
+      category: evt.eventType || 'EVENT',
+      title: evt.title,
+      image: meta.banner_url || null,
+      description: evt.description || meta.description || '',
+      venue: evt.locationName || 'Campus Venue',
+    };
+  });
 
   return (
     <main className="home-editorial-page">
@@ -780,47 +765,84 @@ export default function StudentHomePage() {
             </button>
           </div>
 
-          <div className="poster-wall-grid">
-            {posterEvents.map((evt) => (
-              <div 
-                key={evt.id} 
-                className="poster-card-item"
-                onClick={() => {
-                  if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-                  router.push(evt.id.startsWith('evt-') ? '/student/campus' : `/student/events/${evt.id}`);
-                }}
+          {posterEvents.length > 0 ? (
+            <div className="poster-wall-grid">
+              {posterEvents.map((evt) => (
+                <div
+                  key={evt.id}
+                  className="poster-card-item"
+                  onClick={() => {
+                    if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                    router.push(`/student/events/${evt.id}`);
+                  }}
+                >
+                  <div className="poster-card-header">
+                    <span className="poster-date-badge">{evt.dateBadge}</span>
+                    <span className="micro-annotation" style={{ color: '#000' }}>{evt.category}</span>
+                  </div>
+
+                  <h3 className="poster-title-text">{evt.title}</h3>
+
+                  <div className="poster-photo-frame">
+                    {evt.image ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={evt.image} alt={evt.title} loading="lazy" decoding="async" />
+                    ) : (
+                      <div className="poster-photo-placeholder">
+                        <span className="poster-photo-placeholder-text">
+                          {evt.category?.slice(0, 4) || 'NST'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="poster-desc-text">{evt.description || 'Join this campus event to learn, collaborate, and compete.'}</p>
+
+                  <div className="poster-meta-footer">
+                    <span style={{ color: '#333' }}>{evt.venue}</span>
+                    <button
+                      type="button"
+                      className="poster-register-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                        router.push(`/student/events/${evt.id}`);
+                      }}
+                    >
+                      {isAdmin ? 'VIEW DETAILS ↗' : 'REGISTER ↗'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="poster-empty-state">
+              <span className="micro-annotation" style={{ color: '#000', display: 'block', marginBottom: '8px' }}>
+                CAMPUS POSTER WALL // STATUS: IDLE
+              </span>
+              <h3 className="font-display-section" style={{ color: '#000', fontSize: '32px', marginBottom: '12px' }}>
+                NO UPCOMING EVENTS SCHEDULED
+              </h3>
+              <p style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: '15px',
+                color: '#333',
+                maxWidth: '480px',
+                margin: '0 auto 24px auto',
+                lineHeight: 1.5,
+              }}>
+                There are currently no upcoming events published on campus. Check back soon or explore campus clubs for new activities.
+              </p>
+              <button
+                type="button"
+                onClick={() => router.push('/student/campus')}
+                className="poster-register-btn"
+                style={{ padding: '12px 28px', fontSize: '13px' }}
               >
-                <div className="poster-card-header">
-                  <span className="poster-date-badge">{evt.dateBadge}</span>
-                  <span className="micro-annotation" style={{ color: '#000' }}>{evt.category}</span>
-                </div>
-
-                <h3 className="poster-title-text">{evt.title}</h3>
-
-                <div className="poster-photo-frame">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={evt.image} alt={evt.title} loading="lazy" decoding="async" />
-                </div>
-
-                <p className="poster-desc-text">{evt.description}</p>
-
-                <div className="poster-meta-footer">
-                  <span style={{ color: '#333' }}>{evt.venue}</span>
-                  <button 
-                    type="button" 
-                    className="poster-register-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-                      router.push(evt.id.startsWith('evt-') ? '/student/campus' : `/student/events/${evt.id}`);
-                    }}
-                  >
-                    {isAdmin ? 'VIEW DETAILS ↗' : 'REGISTER ↗'}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+                EXPLORE CLUBS & CAMPUS ↗
+              </button>
+            </div>
+          )}
 
         </div>
       </section>
