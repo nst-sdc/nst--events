@@ -74,6 +74,11 @@ describe('Registration Window Edge Cases & Authoritative Enforcement', () => {
     await adminPrisma.user.deleteMany({ where: { id: { in: [organizerId, platformAdminId, studentAId, studentBId, studentCId] } } });
   });
 
+  async function getDbNow(): Promise<Date> {
+    const [{ now }] = await adminPrisma.$queryRaw<{ now: Date }[]>`SELECT clock_timestamp() as now`;
+    return new Date(now);
+  }
+
   async function createTestEvent(overrides: {
     registrationStartTime?: Date | null;
     registrationEndTime?: Date | null;
@@ -181,13 +186,14 @@ describe('Registration Window Edge Cases & Authoritative Enforcement', () => {
   });
 
   it('6. Rejects registration immediately before opening time (future window)', async () => {
+    const dbNow = await getDbNow();
     // Opens in 5 seconds
     const event = await createTestEvent({
-      registrationStartTime: new Date(Date.now() + 5000),
-      registrationEndTime: new Date(Date.now() + 7200000),
+      registrationStartTime: new Date(dbNow.getTime() + 5000),
+      registrationEndTime: new Date(dbNow.getTime() + 7200000),
     });
 
-    const status = calculateRegistrationStatus(new Date(), event.registrationStartTime, event.registrationEndTime);
+    const status = calculateRegistrationStatus(dbNow, event.registrationStartTime, event.registrationEndTime);
     assert.strictEqual(status, 'UPCOMING', 'Future start time status must be UPCOMING');
 
     await assert.rejects(
@@ -197,12 +203,13 @@ describe('Registration Window Edge Cases & Authoritative Enforcement', () => {
   });
 
   it('7. Allows registration when current time is within [start, end) window', async () => {
+    const dbNow = await getDbNow();
     const event = await createTestEvent({
-      registrationStartTime: new Date(Date.now() - 3600000),
-      registrationEndTime: new Date(Date.now() + 3600000),
+      registrationStartTime: new Date(dbNow.getTime() - 3600000),
+      registrationEndTime: new Date(dbNow.getTime() + 3600000),
     });
 
-    const status = calculateRegistrationStatus(new Date(), event.registrationStartTime, event.registrationEndTime);
+    const status = calculateRegistrationStatus(dbNow, event.registrationStartTime, event.registrationEndTime);
     assert.strictEqual(status, 'OPEN', 'Active window status must be OPEN');
 
     const result = await registerEvent(studentAId, event.id);
@@ -210,13 +217,14 @@ describe('Registration Window Edge Cases & Authoritative Enforcement', () => {
   });
 
   it('8. Rejects registration immediately after closing time (expired window)', async () => {
+    const dbNow = await getDbNow();
     // Closed 2 seconds ago
     const event = await createTestEvent({
-      registrationStartTime: new Date(Date.now() - 7200000),
-      registrationEndTime: new Date(Date.now() - 2000),
+      registrationStartTime: new Date(dbNow.getTime() - 7200000),
+      registrationEndTime: new Date(dbNow.getTime() - 2000),
     });
 
-    const status = calculateRegistrationStatus(new Date(), event.registrationStartTime, event.registrationEndTime);
+    const status = calculateRegistrationStatus(dbNow, event.registrationStartTime, event.registrationEndTime);
     assert.strictEqual(status, 'CLOSED', 'Expired end time status must be CLOSED');
 
     await assert.rejects(
@@ -226,10 +234,11 @@ describe('Registration Window Edge Cases & Authoritative Enforcement', () => {
   });
 
   it('9. Enforces sub-second millisecond boundary precision on closing time (now >= endAt)', async () => {
+    const dbNow = await getDbNow();
     // End is set to exactly 50 milliseconds in the past
     const event = await createTestEvent({
-      registrationStartTime: new Date(Date.now() - 60000),
-      registrationEndTime: new Date(Date.now() - 50),
+      registrationStartTime: new Date(dbNow.getTime() - 60000),
+      registrationEndTime: new Date(dbNow.getTime() - 50),
     });
 
     await assert.rejects(
@@ -239,11 +248,12 @@ describe('Registration Window Edge Cases & Authoritative Enforcement', () => {
   });
 
   it('10. Blocks team creation outside registration window', async () => {
+    const dbNow = await getDbNow();
     // Event where registration has closed
     const event = await createTestEvent({
       registrationType: 'TEAM',
-      registrationStartTime: new Date(Date.now() - 7200000),
-      registrationEndTime: new Date(Date.now() - 1000),
+      registrationStartTime: new Date(dbNow.getTime() - 7200000),
+      registrationEndTime: new Date(dbNow.getTime() - 1000),
     });
 
     await assert.rejects(
@@ -391,18 +401,20 @@ describe('Registration Window Edge Cases & Authoritative Enforcement', () => {
   });
 
   it('16. Exact boundary conditions: register permitted at opening millisecond, rejected at closing millisecond', async () => {
+    const dbNow = await getDbNow();
     // 16a. Opens exactly now
     const openNowEvent = await createTestEvent({
-      registrationStartTime: new Date(Date.now() - 50),
-      registrationEndTime: new Date(Date.now() + 3600000),
+      registrationStartTime: new Date(dbNow.getTime() - 200),
+      registrationEndTime: new Date(dbNow.getTime() + 3600000),
     });
     const regRes = await registerEvent(studentBId, openNowEvent.id);
     assert.strictEqual(regRes.status, 'REGISTERED', 'Registration must succeed at start boundary');
 
-    // 16b. Closed 1 millisecond ago
+    // 16b. Closed 200 milliseconds ago
+    const dbNowClosed = await getDbNow();
     const closedNowEvent = await createTestEvent({
-      registrationStartTime: new Date(Date.now() - 3600000),
-      registrationEndTime: new Date(Date.now() - 1),
+      registrationStartTime: new Date(dbNowClosed.getTime() - 3600000),
+      registrationEndTime: new Date(dbNowClosed.getTime() - 200),
     });
     await assert.rejects(
       registerEvent(studentCId, closedNowEvent.id),

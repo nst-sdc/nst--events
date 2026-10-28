@@ -32,7 +32,7 @@ test('ERROR-02 Message Independence Tests', async (t) => {
       try {
         mapDatabaseError(err);
       } catch (e: any) {
-        assert.strictEqual(e.message, 'TEAM_NOT_FOUND');
+        assert.strictEqual(e.message, 'Team not found');
         assert.strictEqual(e.statusCode, 404);
       }
     });

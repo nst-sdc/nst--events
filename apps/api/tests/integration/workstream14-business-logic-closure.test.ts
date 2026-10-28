@@ -608,6 +608,20 @@ describe('Workstream 14: Business Logic & Transaction Integrity Closure Integrat
       const rs = await adminPrisma.eventResultSet.findUnique({ where: { eventId: pubEventId } });
       assert.strictEqual(rs?.status, 'PUBLISHED');
     });
+
+    afterAll(async () => {
+      try {
+        await adminPrisma.studentAchievement.deleteMany({ where: { eventId: pubEventId } });
+        await adminPrisma.awardRecipientMember.deleteMany({ where: { recipient: { award: { revision: { resultSet: { eventId: pubEventId } } } } } });
+        await adminPrisma.awardRecipient.deleteMany({ where: { award: { revision: { resultSet: { eventId: pubEventId } } } } });
+        await adminPrisma.eventAward.deleteMany({ where: { revision: { resultSet: { eventId: pubEventId } } } });
+        await adminPrisma.eventResultRevision.deleteMany({ where: { resultSet: { eventId: pubEventId } } });
+        await adminPrisma.eventResultSet.deleteMany({ where: { eventId: pubEventId } });
+        await adminPrisma.eventRegistration.deleteMany({ where: { eventId: pubEventId } });
+        await adminPrisma.eventClub.deleteMany({ where: { eventId: pubEventId } });
+        await adminPrisma.event.deleteMany({ where: { id: pubEventId } });
+      } catch {}
+    });
   });
 
   // =========================================================================

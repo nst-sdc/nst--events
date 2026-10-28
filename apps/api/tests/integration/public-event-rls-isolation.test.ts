@@ -33,6 +33,11 @@ describe('Public Event RLS & Anonymous Isolation Integration', () => {
 
   let draftEventId: string;
   let draftSlug: string;
+  let draftSessionId: string;
+
+  let regStudentId: string;
+  let waitlistedStudentId: string;
+  let adminUserId: string;
 
   before(async () => {
     // 1. Connect application client using nst_app (which is subject to RLS)
@@ -62,6 +67,36 @@ describe('Public Event RLS & Anonymous Isolation Integration', () => {
       },
     });
     studentId = student.id;
+
+    const regStudent = await adminPrisma.user.create({
+      data: {
+        email: `reg_student_rls_${timestamp}@adypu.edu.in`,
+        googleSub: `sub_reg_student_rls_${timestamp}`,
+        fullName: 'RLS Registered Student',
+        globalRole: 'STUDENT',
+      },
+    });
+    regStudentId = regStudent.id;
+
+    const waitStudent = await adminPrisma.user.create({
+      data: {
+        email: `wait_student_rls_${timestamp}@adypu.edu.in`,
+        googleSub: `sub_wait_student_rls_${timestamp}`,
+        fullName: 'RLS Waitlisted Student',
+        globalRole: 'STUDENT',
+      },
+    });
+    waitlistedStudentId = waitStudent.id;
+
+    const admin = await adminPrisma.user.create({
+      data: {
+        email: `admin_rls_${timestamp}@adypu.edu.in`,
+        googleSub: `sub_admin_rls_${timestamp}`,
+        fullName: 'RLS Platform Admin',
+        globalRole: 'PLATFORM_ADMIN',
+      },
+    });
+    adminUserId = admin.id;
 
     const club = await adminPrisma.club.create({
       data: { name: `RLS Verification Club ${timestamp}` },
@@ -216,7 +251,26 @@ describe('Public Event RLS & Anonymous Isolation Integration', () => {
     });
     restrictedSessionId = sessionRestricted.id;
 
-    // 6. Seed DRAFT Event
+    // Seed registrations for restricted event:
+    // a) regStudentId is explicitly REGISTERED
+    await adminPrisma.eventRegistration.create({
+      data: {
+        eventId: restrictedEventId,
+        userId: regStudentId,
+        registrationStatus: 'REGISTERED',
+      },
+    });
+
+    // b) waitlistedStudentId is WAITLISTED
+    await adminPrisma.eventRegistration.create({
+      data: {
+        eventId: restrictedEventId,
+        userId: waitlistedStudentId,
+        registrationStatus: 'WAITLISTED',
+      },
+    });
+
+    // 6. Seed DRAFT Event with attendance session
     draftSlug = `rls-draft-event-${timestamp}`;
     const draftEvent = await adminPrisma.event.create({
       data: {
@@ -232,6 +286,20 @@ describe('Public Event RLS & Anonymous Isolation Integration', () => {
       },
     });
     draftEventId = draftEvent.id;
+
+    const sessionDraft = await adminPrisma.attendanceSession.create({
+      data: {
+        eventId: draftEventId,
+        title: 'Draft Secret Session',
+        startTime: new Date(Date.now() + 86400000),
+        endTime: new Date(Date.now() + 90000000),
+        openAt: new Date(Date.now() + 86400000),
+        closeAt: new Date(Date.now() + 90000000),
+        qrSecret: 'qr_secret_draft_123',
+        createdBy: organizerId,
+      },
+    });
+    draftSessionId = sessionDraft.id;
   });
 
   after(async () => {
@@ -260,7 +328,11 @@ describe('Public Event RLS & Anonymous Isolation Integration', () => {
     await adminPrisma.clubMembership.deleteMany({ where: { clubId } });
     await adminPrisma.club.deleteMany({ where: { id: clubId } });
     await adminPrisma.user.deleteMany({
-      where: { id: { in: [organizerId, studentId].filter(Boolean) } },
+      where: {
+        id: {
+          in: [organizerId, studentId, regStudentId, waitlistedStudentId, adminUserId].filter(Boolean),
+        },
+      },
     });
   });
 
@@ -271,9 +343,9 @@ describe('Public Event RLS & Anonymous Isolation Integration', () => {
     assert.strictEqual(adminEvents.length, 4, 'All 4 seeded event fixtures must exist in DB');
 
     const adminSessions = await adminPrisma.attendanceSession.findMany({
-      where: { id: { in: [pubSessionId, unlistedSessionId, restrictedSessionId] } },
+      where: { id: { in: [pubSessionId, unlistedSessionId, restrictedSessionId, draftSessionId] } },
     });
-    assert.strictEqual(adminSessions.length, 3, 'All 3 seeded attendance sessions must exist in DB');
+    assert.strictEqual(adminSessions.length, 4, 'All 4 seeded attendance sessions must exist in DB');
 
     const adminFields = await adminPrisma.eventFormField.findMany({
       where: { id: { in: [pubFieldId, unlistedFieldId] } },
@@ -303,10 +375,10 @@ describe('Public Event RLS & Anonymous Isolation Integration', () => {
     // Reset RLS session to anonymous
     await appClient.query("SELECT set_config('app.user_id', '', false);");
 
-    // 1. Attendance Sessions
+    // 1. Attendance Sessions (all 4 sessions across PUBLIC, UNLISTED, RESTRICTED, and DRAFT)
     const sessionsRes = await appClient.query(
       'SELECT id FROM attendance_sessions WHERE id = ANY($1::uuid[]);',
-      [[pubSessionId, unlistedSessionId, restrictedSessionId]]
+      [[pubSessionId, unlistedSessionId, restrictedSessionId, draftSessionId]]
     );
     assert.strictEqual(sessionsRes.rows.length, 0, 'Anonymous users must receive 0 attendance sessions');
 
@@ -363,6 +435,84 @@ describe('Public Event RLS & Anonymous Isolation Integration', () => {
       [pubRespId]
     );
     assert.strictEqual(respRes.rows.length, 1, 'Student must see their own responses');
+  });
+
+  it('enforces restricted-event and draft session isolation for ordinary authenticated students', async () => {
+    // Student is authenticated, but NOT registered for restricted event and NOT an organizer/creator/admin
+    await appClient.query("SELECT set_config('app.user_id', $1, false);", [studentId]);
+
+    // 1. Ordinary student querying restricted event attendance session receives 0 rows
+    const restrictedRes = await appClient.query(
+      'SELECT id FROM attendance_sessions WHERE id = $1::uuid;',
+      [restrictedSessionId]
+    );
+    assert.strictEqual(restrictedRes.rows.length, 0, 'Ordinary student must NOT read restricted event attendance session');
+
+    // 2. Ordinary student querying draft event attendance session receives 0 rows
+    const draftRes = await appClient.query(
+      'SELECT id FROM attendance_sessions WHERE id = $1::uuid;',
+      [draftSessionId]
+    );
+    assert.strictEqual(draftRes.rows.length, 0, 'Ordinary student must NOT read draft event attendance session');
+
+    // 3. Ordinary student querying unlisted published event attendance session receives 1 row
+    const unlistedRes = await appClient.query(
+      'SELECT id FROM attendance_sessions WHERE id = $1::uuid;',
+      [unlistedSessionId]
+    );
+    assert.strictEqual(unlistedRes.rows.length, 1, 'Authenticated student can read unlisted event attendance session');
+
+    // 4. Multi-session query returns only the 2 public/unlisted sessions, strictly filtering out restricted & draft
+    const batchRes = await appClient.query(
+      'SELECT id FROM attendance_sessions WHERE id = ANY($1::uuid[]);',
+      [[pubSessionId, unlistedSessionId, restrictedSessionId, draftSessionId]]
+    );
+    assert.strictEqual(batchRes.rows.length, 2, 'Ordinary student must only see 2 public/unlisted sessions out of 4');
+    const returnedIds = batchRes.rows.map((r: any) => r.id);
+    assert.ok(returnedIds.includes(pubSessionId));
+    assert.ok(returnedIds.includes(unlistedSessionId));
+    assert.strictEqual(returnedIds.includes(restrictedSessionId), false);
+    assert.strictEqual(returnedIds.includes(draftSessionId), false);
+  });
+
+  it('allows registered attendees to read restricted event attendance sessions while blocking waitlisted users', async () => {
+    // 1. Registered attendee can see the restricted session
+    await appClient.query("SELECT set_config('app.user_id', $1, false);", [regStudentId]);
+    const registeredRes = await appClient.query(
+      'SELECT id FROM attendance_sessions WHERE id = $1::uuid;',
+      [restrictedSessionId]
+    );
+    assert.strictEqual(registeredRes.rows.length, 1, 'Explicitly registered attendee must read restricted session');
+
+    // 2. Waitlisted attendee is NOT registered, so receives 0 rows
+    await appClient.query("SELECT set_config('app.user_id', $1, false);", [waitlistedStudentId]);
+    const waitlistedRes = await appClient.query(
+      'SELECT id FROM attendance_sessions WHERE id = $1::uuid;',
+      [restrictedSessionId]
+    );
+    assert.strictEqual(waitlistedRes.rows.length, 0, 'Waitlisted user must NOT read restricted session');
+  });
+
+  it('allows active club organizer to read all sessions for their club events including restricted and draft', async () => {
+    // Switch context to organizer
+    await appClient.query("SELECT set_config('app.user_id', $1, false);", [organizerId]);
+
+    const res = await appClient.query(
+      'SELECT id FROM attendance_sessions WHERE id = ANY($1::uuid[]) ORDER BY title ASC;',
+      [[pubSessionId, unlistedSessionId, restrictedSessionId, draftSessionId]]
+    );
+    assert.strictEqual(res.rows.length, 4, 'Active club organizer must see all 4 sessions for their events');
+  });
+
+  it('allows platform administrator to read all attendance sessions across all events and states', async () => {
+    // Switch context to platform admin
+    await appClient.query("SELECT set_config('app.user_id', $1, false);", [adminUserId]);
+
+    const res = await appClient.query(
+      'SELECT id FROM attendance_sessions WHERE id = ANY($1::uuid[]) ORDER BY title ASC;',
+      [[pubSessionId, unlistedSessionId, restrictedSessionId, draftSessionId]]
+    );
+    assert.strictEqual(res.rows.length, 4, 'Platform admin must see all 4 sessions across states and visibilities');
   });
 
   it('public discovery API excludes UNLISTED, RESTRICTED, and DRAFT events', async () => {

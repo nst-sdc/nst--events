@@ -91,6 +91,8 @@ async function setupTestData() {
       locationName: 'Test Location',
       eventType: 'OTHER',
       visibility: 'PUBLIC',
+      registrationStartTime: new Date(Date.now() - 3600000),
+      registrationEndTime: new Date(Date.now() + 86400000),
       createdBy: testUserId,
       eventClubs: { create: { clubId: testClubId, isPrimary: true } }
     }
