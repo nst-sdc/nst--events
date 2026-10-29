@@ -178,3 +178,36 @@ export function canLockEvent(user: CurrentUser | null | undefined, event: Event)
     (m) => m.club_id === primaryClubId && ['CLUB_ADMIN', 'CORE_MEMBER', 'FACULTY_MENTOR'].includes(m.role)
   );
 }
+
+/**
+ * Validates whether a redirect path is a safe relative internal route.
+ * Strictly prevents open-redirect vulnerabilities (e.g. //evil.com, /\evil.com, backslashes, absolute protocols).
+ */
+export function validateSafeRedirectPath(candidate: string | null | undefined): string | null {
+  if (!candidate || typeof candidate !== 'string') return null;
+  const trimmed = candidate.trim();
+  if (!trimmed) return null;
+
+  // Must begin with a single '/' and not with '//' or '/\' or control chars
+  if (!trimmed.startsWith('/') || trimmed.startsWith('//') || trimmed.startsWith('/\\')) {
+    return null;
+  }
+
+  // Reject backslashes anywhere in path (some browsers normalize \ to /)
+  if (trimmed.includes('\\')) {
+    return null;
+  }
+
+  // Parse against a dummy base origin to verify protocol and host
+  try {
+    const parsed = new URL(trimmed, 'http://localhost');
+    // Must remain on localhost origin and http: protocol
+    if (parsed.origin !== 'http://localhost' || parsed.protocol !== 'http:') {
+      return null;
+    }
+    // Return relative pathname + search + hash
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return null;
+  }
+}

@@ -34,6 +34,7 @@ interface MarkdownEditorProps {
   error?: string | null;
   minHeight?: string;
   id?: string;
+  variant?: 'default' | 'document';
 }
 
 export const STARTER_PROJECT_TEMPLATE = `# Project Title & Overview
@@ -91,9 +92,11 @@ export function MarkdownEditor({
   error = null,
   minHeight = '380px',
   id = 'project-description-markdown-editor',
+  variant = 'default',
 }: MarkdownEditorProps) {
   const [viewMode, setViewMode] = useState<'write' | 'split' | 'preview'>('write');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isDoc = variant === 'document';
 
   // Compute word and character count
   const charCount = value ? value.length : 0;
@@ -179,226 +182,332 @@ export function MarkdownEditor({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <label
           htmlFor={id}
-          className="block text-xs font-mono uppercase text-zinc-300 font-bold tracking-wider"
+          className={
+            isDoc
+              ? 'block text-xs font-semibold uppercase tracking-wider text-zinc-700 dark:text-zinc-300'
+              : 'block text-xs font-mono uppercase text-zinc-300 font-bold tracking-wider'
+          }
         >
-          {label} {required && <span className="text-blue-400">*</span>}
+          {label} {required && <span className="text-blue-500">*</span>}
         </label>
 
         {/* View Mode Switcher Pills */}
-        <div className="flex items-center gap-1 p-1 bg-zinc-900 border border-zinc-800 rounded-lg">
+        <div
+          className={`flex items-center gap-1 p-1 rounded-lg border ${
+            isDoc
+              ? 'bg-zinc-100 dark:bg-zinc-800/80 border-zinc-200 dark:border-zinc-700/80'
+              : 'bg-zinc-900 border-zinc-800'
+          }`}
+        >
           <button
             type="button"
             onClick={() => setViewMode('write')}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
               viewMode === 'write'
-                ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700/60'
-                : 'text-zinc-400 hover:text-zinc-200'
+                ? isDoc
+                  ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-xs border border-zinc-200/80 dark:border-zinc-600'
+                  : 'bg-zinc-800 text-white shadow-sm border border-zinc-700/60'
+                : isDoc
+                  ? 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
+                  : 'text-zinc-400 hover:text-zinc-200'
             }`}
             title="Write mode: Full-width editing area"
           >
-            <PenSquare className="w-3.5 h-3.5 text-blue-400" />
+            <PenSquare className="w-3.5 h-3.5 text-blue-500" />
             <span>Write</span>
           </button>
 
           <button
             type="button"
             onClick={() => setViewMode('split')}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
               viewMode === 'split'
-                ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700/60'
-                : 'text-zinc-400 hover:text-zinc-200'
+                ? isDoc
+                  ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-xs border border-zinc-200/80 dark:border-zinc-600'
+                  : 'bg-zinc-800 text-white shadow-sm border border-zinc-700/60'
+                : isDoc
+                  ? 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
+                  : 'text-zinc-400 hover:text-zinc-200'
             }`}
             title="Split mode: Side-by-side editor and live preview"
           >
-            <Columns className="w-3.5 h-3.5 text-cyan-400" />
+            <Columns className="w-3.5 h-3.5 text-cyan-500" />
             <span>Split</span>
           </button>
 
           <button
             type="button"
             onClick={() => setViewMode('preview')}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
               viewMode === 'preview'
-                ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700/60'
-                : 'text-zinc-400 hover:text-zinc-200'
+                ? isDoc
+                  ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-xs border border-zinc-200/80 dark:border-zinc-600'
+                  : 'bg-zinc-800 text-white shadow-sm border border-zinc-700/60'
+                : isDoc
+                  ? 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
+                  : 'text-zinc-400 hover:text-zinc-200'
             }`}
             title="Preview mode: Full-width published preview"
           >
-            <Eye className="w-3.5 h-3.5 text-emerald-400" />
+            <Eye className="w-3.5 h-3.5 text-emerald-500" />
             <span>Preview</span>
           </button>
         </div>
       </div>
 
       {/* Editor Container */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-950 overflow-hidden shadow-sm focus-within:border-[#0057FF] transition-colors">
+      <div
+        className={`rounded-xl border overflow-hidden transition-all ${
+          isDoc
+            ? 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500/20'
+            : 'border-zinc-800 bg-zinc-950 shadow-sm focus-within:border-[#0057FF]'
+        }`}
+      >
         {/* Formatting Toolbar (Visible in Write and Split modes) */}
         {viewMode !== 'preview' && (
-          <div className="flex flex-wrap items-center gap-1 p-2 bg-zinc-900/90 border-b border-zinc-800/80 text-zinc-300">
-            {/* Headings */}
-            <button
-              type="button"
-              onClick={() => insertFormatting('# ', '', 'Heading 1')}
-              className="p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors"
-              title="Heading 1 (#)"
-              aria-label="Heading 1"
-            >
-              <Heading1 className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => insertFormatting('## ', '', 'Heading 2')}
-              className="p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors"
-              title="Heading 2 (##)"
-              aria-label="Heading 2"
-            >
-              <Heading2 className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => insertFormatting('### ', '', 'Heading 3')}
-              className="p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors"
-              title="Heading 3 (###)"
-              aria-label="Heading 3"
-            >
-              <Heading3 className="w-4 h-4" />
-            </button>
+          <div
+            className={`flex flex-wrap items-center gap-1 p-2 sm:px-3 border-b text-xs ${
+              isDoc
+                ? 'bg-zinc-50/90 dark:bg-zinc-900/90 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300'
+                : 'bg-zinc-900/90 border-zinc-800/80 text-zinc-300'
+            }`}
+          >
+            {/* Group 1: Headings */}
+            <div className="flex items-center gap-0.5">
+              <button
+                type="button"
+                onClick={() => insertFormatting('# ', '', 'Heading 1')}
+                className={
+                  isDoc
+                    ? 'p-1.5 rounded-md hover:bg-zinc-200/80 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors focus:outline-hidden focus:ring-1 focus:ring-blue-500'
+                    : 'p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors'
+                }
+                title="Heading 1 (#)"
+                aria-label="Heading 1"
+              >
+                <Heading1 className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => insertFormatting('## ', '', 'Heading 2')}
+                className={
+                  isDoc
+                    ? 'p-1.5 rounded-md hover:bg-zinc-200/80 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors focus:outline-hidden focus:ring-1 focus:ring-blue-500'
+                    : 'p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors'
+                }
+                title="Heading 2 (##)"
+                aria-label="Heading 2"
+              >
+                <Heading2 className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => insertFormatting('### ', '', 'Heading 3')}
+                className={
+                  isDoc
+                    ? 'p-1.5 rounded-md hover:bg-zinc-200/80 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors focus:outline-hidden focus:ring-1 focus:ring-blue-500'
+                    : 'p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors'
+                }
+                title="Heading 3 (###)"
+                aria-label="Heading 3"
+              >
+                <Heading3 className="w-4 h-4" />
+              </button>
+            </div>
 
-            <div className="w-[1px] h-4 bg-zinc-800 mx-1" />
+            <div className={`w-[1px] h-4 mx-1 ${isDoc ? 'bg-zinc-200 dark:bg-zinc-700' : 'bg-zinc-800'}`} />
 
-            {/* Inline styles */}
-            <button
-              type="button"
-              onClick={() => insertFormatting('**', '**', 'bold text')}
-              className="p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors"
-              title="Bold (**text**)"
-              aria-label="Bold"
-            >
-              <Bold className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => insertFormatting('*', '*', 'italic text')}
-              className="p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors"
-              title="Italic (*text*)"
-              aria-label="Italic"
-            >
-              <Italic className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => insertFormatting('~~', '~~', 'strikethrough text')}
-              className="p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors"
-              title="Strikethrough (~~text~~)"
-              aria-label="Strikethrough"
-            >
-              <Strikethrough className="w-4 h-4" />
-            </button>
+            {/* Group 2: Inline styles */}
+            <div className="flex items-center gap-0.5">
+              <button
+                type="button"
+                onClick={() => insertFormatting('**', '**', 'bold text')}
+                className={
+                  isDoc
+                    ? 'p-1.5 rounded-md hover:bg-zinc-200/80 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors focus:outline-hidden focus:ring-1 focus:ring-blue-500'
+                    : 'p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors'
+                }
+                title="Bold (**text**)"
+                aria-label="Bold"
+              >
+                <Bold className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => insertFormatting('*', '*', 'italic text')}
+                className={
+                  isDoc
+                    ? 'p-1.5 rounded-md hover:bg-zinc-200/80 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors focus:outline-hidden focus:ring-1 focus:ring-blue-500'
+                    : 'p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors'
+                }
+                title="Italic (*text*)"
+                aria-label="Italic"
+              >
+                <Italic className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => insertFormatting('~~', '~~', 'strikethrough text')}
+                className={
+                  isDoc
+                    ? 'p-1.5 rounded-md hover:bg-zinc-200/80 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors focus:outline-hidden focus:ring-1 focus:ring-blue-500'
+                    : 'p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors'
+                }
+                title="Strikethrough (~~text~~)"
+                aria-label="Strikethrough"
+              >
+                <Strikethrough className="w-4 h-4" />
+              </button>
+            </div>
 
-            <div className="w-[1px] h-4 bg-zinc-800 mx-1" />
+            <div className={`w-[1px] h-4 mx-1 ${isDoc ? 'bg-zinc-200 dark:bg-zinc-700' : 'bg-zinc-800'}`} />
 
-            {/* Lists & Quotes */}
-            <button
-              type="button"
-              onClick={() => insertFormatting('- ', '', 'List item')}
-              className="p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors"
-              title="Unordered List (-)"
-              aria-label="Unordered List"
-            >
-              <List className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => insertFormatting('1. ', '', 'First item')}
-              className="p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors"
-              title="Ordered List (1.)"
-              aria-label="Ordered List"
-            >
-              <ListOrdered className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => insertFormatting('- [ ] ', '', 'Task item')}
-              className="p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors"
-              title="Task List (- [ ])"
-              aria-label="Task List"
-            >
-              <CheckSquare className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => insertFormatting('> ', '', 'Quoted insight or highlight')}
-              className="p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors"
-              title="Blockquote (>)"
-              aria-label="Blockquote"
-            >
-              <Quote className="w-4 h-4" />
-            </button>
+            {/* Group 3: Lists & Quotes */}
+            <div className="flex items-center gap-0.5">
+              <button
+                type="button"
+                onClick={() => insertFormatting('- ', '', 'List item')}
+                className={
+                  isDoc
+                    ? 'p-1.5 rounded-md hover:bg-zinc-200/80 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors focus:outline-hidden focus:ring-1 focus:ring-blue-500'
+                    : 'p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors'
+                }
+                title="Unordered List (-)"
+                aria-label="Unordered List"
+              >
+                <List className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => insertFormatting('1. ', '', 'First item')}
+                className={
+                  isDoc
+                    ? 'p-1.5 rounded-md hover:bg-zinc-200/80 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors focus:outline-hidden focus:ring-1 focus:ring-blue-500'
+                    : 'p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors'
+                }
+                title="Ordered List (1.)"
+                aria-label="Ordered List"
+              >
+                <ListOrdered className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => insertFormatting('- [ ] ', '', 'Task item')}
+                className={
+                  isDoc
+                    ? 'p-1.5 rounded-md hover:bg-zinc-200/80 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors focus:outline-hidden focus:ring-1 focus:ring-blue-500'
+                    : 'p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors'
+                }
+                title="Task List (- [ ])"
+                aria-label="Task List"
+              >
+                <CheckSquare className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => insertFormatting('> ', '', 'Quoted insight or highlight')}
+                className={
+                  isDoc
+                    ? 'p-1.5 rounded-md hover:bg-zinc-200/80 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors focus:outline-hidden focus:ring-1 focus:ring-blue-500'
+                    : 'p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors'
+                }
+                title="Blockquote (>)"
+                aria-label="Blockquote"
+              >
+                <Quote className="w-4 h-4" />
+              </button>
+            </div>
 
-            <div className="w-[1px] h-4 bg-zinc-800 mx-1" />
+            <div className={`w-[1px] h-4 mx-1 ${isDoc ? 'bg-zinc-200 dark:bg-zinc-700' : 'bg-zinc-800'}`} />
 
-            {/* Code & Links */}
-            <button
-              type="button"
-              onClick={() => insertFormatting('`', '`', 'const x = 1')}
-              className="p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors"
-              title="Inline Code (`code`)"
-              aria-label="Inline Code"
-            >
-              <Code className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => insertFormatting('```ts\n', '\n```', '// implementation snippet')}
-              className="p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors"
-              title="Fenced Code Block (```lang)"
-              aria-label="Code Block"
-            >
-              <FileCode className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => insertFormatting('[', '](https://example.com)', 'Link Title')}
-              className="p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors"
-              title="Link ([text](url))"
-              aria-label="Insert Link"
-            >
-              <LinkIcon className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                insertFormatting(
-                  '\n| Feature | Description | Status |\n| :--- | :--- | :---: |\n| ',
-                  ' | Value | Complete |\n',
-                  'Item'
-                )
-              }
-              className="p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors"
-              title="Table (| Col 1 | Col 2 |)"
-              aria-label="Insert Table"
-            >
-              <TableIcon className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => insertFormatting('\n---\n')}
-              className="p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors"
-              title="Horizontal Divider (---)"
-              aria-label="Horizontal Rule"
-            >
-              <Minus className="w-4 h-4" />
-            </button>
+            {/* Group 4: Code & Links */}
+            <div className="flex items-center gap-0.5">
+              <button
+                type="button"
+                onClick={() => insertFormatting('`', '`', 'const x = 1')}
+                className={
+                  isDoc
+                    ? 'p-1.5 rounded-md hover:bg-zinc-200/80 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors focus:outline-hidden focus:ring-1 focus:ring-blue-500'
+                    : 'p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors'
+                }
+                title="Inline Code (`code`)"
+                aria-label="Inline Code"
+              >
+                <Code className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => insertFormatting('```ts\n', '\n```', '// implementation snippet')}
+                className={
+                  isDoc
+                    ? 'p-1.5 rounded-md hover:bg-zinc-200/80 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors focus:outline-hidden focus:ring-1 focus:ring-blue-500'
+                    : 'p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors'
+                }
+                title="Fenced Code Block (```lang)"
+                aria-label="Code Block"
+              >
+                <FileCode className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => insertFormatting('[', '](https://example.com)', 'Link Title')}
+                className={
+                  isDoc
+                    ? 'p-1.5 rounded-md hover:bg-zinc-200/80 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors focus:outline-hidden focus:ring-1 focus:ring-blue-500'
+                    : 'p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors'
+                }
+                title="Link ([text](url))"
+                aria-label="Insert Link"
+              >
+                <LinkIcon className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  insertFormatting(
+                    '\n| Feature | Description | Status |\n| :--- | :--- | :---: |\n| ',
+                    ' | Value | Complete |\n',
+                    'Item'
+                  )
+                }
+                className={
+                  isDoc
+                    ? 'p-1.5 rounded-md hover:bg-zinc-200/80 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors focus:outline-hidden focus:ring-1 focus:ring-blue-500'
+                    : 'p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors'
+                }
+                title="Table (| Col 1 | Col 2 |)"
+                aria-label="Insert Table"
+              >
+                <TableIcon className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => insertFormatting('\n---\n')}
+                className={
+                  isDoc
+                    ? 'p-1.5 rounded-md hover:bg-zinc-200/80 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors focus:outline-hidden focus:ring-1 focus:ring-blue-500'
+                    : 'p-1.5 rounded hover:bg-zinc-800 hover:text-white transition-colors'
+                }
+                title="Horizontal Divider (---)"
+                aria-label="Horizontal Rule"
+              >
+                <Minus className="w-4 h-4" />
+              </button>
+            </div>
 
             {/* Template Starter Button */}
             <div className="ml-auto flex items-center gap-2">
               <button
                 type="button"
                 onClick={handleInsertTemplate}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-[11px] font-mono transition-colors border border-zinc-700/60"
+                className={
+                  isDoc
+                    ? 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 text-xs font-medium transition-colors border border-zinc-200 dark:border-zinc-700'
+                    : 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-[11px] font-mono transition-colors border border-zinc-700/60'
+                }
                 title="Insert standard technical documentation template"
               >
-                <FileText className="w-3.5 h-3.5 text-blue-400" />
+                <FileText className="w-3.5 h-3.5 text-blue-500" />
                 <span>Insert Template</span>
               </button>
             </div>
@@ -417,16 +526,31 @@ export function MarkdownEditor({
               onKeyDown={handleKeyDown}
               placeholder={placeholder}
               style={{ minHeight }}
-              className="w-full p-4 sm:p-5 bg-transparent text-white text-sm outline-none font-mono leading-relaxed placeholder:text-zinc-600 resize-y"
+              className={`w-full p-6 sm:p-8 bg-transparent text-sm outline-hidden font-mono leading-relaxed placeholder:text-zinc-400 resize-y ${
+                isDoc
+                  ? 'text-zinc-900 dark:text-zinc-100 selection:bg-blue-100 dark:selection:bg-blue-900/60 selection:text-blue-900 dark:selection:text-blue-100'
+                  : 'text-white'
+              }`}
             />
           )}
 
           {/* Split Mode: Left Textarea, Right Preview */}
           {viewMode === 'split' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-zinc-800">
+            <div
+              className={`grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x ${
+                isDoc ? 'divide-zinc-200 dark:divide-zinc-800' : 'divide-zinc-800'
+              }`}
+            >
               <div className="flex flex-col">
-                <div className="px-4 py-1.5 bg-zinc-900/60 border-b border-zinc-800/60 text-[10px] font-mono uppercase tracking-wider text-zinc-400">
-                  Markdown Source
+                <div
+                  className={`px-4 py-2 border-b text-[11px] font-medium uppercase tracking-wider flex items-center justify-between ${
+                    isDoc
+                      ? 'bg-zinc-50/80 dark:bg-zinc-900/80 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400'
+                      : 'bg-zinc-900/60 border-zinc-800/60 text-zinc-400 font-mono'
+                  }`}
+                >
+                  <span>Markdown Source</span>
+                  <span className="text-[10px] text-zinc-400 font-mono">Editor</span>
                 </div>
                 <textarea
                   id={id}
@@ -436,19 +560,27 @@ export function MarkdownEditor({
                   onKeyDown={handleKeyDown}
                   placeholder={placeholder}
                   style={{ minHeight }}
-                  className="w-full p-4 bg-transparent text-white text-xs sm:text-sm outline-none font-mono leading-relaxed placeholder:text-zinc-600 resize-y"
+                  className={`w-full p-6 bg-transparent text-xs sm:text-sm outline-hidden font-mono leading-relaxed placeholder:text-zinc-400 resize-y ${
+                    isDoc ? 'text-zinc-900 dark:text-zinc-100' : 'text-white'
+                  }`}
                 />
               </div>
-              <div className="flex flex-col bg-zinc-950/40">
-                <div className="px-4 py-1.5 bg-zinc-900/60 border-b border-zinc-800/60 text-[10px] font-mono uppercase tracking-wider text-emerald-400 flex items-center justify-between">
+              <div className={`flex flex-col ${isDoc ? 'bg-zinc-50/30 dark:bg-zinc-950/20' : 'bg-zinc-950/40'}`}>
+                <div
+                  className={`px-4 py-2 border-b text-[11px] font-medium uppercase tracking-wider flex items-center justify-between ${
+                    isDoc
+                      ? 'bg-zinc-50/80 dark:bg-zinc-900/80 border-zinc-200 dark:border-zinc-800 text-emerald-600 dark:text-emerald-400'
+                      : 'bg-zinc-900/60 border-zinc-800/60 text-emerald-400 font-mono'
+                  }`}
+                >
                   <span>Live Render Preview</span>
-                  <span className="text-zinc-500 text-[10px]">GFM Safe</span>
+                  <span className="text-zinc-500 text-[10px] font-mono">GFM Safe</span>
                 </div>
                 <div
                   style={{ minHeight }}
-                  className="p-4 sm:p-6 overflow-y-auto max-h-[600px]"
+                  className="p-6 sm:p-8 overflow-y-auto max-h-[700px]"
                 >
-                  <MarkdownRenderer content={value} />
+                  <MarkdownRenderer content={value} variant={variant} />
                 </div>
               </div>
             </div>
@@ -458,44 +590,62 @@ export function MarkdownEditor({
           {viewMode === 'preview' && (
             <div
               style={{ minHeight }}
-              className="p-6 sm:p-8 bg-zinc-950/60 overflow-y-auto"
+              className={`p-6 sm:p-10 overflow-y-auto ${
+                isDoc ? 'bg-zinc-100/50 dark:bg-zinc-950/40' : 'bg-zinc-950/60'
+              }`}
             >
-              <div className="mb-4 pb-3 border-b border-zinc-900 flex items-center justify-between">
-                <div className="text-xs font-mono uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+              <div
+                className={`mb-6 pb-4 border-b flex flex-wrap items-center justify-between gap-2 ${
+                  isDoc ? 'border-zinc-200 dark:border-zinc-800' : 'border-zinc-900'
+                }`}
+              >
+                <div className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
                   <Eye className="w-3.5 h-3.5" />
                   <span>Public Presentation Preview</span>
                 </div>
                 <span className="text-xs text-zinc-500 font-mono">
-                  Exact rendering as shown on /projects/:slug
+                  {isDoc ? 'Exact rendering as shown on /privacy-policy' : 'Exact rendering as shown on /projects/:slug'}
                 </span>
               </div>
-              <MarkdownRenderer content={value} />
+              {isDoc ? (
+                <div className="max-w-3xl mx-auto py-10 px-6 sm:px-12 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200/80 dark:border-zinc-800 shadow-xs my-4">
+                  <MarkdownRenderer content={value} variant={variant} />
+                </div>
+              ) : (
+                <MarkdownRenderer content={value} variant={variant} />
+              )}
             </div>
           )}
         </div>
 
         {/* Footer Bar: Stats & Format hints */}
-        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2 bg-zinc-900/80 border-t border-zinc-800/80 text-[11px] font-mono text-zinc-400">
+        <div
+          className={`flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 border-t text-xs ${
+            isDoc
+              ? 'bg-zinc-50/90 dark:bg-zinc-900/90 border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400'
+              : 'bg-zinc-900/80 border-zinc-800/80 font-mono text-zinc-400'
+          }`}
+        >
           <div className="flex items-center gap-3">
             <span>
               {wordCount.toLocaleString()} {wordCount === 1 ? 'word' : 'words'}
             </span>
-            <span className="text-zinc-600">•</span>
+            <span className={isDoc ? 'text-zinc-300 dark:text-zinc-700' : 'text-zinc-600'}>•</span>
             <span>
               {charCount.toLocaleString()} {charCount === 1 ? 'character' : 'characters'}
             </span>
-            <span className="text-zinc-600">•</span>
-            <span className="text-blue-400">GitHub Flavored Markdown</span>
+            <span className={isDoc ? 'text-zinc-300 dark:text-zinc-700' : 'text-zinc-600'}>•</span>
+            <span className="text-blue-500 font-medium">GitHub Flavored Markdown</span>
           </div>
 
-          <div className="flex items-center gap-2 text-zinc-500 text-[10px]">
+          <div className={`flex items-center gap-2 text-[11px] ${isDoc ? 'text-zinc-400 dark:text-zinc-500' : 'text-zinc-500'}`}>
             <span>Tip: Use Cmd/Ctrl+B for bold, Cmd/Ctrl+K for links, Tab to indent</span>
           </div>
         </div>
       </div>
 
       {error && (
-        <p className="text-xs text-rose-400 font-mono mt-1">{error}</p>
+        <p className={`text-xs ${isDoc ? 'text-rose-500 font-medium' : 'text-rose-400 font-mono'} mt-1`}>{error}</p>
       )}
     </div>
   );

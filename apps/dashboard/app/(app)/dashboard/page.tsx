@@ -914,7 +914,7 @@ export default function DashboardPage() {
 
       {isEventsError && (
         <Alert
-          message="Failed to load events data"
+          title="Failed to load events data"
           type="error"
           showIcon
           action={
@@ -1246,7 +1246,7 @@ function RecentActivitySection() {
   ];
 
   if (isAuditError) {
-    return <Alert message="Failed to load audit logs" type="error" showIcon />;
+    return <Alert title="Failed to load audit logs" type="error" showIcon />;
   }
 
   return (

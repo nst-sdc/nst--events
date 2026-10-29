@@ -37,6 +37,7 @@ import { projectsRouter } from './modules/projects/projects.router';
 import { adminProjectsRouter } from './modules/projects/admin-projects.router';
 import { eventResultsRouter } from './modules/event-results/event-results.router';
 import { studentsRouter } from './modules/students/students.router';
+import { policiesRouter, adminPoliciesRouter } from './modules/policies/policies.router';
 
 export function createApp(): Express {
   const app = express();
@@ -56,7 +57,12 @@ export function createApp(): Express {
       credentials: true,
     })
   );
-  app.use(express.json());
+  // Route-scoped JSON parser for policy write endpoints (256 KiB limit to accommodate 102,400 bytes UTF-8 Markdown + JSON envelope)
+  // Registered before general parser so /v1/admin/policies requests are parsed once with 256kb limit,
+  // setting req._body = true so the general parser skips it without double-parsing.
+  app.use('/v1/admin/policies', express.json({ limit: '256kb' }));
+  // General JSON parser retaining strict default 100kb limit for all unrelated endpoints
+  app.use(express.json({ limit: '100kb' }));
   app.use(cookieParser(env.COOKIE_SECRET));
   app.use(requestIdMiddleware);
   app.use(requestLogger);
@@ -112,6 +118,8 @@ export function createApp(): Express {
   app.use('/v1/projects', projectsRouter);
   app.use('/v1/admin/projects', adminProjectsRouter);
   app.use('/v1/students', studentsRouter);
+  app.use('/v1/policies', policiesRouter);
+  app.use('/v1/admin/policies', adminPoliciesRouter);
 
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok' });

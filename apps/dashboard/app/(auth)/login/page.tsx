@@ -4,8 +4,12 @@ import React, { useEffect, useState, useMemo, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowRight, ShieldCheck, Lock, Activity } from 'lucide-react';
 import { getWebAuthStore } from '../../../lib/auth-store';
-import { API_BASE_URL } from '../../../lib/api';
+import { API_BASE_URL, refreshToken } from '../../../lib/api';
 import { DevClubCreditsModal } from '../../../components/brand/DevClubCreditsModal';
+import { validateSafeRedirectPath } from '../../../lib/auth-helpers';
+import { useCurrentUser } from '../../../hooks/useCurrentUser';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { getQueryClient } from '../../../lib/query-client';
 
 const SUPPORT_EMAIL = 'support@nstsdc.com';
 
@@ -88,7 +92,7 @@ function resolveAuthError(errorCode: string | null): AuthErrorInfo | null {
 
 function GoogleIcon({ className = 'w-4 h-4' }: { className?: string }) {
   return (
-    <svg className={`shrink-0 ${className}`} viewBox="0 0 24 24">
+    <svg suppressHydrationWarning className={`shrink-0 ${className}`} viewBox="0 0 24 24">
       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
       <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
       <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
@@ -135,6 +139,21 @@ const responsiveStyles = `
     overflow-wrap: normal;
   }
 
+  .lp-bg-glow {
+    background: radial-gradient(circle at 50% 45%, rgba(0, 87, 255, 0.2) 0%, rgba(5, 5, 5, 0) 70%);
+  }
+
+  .lp-bg-grid {
+    background-image: 
+      linear-gradient(to right, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  .lp-watermark {
+    font-family: var(--font-syne), 'Syne', sans-serif;
+  }
+
   @media (max-width: 480px) {
     .lp-card-responsive {
       box-shadow: 7px 7px 0px #0057FF !important;
@@ -142,16 +161,26 @@ const responsiveStyles = `
   }
 `;
 
+function getLoginRedirectDestination(searchParams: URLSearchParams): string | null {
+  const candidate =
+    searchParams.get('return_to') ||
+    searchParams.get('redirectTo') ||
+    searchParams.get('redirect');
+  return validateSafeRedirectPath(candidate);
+}
+
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const store = getWebAuthStore();
+  const { data: currentUser, isLoading: isUserLoading } = useCurrentUser();
   const [isLoading, setIsLoading] = useState(false);
   const [isCreditsOpen, setIsCreditsOpen] = useState(false);
   const [pulseTick, setPulseTick] = useState(0);
   const lastLoginClickRef = useRef<number>(0);
   const [isDismissed, setIsDismissed] = useState(false);
   const [prevErrorParam, setPrevErrorParam] = useState<string | null>(null);
+  const [clientError, setClientError] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -191,20 +220,50 @@ function LoginContent() {
     };
   }, []);
 
+  // Attempt transparent session hydration on mount if user already has an active session cookie
+  useEffect(() => {
+    if (!store.accessToken && typeof document !== 'undefined' && document.cookie.includes('user_role=')) {
+      refreshToken()
+        .then((res) => {
+          if (res.status === 'SUCCESS' && res.token) {
+            store.setAccessToken(res.token);
+          }
+        })
+        .catch(() => {
+          // Silent catch: user remains on login page
+        });
+    }
+  }, [store]);
+
   useEffect(() => {
     if (store.accessToken) {
-      let returnTo = searchParams.get('return_to');
-      if (!returnTo && typeof window !== 'undefined') returnTo = window.sessionStorage.getItem('return_to');
+      if (isUserLoading) return;
 
-      const userRoleCookie = typeof document !== 'undefined'
+      let returnTo = getLoginRedirectDestination(searchParams);
+      if ((!returnTo || returnTo === '/dashboard') && typeof window !== 'undefined') {
+        const stored = window.sessionStorage.getItem('return_to');
+        const safeStored = validateSafeRedirectPath(stored);
+        if (safeStored) returnTo = safeStored;
+      }
+
+      const userRole = currentUser?.global_role || (typeof document !== 'undefined'
         ? document.cookie.split('; ').find(row => row.startsWith('user_role='))?.split('=')[1]
-        : undefined;
+        : undefined);
 
-      const isStudent = userRoleCookie === 'STUDENT';
-      const isAdmin = userRoleCookie && ['PLATFORM_ADMIN', 'FACULTY_ADMIN', 'FACULTY_MENTOR'].includes(userRoleCookie);
+      const isStudent = userRole === 'STUDENT';
+      const isAdmin = userRole && ['PLATFORM_ADMIN', 'FACULTY_ADMIN', 'FACULTY_MENTOR'].includes(userRole);
 
-      if (returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//')) {
-        const isAdminRoute = returnTo === '/dashboard' || returnTo.startsWith('/dashboard/') || returnTo.startsWith('/admin') || returnTo.startsWith('/events') || returnTo.startsWith('/clubs');
+      if (returnTo) {
+        const isAdminRoute =
+          returnTo === '/dashboard' ||
+          returnTo.startsWith('/dashboard/') ||
+          returnTo === '/admin' ||
+          returnTo.startsWith('/admin/') ||
+          returnTo === '/events' ||
+          returnTo.startsWith('/events/') ||
+          returnTo === '/clubs' ||
+          returnTo.startsWith('/clubs/');
+
         if (isStudent && isAdminRoute) {
           if (typeof window !== 'undefined') window.sessionStorage.removeItem('return_to');
           router.push('/student/home');
@@ -216,18 +275,45 @@ function LoginContent() {
         router.push(isAdmin ? '/dashboard' : '/student/home');
       }
     }
-  }, [store.accessToken, router, searchParams]);
+  }, [store.accessToken, isUserLoading, currentUser, router, searchParams]);
 
   const handleLogin = () => {
-    lastLoginClickRef.current = Date.now();
-    setIsLoading(true);
-    const returnTo = searchParams.get('return_to');
-    if (returnTo && typeof window !== 'undefined') window.sessionStorage.setItem('return_to', returnTo);
-    const authBase = API_BASE_URL || '';
-    window.location.href = `${authBase}/auth/google`;
+    try {
+      setClientError(null);
+      lastLoginClickRef.current = Date.now();
+      setIsLoading(true);
+
+      let returnTo = getLoginRedirectDestination(searchParams);
+      if ((!returnTo || returnTo === '/dashboard') && typeof window !== 'undefined') {
+        const stored = window.sessionStorage.getItem('return_to');
+        const safeStored = validateSafeRedirectPath(stored);
+        if (safeStored) returnTo = safeStored;
+      }
+      if (returnTo && typeof window !== 'undefined') {
+        window.sessionStorage.setItem('return_to', returnTo);
+      }
+
+      if (store.accessToken && returnTo) {
+        setIsLoading(false);
+        router.push(returnTo);
+        return;
+      }
+
+      const authBase = API_BASE_URL || '';
+      window.location.href = `${authBase}/auth/google`;
+
+      // Safety fallback: restore button state if navigation stalled
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 8000);
+    } catch {
+      setIsLoading(false);
+      setClientError('Unable to initiate Google sign-in. Please try again.');
+    }
   };
 
   const handleDismissError = () => {
+    setClientError(null);
     setIsDismissed(true);
     const params = new URLSearchParams(searchParams.toString());
     params.delete('error');
@@ -258,7 +344,7 @@ function LoginContent() {
           </span>
           <span className="font-semibold text-[#a0a4b8]">NST EVENTS PLATFORM</span>
         </div>
-        <div className="flex items-center gap-1.5 text-[#5e6378]">
+        <div suppressHydrationWarning className="flex items-center gap-1.5 text-[#5e6378]">
           <Activity className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#0057FF]" />
           <span className="hidden xs:inline">AUTH_GATEWAY_ACTIVE</span>
           <span className="xs:hidden">ACTIVE</span>
@@ -302,19 +388,19 @@ function LoginContent() {
           <p className="mb-2.5 sm:mb-3 text-[#d0d4e4]">
             Sign in with your verified institutional Google account to synchronize event attendance, ticket passes, and club leadership roles.
           </p>
-          <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-[#C8FF00]">
+          <div suppressHydrationWarning className="flex items-center gap-2 text-[10px] sm:text-[11px] text-[#C8FF00]">
             <ShieldCheck className="w-4 h-4 text-[#C8FF00] shrink-0" />
             <span>Authorized: @adypu.edu.in (students) &bull; @newtonschool.co (faculty)</span>
           </div>
         </div>
 
         {/* Auth Error Banner */}
-        {authError && (
+        {(authError || clientError) && (
           <div className="p-3.5 sm:p-4 bg-red-950/20 border-2 border-[#FF3B30] mb-4 sm:mb-6 font-mono text-[11px] sm:text-xs text-[#ffb3af] relative">
             <div className="flex items-center justify-between border-b border-[#FF3B30]/30 pb-2 mb-2.5">
               <div className="flex items-center gap-2 text-[#FF3B30] font-bold tracking-wider text-[10px] uppercase">
                 <span className="w-2 h-2 rounded-full bg-[#FF3B30] inline-block animate-ping" />
-                {authError.badge}
+                {clientError ? 'SIGN-IN ERROR' : authError?.badge}
               </div>
               <button
                 type="button"
@@ -326,15 +412,17 @@ function LoginContent() {
               </button>
             </div>
             <div className="font-bold text-[#ff8a84] text-[11px] uppercase tracking-wide mb-1">
-              {authError.title}
+              {clientError ? 'SIGN-IN FAILED' : authError?.title}
             </div>
             <p className="font-sans text-xs text-[#ffb3af] mb-1.5 leading-relaxed">
-              {authError.message}
+              {clientError || authError?.message}
             </p>
-            <p className="font-sans text-[11px] text-[#d67a76] leading-relaxed mb-3">
-              {authError.detail}
-            </p>
-            {authError.canSwitchAccount && (
+            {!clientError && authError?.detail && (
+              <p className="font-sans text-[11px] text-[#d67a76] leading-relaxed mb-3">
+                {authError.detail}
+              </p>
+            )}
+            {authError?.canSwitchAccount && (
               <button
                 type="button"
                 onClick={handleLogin}
@@ -345,7 +433,7 @@ function LoginContent() {
                 SWITCH GOOGLE ACCOUNT
               </button>
             )}
-            {authError.canContactCoordinator && (
+            {authError?.canContactCoordinator && (
               <button
                 type="button"
                 onClick={handleContactCoordinator}
@@ -354,16 +442,18 @@ function LoginContent() {
                 CONTACT ACADEMIC COORDINATOR
               </button>
             )}
-            <div className="text-[9px] text-[#FF3B30]/80 uppercase tracking-wider mt-2.5 pt-2 border-t border-dashed border-[#FF3B30]/30 leading-normal">
-              NOTE: If Google signs you in automatically without prompting, sign out at accounts.google.com or use private browsing.
-            </div>
+            {!clientError && (
+              <div className="text-[9px] text-[#FF3B30]/80 uppercase tracking-wider mt-2.5 pt-2 border-t border-dashed border-[#FF3B30]/30 leading-normal">
+                NOTE: If Google signs you in automatically without prompting, sign out at accounts.google.com or use private browsing.
+              </div>
+            )}
           </div>
         )}
 
         {/* Status Telemetry Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 mb-5 sm:mb-7 font-mono text-xs">
-          <div className="p-2.5 sm:p-3 bg-black/40 border border-white/10 flex flex-col gap-1">
-            <div className="text-[10px] text-[#6b7280] uppercase tracking-wider flex items-center gap-1.5">
+          <div suppressHydrationWarning className="p-2.5 sm:p-3 bg-black/40 border border-white/10 flex flex-col gap-1">
+            <div suppressHydrationWarning className="text-[10px] text-[#6b7280] uppercase tracking-wider flex items-center gap-1.5">
               <Lock className="w-3 h-3 text-[#0057FF] shrink-0" />
               SESSION ENCRYPTION
             </div>
@@ -372,8 +462,8 @@ function LoginContent() {
             </div>
           </div>
 
-          <div className="p-2.5 sm:p-3 bg-black/40 border border-white/10 flex flex-col gap-1">
-            <div className="text-[10px] text-[#6b7280] uppercase tracking-wider flex items-center gap-1.5">
+          <div suppressHydrationWarning className="p-2.5 sm:p-3 bg-black/40 border border-white/10 flex flex-col gap-1">
+            <div suppressHydrationWarning className="text-[10px] text-[#6b7280] uppercase tracking-wider flex items-center gap-1.5">
               <ShieldCheck className="w-3 h-3 text-[#C8FF00] shrink-0" />
               DIRECTORY SSO GATEWAY
             </div>
@@ -387,6 +477,7 @@ function LoginContent() {
         <div className="space-y-3">
           <button
             id="btn-google-login"
+            suppressHydrationWarning
             type="button"
             className="lp-login-btn w-full inline-flex items-center justify-center gap-2.5 sm:gap-3 font-mono uppercase text-xs sm:text-sm font-bold tracking-[0.14em] sm:tracking-[0.16em] px-5 sm:px-8 py-3.5 sm:py-4 active:translate-x-[1px] active:translate-y-[1px] group cursor-pointer text-center"
             onClick={handleLogin}
@@ -435,51 +526,47 @@ function LoginContent() {
 }
 
 export default function LoginPage() {
+  const queryClient = getQueryClient();
+
   return (
-    <div
-      suppressHydrationWarning
-      className="relative min-h-screen w-full flex flex-col items-center justify-center bg-[#050505] text-[#F5F5F2] px-3 py-6 sm:p-6 md:p-8 overflow-x-hidden select-none"
-    >
-      {/* Dynamic Background Glow */}
+    <QueryClientProvider client={queryClient}>
       <div
-        className="pointer-events-none fixed inset-0 z-0 opacity-40"
-        style={{
-          background: 'radial-gradient(circle at 50% 45%, rgba(0, 87, 255, 0.2) 0%, rgba(5, 5, 5, 0) 70%)',
-        }}
-      />
-
-      {/* Cyber Grid Texture Overlay */}
-      <div
-        className="pointer-events-none fixed inset-0 z-0 opacity-25"
-        style={{
-          backgroundImage: `
-            linear-gradient(to right, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 1px, transparent 1px)
-          `,
-          backgroundSize: '32px 32px',
-        }}
-      />
-
-      {/* Huge Background Brutalist Watermark */}
-      <div
-        className="pointer-events-none absolute z-0 text-[20vw] sm:text-[18vw] font-black uppercase text-white/[0.02] tracking-tighter leading-none select-none"
-        style={{ fontFamily: "var(--font-syne), 'Syne', sans-serif" }}
+        suppressHydrationWarning
+        className="relative min-h-screen w-full flex flex-col items-center justify-center bg-[#050505] text-[#F5F5F2] px-3 py-6 sm:p-6 md:p-8 overflow-x-hidden select-none"
       >
-        NST AUTH
+        {/* Dynamic Background Glow */}
+        <div
+          suppressHydrationWarning
+          className="lp-bg-glow pointer-events-none fixed inset-0 z-0 opacity-40"
+        />
+
+        {/* Cyber Grid Texture Overlay */}
+        <div
+          suppressHydrationWarning
+          className="lp-bg-grid pointer-events-none fixed inset-0 z-0 opacity-25"
+        />
+
+        {/* Huge Background Brutalist Watermark */}
+        <div
+          suppressHydrationWarning
+          className="lp-watermark pointer-events-none absolute z-0 text-[20vw] sm:text-[18vw] font-black uppercase text-white/[0.02] tracking-tighter leading-none select-none"
+        >
+          NST AUTH
+        </div>
+
+        <Suspense
+          fallback={
+            <div className="relative z-10 w-full max-w-xl bg-[#0c0d12]/95 border-2 border-white/20 p-8 shadow-[12px_12px_0px_#0057FF] backdrop-blur-xl flex flex-col items-center justify-center min-h-[360px]">
+              <div className="w-8 h-8 border-3 border-[#0057FF] border-t-transparent rounded-full animate-spin mb-4" />
+              <span className="font-mono text-xs uppercase tracking-widest text-[#888]">
+                INITIALIZING AUTH GATEWAY...
+              </span>
+            </div>
+          }
+        >
+          <LoginContent />
+        </Suspense>
       </div>
-
-      <Suspense
-        fallback={
-          <div className="relative z-10 w-full max-w-xl bg-[#0c0d12]/95 border-2 border-white/20 p-8 shadow-[12px_12px_0px_#0057FF] backdrop-blur-xl flex flex-col items-center justify-center min-h-[360px]">
-            <div className="w-8 h-8 border-3 border-[#0057FF] border-t-transparent rounded-full animate-spin mb-4" />
-            <span className="font-mono text-xs uppercase tracking-widest text-[#888]">
-              INITIALIZING AUTH GATEWAY...
-            </span>
-          </div>
-        }
-      >
-        <LoginContent />
-      </Suspense>
-    </div>
+    </QueryClientProvider>
   );
 }
