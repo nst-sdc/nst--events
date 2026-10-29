@@ -6,6 +6,7 @@ import { getWebAuthStore } from '../../lib/auth-store';
 import { AppShell } from '../../components/layout/AppShell';
 import { apiClient } from '../../lib/api';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
+import { validateSafeRedirectPath } from '../../lib/auth-helpers';
 import { Spin, Layout, Result, Button } from 'antd';
 
 // Module-level promise to prevent duplicate concurrent refresh requests across remounts
@@ -43,20 +44,34 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           if (typeof document !== 'undefined') {
             document.cookie = 'user_role=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax';
           }
-          if (typeof window !== 'undefined') {
-            window.sessionStorage?.removeItem('return_to');
+          const currentPath = typeof window !== 'undefined'
+            ? validateSafeRedirectPath(window.location.pathname + window.location.search)
+            : null;
+          const isNonTrivialDestination = !!currentPath && currentPath !== '/' && currentPath !== '/login';
+          if (isNonTrivialDestination && typeof window !== 'undefined') {
+            window.sessionStorage?.setItem('return_to', currentPath);
           }
-          router.push('/login');
+          const loginTarget = isNonTrivialDestination
+            ? `/login?return_to=${encodeURIComponent(currentPath)}`
+            : '/login';
+          router.push(loginTarget);
         }
       } catch {
         setIsAuthenticated(false);
         if (typeof document !== 'undefined') {
           document.cookie = 'user_role=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax';
         }
-        if (typeof window !== 'undefined') {
-          window.sessionStorage?.removeItem('return_to');
+        const currentPath = typeof window !== 'undefined'
+          ? validateSafeRedirectPath(window.location.pathname + window.location.search)
+          : null;
+        const isNonTrivialDestination = !!currentPath && currentPath !== '/' && currentPath !== '/login';
+        if (isNonTrivialDestination && typeof window !== 'undefined') {
+          window.sessionStorage?.setItem('return_to', currentPath);
         }
-        router.push('/login');
+        const loginTarget = isNonTrivialDestination
+          ? `/login?return_to=${encodeURIComponent(currentPath)}`
+          : '/login';
+        router.push(loginTarget);
       } finally {
         setIsHydrating(false);
         refreshPromise = null;
@@ -88,8 +103,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
       // 2. Handle returnTo for authorized administrators
       if (typeof window !== 'undefined') {
-        const returnTo = window.sessionStorage?.getItem('return_to');
-        if (returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//')) {
+        const stored = window.sessionStorage?.getItem('return_to');
+        const returnTo = validateSafeRedirectPath(stored);
+        if (returnTo) {
           window.sessionStorage?.removeItem('return_to');
           router.replace(returnTo);
           return;

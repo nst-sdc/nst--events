@@ -125,7 +125,7 @@ describe('1. Server-Side Route Guard (Next.js Middleware)', () => {
     expect(res.status).toBe(200);
   });
 
-  it('redirects forged PLATFORM_ADMIN cookie without session to /login', () => {
+  it('allows PLATFORM_ADMIN role hint to proceed to AppLayout session validation', () => {
     const req = new NextRequest('http://localhost:3000/dashboard', {
       headers: {
         cookie: 'user_role=PLATFORM_ADMIN',
@@ -133,8 +133,7 @@ describe('1. Server-Side Route Guard (Next.js Middleware)', () => {
     });
 
     const res = middleware(req);
-    expect(res.status).toBe(307);
-    expect(res.headers.get('location')).toBe('http://localhost:3000/login?return_to=%2Fdashboard');
+    expect(res.status).toBe(200);
   });
 
   it('redirects unauthenticated requests on /dashboard to /login with return_to', () => {

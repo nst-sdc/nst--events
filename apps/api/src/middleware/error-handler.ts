@@ -50,6 +50,23 @@ export function errorHandler(
     return;
   }
 
+  if (
+    typeof err === 'object' &&
+    err !== null &&
+    ('type' in err || 'status' in err || 'statusCode' in err) &&
+    ((err as any).type === 'entity.too.large' || (err as any).status === 413 || (err as any).statusCode === 413)
+  ) {
+    res.status(413).json({
+      type: 'https://api.nstsdc.org/errors/payload-too-large',
+      title: 'Payload Too Large',
+      status: 413,
+      detail: (err as any).message || 'Request payload exceeds server limits',
+      instance,
+      request_id: requestId,
+    });
+    return;
+  }
+
   const message =
     err instanceof Error ? err.message : 'An unexpected error occurred';
   const detail =

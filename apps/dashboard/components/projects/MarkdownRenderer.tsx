@@ -7,6 +7,7 @@ interface MarkdownRendererProps {
   content?: string | null;
   className?: string;
   compact?: boolean;
+  variant?: 'default' | 'document';
 }
 
 // ---------------------------------------------------------------------------
@@ -288,8 +289,9 @@ function parseTable(lines: string[]): TableData | null {
 // ---------------------------------------------------------------------------
 // Main Markdown Renderer Component
 // ---------------------------------------------------------------------------
-export function MarkdownRenderer({ content, className = '', compact = false }: MarkdownRendererProps) {
+export function MarkdownRenderer({ content, className = '', compact = false, variant = 'default' }: MarkdownRendererProps) {
   const instanceId = useId();
+  const isDoc = variant === 'document';
 
   if (!content || typeof content !== 'string' || !content.trim()) {
     return (
@@ -350,7 +352,11 @@ export function MarkdownRenderer({ content, className = '', compact = false }: M
           elements.push(
             <h1
               key={key}
-              className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-white mt-8 mb-4 pb-2 border-b border-zinc-800 flex items-center gap-2"
+              className={
+                isDoc
+                  ? 'text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900 dark:text-white mt-8 mb-4 pb-2 border-b border-zinc-200 dark:border-zinc-800 flex items-center gap-2'
+                  : 'text-2xl sm:text-3xl font-black uppercase tracking-tight text-white mt-8 mb-4 pb-2 border-b border-zinc-800 flex items-center gap-2'
+              }
             >
               {parsedHeading}
             </h1>
@@ -360,7 +366,11 @@ export function MarkdownRenderer({ content, className = '', compact = false }: M
           elements.push(
             <h2
               key={key}
-              className="text-xl sm:text-2xl font-bold uppercase tracking-tight text-white mt-7 mb-3 pb-1 border-b border-zinc-800/60"
+              className={
+                isDoc
+                  ? 'text-xl sm:text-2xl font-semibold tracking-tight text-zinc-900 dark:text-white mt-7 mb-3 pb-1 border-b border-zinc-100 dark:border-zinc-800/60'
+                  : 'text-xl sm:text-2xl font-bold uppercase tracking-tight text-white mt-7 mb-3 pb-1 border-b border-zinc-800/60'
+              }
             >
               {parsedHeading}
             </h2>
@@ -370,7 +380,11 @@ export function MarkdownRenderer({ content, className = '', compact = false }: M
           elements.push(
             <h3
               key={key}
-              className="text-lg sm:text-xl font-bold text-zinc-100 mt-6 mb-2.5"
+              className={
+                isDoc
+                  ? 'text-lg sm:text-xl font-medium text-zinc-900 dark:text-zinc-100 mt-6 mb-2.5'
+                  : 'text-lg sm:text-xl font-bold text-zinc-100 mt-6 mb-2.5'
+              }
             >
               {parsedHeading}
             </h3>
@@ -380,7 +394,11 @@ export function MarkdownRenderer({ content, className = '', compact = false }: M
           elements.push(
             <h4
               key={key}
-              className="text-base sm:text-lg font-semibold text-zinc-200 mt-5 mb-2"
+              className={
+                isDoc
+                  ? 'text-base sm:text-lg font-medium text-zinc-800 dark:text-zinc-200 mt-5 mb-2'
+                  : 'text-base sm:text-lg font-semibold text-zinc-200 mt-5 mb-2'
+              }
             >
               {parsedHeading}
             </h4>
@@ -392,7 +410,11 @@ export function MarkdownRenderer({ content, className = '', compact = false }: M
           elements.push(
             <h5
               key={key}
-              className="text-sm sm:text-base font-semibold font-mono uppercase tracking-wider text-zinc-400 mt-4 mb-2"
+              className={
+                isDoc
+                  ? 'text-sm sm:text-base font-medium font-mono uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mt-4 mb-2'
+                  : 'text-sm sm:text-base font-semibold font-mono uppercase tracking-wider text-zinc-400 mt-4 mb-2'
+              }
             >
               {parsedHeading}
             </h5>
@@ -406,7 +428,7 @@ export function MarkdownRenderer({ content, className = '', compact = false }: M
     // 4. Horizontal Rule: ---, ***, ___
     if (/^(\*{3,}|-{3,}|_{3,})$/.test(trimmed)) {
       elements.push(
-        <hr key={key} className="my-6 border-zinc-800" />
+        <hr key={key} className={isDoc ? 'my-6 border-zinc-200 dark:border-zinc-800' : 'my-6 border-zinc-800'} />
       );
       i++;
       continue;
@@ -422,7 +444,11 @@ export function MarkdownRenderer({ content, className = '', compact = false }: M
       elements.push(
         <blockquote
           key={key}
-          className="my-4 border-l-4 border-[#0057FF] bg-zinc-900/40 px-4 py-3 rounded-r-lg text-zinc-300 italic space-y-1 text-sm sm:text-base"
+          className={
+            isDoc
+              ? 'my-4 border-l-4 border-[#0057FF] bg-blue-50/50 dark:bg-zinc-900/40 px-4 py-3 rounded-r-lg text-zinc-700 dark:text-zinc-300 italic space-y-1 text-sm sm:text-base'
+              : 'my-4 border-l-4 border-[#0057FF] bg-zinc-900/40 px-4 py-3 rounded-r-lg text-zinc-300 italic space-y-1 text-sm sm:text-base'
+          }
         >
           {quoteLines.map((ql, idx) => (
             <p key={`${key}-q-${idx}`}>
@@ -445,16 +471,27 @@ export function MarkdownRenderer({ content, className = '', compact = false }: M
       const tableData = parseTable(tableLines);
       if (tableData) {
         elements.push(
-          <div key={key} className="my-5 overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-950/70 shadow-sm">
+          <div
+            key={key}
+            className={
+              isDoc
+                ? 'my-5 overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950/70 shadow-xs'
+                : 'my-5 overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-950/70 shadow-sm'
+            }
+          >
             <table className="w-full text-left border-collapse text-xs sm:text-sm">
               <thead>
-                <tr className="border-b border-zinc-800 bg-zinc-900/80">
+                <tr className={isDoc ? 'border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/80' : 'border-b border-zinc-800 bg-zinc-900/80'}>
                   {tableData.headers.map((header, hIdx) => {
                     const align = tableData.alignments[hIdx] || 'left';
                     return (
                       <th
                         key={`${key}-th-${hIdx}`}
-                        className={`px-4 py-3 font-mono font-bold text-zinc-200 uppercase tracking-wider text-[11px] sm:text-xs text-${align}`}
+                        className={`px-4 py-3 font-mono ${
+                          isDoc
+                            ? 'font-semibold text-zinc-700 dark:text-zinc-200'
+                            : 'font-bold text-zinc-200'
+                        } uppercase tracking-wider text-[11px] sm:text-xs text-${align}`}
                       >
                         {parseInlineMarkdown(header, `${key}-th-txt-${hIdx}`)}
                       </th>
@@ -462,18 +499,22 @@ export function MarkdownRenderer({ content, className = '', compact = false }: M
                   })}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-850">
+              <tbody className={isDoc ? 'divide-y divide-zinc-200 dark:divide-zinc-800' : 'divide-y divide-zinc-850'}>
                 {tableData.rows.map((row, rIdx) => (
                   <tr
                     key={`${key}-tr-${rIdx}`}
-                    className="hover:bg-zinc-900/40 transition-colors even:bg-zinc-950/30"
+                    className={
+                      isDoc
+                        ? 'hover:bg-zinc-50/80 dark:hover:bg-zinc-900/40 transition-colors even:bg-zinc-50/40 dark:even:bg-zinc-950/30'
+                        : 'hover:bg-zinc-900/40 transition-colors even:bg-zinc-950/30'
+                    }
                   >
                     {row.map((cell, cIdx) => {
                       const align = tableData.alignments[cIdx] || 'left';
                       return (
                         <td
                           key={`${key}-td-${rIdx}-${cIdx}`}
-                          className={`px-4 py-3 text-zinc-300 text-${align}`}
+                          className={`px-4 py-3 ${isDoc ? 'text-zinc-800 dark:text-zinc-300' : 'text-zinc-300'} text-${align}`}
                         >
                           {parseInlineMarkdown(cell, `${key}-td-txt-${rIdx}-${cIdx}`)}
                         </td>
@@ -559,7 +600,9 @@ export function MarkdownRenderer({ content, className = '', compact = false }: M
               return (
                 <div
                   key={`${key}-task-${lIdx}`}
-                  className={`flex items-start gap-2.5 text-sm sm:text-base leading-relaxed text-zinc-300 ${padLeft}`}
+                  className={`flex items-start gap-2.5 text-sm sm:text-base leading-relaxed ${
+                    isDoc ? 'text-zinc-800 dark:text-zinc-300' : 'text-zinc-300'
+                  } ${padLeft}`}
                 >
                   <span className="mt-1 text-zinc-400 select-none">
                     {item.checked ? (
@@ -568,7 +611,7 @@ export function MarkdownRenderer({ content, className = '', compact = false }: M
                       <Square className="w-4 h-4 text-zinc-600" />
                     )}
                   </span>
-                  <span className={item.checked ? 'line-through text-zinc-500' : ''}>
+                  <span className={item.checked ? 'line-through text-zinc-400 dark:text-zinc-500' : ''}>
                     {parseInlineMarkdown(item.content, `${key}-task-txt-${lIdx}`)}
                   </span>
                 </div>
@@ -579,9 +622,11 @@ export function MarkdownRenderer({ content, className = '', compact = false }: M
               return (
                 <div
                   key={`${key}-ol-${lIdx}`}
-                  className={`flex items-start gap-2 text-sm sm:text-base leading-relaxed text-zinc-300 ${padLeft}`}
+                  className={`flex items-start gap-2 text-sm sm:text-base leading-relaxed ${
+                    isDoc ? 'text-zinc-800 dark:text-zinc-300' : 'text-zinc-300'
+                  } ${padLeft}`}
                 >
-                  <span className="font-mono text-xs text-zinc-500 mt-1 select-none shrink-0 min-w-[1.2rem]">
+                  <span className="font-mono text-xs text-zinc-400 dark:text-zinc-500 mt-1 select-none shrink-0 min-w-[1.2rem]">
                     {lIdx + 1}.
                   </span>
                   <span>{parseInlineMarkdown(item.content, `${key}-ol-txt-${lIdx}`)}</span>
@@ -592,7 +637,9 @@ export function MarkdownRenderer({ content, className = '', compact = false }: M
             return (
               <div
                 key={`${key}-ul-${lIdx}`}
-                className={`flex items-start gap-2 text-sm sm:text-base leading-relaxed text-zinc-300 ${padLeft}`}
+                className={`flex items-start gap-2 text-sm sm:text-base leading-relaxed ${
+                  isDoc ? 'text-zinc-800 dark:text-zinc-300' : 'text-zinc-300'
+                } ${padLeft}`}
               >
                 <span className="text-[#0057FF] text-base leading-tight select-none shrink-0">•</span>
                 <span>{parseInlineMarkdown(item.content, `${key}-ul-txt-${lIdx}`)}</span>
@@ -628,7 +675,9 @@ export function MarkdownRenderer({ content, className = '', compact = false }: M
           key={key}
           className={`${
             compact ? 'text-xs' : 'text-sm sm:text-base'
-          } leading-relaxed text-zinc-300 my-3 font-sans break-words`}
+          } leading-relaxed ${
+            isDoc ? 'text-zinc-800 dark:text-zinc-300' : 'text-zinc-300'
+          } my-3.5 font-sans break-words`}
         >
           {paragraphLines.map((pLine, pIdx) => (
             <React.Fragment key={`${key}-p-${pIdx}`}>
@@ -642,7 +691,11 @@ export function MarkdownRenderer({ content, className = '', compact = false }: M
   }
 
   return (
-    <div className={`nst-markdown-prose max-w-none text-zinc-200 overflow-hidden ${className}`}>
+    <div
+      className={`nst-markdown-prose max-w-none ${
+        isDoc ? 'text-zinc-800 dark:text-zinc-200' : 'text-zinc-200'
+      } overflow-hidden ${className}`}
+    >
       {elements}
     </div>
   );

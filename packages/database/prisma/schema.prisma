@@ -69,6 +69,7 @@ model User {
   studentProfile            StudentProfile?
   studentCuratedItems       StudentProfileCuratedItem[]
   studentSlugHistory        StudentSlugHistory[]
+  publishedPolicies         SystemPolicy[]              @relation("PolicyPublisher")
 
   @@index([email])
   @@index([googleSub])
@@ -1500,4 +1501,22 @@ model StudentSlugHistory {
 
   @@index([userId])
   @@map("student_slug_history")
+}
+
+/// System-wide governance and legal policies (Privacy Policy, Terms of Service).
+model SystemPolicy {
+  slug                String    @id @db.VarChar(64)
+  title               String    @db.VarChar(128)
+  publishedContent    String    @map("published_content") @db.Text
+  draftContent        String    @map("draft_content") @db.Text
+  concurrencyRevision Int       @default(1) @map("concurrency_revision")
+  publishedVersion    Int       @default(1) @map("published_version")
+  publishedAt         DateTime? @map("published_at") @db.Timestamptz(6)
+  publishedById       String?   @map("published_by_id") @db.Uuid
+  updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  publishedBy         User?     @relation("PolicyPublisher", fields: [publishedById], references: [id], onDelete: SetNull)
+
+  @@index([publishedAt])
+  @@map("system_policies")
 }

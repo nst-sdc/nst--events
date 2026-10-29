@@ -20,7 +20,9 @@ import {
   BookOutlined,
   BlockOutlined,
   InfoCircleOutlined,
-  BarChartOutlined
+  BarChartOutlined,
+  ControlOutlined,
+  FileProtectOutlined,
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
@@ -40,6 +42,8 @@ const { useToken } = antdTheme;
 
 function getPageTitle(pathname: string): string {
   const routeTitles: Record<string, string> = {
+    '/admin': 'Platform Administration',
+    '/admin/privacy-policy': 'Privacy Policy',
     '/dashboard': 'Dashboard',
     '/events': 'Events',
     '/clubs': 'Clubs',
@@ -132,6 +136,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (isAdmin || canApprove) {
     const adminChildren: { key: string; icon: React.ReactNode; label: string }[] = [];
     
+    if (isPlatformAdmin) {
+      adminChildren.push({ key: '/admin', icon: <ControlOutlined />, label: 'Admin Hub' });
+    }
+
     if (isAdmin) {
       adminChildren.push({ key: '/admin/analytics', icon: <BarChartOutlined />, label: 'Analytics' });
     }
@@ -150,6 +158,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
 
     if (isPlatformAdmin) {
+      adminChildren.push({ key: '/admin/privacy-policy', icon: <FileProtectOutlined />, label: 'Privacy Policy' });
       adminChildren.push({ key: '/admin/audit-logs', icon: <FileTextOutlined />, label: 'Audit Logs' });
       adminChildren.push({ key: '/admin/queues', icon: <MonitorOutlined />, label: 'Queues' });
     }
@@ -165,6 +174,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   // Determine active keys
   let selectedKeys = [pathname];
+  if (pathname === '/admin') selectedKeys = ['/admin'];
+  if (pathname.startsWith('/admin/privacy-policy')) selectedKeys = ['/admin/privacy-policy'];
   if (pathname.startsWith('/events/')) selectedKeys = ['/events'];
   if (pathname.startsWith('/clubs/')) selectedKeys = ['/clubs'];
   if (pathname.startsWith('/admin/users/')) selectedKeys = ['/admin/users'];
@@ -269,6 +280,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               menu={{
                 items: [
                   ...themeMenu,
+                  ...(isAdmin ? [
+                    {
+                      key: 'admin-hub',
+                      icon: <ControlOutlined />,
+                      label: 'Platform Admin',
+                      onClick: () => router.push('/admin'),
+                    },
+                  ] : []),
                   {
                     key: 'student-portal',
                     icon: <UserOutlined />,

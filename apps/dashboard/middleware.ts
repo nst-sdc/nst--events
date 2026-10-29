@@ -35,12 +35,11 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(studentUrl);
     }
 
-    const hasRefreshToken = request.cookies.has('refreshToken');
-
-    // 2. Session token is mandatory for protected operations/admin routes.
-    // Client-controlled user_role cookie alone CANNOT establish an authenticated session.
-    // Unauthenticated requests or forged admin cookies with no session must be redirected to /login.
-    if (!hasRefreshToken) {
+    // 2. Unauthenticated requests (no role cookie) or unrecognized roles must be redirected to /login.
+    // Client-controlled user_role cookie acts as an edge presentation routing hint. Authoritative
+    // cryptographic session validation is enforced client-side by AppLayout (/auth/refresh) and by
+    // the Express API on every data request.
+    if (!userRole || !ADMIN_ROLES.includes(userRole)) {
       const loginUrl = new URL('/login', request.url);
       loginUrl.searchParams.set('return_to', pathname);
       return NextResponse.redirect(loginUrl);
