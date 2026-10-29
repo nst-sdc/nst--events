@@ -241,13 +241,102 @@ export function StudentCalendarView() {
   }, [selectedDate]);
 
   return (
-    <div className="w-full flex flex-col gap-6 font-sans">
+    <div className="w-full flex flex-col gap-6 font-sans student-calendar-view">
+      <style href="student-calendar-styles" precedence="high">{`
+        /* Scoped Light Theme for Calendar */
+        html.light .student-calendar-view {
+          color: #050505;
+        }
+        html.light .student-calendar-view .calendar-controls-box {
+          background: #FFFFFF !important;
+          border-color: #000000 !important;
+          color: #050505 !important;
+        }
+        html.light .student-calendar-view .calendar-controls-box span {
+          color: #050505 !important;
+        }
+        html.light .student-calendar-view .calendar-controls-box button {
+          color: #555566 !important;
+        }
+        html.light .student-calendar-view .calendar-controls-box button:hover {
+          color: #000000 !important;
+          background: #F5F5F2 !important;
+        }
+        html.light .student-calendar-view .calendar-today-btn {
+          background: #FFFFFF !important;
+          border-color: #000000 !important;
+          color: #050505 !important;
+        }
+        html.light .student-calendar-view .calendar-today-btn:hover {
+          background: #F5F5F2 !important;
+          color: #000000 !important;
+        }
+        html.light .student-calendar-view select {
+          background: #FFFFFF !important;
+          border-color: #000000 !important;
+          color: #050505 !important;
+        }
+        html.light .student-calendar-view .calendar-legend-bar {
+          background: #F5F5F2 !important;
+          border-color: rgba(0, 0, 0, 0.15) !important;
+          color: #555566 !important;
+        }
+        html.light .student-calendar-view .calendar-legend-bar span {
+          color: #050505;
+        }
+        html.light .student-calendar-view .calendar-grid-border {
+          border-color: #000000 !important;
+          background: #E5E5E0 !important;
+          box-shadow: 8px 8px 0px #000000 !important;
+        }
+        html.light .student-calendar-view .calendar-day-header {
+          background: #F5F5F2 !important;
+          border-bottom-color: #000000 !important;
+          color: #050505 !important;
+        }
+        html.light .student-calendar-view .calendar-day-cell {
+          background: #FFFFFF !important;
+        }
+        html.light .student-calendar-view .calendar-day-cell.inactive-month {
+          background: #F8F8F6 !important;
+        }
+        html.light .student-calendar-view .calendar-day-cell:hover {
+          background: #F0F4FF !important;
+        }
+        html.light .student-calendar-view .calendar-day-num {
+          color: #050505 !important;
+        }
+        html.light .student-calendar-view .calendar-drawer {
+          background: #FFFFFF !important;
+          border-color: #000000 !important;
+          box-shadow: 12px 12px 0px #000000 !important;
+          color: #050505 !important;
+        }
+        html.light .student-calendar-view .calendar-drawer-header {
+          background: #F5F5F2 !important;
+          border-bottom-color: #000000 !important;
+        }
+        html.light .student-calendar-view .calendar-drawer-header * {
+          color: #050505 !important;
+        }
+        html.light .student-calendar-view .calendar-drawer-item {
+          background: #F9F9F8 !important;
+          border-color: #000000 !important;
+          color: #050505 !important;
+        }
+        html.light .student-calendar-view .calendar-drawer-item h4 {
+          color: #050505 !important;
+        }
+        html.light .student-calendar-view .calendar-drawer-item p {
+          color: #555566 !important;
+        }
+      `}</style>
       {/* TOOLBAR & CONTROLS */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b-2 border-white/15 pb-6">
         
         {/* Month Navigation */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center border-2 border-white/20 bg-[#090a0f] shadow-[3px_3px_0px_#000]">
+          <div className="flex items-center border-2 border-white/20 bg-[#090a0f] shadow-[3px_3px_0px_#000] calendar-controls-box">
             <button 
               onClick={handlePrevMonth}
               className="p-2.5 text-white/80 hover:text-white hover:bg-white/10 transition-colors"
@@ -274,7 +363,7 @@ export function StudentCalendarView() {
 
           <button
             onClick={handleToday}
-            className="px-4 py-2 border-2 border-white/20 text-[#a0a4b8] hover:text-white hover:border-white hover:bg-white/10 font-mono uppercase text-xs tracking-wider transition-all shadow-[2px_2px_0px_#000]"
+            className="px-4 py-2 border-2 border-white/20 text-[#a0a4b8] hover:text-white hover:border-white hover:bg-white/10 font-mono uppercase text-xs tracking-wider transition-all shadow-[2px_2px_0px_#000] calendar-today-btn"
           >
             Today
           </button>
@@ -283,13 +372,13 @@ export function StudentCalendarView() {
         {/* Status / Scope / Timeline Filters */}
         <div className="flex flex-wrap items-center gap-3">
           {/* Scope Toggle */}
-          <div className="inline-flex border-2 border-white/20 bg-[#090a0f] p-1 shadow-[3px_3px_0px_#000]">
+          <div className="inline-flex border-2 border-white/20 bg-[#090a0f] p-1 shadow-[3px_3px_0px_#000] calendar-controls-box">
             <button
               onClick={() => setScopeFilter('ALL')}
               className={clsx(
                 "px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider transition-all",
                 scopeFilter === 'ALL' 
-                  ? "bg-[#0057FF] text-white font-bold shadow-[2px_2px_0px_#000]" 
+                  ? "bg-[#0057FF] text-white font-bold shadow-[2px_2px_0px_#000] active-btn" 
                   : "text-[#a0a4b8] hover:text-white"
               )}
             >
@@ -300,7 +389,7 @@ export function StudentCalendarView() {
               className={clsx(
                 "px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider transition-all flex items-center gap-1.5",
                 scopeFilter === 'MY_REGISTRATIONS' 
-                  ? "bg-[#C8FF00] text-black font-black shadow-[2px_2px_0px_#000]" 
+                  ? "bg-[#C8FF00] text-black font-black shadow-[2px_2px_0px_#000] active-btn" 
                   : "text-[#a0a4b8] hover:text-white"
               )}
             >
@@ -309,12 +398,12 @@ export function StudentCalendarView() {
           </div>
 
           {/* Timeline Filter */}
-          <div className="inline-flex border-2 border-white/20 bg-[#090a0f] p-1 shadow-[3px_3px_0px_#000]">
+          <div className="inline-flex border-2 border-white/20 bg-[#090a0f] p-1 shadow-[3px_3px_0px_#000] calendar-controls-box">
             <button
               onClick={() => setTimelineFilter('ALL')}
               className={clsx(
                 "px-2.5 py-1.5 font-mono text-[11px] uppercase transition-all",
-                timelineFilter === 'ALL' ? "bg-white text-black font-extrabold shadow-[2px_2px_0px_#000]" : "text-[#a0a4b8] hover:text-white"
+                timelineFilter === 'ALL' ? "bg-white text-black font-extrabold shadow-[2px_2px_0px_#000] active-btn" : "text-[#a0a4b8] hover:text-white"
               )}
             >
               All
@@ -357,7 +446,7 @@ export function StudentCalendarView() {
       </div>
 
       {/* LEGEND BAR */}
-      <div className="flex flex-wrap items-center gap-5 text-[11px] font-mono uppercase tracking-widest text-[#a0a4b8] bg-[#0c0e14] border border-white/10 p-3">
+      <div className="flex flex-wrap items-center gap-5 text-[11px] font-mono uppercase tracking-widest text-[#a0a4b8] bg-[#0c0e14] border border-white/10 p-3 calendar-legend-bar">
         <span className="flex items-center gap-2">
           <span className="w-3 h-3 bg-[#C8FF00] border border-black inline-block"></span>
           <span className="text-white/90">Registered by You</span>
@@ -391,10 +480,10 @@ export function StudentCalendarView() {
         </div>
       ) : (
         /* CALENDAR GRID */
-        <div className="w-full border-2 border-white/20 bg-white/10 shadow-[8px_8px_0px_#000]">
+        <div className="w-full border-2 border-white/20 bg-white/10 shadow-[8px_8px_0px_#000] calendar-grid-border">
           
           {/* Day of Week Headers */}
-          <div className="grid grid-cols-7 bg-[#0c0e14] text-center border-b-2 border-white/20">
+          <div className="grid grid-cols-7 bg-[#0c0e14] text-center border-b-2 border-white/20 calendar-day-header">
             {['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((dayName, idx) => (
               <div 
                 key={dayName} 
@@ -437,8 +526,8 @@ export function StudentCalendarView() {
                   tabIndex={dayEvents.length > 0 ? 0 : undefined}
                   aria-label={dayEvents.length > 0 ? `${date.format('MMMM D, YYYY')}, ${dayEvents.length} events` : date.format('MMMM D, YYYY')}
                   className={clsx(
-                    "min-h-[110px] md:min-h-[135px] p-2 flex flex-col justify-between transition-all select-none relative group",
-                    isCurrentMonth ? "bg-[#090a0f]" : "bg-[#050608] opacity-35",
+                    "min-h-[110px] md:min-h-[135px] p-2 flex flex-col justify-between transition-all select-none relative group calendar-day-cell",
+                    isCurrentMonth ? "bg-[#090a0f]" : "bg-[#050608] opacity-35 inactive-month",
                     dayEvents.length > 0 ? "cursor-pointer hover:bg-[#12141d]" : "cursor-default",
                     isSelected && "ring-2 ring-[#0057FF] z-10 bg-[#12141d]",
                     hasRegisteredEvent && isCurrentMonth 
@@ -456,7 +545,7 @@ export function StudentCalendarView() {
                         isToday 
                           ? "bg-[#0057FF] text-white font-black shadow-[2px_2px_0px_#000]" 
                           : isCurrentMonth 
-                            ? "text-[#F5F5F2]" 
+                            ? "text-[#F5F5F2] calendar-day-num" 
                             : "text-[#a0a4b8]"
                       )}
                     >
@@ -551,14 +640,14 @@ export function StudentCalendarView() {
           onClick={() => setSelectedDate(null)}
         >
           <div 
-            className="bg-[#090a0f] border-2 sm:border-3 border-[#F5F5F2] w-full max-w-2xl max-h-[88vh] flex flex-col shadow-[12px_12px_0px_#0057FF] relative overflow-hidden animate-in zoom-in-95 duration-150"
+            className="bg-[#090a0f] border-2 sm:border-3 border-[#F5F5F2] w-full max-w-2xl max-h-[88vh] flex flex-col shadow-[12px_12px_0px_#0057FF] relative overflow-hidden animate-in zoom-in-95 duration-150 calendar-drawer"
             onClick={e => e.stopPropagation()}
           >
             {/* Top decorative gradient stripe */}
             <div className="h-1.5 w-full bg-gradient-to-r from-[#0057FF] via-[#C8FF00] to-[#0057FF] shrink-0" />
 
             {/* Modal Header */}
-            <div className="p-6 border-b-2 border-white/15 bg-[#0e1017] shrink-0">
+            <div className="p-6 border-b-2 border-white/15 bg-[#0e1017] shrink-0 calendar-drawer-header">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-center gap-2">
@@ -621,7 +710,7 @@ export function StudentCalendarView() {
                     <div 
                       key={ev.id} 
                       className={clsx(
-                        "bg-[#0e1017] border-2 transition-all p-5 flex flex-col gap-3.5 relative shadow-[4px_4px_0px_#000]",
+                        "bg-[#0e1017] border-2 transition-all p-5 flex flex-col gap-3.5 relative shadow-[4px_4px_0px_#000] calendar-drawer-item",
                         ev.isRegistered 
                           ? "border-[#C8FF00]/40 hover:border-[#C8FF00]" 
                           : "border-white/15 hover:border-[#0057FF]"
