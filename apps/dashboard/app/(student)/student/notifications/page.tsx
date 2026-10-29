@@ -211,6 +211,88 @@ const notificationsStyles = `
   @media (max-width: 768px) {
     .nt-inner { padding: 40px 16px 80px 16px; }
   }
+
+  /* ==========================================================================
+     LIGHT THEME OVERRIDES (Scoped to html.light)
+     ========================================================================== */
+  html.light .nt-page {
+    background-color: #FFFFFF;
+    color: #050505;
+  }
+
+  html.light .collage-noise-overlay {
+    opacity: 0.12;
+    background-image: radial-gradient(rgba(0, 0, 0, 0.08) 1px, transparent 1px);
+  }
+
+  html.light .nt-hero-title {
+    color: #050505;
+  }
+
+  html.light .nt-header {
+    border-bottom: 3px solid #000000;
+  }
+
+  html.light .nt-watermark {
+    color: rgba(0, 0, 0, 0.04);
+  }
+
+  html.light .nt-header p {
+    color: #555566 !important;
+  }
+
+  html.light .nt-card {
+    background: #FFFFFF;
+    border-color: rgba(0, 0, 0, 0.2);
+    box-shadow: 6px 6px 0px #000000;
+    color: #050505;
+  }
+
+  html.light .nt-card:hover {
+    border-color: #000000;
+    box-shadow: 8px 8px 0px var(--electric-blue);
+  }
+
+  html.light .nt-card.is-unread {
+    border-color: var(--electric-blue);
+    border-left: 5px solid var(--electric-blue);
+    background: rgba(0, 87, 255, 0.06);
+  }
+
+  html.light .nt-card-top {
+    border-bottom-color: rgba(0, 0, 0, 0.15);
+  }
+
+  html.light .nt-card-title {
+    color: #050505;
+  }
+
+  html.light .nt-card-body {
+    color: #555566;
+  }
+
+  html.light .nt-action-btn {
+    border: 2px solid #000000;
+    box-shadow: 4px 4px 0px #000000;
+  }
+
+  html.light .nt-action-btn:hover:not(:disabled) {
+    box-shadow: 6px 6px 0px #000000;
+  }
+
+  html.light .nt-empty-poster {
+    background: #FFFFFF;
+    border: 3px solid #000000;
+    box-shadow: 12px 12px 0px var(--electric-blue);
+  }
+
+  html.light .nt-empty-poster h2 {
+    color: #050505 !important;
+  }
+
+  html.light .nt-empty-poster p {
+    color: #555566 !important;
+  }
 `;
 
 export default function StudentNotificationsPage() {
