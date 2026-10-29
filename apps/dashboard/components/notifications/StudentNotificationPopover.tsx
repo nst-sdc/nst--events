@@ -4,11 +4,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import clsx from 'clsx';
 import { useNotifications, useReadNotification, useUnreadCount, Notification } from '../../hooks/useNotifications';
 import { resolveStudentNotificationTarget } from '../../lib/student-notification-utils';
+import { getWebAuthStore } from '../../lib/auth-store';
 
 export function StudentNotificationPopover() {
+  const isAuth = typeof window !== 'undefined' ? !!getWebAuthStore().accessToken : false;
   const [isOpen, setIsOpen] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -76,6 +77,10 @@ export function StudentNotificationPopover() {
     return `${Math.floor(diffHrs / 24)}D AGO`;
   };
 
+  if (!isAuth) {
+    return null;
+  }
+
   return (
     <div className="relative" ref={popoverRef}>
       {/* Trigger: Brutalist Square Bell Button */}
@@ -86,20 +91,19 @@ export function StudentNotificationPopover() {
         style={{
           width: '36px',
           height: '36px',
+          background: isOpen ? 'rgba(0, 87, 255, 0.15)' : 'transparent',
+          border: isOpen ? '2px solid var(--electric-blue, #0057FF)' : '2px solid rgba(245, 245, 242, 0.25)',
+          color: '#ffffff',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           position: 'relative',
           borderRadius: 0,
+          boxShadow: isOpen ? '3px 3px 0px var(--electric-blue, #0057FF)' : 'none',
           transition: 'all 0.15s ease'
         }}
-        className={clsx(
-          "student-notification-btn border-2 transition-all",
-          isOpen
-            ? "bg-[#0057FF]/15 border-[#0057FF] text-[#0057FF] shadow-[3px_3px_0px_#0057FF]"
-            : "bg-transparent border-[#F5F5F2]/25 text-[#ffffff] hover:border-white hover:shadow-[3px_3px_0px_#ffffff]"
-        )}
+        className="hover:border-white hover:shadow-[3px_3px_0px_#ffffff]"
       >
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
@@ -107,7 +111,6 @@ export function StudentNotificationPopover() {
         </svg>
         {unreadCount > 0 && (
           <span 
-            className="student-notification-dot"
             style={{
               position: 'absolute',
               top: '-3px',
@@ -125,7 +128,6 @@ export function StudentNotificationPopover() {
       {/* Popover Content */}
       {isOpen && (
         <div
-          className="student-notification-popover"
           style={{
             position: 'absolute',
             right: 0,
@@ -143,7 +145,6 @@ export function StudentNotificationPopover() {
         >
           {/* Header */}
           <div
-            className="student-notification-popover-header"
             style={{
               padding: '12px 16px',
               background: '#000000',
@@ -154,7 +155,6 @@ export function StudentNotificationPopover() {
             }}
           >
             <span
-              className="popover-title"
               style={{
                 fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
                 fontSize: '11px',
@@ -224,7 +224,6 @@ export function StudentNotificationPopover() {
             {!isLoading && !isError && notifications.length === 0 && (
               <div style={{ padding: '36px 20px', textAlign: 'center' }}>
                 <div
-                  className="student-notification-empty-title"
                   style={{
                     fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
                     fontSize: '13px',
@@ -268,11 +267,10 @@ export function StudentNotificationPopover() {
                         cursor: 'pointer',
                         transition: 'background 0.15s'
                       }}
-                      className="hover:bg-white/[0.06] student-notification-item"
+                      className="hover:bg-white/[0.06]"
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
                         <div
-                          className="student-notification-item-title"
                           style={{
                             fontFamily: 'var(--font-display, "Syne", sans-serif)',
                             fontSize: '13px',
@@ -326,7 +324,6 @@ export function StudentNotificationPopover() {
 
           {/* Footer CTA */}
           <div
-            className="student-notification-popover-footer"
             style={{
               borderTop: '2px solid #ffffff',
               background: '#000000',
