@@ -420,6 +420,11 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
   const { data: currentUser } = useCurrentUser();
   const { submitMutation } = useEventLifecycle();
 
+  const isGlobalAdmin =
+    currentUser?.global_role === 'PLATFORM_ADMIN' || currentUser?.global_role === 'FACULTY_ADMIN';
+  const hasClubAdminMembership = currentUser?.club_memberships?.some((membership) => membership.role === 'CLUB_ADMIN');
+  const isAdminRegistrationRestricted = isGlobalAdmin || hasClubAdminMembership;
+
   const isClubAdminForEvent = event?.eventClubs?.some((ec: any) => 
     ec.isPrimary && currentUser?.club_memberships?.some(m => m.club_id === ec.club.id && m.role === 'CLUB_ADMIN')
   );
@@ -568,6 +573,19 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
           </div>
           <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: '#a0a4b8', margin: '14px 0 0 0', lineHeight: 1.5 }}>
             Your batch cannot register for this event. It is limited to selected batches only.
+          </p>
+        </div>
+      );
+    }
+
+    if (isAdminRegistrationRestricted) {
+      return (
+        <div>
+          <div className="ed-status-badge" style={{ color: 'var(--warm-red)', borderColor: 'var(--warm-red)' }}>
+            ACCESS RESTRICTED // ADMINISTRATOR ACCOUNT
+          </div>
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: '#a0a4b8', margin: '14px 0 0 0', lineHeight: 1.5 }}>
+            Administrator accounts cannot register for events.
           </p>
         </div>
       );
