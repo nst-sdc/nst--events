@@ -464,110 +464,6 @@ const myEventsStyles = `
     .me-tabs-group { width: 100%; }
     .me-tab-btn { flex: 1; text-align: center; }
   }
-
-  /* ==========================================================================
-     LIGHT THEME OVERRIDES (Scoped to html.light)
-     ========================================================================== */
-  html.light .me-page {
-    background-color: #FFFFFF;
-    color: #050505;
-  }
-
-  html.light .collage-noise-overlay {
-    opacity: 0.12;
-    background-image: radial-gradient(rgba(0, 0, 0, 0.08) 1px, transparent 1px);
-  }
-
-  html.light .me-hero-title {
-    color: #050505;
-  }
-
-  html.light .me-header {
-    border-bottom: 3px solid #000000;
-  }
-
-  html.light .me-watermark {
-    color: rgba(0, 0, 0, 0.04);
-  }
-
-  html.light .me-header p {
-    color: #555566 !important;
-  }
-
-  html.light .me-controls-row {
-    border-bottom-color: rgba(0, 0, 0, 0.15);
-  }
-
-  html.light .me-tab-btn {
-    color: #555566;
-    border-color: rgba(0, 0, 0, 0.2);
-  }
-
-  html.light .me-tab-btn:hover {
-    border-color: #000000;
-    color: #000000;
-  }
-
-  html.light .me-tab-btn.active {
-    background: var(--electric-blue);
-    color: #ffffff;
-    border-color: var(--electric-blue);
-    box-shadow: 4px 4px 0px #000000;
-  }
-
-  html.light .me-view-toggle {
-    background: #ECECE8;
-    border-color: rgba(0, 0, 0, 0.2);
-  }
-
-  html.light .me-view-btn {
-    color: #555566;
-  }
-
-  html.light .me-view-btn.active {
-    background: #FFFFFF;
-    color: #000000;
-    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.15);
-  }
-
-  html.light .me-empty-poster {
-    background: #FFFFFF;
-    border: 3px solid #000000;
-    box-shadow: 12px 12px 0px var(--electric-blue);
-  }
-
-  html.light .me-empty-poster h2 {
-    color: #050505 !important;
-  }
-
-  html.light .me-empty-poster p {
-    color: #555566 !important;
-  }
-
-  html.light .me-empty-watermark {
-    color: rgba(0, 0, 0, 0.04);
-  }
-
-  html.light .me-empty-btn {
-    border: 2px solid #000000;
-    box-shadow: 4px 4px 0px #000000;
-  }
-
-  html.light .me-empty-btn:hover {
-    box-shadow: 6px 6px 0px #000000;
-  }
-
-  html.light .me-calendar-container {
-    background: #FFFFFF;
-    border: 3px solid #000000;
-    box-shadow: 12px 12px 0px var(--electric-blue);
-  }
-
-  html.light .me-skeleton-card {
-    background: #F5F5F2;
-    border-color: rgba(0, 0, 0, 0.15);
-    box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.05);
-  }
 `;
 
 export default function StudentEventsPage() {
@@ -783,7 +679,10 @@ export default function StudentEventsPage() {
                     <div
                       key={reg.id}
                       className={`me-poster-card ${isPast ? 'is-past' : ''}`}
-                      onClick={() => router.push(`/student/events/${reg.eventId}`)}
+                      onClick={() => {
+                        if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                        router.push(`/student/events/${reg.eventId}`);
+                      }}
                     >
                       <div>
                         <div className="me-card-header">
@@ -827,7 +726,9 @@ export default function StudentEventsPage() {
                         {reg.team && (
                           <div className="me-team-box">
                             <span>TEAM // {reg.team.name}</span>
-                            <span style={{ color: 'var(--electric-blue)' }}>[{reg.team.status}]</span>
+                            <span style={{ color: 'var(--electric-blue)' }}>
+                              [{(reg.team.status === 'FORMING' && (reg.registrationStatus === 'REGISTERED' || (typeof reg.event?.metadata?.minimum_team_size === 'number' && (reg.team.memberCount ?? 1) >= reg.event.metadata.minimum_team_size))) ? 'REGISTERED' : reg.team.status}]
+                            </span>
                           </div>
                         )}
                       </div>

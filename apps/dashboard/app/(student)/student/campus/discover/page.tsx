@@ -6,6 +6,8 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import { useEvents } from '../../../../../hooks/useEvents';
+import { useCurrentUser } from '../../../../../hooks/useCurrentUser';
+import { isAdministratorAccount } from '../../../../../lib/auth-helpers';
 
 dayjs.extend(isBetween);
 
@@ -342,34 +344,47 @@ const discoverStyles = `
   .d-empty-state {
     border: 3px solid var(--bg-paper-white);
     background: var(--bg-dark-card);
-    padding: 60px 40px;
+    padding: 64px 40px;
     position: relative;
     overflow: hidden;
     box-shadow: 12px 12px 0px var(--electric-blue);
     text-align: center;
-    max-width: 640px;
-    margin: 0 auto;
+    max-width: 660px;
+    margin: 40px auto 80px auto;
+    border-radius: 0 !important;
+  }
+  .d-error-state {
+    box-shadow: 12px 12px 0px var(--warm-red);
   }
   .d-empty-watermark {
     position: absolute;
-    bottom: -20px;
+    bottom: -15px;
     right: -10px;
     font-family: var(--font-display);
-    font-size: 100px;
+    font-size: 130px;
     font-weight: 900;
-    color: rgba(245,245,242,0.04);
+    color: rgba(245, 245, 242, 0.025);
     pointer-events: none;
+    user-select: none;
     text-transform: uppercase;
+    line-height: 0.85;
+    z-index: 1;
+    letter-spacing: -2px;
+  }
+  .d-error-watermark {
+    color: rgba(255, 59, 48, 0.035);
   }
   .d-empty-title {
     font-family: var(--font-display);
-    font-size: clamp(32px, 5vw, 56px);
+    font-size: clamp(36px, 5.5vw, 60px);
     font-weight: 900;
-    line-height: 0.92;
+    line-height: 0.95;
     text-transform: uppercase;
     color: var(--bg-paper-white);
     margin-bottom: 16px;
     letter-spacing: -1.5px;
+    position: relative;
+    z-index: 2;
   }
   .d-empty-sub {
     font-family: var(--font-body);
@@ -377,9 +392,11 @@ const discoverStyles = `
     color: #a0a4b8;
     margin-bottom: 32px;
     line-height: 1.6;
-    max-width: 420px;
+    max-width: 440px;
     margin-left: auto;
     margin-right: auto;
+    position: relative;
+    z-index: 2;
   }
   .d-clear-btn {
     display: inline-flex;
@@ -395,13 +412,21 @@ const discoverStyles = `
     padding: 14px 28px;
     border: 2px solid var(--bg-paper-white);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     border-radius: 0 !important;
-    margin-right: 12px;
+    position: relative;
+    z-index: 2;
+    box-shadow: 4px 4px 0px rgba(255, 255, 255, 0.15);
   }
   .d-clear-btn:hover {
     background: var(--bg-paper-white);
     color: var(--bg-black);
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px rgba(255, 255, 255, 0.3);
+  }
+  .d-clear-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px rgba(255, 255, 255, 0.15);
   }
   .d-retry-btn {
     display: inline-flex;
@@ -414,16 +439,23 @@ const discoverStyles = `
     font-weight: 700;
     letter-spacing: 2px;
     text-transform: uppercase;
-    padding: 14px 28px;
+    padding: 14px 32px;
     border: 2px solid var(--bg-paper-white);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     border-radius: 0 !important;
     box-shadow: 4px 4px 0px #ffffff;
+    position: relative;
+    z-index: 2;
   }
   .d-retry-btn:hover {
+    background: var(--electric-blue-dark);
     transform: translate(-2px, -2px);
     box-shadow: 6px 6px 0px #ffffff;
+  }
+  .d-retry-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px #ffffff;
   }
 
   /* ── Load More ── */
@@ -461,110 +493,14 @@ const discoverStyles = `
     .d-hero-title { letter-spacing: -1px; }
     .discover-filter-row { gap: 8px; }
   }
-
-  /* ==========================================================================
-     LIGHT THEME OVERRIDES (Scoped to html.light)
-     ========================================================================== */
-  html.light .discover-page {
-    background-color: #FFFFFF;
-    color: #050505;
-  }
-
-  html.light .d-hero-title {
-    color: #050505;
-  }
-
-  html.light .discover-header {
-    border-bottom: 3px solid #000000;
-  }
-
-  html.light .discover-header p {
-    color: #555566 !important;
-  }
-
-  html.light .discover-search {
-    background: #FFFFFF;
-    border: 3px solid #000000;
-    color: #050505;
-    box-shadow: 6px 6px 0px #000000;
-  }
-
-  html.light .discover-search::placeholder {
-    color: #777788;
-  }
-
-  html.light .discover-filter-row {
-    border-bottom-color: rgba(0, 0, 0, 0.15);
-  }
-
-  html.light .filter-btn {
-    color: #555566;
-    border-color: rgba(0, 0, 0, 0.2);
-  }
-
-  html.light .filter-btn:hover {
-    border-color: #000000;
-    color: #000000;
-  }
-
-  html.light .filter-btn.active {
-    background: var(--electric-blue);
-    color: #ffffff;
-    border-color: var(--electric-blue);
-    box-shadow: 3px 3px 0px #000000;
-  }
-
-  html.light .d-empty-state {
-    background: #FFFFFF;
-    border: 3px solid #000000;
-    box-shadow: 12px 12px 0px var(--electric-blue);
-  }
-
-  html.light .d-empty-title {
-    color: #050505;
-  }
-
-  html.light .d-empty-sub {
-    color: #555566;
-  }
-
-  html.light .d-empty-watermark {
-    color: rgba(0, 0, 0, 0.04);
-  }
-
-  html.light .d-clear-btn {
-    color: #050505;
-    border-color: #000000;
-  }
-
-  html.light .d-clear-btn:hover {
-    background: #000000;
-    color: #FFFFFF;
-  }
-
-  html.light .d-retry-btn {
-    border: 2px solid #000000;
-    box-shadow: 4px 4px 0px #000000;
-  }
-
-  html.light .d-retry-btn:hover {
-    box-shadow: 6px 6px 0px #000000;
-  }
-
-  html.light .d-skeleton-card {
-    background: #F5F5F2;
-    border-color: rgba(0, 0, 0, 0.15);
-  }
-
-  html.light .d-skel-bar {
-    background: rgba(0, 0, 0, 0.08);
-  }
 `;
 
 export default function DiscoverPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { data: currentUser } = useCurrentUser();
+  const isAdmin = isAdministratorAccount(currentUser);
 
   const queryQ = searchParams.get('q') || '';
   const queryType = searchParams.get('type') || '';
@@ -620,27 +556,54 @@ export default function DiscoverPage() {
     </div>
   );
 
-  const renderEmpty = () => (
+  const renderEmptyState = () => (
     <div className="d-empty-state">
       <div className="d-empty-watermark">EMPTY</div>
-      <div className="d-micro d-micro-blue" style={{ marginBottom: 12 }}>
-        DISCOVER // 0 RESULTS
+      <div className="d-micro d-micro-blue" style={{ marginBottom: 14 }}>
+        DISCOVER ARCHIVE // 0 RESULTS
       </div>
-      <h3 className="d-empty-title">
-        {isError ? 'CONNECTION\nFAILED.' : 'NO EVENTS\nFOUND.'}
-      </h3>
+      <h2 className="d-empty-title">
+        NO EVENTS<br />FOUND.
+      </h2>
       <p className="d-empty-sub">
-        {isError
-          ? 'We couldn\'t connect to the server. Check your connection and try again.'
-          : 'Try a different search or clear your filters to explore more.'}
+        {searchInput || queryType
+          ? 'No campus events matched your current search filters. Try adjusting keywords or clear filters.'
+          : 'There are currently no events published under this view. Check back soon for upcoming sessions.'}
       </p>
-      {isError ? (
-        <button onClick={() => refetch()} className="d-retry-btn">RETRY ↗</button>
-      ) : (
-        <button onClick={() => { setSearchInput(''); router.push(pathname); }} className="d-clear-btn">
-          CLEAR FILTERS
-        </button>
+      {(searchInput || queryType) && (
+        <div style={{ position: 'relative', zIndex: 2 }}>
+          <button
+            onClick={() => {
+              setSearchInput('');
+              router.push(pathname);
+            }}
+            className="d-clear-btn"
+          >
+            CLEAR ALL FILTERS ↺
+          </button>
+        </div>
       )}
+    </div>
+  );
+
+  const renderErrorState = () => (
+    <div className="d-empty-state d-error-state" role="alert">
+      <div className="d-empty-watermark d-error-watermark">FAULT</div>
+      <div className="d-micro" style={{ color: 'var(--warm-red)', marginBottom: 14, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ width: 8, height: 8, background: 'var(--warm-red)', display: 'inline-block', boxShadow: '0 0 10px var(--warm-red)' }} />
+        SYSTEM FAULT // CONNECTION INTERRUPTED
+      </div>
+      <h2 className="d-empty-title">
+        CONNECTION<br />FAILED.
+      </h2>
+      <p className="d-empty-sub">
+        We couldn&apos;t connect to the server or retrieve the campus event ledger. Check your connection and try again.
+      </p>
+      <div style={{ position: 'relative', zIndex: 2 }}>
+        <button onClick={() => refetch()} className="d-retry-btn">
+          RETRY CONNECTION ↗
+        </button>
+      </div>
     </div>
   );
 
@@ -696,6 +659,8 @@ export default function DiscoverPage() {
           {/* ── Content ── */}
           {isLoading ? (
             renderSkeletons()
+          ) : isError ? (
+            renderErrorState()
           ) : events.length > 0 ? (
             <div className="d-poster-grid">
               {events.map((event) => {
@@ -713,6 +678,12 @@ export default function DiscoverPage() {
                     href={`/student/events/${event.id}`}
                     className="d-poster-card"
                     style={{ textDecoration: 'none' }}
+                    scroll={true}
+                    onClick={() => {
+                      if (typeof window !== 'undefined') {
+                        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                      }
+                    }}
                   >
                     {/* Card Header */}
                     <div className="d-poster-card-header">
@@ -747,14 +718,14 @@ export default function DiscoverPage() {
                       <span className="d-location-text">
                         {locationLabel.length > 22 ? locationLabel.slice(0, 22) + '…' : locationLabel}
                       </span>
-                      <span className="d-explore-btn">REGISTER ↗</span>
+                      <span className="d-explore-btn">{isAdmin ? 'VIEW EVENT ↗' : 'REGISTER ↗'}</span>
                     </div>
                   </Link>
                 );
               })}
             </div>
           ) : (
-            renderEmpty()
+            renderEmptyState()
           )}
 
           {/* ── Load More ── */}

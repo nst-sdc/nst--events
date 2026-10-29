@@ -238,71 +238,6 @@ const clubDetailStyles = `
     .cd-columns-grid { grid-template-columns: 1fr; }
     .cd-inner { padding: 32px 16px 80px 16px; }
   }
-
-  /* ==========================================================================
-     LIGHT THEME OVERRIDES (Scoped to html.light)
-     ========================================================================== */
-  html.light .cd-page {
-    background-color: #FFFFFF;
-    color: #050505;
-  }
-
-  html.light .cd-banner-container {
-    border-bottom: 3px solid #000000;
-  }
-
-  html.light .cd-back-btn {
-    background: #FFFFFF;
-    color: #050505;
-    border: 2px solid #000000;
-    box-shadow: 4px 4px 0px #000000;
-  }
-
-  html.light .cd-headline-row {
-    border-bottom: 3px solid #000000;
-  }
-
-  html.light .cd-club-title {
-    color: #050505;
-  }
-
-  html.light .cd-stat-card {
-    background: #FFFFFF;
-    border: 2px solid #000000;
-    box-shadow: 6px 6px 0px var(--electric-blue);
-  }
-
-  html.light .cd-stat-num {
-    color: #050505;
-  }
-
-  html.light .cd-section-box {
-    background: #FFFFFF;
-    border: 3px solid #000000;
-    box-shadow: 10px 10px 0px #000000;
-    color: #050505;
-  }
-
-  html.light .cd-section-title {
-    color: #050505;
-    border-bottom: 2px solid #000000;
-  }
-
-  html.light .cd-member-item {
-    border-bottom-color: rgba(0, 0, 0, 0.15);
-  }
-
-  html.light .cd-event-card {
-    background: #F5F5F2;
-    border: 2px solid #000000;
-    color: #050505;
-  }
-
-  html.light .cd-event-card:hover {
-    background: #F0F4FF;
-    border-color: #000000;
-    box-shadow: 6px 6px 0px var(--electric-blue);
-  }
 `;
 
 export default function ClubDetailPage() {
@@ -532,6 +467,12 @@ export default function ClubDetailPage() {
                         key={event.id}
                         href={`/student/events/${event.id}`}
                         className="cd-event-card"
+                        scroll={true}
+                        onClick={() => {
+                          if (typeof window !== 'undefined') {
+                            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+                          }
+                        }}
                       >
                         <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 900, textTransform: 'uppercase', marginBottom: '8px' }}>
                           {event.title}
