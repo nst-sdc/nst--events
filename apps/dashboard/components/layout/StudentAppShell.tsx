@@ -363,9 +363,9 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
             </nav>
 
             <div className="flex items-center gap-3 md:gap-4">
-              {user && (isPlatformAdmin(user) || isFacultyAdmin(user)) && (
+              {(!user || isPlatformAdmin(user) || isFacultyAdmin(user)) && (
                 <Link
-                  href="/dashboard"
+                  href="/admin"
                   className="hidden md:inline-flex items-center text-[10px] font-mono font-bold text-[#a0a4b8] hover:text-[#0057FF] border border-white/20 px-2.5 py-1 uppercase tracking-wider transition-colors"
                 >
                   ADMIN OPS &rarr;
