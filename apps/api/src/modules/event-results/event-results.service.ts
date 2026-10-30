@@ -1,7 +1,6 @@
 import { prisma } from '../../lib/prisma';
 import { withUserContext } from '@nst/database';
 import { NotFoundError, BadRequestError, ConflictError } from '../../lib/errors';
-import { calculateAwardPoints } from './scoring-policy';
 
 interface AwardInput {
   id?: string;
@@ -1128,55 +1127,6 @@ export async function publishRevision(
         }
       }
     }
-
-    // 5B. Reconcile Competition Leaderboard Scores
-    // Revoke previous awards for this result set to ensure idempotency and accurate corrections
-    const previousAwards = await tx.eventAward.findMany({
-      where: { revision: { resultSetId: resultSet.id } },
-      select: { id: true },
-    });
-    const previousAwardIds = previousAwards.map((a: any) => a.id);
-    if (previousAwardIds.length > 0) {
-      await tx.leaderboardScore.deleteMany({
-        where: { sourceId: { in: previousAwardIds } },
-      });
-    }
-
-    // Award leaderboard points according to the centralized scoring policy
-    const primaryClubId = event.eventClubs.find((c: any) => c.isPrimary)?.clubId || null;
-    for (const award of revision.awards) {
-      const points = calculateAwardPoints(award.awardType, award.placement);
-      if (points > 0) {
-        for (const rec of award.recipients) {
-          if (rec.recipientType === 'INDIVIDUAL' && rec.userId) {
-            await tx.leaderboardScore.create({
-              data: {
-                userId: rec.userId,
-                clubId: primaryClubId,
-                points,
-                reason: `COMPETITION: ${award.title}`,
-                sourceId: award.id,
-              },
-            });
-          } else if (rec.recipientType === 'TEAM' && rec.teamId) {
-            for (const member of rec.members) {
-              if (member.userId) {
-                await tx.leaderboardScore.create({
-                  data: {
-                    userId: member.userId,
-                    clubId: primaryClubId,
-                    points,
-                    reason: `COMPETITION: ${award.title}`,
-                    sourceId: award.id,
-                  },
-                });
-              }
-            }
-          }
-        }
-      }
-    }
-
     // 6. Record Audit Log
     await tx.resultAuditLog.create({
       data: {
@@ -1472,19 +1422,6 @@ export async function withdrawResults(eventId: string, userId: string, reason: s
         isActive: false,
       },
     });
-
-    // Reconcile/remove leaderboard awards for this result set
-    const allResultAwards = await tx.eventAward.findMany({
-      where: { revision: { resultSetId: resultSet.id } },
-      select: { id: true },
-    });
-    const awardIds = allResultAwards.map((a: any) => a.id);
-    if (awardIds.length > 0) {
-      await tx.leaderboardScore.deleteMany({
-        where: { sourceId: { in: awardIds } },
-      });
-    }
-
     await tx.resultAuditLog.create({
       data: {
         resultSetId: resultSet.id,
@@ -1545,75 +1482,6 @@ export async function restoreResults(eventId: string, userId: string, reason: st
         isActive: true,
       },
     });
-
-    // Re-apply leaderboard scores idempotently for active revision
-    const activeRevision = await tx.eventResultRevision.findUnique({
-      where: { id: resultSet.activePublishedRevisionId },
-      include: {
-        awards: {
-          include: {
-            recipients: {
-              include: {
-                members: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (activeRevision) {
-      const allResultAwards = await tx.eventAward.findMany({
-        where: { revision: { resultSetId: resultSet.id } },
-        select: { id: true },
-      });
-      const activeAwardIds = allResultAwards.map((a: any) => a.id);
-      if (activeAwardIds.length > 0) {
-        await tx.leaderboardScore.deleteMany({
-          where: { sourceId: { in: activeAwardIds } },
-        });
-      }
-
-      const event = await tx.event.findUnique({
-        where: { id: eventId },
-        include: { eventClubs: { where: { isPrimary: true } } },
-      });
-      const primaryClubId = event?.eventClubs[0]?.clubId || null;
-
-      for (const award of activeRevision.awards) {
-        const points = calculateAwardPoints(award.awardType, award.placement);
-        if (points > 0) {
-          for (const rec of award.recipients) {
-            if (rec.recipientType === 'INDIVIDUAL' && rec.userId) {
-              await tx.leaderboardScore.create({
-                data: {
-                  userId: rec.userId,
-                  clubId: primaryClubId,
-                  points,
-                  reason: `COMPETITION: ${award.title}`,
-                  sourceId: award.id,
-                },
-              });
-            } else if (rec.recipientType === 'TEAM' && rec.teamId) {
-              for (const member of rec.members) {
-                if (member.userId) {
-                  await tx.leaderboardScore.create({
-                    data: {
-                      userId: member.userId,
-                      clubId: primaryClubId,
-                      points,
-                      reason: `COMPETITION: ${award.title}`,
-                      sourceId: award.id,
-                    },
-                  });
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
     await tx.resultAuditLog.create({
       data: {
         resultSetId: resultSet.id,

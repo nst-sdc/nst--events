@@ -34,7 +34,6 @@ describe('ATTENDANCE-07: Offline Attendance 24-Hour Lock Time Correction', () =>
       await adminPrisma.eventRegistration.deleteMany({ where: { userId: { in: uids } } });
       await adminPrisma.attendanceSession.deleteMany({ where: { createdBy: { in: uids } } });
       await adminPrisma.event.deleteMany({ where: { createdBy: { in: uids } } });
-      await adminPrisma.leaderboardScore.deleteMany({ where: { userId: { in: uids } } });
       await adminPrisma.user.deleteMany({ where: { id: { in: uids } } });
     }
 
@@ -106,7 +105,6 @@ describe('ATTENDANCE-07: Offline Attendance 24-Hour Lock Time Correction', () =>
 
   after(async () => {
     sinon.restore();
-    await adminPrisma.leaderboardScore.deleteMany({ where: { userId: { in: [studentAId, studentBId] } } });
     await adminPrisma.attendanceRecord.deleteMany({ where: { sessionId } });
     await adminPrisma.attendanceSession.deleteMany({ where: { id: sessionId } });
     await adminPrisma.eventRegistration.deleteMany({ where: { eventId } });

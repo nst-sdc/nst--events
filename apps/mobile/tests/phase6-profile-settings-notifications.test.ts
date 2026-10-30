@@ -276,10 +276,12 @@ describe('Phase 6 — Profile, Settings & Notifications UI & Contract Tests', ()
       expect.stringContaining('/auth/logout'),
       expect.objectContaining({
         method: 'POST',
-        headers: expect.objectContaining({
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Client-Platform': 'mobile',
           Authorization: 'Bearer access-tok-1',
-          Cookie: 'refreshToken=refresh-tok-1',
-        }),
+        },
+        body: JSON.stringify({ refresh_token: 'refresh-tok-1' }),
       })
     );
 

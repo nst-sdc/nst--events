@@ -184,7 +184,6 @@ test('Attendance QR Reuse and Uniqueness', async (t) => {
   });
 
   // Cleanup
-  await adminPrisma.leaderboardScore.deleteMany({ where: { userId: { in: [user1.id, user2.id, user3.id] } } });
   await adminPrisma.attendanceRecord.deleteMany({ where: { sessionId: { in: [session1.id, session2.id] } } });
   await adminPrisma.attendanceSession.deleteMany({ where: { id: { in: [session1.id, session2.id] } } });
   await adminPrisma.eventRegistration.deleteMany({ where: { eventId: event.id } });

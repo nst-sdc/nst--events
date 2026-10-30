@@ -16,17 +16,22 @@ import {
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://events.nstsdc.org';
 
 export const metadata: Metadata = {
-  title: 'NST Events | Newton School of Technology (NST SDC) — Official Campus Events & Hackathons',
+  title: 'NST Events — Official Campus Events & Hackathons | Newton School of Technology (NST SDC)',
   description:
-    'Official technical events, hackathons, and developer ecosystem portal for Newton School of Technology (NST) and NST SDC. Discover campus hackathons, technical workshops, coding competitions, and the annual Neutron fest at NST ADYPU Pune.',
+    'NST Events (events.nstsdc.org) is the official events, hackathons, and developer ecosystem portal for Newton School of Technology (NST) and NST SDC at ADYPU Pune. Discover campus hackathons, technical workshops, coding competitions, and the annual Neutron fest.',
   keywords: [
     'NST Events',
+    'nst events',
+    'events.nstsdc.org',
     'Newton School of Technology',
+    'Newton School of Technology Events',
+    'NST',
     'NST SDC',
     'NST ADYPU',
     'NST Hackathons',
     'Newton School Events',
     'Neutron Fest',
+    'Neutron NST',
     'Campus Technical Events',
     'Coding Competitions',
     'Tech Workshops Pune',
@@ -35,13 +40,14 @@ export const metadata: Metadata = {
     canonical: '/',
   },
   openGraph: {
-    title: 'NST Events | Newton School of Technology (NST SDC)',
+    title: 'NST Events — Official Campus Events & Hackathons | Newton School of Technology (NST SDC)',
     description:
-      'Official events portal for Newton School of Technology (NST) and NST SDC. Discover campus hackathons, workshops, and Neutron fest.',
+      'Official events portal for Newton School of Technology (NST) and NST SDC. Discover campus hackathons, workshops, coding competitions, and Neutron fest.',
     url: siteUrl,
     siteName: 'NST Events',
-    images: [{ url: '/icon.png', width: 512, height: 512, alt: 'NST Events' }],
+    images: [{ url: '/icon.png', width: 512, height: 512, alt: 'NST Events — Newton School of Technology' }],
     type: 'website',
+    locale: 'en_IN',
   },
 };
 
@@ -83,8 +89,35 @@ async function getPublicEvents(): Promise<PublicEvent[]> {
 export default async function HomePage() {
   const events = await getPublicEvents();
 
+  const homeJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'Featured NST Campus Events & Hackathons',
+    description: 'Upcoming technical events and hackathons hosted at Newton School of Technology.',
+    itemListElement: events.map((ev, idx) => ({
+      '@type': 'ListItem',
+      position: idx + 1,
+      item: {
+        '@type': 'Event',
+        name: ev.title,
+        description: ev.description || undefined,
+        startDate: ev.start_time,
+        endDate: ev.end_time || ev.start_time,
+        url: ev.slug ? `${siteUrl}/event/${ev.slug}` : undefined,
+        location: {
+          '@type': 'Place',
+          name: ev.location_name || 'Newton School of Technology, ADYPU Campus, Pune',
+        },
+      },
+    })),
+  };
+
   return (
     <div className="min-h-screen bg-[#050505] text-[#F5F5F2] font-sans selection:bg-[#0057FF] selection:text-white relative overflow-x-hidden">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(homeJsonLd) }}
+      />
       {/* Background Radial Pattern Overlay */}
       <div
         className="fixed inset-0 pointer-events-none opacity-25 z-0"
@@ -153,7 +186,7 @@ export default async function HomePage() {
             href="/student/campus/discover"
             className="px-8 py-4 bg-[#0057FF] text-white border-2 border-[#0057FF] shadow-[6px_6px_0px_#ffffff] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_#ffffff] transition-all flex items-center gap-2"
           >
-            EXPLORE ALL CAMPUS EVENTS <ArrowRight className="w-4 h-4" />
+            Go to Events <ArrowRight className="w-4 h-4" />
           </Link>
           <Link
             href="/login"

@@ -93,12 +93,8 @@ export const dashboardService = {
         member_count: m.club._count.memberships,
       }));
 
-      // 4. Points & Attendance
-      const scores = await tx.leaderboardScore.aggregate({
-        where: { userId },
-        _sum: { points: true }
-      });
-      const totalPoints = scores._sum.points || 0;
+      // 4. Attendance
+      const totalPoints = 0;
 
       const attendedEvents = await tx.$queryRaw<{ count: bigint }[]>`
         SELECT COUNT(DISTINCT s.event_id) as count

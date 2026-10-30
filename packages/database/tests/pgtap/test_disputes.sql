@@ -97,11 +97,11 @@ SELECT results_eq(
   'Attendance status should be EXCUSED'
 );
 
--- Test 10: Check 0 points awarded (no leaderboard score inserted)
+-- Test 10: Check attendance remains EXCUSED (no PRESENT attendance recorded)
 SELECT results_eq(
-  'SELECT count(*)::int FROM leaderboard_scores WHERE user_id = ''' || :user1_id || ''' AND reason = ''ATTENDANCE''',
+  'SELECT count(*)::int FROM attendance_records WHERE user_id = ''' || :user1_id || ''' AND status = ''PRESENT''',
   ARRAY[0::int],
-  'No points should be awarded for EXCUSED attendance'
+  'No PRESENT attendance should be recorded for EXCUSED dispute resolution'
 );
 
 -- Test 11: Missing dispute

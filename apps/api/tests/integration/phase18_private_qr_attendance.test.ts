@@ -72,7 +72,6 @@ describe('Phase 18: Private Event QR Attendance Regression', () => {
 
   after(async () => {
     // Cleanup
-    await adminPrisma.leaderboardScore.deleteMany({ where: { userId: studentId } });
     await adminPrisma.attendanceRecord.deleteMany({ where: { userId: studentId } });
     await adminPrisma.eventRegistration.deleteMany({ where: { eventId: eventId } });
     await adminPrisma.attendanceSession.delete({ where: { id: sessionId } });

@@ -78,7 +78,7 @@ export const canManageClubDetails = (
 };
 
 /**
- * Ensures the authenticated user can view club oversight data (Analytics, Disputes, Leaderboard).
+ * Ensures the authenticated user can view club oversight data (Analytics, Disputes).
  * Allows PLATFORM_ADMIN, FACULTY_ADMIN globally.
  * Allows CLUB_ADMIN, CORE_MEMBER, and FACULTY_MENTOR for the specific club.
  */

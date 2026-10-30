@@ -133,9 +133,6 @@ export function canMarkAttendanceManually(user: CurrentUser | null | undefined, 
   );
 }
 
-export function canRecalculateLeaderboard(user?: CurrentUser | null): boolean {
-  return isPlatformAdmin(user);
-}
 
 // Event Capability Helpers
 

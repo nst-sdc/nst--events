@@ -27,7 +27,7 @@ import {
 import { useRouter, usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
-import { getWebAuthStore } from '../../lib/auth-store';
+import { useLogout } from '../../hooks/useLogout';
 import { canViewStudentDirectory, canViewAcademicCatalog } from '../../lib/auth-helpers';
 import { NotificationPopover } from '../notifications/NotificationPopover';
 import { useRealtimeNotifications } from '../../hooks/useRealtimeNotifications';
@@ -112,9 +112,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isAdmin = isPlatformAdmin || isFacultyAdmin;
   const canApprove = isAdmin || isFacultyMentor;
 
+  const { mutate: logout } = useLogout();
+
   const handleLogout = () => {
-    getWebAuthStore().logout();
-    router.push('/login');
+    logout();
   };
 
   // OVERVIEW GROUP

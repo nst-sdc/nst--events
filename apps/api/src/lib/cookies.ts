@@ -4,22 +4,23 @@ import { env } from '../config/env';
 export const REFRESH_TOKEN_COOKIE_NAME = 'refreshToken';
 export const OAUTH_STATE_COOKIE_NAME = 'oauth_state';
 
+const REFRESH_TOKEN_COOKIE_BASE_OPTIONS: CookieOptions = {
+  httpOnly: true,
+  secure: !env.ALLOW_INSECURE_COOKIES_LOCAL_DEV,
+  sameSite: 'strict',
+  path: '/auth',
+};
+
 export function getRefreshTokenCookieOptions(): CookieOptions {
   return {
-    httpOnly: true,
-    secure: !env.ALLOW_INSECURE_COOKIES_LOCAL_DEV,
-    sameSite: 'strict',
-    path: '/auth',
+    ...REFRESH_TOKEN_COOKIE_BASE_OPTIONS,
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   };
 }
 
 export function getClearRefreshTokenCookieOptions(): CookieOptions {
   return {
-    httpOnly: true,
-    secure: env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    path: '/auth',
+    ...REFRESH_TOKEN_COOKIE_BASE_OPTIONS,
   };
 }
 

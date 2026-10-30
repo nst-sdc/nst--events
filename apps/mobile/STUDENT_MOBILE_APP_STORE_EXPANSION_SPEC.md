@@ -35,7 +35,7 @@ Crucially, **the backend already provides 100% of the required data models and R
 | **Event Registration** | Read-only (`STATUS: NOT REGISTERED`). Students must open desktop web to click Register. | In-app solo event registration (`POST /v1/events/:id/register`) and cancellation with confirm sheets. | Fundamental native app utility. |
 | **Club Organizations** | Static text badges on Profile (`[ CLUB_NAME / MEMBER ]`). | Full Campus Club Directory (`/clubs`) and Club Profile (`/clubs/[id]`) with rosters and hosted events. | Institutional community depth. |
 | **Team Rosters** | Static notice: *"Team registration & rosters are restricted to desktop web."* | Read-only inspection of the student's registered team (`/events/[id]/teams`), captain, and member statuses. | Essential for hackathons & competitions. |
-| **Leaderboard & Ranks** | Completely absent from mobile. | Campus Student Leaderboard (`/leaderboard`) with sticky personal rank card and club rankings. | High-engagement gamification. |
+| **Leaderboard & Ranks** | Decommissioned | Decommissioned — Leaderboards removed across mobile, dashboard, API, and database. | N/A |
 | **Attendance & Check-in** | High-precision dynamic TOTP QR scanner + geofencing + device ID binding. | Unchanged — retained as the flagship physical check-in engine. | Strong native hardware integration (Camera + GPS). |
 | **Attendance Disputes** | Ledger and claim submission with countdown deadline. | Retained with enhanced deep-linking from notifications. | Complete student agency. |
 | **Native Integrations** | Camera, GPS, Push Tokens, SecureStore. | Added: Native Device Calendar sync (`expo-calendar`) and Native Share Sheet (`Share.share`). | Demonstrates rich iOS/Android platform capabilities. |
@@ -239,36 +239,9 @@ Replaces the current placeholder screen with an active team inspection view for 
 
 ---
 
-### Screen 7: Campus Leaderboard (`/(app)/leaderboard.tsx`)
-Adds high-value gamification and student engagement to the mobile app.
+### Screen 7: Campus Leaderboard (DECOMMISSIONED / NOT IMPLEMENTED)
+> **Status: Removed**. We have decided not to build student or club leaderboards. All leaderboard screens, routes, database tables, and endpoints have been completely removed across the system.
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  CAMPUS LEADERBOARD                                         │
-├─────────────────────────────────────────────────────────────┤
-│  [ 👤 STUDENTS ]                     [ 🏛 CLUBS ]           │
-├─────────────────────────────────────────────────────────────┤
-│  ⭐ YOUR RANKING                                            │
-│  #14  Soham Dhande                   340 PTS  ·  TOP 5%     │
-├─────────────────────────────────────────────────────────────┤
-│  🏆 PODIUM                                                  │
-│  🥇 #1  Vikram Malhotra              820 PTS                │
-│  🥈 #2  Sneha Roy                    760 PTS                │
-│  🥉 #3  Arjun Das                    710 PTS                │
-├─────────────────────────────────────────────────────────────┤
-│  #4  Meera Joshi                     640 PTS                │
-│  #5  Karan Kapoor                    610 PTS                │
-└─────────────────────────────────────────────────────────────┘
-```
-
-* **Data Source:** 
-  - Students: `GET /v1/leaderboard/students` (returns `user_id`, `display_name`, `total_points`, `last_refreshed_at`).
-  - Clubs: `GET /v1/leaderboard/clubs` (returns `club_id`, `club_name`, `total_points`, `event_count`, `member_count`).
-* **Features:**
-  - Two-segment toggle: **Students** and **Clubs**.
-  - Pinned "Your Rank" card showing current student's placement, total points, and percentile.
-  - Top-3 podium display with distinct gold, silver, and bronze Neo-Brutalist badges.
-  - *(Contract Notice: `DATA_CONTRACT.md:226` confirms `attendance_points`, `contribution_points`, and `competition_points` are hardcoded to 0 in the backend materialized view; UI strictly displays `total_points`)*.
 
 ---
 
@@ -375,8 +348,6 @@ Every screen and feature in this expansion uses **existing, verified backend end
 | **Campus Club Directory** | `/clubs` or `/clubs/search` | `GET` | `snake_case`: `banner_url`, `event_count` | `DATA_CONTRACT.md:136` |
 | **Club Profile & Roster** | `/clubs/:id` | `GET` | `snake_case`: `members[]`, `banner_url` | `DATA_CONTRACT.md:145` |
 | **Read-Only Team Roster** | `/v1/events/:id/teams` | `GET` | `snake_case`: `leader_name`, `members[]` | `DATA_CONTRACT.md:120` |
-| **Student Leaderboard** | `/v1/leaderboard/students` | `GET` | `snake_case`: `total_points` authoritative | `DATA_CONTRACT.md:221` |
-| **Club Leaderboard** | `/v1/leaderboard/clubs` | `GET` | `snake_case`: `total_points`, `event_count` | `DATA_CONTRACT.md:231` |
 | **Realtime Notifications** | `/v1/notifications/live` | `GET (SSE)` | Session-bound PostgreSQL stream | `02-api-routing-matrix.md:154` |
 | **Notification Prefs** | `/v1/notifications/preferences`| `GET/PATCH`| 4 independent toggles | `02-api-routing-matrix.md:90` |
 | **QR Check-in** | `/v1/attendance/mark` | `POST` | TOTP + geofencing + device UUID | `02-api-routing-matrix.md:48` |
@@ -408,11 +379,11 @@ Per project law, conflicts between documentation files are formally logged below
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                     ROLLOUT PHASES FOR STORE SUBMISSION                     │
 ├───────────────────────┬─────────────────────────────┬───────────────────────┤
-│ PHASE 1: PARTICIPATION│ PHASE 2: DISCOVERY & CLUBS  │ PHASE 3: GAMIFICATION │
-│ - In-App Solo Register│ - Discover Search & Filters │ - Student Leaderboard │
-│ - In-App Solo Cancel  │ - Campus Clubs Directory    │ - Club Leaderboard    │
-│ - Live Waitlist Status│ - Club Profile & Rosters    │ - Team Rosters View   │
-│ - Calendar & Share    │ - Onboarding Stack on Home  │ - Store Submission QA │
+│ PHASE 1: PARTICIPATION│ PHASE 2: DISCOVERY & CLUBS  │ PHASE 3: ROSTERS & QA │
+│ - In-App Solo Register│ - Discover Search & Filters │ - Team Rosters View   │
+│ - In-App Solo Cancel  │ - Campus Clubs Directory    │ - Store Submission QA │
+│ - Live Waitlist Status│ - Club Profile & Rosters    │ - (Leaderboards       │
+│ - Calendar & Share    │ - Onboarding Stack on Home  │    Decommissioned)    │
 └───────────────────────┴─────────────────────────────┴───────────────────────┘
 ```
 
@@ -424,10 +395,10 @@ Per project law, conflicts between documentation files are formally logged below
   - Implement Discover Feed with keyword search and `EventType` filter chips.
   - Build Campus Club Directory (`/clubs`) and Club Profile (`/clubs/[id]`).
   - Wire Profile club badges to open Club Profiles.
-* **Phase 3: Gamification & Team Roster (Days 6–7)**
-  - Build Student and Club Leaderboards (`/leaderboard`).
+* **Phase 3: Campus Exploration & Team Roster (Days 6–7)**
   - Replace desktop notice in `/events/[id]/teams.tsx` with read-only team roster view.
   - Add Onboarding Stack to Home feed.
+  - (Student and Club Leaderboards decommissioned per product decision).
 * **Phase 4: Store Submission & Compliance Polish (Days 8–9)**
   - Add Apple Account Deletion / Data Privacy request link in `settings.tsx`.
   - Validate high-contrast Neo-Brutalist dark/light appearance.

@@ -4,7 +4,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { NextRequest } from 'next/server';
-import { middleware } from '../middleware';
+import { proxy as middleware } from '../proxy';
 import LoginPage from '../app/(auth)/login/page';
 import { getWebAuthStore } from '../lib/auth-store';
 import * as api from '../lib/api';

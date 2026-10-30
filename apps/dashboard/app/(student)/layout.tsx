@@ -22,25 +22,51 @@ function StudentLayoutContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (store.accessToken) {
+      setIsAuthenticated(true);
       setIsHydrating(false);
+      return;
+    }
+
+    const currentPath = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
+    const loginTarget = `/login?return_to=${encodeURIComponent(currentPath)}&returnTo=${encodeURIComponent(currentPath)}`;
+
+    // Session hint check (non-HttpOnly user_role cookie cleared on logout)
+    const hasSessionHint =
+      typeof document !== 'undefined' &&
+      document.cookie
+        .split('; ')
+        .some((row) => row.startsWith('user_role=') && Boolean(row.split('=')[1]?.trim()));
+
+    // Skip the refresh call entirely when there is no session hint and go straight to /login
+    if (!hasSessionHint) {
+      setIsAuthenticated(false);
+      setIsHydrating(false);
+      router.replace(loginTarget);
       return;
     }
 
     const bootstrap = async () => {
       try {
         const res = await refreshToken();
-        if (res.status === 'SUCCESS') {
+        if (res.status === 'SUCCESS' && res.token) {
           store.setAccessToken(res.token);
           setIsAuthenticated(true);
         } else {
+          // If refresh returns 401/403 or fails, clear stale hint and redirect to /login
+          if (typeof document !== 'undefined') {
+            document.cookie = 'user_role=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax';
+          }
+          store.setAccessToken(null);
           setIsAuthenticated(false);
-          const currentPath = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
-          router.push(`/login?return_to=${encodeURIComponent(currentPath)}`);
+          router.replace(loginTarget);
         }
       } catch {
+        if (typeof document !== 'undefined') {
+          document.cookie = 'user_role=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax';
+        }
+        store.setAccessToken(null);
         setIsAuthenticated(false);
-        const currentPath = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
-        router.push(`/login?return_to=${encodeURIComponent(currentPath)}`);
+        router.replace(loginTarget);
       } finally {
         setIsHydrating(false);
       }
@@ -49,7 +75,7 @@ function StudentLayoutContent({ children }: { children: React.ReactNode }) {
     bootstrap();
   }, [router, store, pathname, searchParams]);
 
-  if (isHydrating || (isAuthenticated && isUserLoading)) {
+  if (isHydrating || !isAuthenticated || isUserLoading) {
     return (
       <div className="min-h-screen bg-m3-surface flex items-center justify-center">
         <div className="animate-pulse flex flex-col items-center gap-4">
@@ -76,7 +102,14 @@ function StudentLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   if (!isAuthenticated) {
-    return null; // Will redirect to login
+    return (
+      <div className="min-h-screen bg-m3-surface flex items-center justify-center">
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-m3-surface-variant/50"></div>
+          <div className="w-24 h-4 rounded-md bg-m3-surface-variant/50"></div>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -58,7 +58,6 @@ export default function AnalyticsLayout({ children }: { children: React.ReactNod
   // Append extra tabs for GLOBAL scope only
   if (access.scope === 'GLOBAL') {
     tabItems.push({ key: 'users', label: 'Users' });
-    tabItems.push({ key: 'leaderboard', label: 'Leaderboard' });
   }
 
   // Derive active tab from pathname

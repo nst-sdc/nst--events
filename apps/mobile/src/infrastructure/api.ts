@@ -16,6 +16,7 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'X-App-Version': APP_VERSION,
+    'X-Client-Platform': 'mobile',
     ...(options.headers as Record<string, string> || {}),
   };
   

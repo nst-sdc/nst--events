@@ -32,6 +32,14 @@ const nextConfig: NextConfig = {
           has: [{ type: 'header', key: 'x-client-platform' }],
           destination: `${apiInternalUrl}/users/:path*`,
         },
+        {
+          source: '/v1/:path*',
+          destination: `${apiInternalUrl}/v1/:path*`,
+        },
+        {
+          source: '/auth/:path*',
+          destination: `${apiInternalUrl}/auth/:path*`,
+        },
       ],
       fallback: [
         {
@@ -49,6 +57,14 @@ const nextConfig: NextConfig = {
         {
           source: '/users/:path*',
           destination: `${apiInternalUrl}/users/:path*`,
+        },
+        {
+          source: '/v1/:path*',
+          destination: `${apiInternalUrl}/v1/:path*`,
+        },
+        {
+          source: '/auth/:path*',
+          destination: `${apiInternalUrl}/auth/:path*`,
         },
       ],
     };

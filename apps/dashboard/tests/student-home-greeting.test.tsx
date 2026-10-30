@@ -91,7 +91,7 @@ describe('Student Home Greeting Layout', () => {
 
     // Honest empty state must be shown
     expect(screen.getByText('NO UPCOMING EVENTS SCHEDULED')).toBeInTheDocument();
-    expect(screen.getByText(/CAMPUS POSTER WALL \/\/ STATUS: IDLE/i)).toBeInTheDocument();
+    expect(screen.getByText(/CAMPUS POSTER WALL \/\/ 0 UPCOMING/i)).toBeInTheDocument();
   });
 
   it('renders real events from backend on the poster wall', () => {

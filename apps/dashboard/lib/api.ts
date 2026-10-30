@@ -39,9 +39,24 @@ export type RefreshResult =
 
 // Module-level promise to prevent duplicate concurrent refresh requests across remounts and queries
 let refreshPromise: Promise<RefreshResult> | null = null;
+let refreshAbortController: AbortController | null = null;
+
+export const abortInFlightRefresh = () => {
+  if (refreshAbortController) {
+    refreshAbortController.abort();
+    refreshAbortController = null;
+  }
+  refreshPromise = null;
+};
 
 export const refreshToken = async (): Promise<RefreshResult> => {
+  const authStore = getWebAuthStore();
+  if (authStore.isLoggingOut) {
+    return { status: 'SESSION_DEAD' };
+  }
+
   if (!refreshPromise) {
+    refreshAbortController = new AbortController();
     refreshPromise = fetch(`${API_BASE_URL}/auth/refresh`, {
       method: 'POST',
       headers: {
@@ -49,8 +64,12 @@ export const refreshToken = async (): Promise<RefreshResult> => {
         'X-Client-Platform': 'web',
       },
       credentials: 'include',
+      signal: refreshAbortController.signal,
     })
       .then(async (res) => {
+        if (authStore.isLoggingOut) {
+          return { status: 'SESSION_DEAD' as const };
+        }
         if (res.status === 401) {
           return { status: 'SESSION_DEAD' as const };
         }
@@ -64,6 +83,9 @@ export const refreshToken = async (): Promise<RefreshResult> => {
         }
         try {
           const data = await res.json();
+          if (authStore.isLoggingOut) {
+            return { status: 'SESSION_DEAD' as const };
+          }
           if (data?.access_token) {
             if (typeof document !== 'undefined' && data?.user?.global_role) {
               document.cookie = `user_role=${data.user.global_role}; path=/; max-age=2592000; SameSite=Lax`;
@@ -75,9 +97,15 @@ export const refreshToken = async (): Promise<RefreshResult> => {
           return { status: 'SESSION_DEAD' as const };
         }
       })
-      .catch(() => ({ status: 'TRANSIENT_ERROR' as const }))
+      .catch((err) => {
+        if (authStore.isLoggingOut || err?.name === 'AbortError') {
+          return { status: 'SESSION_DEAD' as const };
+        }
+        return { status: 'TRANSIENT_ERROR' as const };
+      })
       .finally(() => {
         refreshPromise = null;
+        refreshAbortController = null;
       });
   }
   return refreshPromise;
@@ -111,7 +139,7 @@ export const apiClient = async <T = any>(endpoint: string, options: RequestInit 
   const fetchOptions: RequestInit = {
     ...options,
     headers,
-    credentials: endpoint === '/auth/refresh' ? 'include' : 'omit',
+    credentials: (endpoint === '/auth/refresh' || endpoint === '/auth/logout') ? 'include' : 'omit',
   };
 
   let response = await fetch(`${API_BASE_URL}${endpoint}`, fetchOptions);
@@ -119,10 +147,13 @@ export const apiClient = async <T = any>(endpoint: string, options: RequestInit 
 
   // Intercept 401 Unauthorized for transparent refresh & retry (exactly once)
   let refreshResult: RefreshResult | null = null;
-  if (response.status === 401 && endpoint !== '/auth/refresh') {
+  if (response.status === 401 && endpoint !== '/auth/refresh' && endpoint !== '/auth/logout') {
+    if (authStore.isLoggingOut) {
+      throw new ApiError(response.status, 'Session logged out', null, requestId);
+    }
     refreshResult = await refreshToken();
     
-    if (refreshResult.status === 'SUCCESS') {
+    if (refreshResult.status === 'SUCCESS' && !authStore.isLoggingOut) {
       const newToken = refreshResult.token;
       authStore.setAccessToken(newToken);
       // Retry original request with new token

@@ -75,21 +75,13 @@ describe('NST-Events Mobile Navigation Remediation & Regression Suite', () => {
     });
   });
 
-  describe('BUG-04: Trapped Screens Without Back Buttons: Clubs & Leaderboard', () => {
+  describe('BUG-04: Trapped Screens Without Back Buttons: Clubs', () => {
     it('clubs/index.tsx provides showBackButton and onBackPress fallback to /(app)/profile', () => {
       const clubsContent = fs.readFileSync(path.join(appDir, 'clubs/index.tsx'), 'utf-8');
       expect(clubsContent).toContain('showBackButton');
       expect(clubsContent).toContain('onBackPress={handleBackToProfile}');
       expect(clubsContent).toContain('if (router.canGoBack())');
       expect(clubsContent).toContain("router.replace('/(app)/profile')");
-    });
-
-    it('leaderboard.tsx provides showBackButton and onBackPress fallback to /(app)/profile', () => {
-      const leaderboardContent = fs.readFileSync(path.join(appDir, 'leaderboard.tsx'), 'utf-8');
-      expect(leaderboardContent).toContain('showBackButton');
-      expect(leaderboardContent).toContain('onBackPress={handleBackToProfile}');
-      expect(leaderboardContent).toContain('if (router.canGoBack())');
-      expect(leaderboardContent).toContain("router.replace('/(app)/profile')");
     });
 
     it('students/index.tsx provides onBackPress fallback to /(app)/profile', () => {
@@ -217,14 +209,6 @@ describe('NST-Events Mobile Navigation Remediation & Regression Suite', () => {
       expect(clubsContent).toContain('scrollable={false}');
       // No duplicate Display header title inside scroll view
       expect(clubsContent).not.toContain('<Display style={styles.headerTitle}>STUDENT CLUBS</Display>');
-    });
-
-    it('leaderboard.tsx sets MobileShell title to CAMPUS LEADERBOARD and scrollable={false}', () => {
-      const leaderboardContent = fs.readFileSync(path.join(appDir, 'leaderboard.tsx'), 'utf-8');
-      expect(leaderboardContent).toContain('title="CAMPUS LEADERBOARD"');
-      expect(leaderboardContent).toContain('scrollable={false}');
-      // No duplicate Display header title inside scroll view
-      expect(leaderboardContent).not.toContain('<Display style={styles.headerTitle}>CAMPUS LEADERBOARD</Display>');
     });
   });
 });

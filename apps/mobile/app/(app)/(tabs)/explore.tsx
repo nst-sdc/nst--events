@@ -537,14 +537,6 @@ export default function ExploreScreen() {
 
         <TouchableOpacity
           style={styles.shortcutChip}
-          onPress={() => router.push('/(app)/leaderboard')}
-          activeOpacity={0.8}
-        >
-          <Mono style={styles.shortcutText}>[ 🏆 LEADERBOARD ]</Mono>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.shortcutChip}
           onPress={() => openProjectShowcase()}
           activeOpacity={0.8}
         >

@@ -254,6 +254,70 @@ interface RawMyProfileResponse {
   availableClubs?: RawClubItem[];
 }
 
+export function normalizeStudentDirectoryResponse(raw: any, queryPage = 1, queryLimit = 12): StudentDirectoryResponse {
+  if (!raw) {
+    return {
+      items: [],
+      pagination: { total: 0, page: queryPage, limit: queryLimit, totalPages: 1 },
+      facets: { programs: [], batches: [], skills: [] },
+    };
+  }
+
+  // Handle both { items: [...] } (client/mock shape) and { data: [...] } (backend shape)
+  const rawList = Array.isArray(raw.items) ? raw.items : Array.isArray(raw.data) ? raw.data : [];
+
+  const items: PublicStudentCard[] = rawList.map((item: any) => {
+    const fullName = item.fullName ?? item.full_name ?? '';
+    const avatarUrl = item.avatarUrl ?? item.avatar_url ?? null;
+    const program = item.program ?? item.academic?.program_name ?? item.academic?.program_code ?? null;
+    const batch = item.batch ?? (item.academic?.graduation_year != null ? String(item.academic.graduation_year) : null);
+    const skills = Array.isArray(item.skills) ? item.skills : [];
+
+    return {
+      id: item.id || item.user_id || '',
+      fullName,
+      slug: item.slug || '',
+      avatarUrl,
+      headline: item.headline ?? null,
+      bio: item.bio ?? null,
+      batch,
+      program,
+      campus: item.campus ?? null,
+      skills,
+      projectsCount: item.projectsCount ?? item.projects_count ?? 0,
+      achievementsCount: item.achievementsCount ?? item.achievements_count ?? 0,
+    };
+  });
+
+  const total = raw.pagination?.total ?? items.length;
+  const limit = raw.pagination?.limit ?? queryLimit;
+  const page = raw.pagination?.page ?? (raw.pagination?.offset != null ? Math.floor(raw.pagination.offset / limit) + 1 : queryPage);
+  const totalPages = raw.pagination?.totalPages ?? Math.max(1, Math.ceil(total / limit));
+
+  const facets = {
+    programs: Array.isArray(raw.facets?.programs)
+      ? raw.facets.programs
+      : Array.from(new Set(items.map((i) => i.program).filter(Boolean) as string[])).sort(),
+    batches: Array.isArray(raw.facets?.batches)
+      ? raw.facets.batches
+      : Array.from(new Set(items.map((i) => i.batch).filter(Boolean) as string[])).sort(),
+    skills: Array.isArray(raw.facets?.skills)
+      ? raw.facets.skills
+      : Array.from(new Set(items.flatMap((i) => i.skills).filter(Boolean) as string[])).sort(),
+  };
+
+  return {
+    items,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages,
+    },
+    facets,
+  };
+}
+
 export const studentsApi = {
   /**
    * Public directory search & filter
@@ -268,11 +332,21 @@ export const studentsApi = {
   } = {}): Promise<StudentDirectoryResponse> {
     const params = new URLSearchParams();
     if (query.search) params.set('search', query.search);
-    if (query.program) params.set('program', query.program);
-    if (query.batch) params.set('batch', query.batch);
+    if (query.program) {
+      params.set('program', query.program);
+      params.set('program_code', query.program);
+    }
+    if (query.batch) {
+      params.set('batch', query.batch);
+      params.set('graduation_year', query.batch);
+    }
     if (query.skill) params.set('skill', query.skill);
+    const limit = query.limit || 12;
+    const page = query.page || 1;
+    const offset = (page - 1) * limit;
+    params.set('limit', String(limit));
+    params.set('offset', String(offset));
     if (query.page) params.set('page', String(query.page));
-    if (query.limit) params.set('limit', String(query.limit));
 
     const res = await fetch(`${API_BASE_URL}/v1/students?${params.toString()}`, {
       next: { revalidate: 30 },
@@ -286,7 +360,8 @@ export const studentsApi = {
       throw new Error(`Failed to fetch student directory: ${res.statusText}`);
     }
 
-    return res.json();
+    const raw = await res.json();
+    return normalizeStudentDirectoryResponse(raw, page, limit);
   },
 
   /**

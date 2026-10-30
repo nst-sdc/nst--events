@@ -90,7 +90,7 @@ async function ensureDevRoles() {
     const devUsers = [
       {
         email: 'e25b070564@adypu.edu.in',
-        role: 'STUDENT',
+        role: 'PLATFORM_ADMIN',
         defaultName: 'Soham Dhande',
         clubAdmin: true,
       },

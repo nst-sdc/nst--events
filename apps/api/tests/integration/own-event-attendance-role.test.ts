@@ -94,7 +94,6 @@ describe('Own-Event Club Admin Participation & Attendance Restriction', { concur
   });
 
   after(async () => {
-    await adminPrisma.$executeRaw`DELETE FROM leaderboard_scores WHERE user_id IN (${studentUserId}::uuid, ${clubAdminUserId}::uuid, ${multiClubAdminUserId}::uuid, ${clubMemberUserId}::uuid);`;
     await adminPrisma.$executeRaw`DELETE FROM attendance_records WHERE session_id IN (${sessionAId}::uuid, ${sessionBId}::uuid);`;
     await adminPrisma.$executeRaw`DELETE FROM attendance_sessions WHERE id IN (${sessionAId}::uuid, ${sessionBId}::uuid);`;
     await adminPrisma.$executeRaw`DELETE FROM event_registrations WHERE event_id IN (${eventAId}::uuid, ${eventBId}::uuid);`;

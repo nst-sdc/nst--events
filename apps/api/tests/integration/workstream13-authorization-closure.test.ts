@@ -419,6 +419,7 @@ describe('Workstream 13: API Authorization & IDOR Closure Integration Suite', ()
       // Call logout passing refresh_token in request body (no cookies)
       const logoutRes = await request(app)
         .post('/auth/logout')
+        .set('X-Client-Platform', 'mobile')
         .set('Authorization', `Bearer ${studentAToken}`)
         .send({ refresh_token: mobileRt });
 
@@ -433,6 +434,7 @@ describe('Workstream 13: API Authorization & IDOR Closure Integration Suite', ()
       // Attempting to refresh with the revoked token must fail with 401
       const refreshRes = await request(app)
         .post('/auth/refresh')
+        .set('X-Client-Platform', 'mobile')
         .send({ refresh_token: mobileRt });
       assert.strictEqual(refreshRes.status, 401);
     });

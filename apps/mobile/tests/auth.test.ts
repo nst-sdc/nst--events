@@ -153,9 +153,11 @@ describe('Phase 1 Authentication Completion Tests', () => {
         expect.objectContaining({
           method: 'POST',
           headers: {
+            'Content-Type': 'application/json',
+            'X-Client-Platform': 'mobile',
             Authorization: 'Bearer active-access-token',
-            Cookie: 'refreshToken=active-refresh-token',
           },
+          body: JSON.stringify({ refresh_token: 'active-refresh-token' }),
         })
       );
 

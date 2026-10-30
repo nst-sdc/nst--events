@@ -46,7 +46,7 @@ export async function teardownSession(options?: TeardownOptions): Promise<void> 
           const accessToken = state.accessToken || (await safeSecureStore.getItemAsync('access_token'));
           const refreshToken = state.refreshToken || (await safeSecureStore.getItemAsync('refresh_token'));
 
-          if (accessToken && refreshToken) {
+          if (refreshToken) {
             const timeoutMs = options.serverTimeoutMs ?? DEFAULT_SERVER_REVOCATION_TIMEOUT_MS;
             const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
 
@@ -59,14 +59,20 @@ export async function teardownSession(options?: TeardownOptions): Promise<void> 
               }, timeoutMs);
             });
 
+            const headers: Record<string, string> = {
+              'Content-Type': 'application/json',
+              'X-Client-Platform': 'mobile',
+            };
+            if (accessToken) {
+              headers['Authorization'] = `Bearer ${accessToken}`;
+            }
+
             const fetchPromise = (async () => {
               try {
                 await fetch(`${API_BASE_URL}/auth/logout`, {
                   method: 'POST',
-                  headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                    Cookie: `refreshToken=${refreshToken}`,
-                  },
+                  headers,
+                  body: JSON.stringify({ refresh_token: refreshToken }),
                   signal: controller?.signal,
                 });
               } catch (err) {

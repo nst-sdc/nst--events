@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Compass, Calendar, User, Users, Sun, Moon } from 'lucide-react';
+import { Home, Compass, Calendar, User, Users, Sun, Moon, ChevronDown } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import clsx from 'clsx';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
@@ -81,6 +81,11 @@ const shellStyles = `
   html.light .campus-dropdown-item:hover {
     background: #0057FF !important;
     color: #FFFFFF !important;
+  }
+
+  html.light .campus-dropdown-item.active {
+    color: #0057FF !important;
+    background: rgba(0, 87, 255, 0.08) !important;
   }
 
   html.light .student-user-badge {
@@ -200,7 +205,7 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
       return pathname === '/student/campus/discover' || pathname.startsWith('/student/campus/discover') || pathname.startsWith('/event/');
     }
     if (item.href === '/student/campus') {
-      return pathname === '/student/campus' || (pathname.startsWith('/student/campus/') && !pathname.startsWith('/student/campus/discover'));
+      return pathname === '/student/campus' || pathname.startsWith('/student/campus/');
     }
     if (item.exactMatch === false) {
       return pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -264,16 +269,45 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
                       HOME
                     </Link>
 
-                    <Link
-                      aria-current={isActive({ href: '/student/campus', exactMatch: false }) ? 'page' : undefined}
-                      href="/student/campus"
-                      className={clsx(
-                        "transition-colors duration-200 nav-link-item", 
-                        isActive({ href: '/student/campus', exactMatch: false }) ? "text-[#0057FF] nav-link-item-active" : "text-[#a0a4b8] hover:text-[#0057FF]"
-                      )}
-                    >
-                      CAMPUS
-                    </Link>
+                    <div className="relative group/campus">
+                      <Link
+                        aria-current={isActive({ href: '/student/campus', exactMatch: false }) ? 'page' : undefined}
+                        href="/student/campus"
+                        className={clsx(
+                          "transition-colors duration-200 nav-link-item flex items-center gap-1.5 py-1", 
+                          isActive({ href: '/student/campus', exactMatch: false }) ? "text-[#0057FF] nav-link-item-active" : "text-[#a0a4b8] hover:text-[#0057FF]"
+                        )}
+                      >
+                        <span>CAMPUS</span>
+                        <ChevronDown className="w-3 h-3 transition-transform duration-200 group-hover/campus:rotate-180 opacity-70 group-hover/campus:opacity-100" />
+                      </Link>
+
+                      {/* Dropdown Menu */}
+                      <div className="campus-dropdown-menu absolute top-full left-0 w-44 bg-[#0d0e12] border-2 border-white/20 shadow-[4px_4px_0px_#0057FF] opacity-0 invisible group-hover/campus:opacity-100 group-hover/campus:visible focus-within:opacity-100 focus-within:visible transition-all duration-150 z-50 before:content-[''] before:absolute before:-top-2 before:left-0 before:right-0 before:h-2">
+                        <Link
+                          href="/student/campus/discover"
+                          className={clsx(
+                            "campus-dropdown-item block px-4 py-2.5 text-[11px] font-['JetBrains_Mono',monospace] font-bold tracking-widest border-b border-white/10 transition-colors uppercase",
+                            pathname === '/student/campus/discover' || pathname.startsWith('/student/campus/discover') || pathname.startsWith('/event/')
+                              ? "active text-[#0057FF] bg-white/5"
+                              : "text-[#a0a4b8] hover:text-white hover:bg-[#0057FF]"
+                          )}
+                        >
+                          DISCOVER
+                        </Link>
+                        <Link
+                          href="/student/campus/clubs"
+                          className={clsx(
+                            "campus-dropdown-item block px-4 py-2.5 text-[11px] font-['JetBrains_Mono',monospace] font-bold tracking-widest border-b-0 transition-colors uppercase",
+                            pathname === '/student/campus/clubs' || pathname.startsWith('/student/campus/clubs')
+                              ? "active text-[#0057FF] bg-white/5"
+                              : "text-[#a0a4b8] hover:text-white hover:bg-[#0057FF]"
+                          )}
+                        >
+                          CLUBS
+                        </Link>
+                      </div>
+                    </div>
 
                     <Link
                       aria-current={isActive({ href: '/student/events' }) ? 'page' : undefined}
@@ -310,16 +344,45 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
                   </>
                 ) : (
                   <>
-                    <Link
-                      aria-current={isActive({ href: '/student/campus/discover' }) ? 'page' : undefined}
-                      href="/student/campus/discover"
-                      className={clsx(
-                        "transition-colors duration-200 nav-link-item", 
-                        isActive({ href: '/student/campus/discover' }) ? "text-[#0057FF] nav-link-item-active" : "text-[#a0a4b8] hover:text-[#0057FF]"
-                      )}
-                    >
-                      EVENTS
-                    </Link>
+                    <div className="relative group/campus">
+                      <Link
+                        aria-current={isActive({ href: '/student/campus', exactMatch: false }) ? 'page' : undefined}
+                        href="/student/campus"
+                        className={clsx(
+                          "transition-colors duration-200 nav-link-item flex items-center gap-1.5 py-1", 
+                          isActive({ href: '/student/campus', exactMatch: false }) ? "text-[#0057FF] nav-link-item-active" : "text-[#a0a4b8] hover:text-[#0057FF]"
+                        )}
+                      >
+                        <span>CAMPUS</span>
+                        <ChevronDown className="w-3 h-3 transition-transform duration-200 group-hover/campus:rotate-180 opacity-70 group-hover/campus:opacity-100" />
+                      </Link>
+
+                      {/* Dropdown Menu */}
+                      <div className="campus-dropdown-menu absolute top-full left-0 w-44 bg-[#0d0e12] border-2 border-white/20 shadow-[4px_4px_0px_#0057FF] opacity-0 invisible group-hover/campus:opacity-100 group-hover/campus:visible focus-within:opacity-100 focus-within:visible transition-all duration-150 z-50 before:content-[''] before:absolute before:-top-2 before:left-0 before:right-0 before:h-2">
+                        <Link
+                          href="/student/campus/discover"
+                          className={clsx(
+                            "campus-dropdown-item block px-4 py-2.5 text-[11px] font-['JetBrains_Mono',monospace] font-bold tracking-widest border-b border-white/10 transition-colors uppercase",
+                            pathname === '/student/campus/discover' || pathname.startsWith('/student/campus/discover') || pathname.startsWith('/event/')
+                              ? "active text-[#0057FF] bg-white/5"
+                              : "text-[#a0a4b8] hover:text-white hover:bg-[#0057FF]"
+                          )}
+                        >
+                          DISCOVER
+                        </Link>
+                        <Link
+                          href="/student/campus/clubs"
+                          className={clsx(
+                            "campus-dropdown-item block px-4 py-2.5 text-[11px] font-['JetBrains_Mono',monospace] font-bold tracking-widest border-b-0 transition-colors uppercase",
+                            pathname === '/student/campus/clubs' || pathname.startsWith('/student/campus/clubs')
+                              ? "active text-[#0057FF] bg-white/5"
+                              : "text-[#a0a4b8] hover:text-white hover:bg-[#0057FF]"
+                          )}
+                        >
+                          CLUBS
+                        </Link>
+                      </div>
+                    </div>
 
                     <Link
                       aria-current={isActive({ href: '/projects', exactMatch: false }) ? 'page' : undefined}

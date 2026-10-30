@@ -8,7 +8,6 @@ import { signJwt } from '../../src/lib/jwt';
 import { createTeam, joinTeam, leaveTeam, removeMember } from '../../src/modules/teams/teams.service';
 import { deleteEventForm, submitEventFormResponses } from '../../src/modules/event-forms/event-forms.service';
 import { registerEvent } from '../../src/modules/registrations/registrations.service';
-import { leaderboardService } from '../../src/modules/leaderboard/leaderboard.service';
 import { randomUUID } from 'crypto';
 
 const app = createApp();
@@ -161,7 +160,6 @@ describe('Phase 1 Remediation Integration Suite', () => {
       await adminPrisma.club.deleteMany({ where: { id: clubId } });
       await adminPrisma.studentSlugHistory.deleteMany({ where: { userId: { in: [publicStudentId, unlistedStudentId, anonStudentId] } } });
       await adminPrisma.studentProfile.deleteMany({ where: { userId: { in: [publicStudentId, unlistedStudentId, anonStudentId] } } });
-      await adminPrisma.leaderboardScore.deleteMany({ where: { userId: { in: [publicStudentId, unlistedStudentId, anonStudentId] } } });
       await adminPrisma.user.deleteMany({
         where: {
           id: {
@@ -420,7 +418,7 @@ describe('Phase 1 Remediation Integration Suite', () => {
   // =========================================================================
   // WORKSTREAM 3: Student Identity Privacy (FINDING-PRIVACY-01 & PRIVACY-02)
   // =========================================================================
-  describe('Workstream 3: Student Identity Privacy & Leaderboard Projection', () => {
+  describe('Workstream 3: Student Identity Privacy & Directory Projection', () => {
     const pubVanity = `pub-student-${runId}`;
     const unlistedVanity1 = `unlisted-old-${runId}`;
     const unlistedVanity2 = `unlisted-new-${runId}`;
@@ -472,18 +470,6 @@ describe('Phase 1 Remediation Integration Suite', () => {
           slug: anonVanity,
         },
       });
-
-      // 4. Award leaderboard scores
-      await adminPrisma.leaderboardScore.createMany({
-        data: [
-          { userId: publicStudentId, points: 300, reason: 'ATTENDANCE', sourceId: randomUUID(), clubId },
-          { userId: unlistedStudentId, points: 200, reason: 'ATTENDANCE', sourceId: randomUUID(), clubId },
-          { userId: anonStudentId, points: 500, reason: 'ATTENDANCE', sourceId: randomUUID(), clubId },
-        ],
-      });
-
-      // Refresh materialized view
-      await leaderboardService.refreshLeaderboards();
     });
 
     it('3.1: Public profile displays real full name and appears in directory', async () => {
@@ -536,85 +522,6 @@ describe('Phase 1 Remediation Integration Suite', () => {
       // API request returns 404 (does not leak anonymous handle)
       const redirectReq = await request(app).get(`/v1/students/${anonVanity}`).set('X-App-Version', '1.0.0');
       assert.strictEqual(redirectReq.status, 404);
-    });
-
-    it('3.4: Global and club-scoped leaderboard masks hidden identities to Anonymous Student while preserving visible identities', async () => {
-      // 1. Global leaderboard materialized view
-      const lbRows = await adminPrisma.$queryRawUnsafe<any[]>(
-        `SELECT user_id, display_name FROM student_leaderboard_mv WHERE user_id IN ('${publicStudentId}', '${unlistedStudentId}', '${anonStudentId}')`
-      );
-      const pubEntry = lbRows.find((d) => d.user_id === publicStudentId);
-      const unlistedEntry = lbRows.find((d) => d.user_id === unlistedStudentId);
-      const anonEntry = lbRows.find((d) => d.user_id === anonStudentId);
-
-      assert.ok(pubEntry);
-      assert.strictEqual(pubEntry.display_name, 'Public Student');
-
-      assert.ok(unlistedEntry);
-      assert.strictEqual(unlistedEntry.display_name, 'Unlisted Student', 'Unlisted student with identity:true must display name');
-
-      assert.ok(anonEntry);
-      assert.strictEqual(anonEntry.display_name, 'Anonymous Student', 'Hidden identity student must be masked to Anonymous Student');
-
-      // 2. Club-scoped leaderboard
-      const clubLb = await leaderboardService.getClubScopedStudentLeaderboard(platformAdminId, clubId, { limit: 10 });
-      const clubAnonEntry = clubLb.data.find((d) => d.user_id === anonStudentId);
-      assert.ok(clubAnonEntry);
-      assert.strictEqual(clubAnonEntry.display_name, 'Anonymous Student', 'Club-scoped leaderboard must also mask hidden identity');
-    });
-
-    it('3.5: Critical Privacy Transition Gate: Immediate fail-closed masking when identity transitions to hidden without MV refresh', async () => {
-      // 1. Initially public student is visible on global leaderboard API
-      const initialLb = await leaderboardService.getStudentLeaderboard({ limit: 100 });
-      const initialEntry = initialLb.data.find((d) => d.user_id === publicStudentId);
-      assert.ok(initialEntry);
-      assert.strictEqual(initialEntry.display_name, 'Public Student', 'Initially visible student displays real name');
-
-      // 2. Student updates privacy settings to hide identity
-      await adminPrisma.studentProfile.update({
-        where: { userId: publicStudentId },
-        data: {
-          sectionVisibility: { identity: false, name: false },
-        },
-      });
-
-      // 3. Confirm that the materialized view itself is STALE and still stores the real name
-      const staleMvRow = await adminPrisma.$queryRawUnsafe<any[]>(
-        `SELECT display_name FROM student_leaderboard_mv WHERE user_id = '${publicStudentId}'`
-      );
-      assert.strictEqual(
-        staleMvRow[0].display_name,
-        'Public Student',
-        'Materialized view row is deliberately unrefreshed and stale'
-      );
-
-      // 4. Critical Gate: Global leaderboard API must immediately fail-closed and return Anonymous Student
-      const transitionedLb = await leaderboardService.getStudentLeaderboard({ limit: 100 });
-      const transitionedEntry = transitionedLb.data.find((d) => d.user_id === publicStudentId);
-      assert.ok(transitionedEntry);
-      assert.strictEqual(
-        transitionedEntry.display_name,
-        'Anonymous Student',
-        'Concealment guarantee must NOT depend on delayed or background MV refresh'
-      );
-
-      // HTTP endpoint also immediately returns Anonymous Student
-      const httpRes = await request(app)
-        .get('/v1/leaderboard/students?limit=100')
-        .set('Authorization', `Bearer ${publicToken}`)
-        .set('X-App-Version', '1.0.0');
-      assert.strictEqual(httpRes.status, 200);
-      const httpEntry = httpRes.body.data.find((d: any) => d.user_id === publicStudentId);
-      assert.ok(httpEntry);
-      assert.strictEqual(httpEntry.display_name, 'Anonymous Student');
-
-      // 5. Cleanup / revert public student visibility
-      await adminPrisma.studentProfile.update({
-        where: { userId: publicStudentId },
-        data: {
-          sectionVisibility: { identity: true, name: true },
-        },
-      });
     });
   });
 });

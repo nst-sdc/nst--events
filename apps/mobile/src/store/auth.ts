@@ -103,7 +103,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Client-Platform': 'mobile',
+        },
         body: JSON.stringify({ refresh_token: currentRefresh }),
       });
 

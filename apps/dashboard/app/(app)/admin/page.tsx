@@ -4,8 +4,6 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
 import { useAuditLogs } from '../../../hooks/useAuditLogs';
-import { useRecalculateLeaderboard } from '../../../hooks/useLeaderboard';
-import { canRecalculateLeaderboard } from '../../../lib/auth-helpers';
 import { Card, Button, Skeleton, Alert, Typography, Row, Col, Table, theme, App } from 'antd';
 
 const { Title, Text } = Typography;
@@ -37,29 +35,6 @@ export default function AdminHubPage() {
   const isAdmin = isPlatformAdmin || isFacultyAdmin;
 
   const { data: auditLogs, isLoading: isLogsLoading, error: logsError, refetch } = useAuditLogs({ enabled: isPlatformAdmin });
-
-  const canRecalculate = canRecalculateLeaderboard(currentUser);
-  
-  const recalculateLeaderboard = useRecalculateLeaderboard();
-
-  const handleRecalculateLeaderboard = () => {
-    modal.confirm({
-      title: 'Recalculate Leaderboard?',
-      content: 'Are you sure you want to trigger a full leaderboard recalculation? This may take some time depending on the amount of data.',
-      okText: 'Recalculate Now',
-      okType: 'primary',
-      cancelText: 'Cancel',
-      onOk: async () => {
-        try {
-          await recalculateLeaderboard.mutateAsync();
-          message.success('Leaderboard recalculation triggered successfully');
-        } catch (err: unknown) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          message.error((err as any).response?.data?.error || 'Failed to trigger recalculation');
-        }
-      }
-    });
-  };
 
   useEffect(() => {
     if (!isUserLoading && !isAdmin) {
@@ -136,32 +111,7 @@ export default function AdminHubPage() {
           </Card>
         </Col>
 
-        {/* Quick Actions */}
-        {isPlatformAdmin && (
-          <Col xs={24} lg={12}>
-            <Card title="Quick Actions" style={{ height: '100%' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 16, backgroundColor: token.colorBgLayout, borderRadius: 8 }}>
-                  <div>
-                    <Text strong style={{ display: 'block' }}>Point Adjustments</Text>
-                    <Text type="secondary">Manually adjust student or club points.</Text>
-                  </div>
-                  <Button disabled>DEFERRED TO V2</Button>
-                </div>
-                
-                {canRecalculate && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 16, backgroundColor: token.colorBgLayout, borderRadius: 8 }}>
-                    <div>
-                      <Text strong style={{ display: 'block' }}>Leaderboard Recalculation</Text>
-                      <Text type="secondary">Force a manual update of the global leaderboard materialized views.</Text>
-                    </div>
-                    <Button type="primary" onClick={handleRecalculateLeaderboard}>Recalculate Now</Button>
-                  </div>
-                )}
-              </div>
-            </Card>
-          </Col>
-        )}
+
 
         {/* Audit Logs */}
         {isPlatformAdmin && (

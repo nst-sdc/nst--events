@@ -43,7 +43,6 @@ describe('Phase 26B: Offline Attendance Cryptographic Integrity', () => {
     session2Secret = crypto.randomBytes(32).toString('hex');
 
     // Clean up any stale records from previous runs
-    await adminPrisma.$executeRaw`DELETE FROM leaderboard_scores WHERE user_id IN (SELECT id FROM users WHERE email IN ('org26b@test.com', 'nonorg26b@test.com', 'student26b@test.com'))`;
     await adminPrisma.$executeRaw`DELETE FROM attendance_records WHERE user_id IN (SELECT id FROM users WHERE email IN ('org26b@test.com', 'nonorg26b@test.com', 'student26b@test.com'))`;
     await adminPrisma.$executeRaw`DELETE FROM event_registrations WHERE user_id IN (SELECT id FROM users WHERE email IN ('org26b@test.com', 'nonorg26b@test.com', 'student26b@test.com'))`;
     await adminPrisma.$executeRaw`DELETE FROM attendance_sessions WHERE event_id IN (SELECT id FROM events WHERE title IN ('Test Event 1', 'Test Event 2'))`;
@@ -145,7 +144,6 @@ describe('Phase 26B: Offline Attendance Cryptographic Integrity', () => {
 
   after(async () => {
     // Cleanup
-    await adminPrisma.$executeRaw`DELETE FROM leaderboard_scores WHERE user_id = ${studentId}::uuid`;
     await adminPrisma.$executeRaw`DELETE FROM attendance_records WHERE user_id = ${studentId}::uuid`;
     await adminPrisma.$executeRaw`DELETE FROM event_registrations WHERE user_id = ${studentId}::uuid`;
     await adminPrisma.$executeRaw`DELETE FROM attendance_sessions WHERE id IN (${session1Id}::uuid, ${session2Id}::uuid)`;

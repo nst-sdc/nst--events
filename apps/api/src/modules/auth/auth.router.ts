@@ -10,11 +10,10 @@ import {
   REFRESH_TOKEN_COOKIE_NAME,
   USER_ROLE_COOKIE_NAME,
 } from '../../lib/cookies';
-import { UnauthorizedError } from '../../lib/errors';
+import { BadRequestError, UnauthorizedError } from '../../lib/errors';
 import { googleCallbackQuerySchema } from './auth.schema';
 import { authService } from './auth.service';
 import { googleOAuth } from './google.oauth';
-import { authenticate } from '../../middleware/authenticate';
 import { prisma } from '../../lib/prisma';
 import { rateLimit } from 'express-rate-limit';
 import { env } from '../../config/env';
@@ -45,18 +44,19 @@ const exchangeLimiter = rateLimit({
 });
 
 export const authRouter: Router = Router();
-
-
+export const OAUTH_NONCE_COOKIE_NAME = 'oauth_nonce';
 
 authRouter.get(
   '/google',
   (req: Request, res: Response, next: NextFunction): void => {
     try {
       const state = crypto.randomBytes(16).toString('hex');
+      const nonce = crypto.randomBytes(16).toString('hex');
       const platform = req.query.platform === 'mobile' ? 'mobile' : 'web';
       const statePayload = `${state}:${platform}`;
       res.cookie(OAUTH_STATE_COOKIE_NAME, statePayload, getOAuthStateCookieOptions());
-      const authUrl = googleOAuth.getAuthUrl(statePayload);
+      res.cookie(OAUTH_NONCE_COOKIE_NAME, nonce, getOAuthStateCookieOptions());
+      const authUrl = googleOAuth.generateAuthUrl(statePayload, nonce);
       res.redirect(authUrl);
     } catch (err) {
       next(err);
@@ -78,13 +78,28 @@ authRouter.get(
         throw new UnauthorizedError('Invalid OAuth state parameter');
       }
       platform = cookieState.split(':').pop() || 'web';
-      res.clearCookie(OAUTH_STATE_COOKIE_NAME, { path: '/auth' });
 
-      const result = await authService.loginWithGoogle(
-        query.code,
+      const cookieNonce =
+        req.signedCookies?.[OAUTH_NONCE_COOKIE_NAME] ||
+        req.cookies?.[OAUTH_NONCE_COOKIE_NAME];
+      if (!cookieNonce) {
+        throw new UnauthorizedError('Missing OAuth nonce');
+      }
+
+      const { id_token } = await googleOAuth.exchangeCodeForTokens(query.code);
+      const googleUser = await googleOAuth.verifyIdToken(id_token, cookieNonce);
+      if (!googleUser.nonce || googleUser.nonce !== cookieNonce) {
+        throw new UnauthorizedError('Invalid or mismatched OAuth nonce');
+      }
+
+      const result = await authService.loginWithIdToken(
+        id_token,
         req.ip,
         req.headers['user-agent']
       );
+
+      res.clearCookie(OAUTH_STATE_COOKIE_NAME, { path: '/auth' });
+      res.clearCookie(OAUTH_NONCE_COOKIE_NAME, { path: '/auth' });
 
       if (platform === 'mobile') {
         // Mobile: create a single-use code and redirect to the app deep link
@@ -112,6 +127,18 @@ authRouter.get(
       }
     } catch (err: any) {
       console.error('Login Error:', err);
+      res.clearCookie(OAUTH_STATE_COOKIE_NAME, { path: '/auth' });
+      res.clearCookie(OAUTH_NONCE_COOKIE_NAME, { path: '/auth' });
+
+      if (req.headers.accept?.includes('application/json')) {
+        const status = err.statusCode || 401;
+        res.status(status).json({
+          error: err.message || 'authentication_failed',
+          statusCode: status,
+        });
+        return;
+      }
+
       const errorCode = ['INSTITUTIONAL_DOMAIN_NOT_ALLOWED', 'STUDENT_ACCESS_NOT_AUTHORIZED', 'Account deactivated'].includes(err.message)
         ? err.message
         : 'authentication_failed';
@@ -178,8 +205,22 @@ authRouter.post(
   }
 );
 
+/**
+ * SEC-11: Defense-in-depth CSRF mitigation for cookie-authenticated state-changing auth endpoints.
+ * Enforces requirement for custom header `X-Client-Platform: web|mobile`.
+ * Cross-site forms, scripts, and simple cross-origin requests cannot set custom headers.
+ */
+export function validateClientPlatform(req: Request, _res: Response, next: NextFunction): void {
+  const platform = req.header('x-client-platform')?.trim().toLowerCase();
+  if (!platform || (platform !== 'web' && platform !== 'mobile')) {
+    throw new BadRequestError('Missing or invalid X-Client-Platform header. Expected "web" or "mobile".');
+  }
+  next();
+}
+
 authRouter.post(
   '/refresh',
+  validateClientPlatform,
   refreshLimiter,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -225,7 +266,7 @@ authRouter.post(
 
 authRouter.post(
   '/logout',
-  authenticate,
+  validateClientPlatform,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const rawRefreshToken =
@@ -235,7 +276,13 @@ authRouter.post(
         req.signedCookies?.refresh_token ||
         req.body?.refresh_token;
 
-      await authService.logout(rawRefreshToken);
+      if (rawRefreshToken) {
+        try {
+          await authService.logout(rawRefreshToken);
+        } catch {
+          // Idempotent: don't fail logout even if DB error or race
+        }
+      }
 
       res.clearCookie(
         REFRESH_TOKEN_COOKIE_NAME,
@@ -245,7 +292,7 @@ authRouter.post(
         USER_ROLE_COOKIE_NAME,
         getClearUserRoleCookieOptions()
       );
-      res.status(204).json({});
+      res.status(204).send();
     } catch (err) {
       next(err);
     }

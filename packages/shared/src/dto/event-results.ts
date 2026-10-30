@@ -1,5 +1,5 @@
 /**
- * Canonical Event Results & Leaderboard Data Transfer Objects (DTOs)
+ * Canonical Event Results Data Transfer Objects (DTOs)
  * Sourced directly from backend ground truth:
  * - apps/api/src/modules/event-results/event-results.service.ts
  * - docs/frontend/shared/DATA_CONTRACT.md

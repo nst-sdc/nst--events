@@ -18,7 +18,6 @@ describe('BACKEND-GAP-022: Manual Attendance Authorization & Multi-Session', () 
 
   before(async () => {
     // Clear existing data
-    await adminPrisma.leaderboardScore.deleteMany({});
     await adminPrisma.auditLog.deleteMany({});
     await adminPrisma.attendanceDispute.deleteMany({});
     await adminPrisma.attendanceRecord.deleteMany({});
@@ -202,7 +201,6 @@ describe('BACKEND-GAP-022: Manual Attendance Authorization & Multi-Session', () 
   });
 
   after(async () => {
-    await adminPrisma.leaderboardScore.deleteMany({});
     await adminPrisma.auditLog.deleteMany({});
     await adminPrisma.attendanceDispute.deleteMany({});
     await adminPrisma.attendanceRecord.deleteMany({});

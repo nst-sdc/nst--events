@@ -35,7 +35,6 @@ model User {
   eventResultsCreated       EventResult[]               @relation("EventResultCreatedBy")
   eventResults              EventResult[]               @relation("EventResultUser")
   createdEvents             Event[]                     @relation("EventCreatedBy")
-  leaderboardScores         LeaderboardScore[]
   handoverFacultyMentor     LeadershipHandoverRequest[] @relation("HandoverFacultyMentor")
   handoverInitiated         LeadershipHandoverRequest[] @relation("HandoverInitiatedBy")
   handoverSuccessor         LeadershipHandoverRequest[] @relation("HandoverSuccessor")
@@ -110,7 +109,6 @@ model Club {
   announcements           Announcement[]
   memberships             ClubMembership[]
   eventClubs              EventClub[]
-  leaderboardScores       LeaderboardScore[]
   handoverRequests        LeadershipHandoverRequest[]
   createdFieldDefinitions FieldDefinition[]
 
@@ -451,25 +449,6 @@ model LeadershipHandoverRequest {
 
   @@index([clubId])
   @@map("leadership_handover_requests")
-}
-
-model LeaderboardScore {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  /// NULL for user-level scores not tied to a specific club
-  clubId    String?  @map("club_id") @db.Uuid
-  points    Int
-  reason    String
-  /// Reference to the source entity (attendance_record id, event_result id, etc.)
-  sourceId  String   @map("source_id") @db.Uuid
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  club      Club?    @relation(fields: [clubId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
-
-  @@index([userId])
-  @@index([clubId])
-  @@index([createdAt], map: "leaderboard_scores_created_at_brin_idx", type: Brin)
-  @@map("leaderboard_scores")
 }
 
 model AuditLog {

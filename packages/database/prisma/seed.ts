@@ -457,32 +457,6 @@ async function main() {
   console.log('  ✓ Created/verified dead-letter queue records\n');
 
   // ----------------------------------------------------------
-  // 12. LEADERBOARD SCORES
-  // ----------------------------------------------------------
-  console.log('Creating leaderboard scores...');
-  const existingScore = await prisma.leaderboardScore.findFirst({ where: { userId: userStudent1.id, reason: 'Attended Tech Symposium' }});
-  if (!existingScore) {
-    await prisma.leaderboardScore.createMany({
-      data: [
-        {
-          userId: userStudent1.id,
-          clubId: clubAIML.id,
-          points: 100,
-          reason: 'Attended Tech Symposium',
-          sourceId: sessionTechSymp.id,
-        },
-        {
-          userId: userStudent2.id,
-          clubId: clubAIML.id,
-          points: 100,
-          reason: 'Attended Tech Symposium',
-          sourceId: sessionTechSymp.id,
-        }
-      ]
-    });
-  }
-  console.log('  ✓ Created/verified leaderboard scores\n');
-
   // ----------------------------------------------------------
   // SUMMARY
   // ----------------------------------------------------------
@@ -497,7 +471,6 @@ async function main() {
     attendanceSessions: await prisma.attendanceSession.count(),
     attendanceRecords: await prisma.attendanceRecord.count(),
     notifications: await prisma.notification.count(),
-    leaderboardScores: await prisma.leaderboardScore.count(),
     auditLogs: await prisma.auditLog.count(),
     notificationJobs: await prisma.notificationJob.count(),
   };
