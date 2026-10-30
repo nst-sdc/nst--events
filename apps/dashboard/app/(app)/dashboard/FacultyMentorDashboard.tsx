@@ -6,7 +6,6 @@ import { CalendarOutlined, CheckCircleOutlined, UserOutlined, FileTextOutlined }
 import { CurrentUser, ClubMembership } from '../../../hooks/useCurrentUser';
 import { useClubAnalytics } from '../../../hooks/useClubAnalytics';
 import { useClubActivity } from '../../../hooks/useClubActivity';
-import { useClubStudentLeaderboard } from '../../../hooks/useLeaderboard';
 import { useApprovals, PendingEvent } from '../../../hooks/useApprovals';
 import { useAttendanceDisputes, AttendanceDispute } from '../../../hooks/useAttendance';
 import Link from 'next/link';
@@ -22,7 +21,6 @@ export function FacultyMentorDashboard({ currentUser }: { currentUser: CurrentUs
 
   const { data: analytics, isLoading: isAnalyticsLoading } = useClubAnalytics(selectedClubId);
   const { data: activity, isLoading: isActivityLoading } = useClubActivity(selectedClubId);
-  const { data: leaderboard, isLoading: isLeaderboardLoading } = useClubStudentLeaderboard(selectedClubId);
   
   // Pending Approvals specific to this club
   const { data: approvalsData, isLoading: isApprovalsLoading } = useApprovals(selectedClubId);
@@ -148,24 +146,6 @@ export function FacultyMentorDashboard({ currentUser }: { currentUser: CurrentUs
                     }
                   ]}
                   locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No pending disputes." /> }}
-                />
-              )
-            },
-            {
-              key: 'leaderboard',
-              label: 'Club Leaderboard',
-              children: (
-                <Table
-                  dataSource={leaderboard?.data || []}
-                  loading={isLeaderboardLoading}
-                  rowKey="user_id"
-                  pagination={{ pageSize: 10 }}
-                  size="small"
-                  columns={[
-                    { title: 'Rank', key: 'rank', render: (_, __, idx) => idx + 1, width: 60 },
-                    { title: 'Student', dataIndex: 'display_name', key: 'name' },
-                    { title: 'Points', dataIndex: 'total_points', key: 'points', render: (val) => <Tag color="blue">{val}</Tag> }
-                  ]}
                 />
               )
             },

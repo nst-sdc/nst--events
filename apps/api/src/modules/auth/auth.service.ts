@@ -237,7 +237,11 @@ export async function refreshTokens(
 
   const tokenHash = hashToken(rawRefreshToken);
 
-  return prisma.$transaction(async (tx) => {
+  type RefreshTxResult =
+    | { kind: 'success'; data: AuthTokenResponse }
+    | { kind: 'reuse_detected' };
+
+  const result = await prisma.$transaction<RefreshTxResult>(async (tx) => {
     // 1. Lookup refresh token using the SECURITY DEFINER RPC
     const rows = await tx.$queryRaw<
       Array<{
@@ -267,7 +271,7 @@ export async function refreshTokens(
         // Benign concurrent-request race: return 401 without touching family_id
         throw new UnauthorizedError('Refresh token already used concurrently');
       } else {
-        // Theft detected: revoke all rows with that family_id, return 401
+        // Theft detected: revoke all rows with that family_id and commit write
         await tx.refreshToken.updateMany({
           where: {
             familyId: existingToken.family_id,
@@ -277,7 +281,7 @@ export async function refreshTokens(
             revokedAt: now,
           },
         });
-        throw new UnauthorizedError('Refresh token reuse detected; all sessions revoked');
+        return { kind: 'reuse_detected' };
       }
     }
 
@@ -318,17 +322,26 @@ export async function refreshTokens(
     const accessToken = signJwt(user.id, user.securityVersion);
 
     return {
-      access_token: accessToken,
-      expires_in: 900,
-      refreshToken: newRawRefreshToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        full_name: user.fullName || '',
-        global_role: user.globalRole,
+      kind: 'success',
+      data: {
+        access_token: accessToken,
+        expires_in: 900,
+        refreshToken: newRawRefreshToken,
+        user: {
+          id: user.id,
+          email: user.email,
+          full_name: user.fullName || '',
+          global_role: user.globalRole,
+        },
       },
     };
   });
+
+  if (result.kind === 'reuse_detected') {
+    throw new UnauthorizedError('Refresh token reuse detected; all sessions revoked');
+  }
+
+  return result.data;
 }
 
 export async function logout(rawRefreshToken?: string): Promise<void> {
@@ -336,7 +349,16 @@ export async function logout(rawRefreshToken?: string): Promise<void> {
     return;
   }
   const tokenHash = hashToken(rawRefreshToken);
-  await prisma.$executeRaw`SELECT revoke_refresh_token_by_hash(${tokenHash})`;
+  await prisma.$transaction(async (tx) => {
+    const rows = await tx.$queryRaw<Array<{ family_id: string }>>`
+      SELECT family_id FROM lookup_refresh_token(${tokenHash})
+    `;
+    const token = rows[0];
+    if (!token?.family_id) {
+      return;
+    }
+    await tx.$executeRaw`SELECT revoke_refresh_token_family(${token.family_id}::uuid)`;
+  });
 }
 
 export const authService = {

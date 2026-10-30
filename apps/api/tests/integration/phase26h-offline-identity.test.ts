@@ -32,7 +32,6 @@ describe('ATTENDANCE-06: Offline Identity Binding BOLA Protection', () => {
     await adminPrisma.eventAudienceBatch.deleteMany({});
     await adminPrisma.eventClub.deleteMany({});
     await adminPrisma.event.deleteMany({});
-    await adminPrisma.leaderboardScore.deleteMany({});
     await adminPrisma.user.deleteMany({
       where: { email: { in: ['studentA_offline@nst.com', 'studentB_offline@nst.com'] } }
     });

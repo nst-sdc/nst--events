@@ -14,7 +14,7 @@ This document provides a comprehensive audit of the **NST Events Student Mobile 
 1. **Current App Inventory:** Every screen, hook, and capability currently functioning in code.
 2. **Global Student Capability Matrix:** Everything a student can access across the entire platform (mobile-only, shared web/mobile, and desktop-only workflows).
 3. **Immediate V1 Gaps:** Necessary UI and hook integrations required to bring the current mobile codebase into 100% compliance with the frozen V1 contract.
-4. **Proposed Feature Roadmap:** High-value student features ready to be added to mobile (Discover & Filtering, Student Leaderboard, Club Directory, In-App Solo Registration, and Team Roster inspection).
+4. **Proposed Feature Roadmap:** High-value student features ready to be added to mobile (Discover & Filtering, Club Directory, In-App Solo Registration, and Team Roster inspection). Leaderboards are completely decommissioned.
 5. **Documentation Conflicts & Specification Gaps:** Explicit file:line citations of contradictions across project documentation per project operating rules.
 
 ---
@@ -174,15 +174,9 @@ These features are either documented in earlier UX specifications (`nst-events-s
   - Horizontal scrollable filter chips: `ALL`, `MY CLUBS`, plus `EventType` chips (`WORKSHOP`, `COMPETITION`, `HACKATHON`, `GUEST_SPEAKER`, `CLUB_MEETING`).
   - Pull-to-refresh and pagination for large event catalogs.
 
-### Feature 2: Student Leaderboard Screen (`GET /v1/leaderboard/students`)
+### Feature 2: Student Leaderboard Screen (REMOVED / DECIDED AGAINST)
 
-* **User Value:** Campus engagement and gamification. Allows students to see where they stand among peers.
-* **Backend Endpoint:** `GET /v1/leaderboard/students` (returns `user_id`, `display_name`, `total_points`, `last_refreshed_at`).
-* **UI Additions:**
-  - Dedicated Leaderboard view (e.g. reachable via Profile menu or Campus segment).
-  - Neo-Brutalist leaderboard cards displaying Student Rank (`#1`, `#2`), Display Name, and Total Points.
-  - Sticky "My Rank" card pinned at the top showing the current student's personal placement.
-  - *(Note: Points sub-breakdowns for attendance/contribution/competition are hardcoded to 0 in the backend materialized view per `DATA_CONTRACT.md:226`; UI must display `total_points` only).*
+> **Status: Decommissioned**. We have decided not to build student or club leaderboards. All leaderboard screens, routes, and endpoints have been completely removed.
 
 ### Feature 3: Club Directory & Club Profile Screens (`GET /clubs`, `GET /clubs/:id`)
 
@@ -275,8 +269,8 @@ In compliance with repository operating principles, the following documentation 
 * **Code Reality:** `(auth)/index.tsx` currently displays Citation A (single "Try a different account" CTA).
 
 ### Specification Gaps
-
-1. **Student Leaderboard Breakdown:** Backend materialized view hardcodes `attendance_points`, `contribution_points`, and `competition_points` to `0` (`DATA_CONTRACT.md:226`). Only `total_points` is authoritative.
+ 
+1. **Leaderboards Decommissioned:** Student and club leaderboards have been completely removed across database, API, and frontend applications.
 2. **Team Association in Self-Registration:** `GET /v1/events/:id/my-registration` only returns `{ status: "REGISTERED" }` and does **not** return `team_id` (`DATA_CONTRACT.md:98`). Mobile cannot directly deduce which team the user belongs to without cross-referencing `GET /v1/events/:id/teams`.
 
 ---
@@ -287,7 +281,7 @@ In compliance with repository operating principles, the following documentation 
 | ---------------------------------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
 | **Phase 1: V1 Freeze Completion** *(COMPLETED)*    | `apps/mobile` | • Wire 4-toggle Notification Preferences in`settings.tsx` [DONE]• Differentiate Domain Rejection & add `mailto:` in `(auth)/index.tsx` [DONE]• Implement network offline guard in `scan.tsx` & `AttendanceFailureView.tsx` [DONE]• Wire notification card deep linking in `notifications.tsx` [DONE]• iOS-parity 8-spoke ActivityIndicator with discrete stepping on Android [DONE] | Fixes current spec gaps; 0 new routes.     |
 | **Phase 2: Core Participation Expansion**            | `apps/mobile` | • Enable In-App Solo Registration & Cancellation in`events/[id]/index.tsx`• Implement Event Search & EventType Filter Chips on Home Feed• Add Read-Only Team Roster inspection in `events/[id]/teams.tsx`                                                                                                                                                                                     | High student UX value; uses existing APIs. |
-| **Phase 3: Campus Exploration & Community**          | `apps/mobile` | • Add Student Leaderboard view (`/leaderboard`)• Add Campus Clubs Directory (`/clubs`) & Club Profile (`/clubs/[id]`)• Add Onboarding Checklist cards on Home for new accounts                                                                                                                                                                                                              | Adds community depth and exploration.      |
+| **Phase 3: Campus Exploration & Community**          | `apps/mobile` | • Add Campus Clubs Directory (`/clubs`) & Club Profile (`/clubs/[id]`)• Add Onboarding Checklist cards on Home for new accounts (Leaderboards decommissioned)                                                                                                                                                                                                              | Adds community depth and exploration.      |
 | **Phase 4: Resilient In-Person Attendance** *(V2)* | `apps/mobile` | • Offline Attendance FIFO sync buffer (`POST /v1/attendance/sync-offline`)• Enhanced haptic & audio feedback on TOTP scan completion                                                                                                                                                                                                                                                             | Resiliency in offline campus venues.       |
 
 ---
@@ -296,4 +290,4 @@ In compliance with repository operating principles, the following documentation 
 
 1. **Complete Phase 1 immediately:** Align `settings.tsx`, `(auth)/index.tsx`, `scan.tsx`, and `notifications.tsx` with the accepted V1 freeze specifications.
 2. **Product Alignment on Solo Registration:** Confirm whether product wants to allow in-app solo registration (enabling `useRegistration` in `events/[id]/index.tsx`) or maintain strict desktop exclusivity.
-3. **Product Alignment on Navigation Shell:** Confirm whether the bottom navigation should remain `ATTENDANCE / HISTORY / PROFILE` (V1 Freeze standard) or incorporate `CAMPUS` (Discover/Leaderboard/Clubs) as outlined in `nst-events-student-ux-spec.md`.
+3. **Product Alignment on Navigation Shell:** Confirm whether the bottom navigation should remain `ATTENDANCE / HISTORY / PROFILE` (V1 Freeze standard) or incorporate `CAMPUS` (Discover/Clubs) as outlined in `nst-events-student-ux-spec.md`.

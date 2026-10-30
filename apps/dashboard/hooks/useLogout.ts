@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { apiClient } from '../lib/api';
+import { apiClient, abortInFlightRefresh } from '../lib/api';
 import { getWebAuthStore } from '../lib/auth-store';
 import { useRouter } from 'next/navigation';
 
@@ -8,20 +8,27 @@ export function useLogout() {
 
   return useMutation({
     mutationFn: async () => {
-      // Best effort network call
+      // (a) abort or invalidate any in-flight refresh and block new refreshes via a "logging out" flag in the auth store
+      const store = getWebAuthStore();
+      store.setLoggingOut(true);
+      abortInFlightRefresh();
+
+      // (b) await POST /auth/logout
       try {
         await apiClient('/auth/logout', { method: 'POST' });
       } catch (e) {
-        // Ignore network errors on logout, we still want to clear local state
+        // Local cleanup must happen even when the network call fails
         console.error('Logout API failed', e);
       }
     },
     onSettled: () => {
-      // Clear client state
+      // (c) even if it fails, clear in-memory access token, the user_role cookie, the React Query cache and any other session hints
       getWebAuthStore().logout();
-      
-      // Navigate to login
-      router.push('/login');
-    }
+      // Ensure the logging out flag remains active so late in-flight refreshes cannot set token
+      getWebAuthStore().setLoggingOut(true);
+
+      // (d) router.replace('/login')
+      router.replace('/login');
+    },
   });
 }

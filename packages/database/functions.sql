@@ -124,14 +124,6 @@ BEGIN
   IF FOUND THEN
     PERFORM set_config('app.attendance_is_new', 'true', true);
 
-    IF NOT v_collision_detected THEN
-      INSERT INTO leaderboard_scores (
-        id, user_id, club_id, points, reason, source_id, created_at
-      ) VALUES (
-        gen_random_uuid(), v_user_id, NULL, 5, 'ATTENDANCE', v_new_record.id, now()
-      );
-    END IF;
-
     RETURN v_new_record;
   ELSE
     PERFORM set_config('app.attendance_is_new', 'false', true);
@@ -293,13 +285,6 @@ BEGIN
       RETURNING * INTO v_new_record;
 
       IF FOUND THEN
-        IF NOT v_collision_detected THEN
-          INSERT INTO public.leaderboard_scores (
-            id, user_id, club_id, points, reason, source_id, created_at
-          ) VALUES (
-            gen_random_uuid(), v_user_id, NULL, 5, 'ATTENDANCE', v_new_record.id, now()
-          );
-        END IF;
         v_processed := v_processed + 1;
       ELSE
         v_skipped := v_skipped + 1;
@@ -446,14 +431,6 @@ BEGIN
 
   IF FOUND THEN
     PERFORM set_config('app.attendance_is_new', 'true', true);
-
-    IF NOT v_collision_detected THEN
-      INSERT INTO leaderboard_scores (
-        id, user_id, club_id, points, reason, source_id, created_at
-      ) VALUES (
-        gen_random_uuid(), v_user_id, NULL, 5, 'ATTENDANCE', v_new_record.id, now()
-      );
-    END IF;
 
     RETURN v_new_record;
   ELSE
@@ -611,13 +588,6 @@ BEGIN
       RETURNING * INTO v_new_record;
 
       IF FOUND THEN
-        IF NOT v_collision_detected THEN
-          INSERT INTO public.leaderboard_scores (
-            id, user_id, club_id, points, reason, source_id, created_at
-          ) VALUES (
-            gen_random_uuid(), v_user_id, NULL, 5, 'ATTENDANCE', v_new_record.id, now()
-          );
-        END IF;
         v_processed := v_processed + 1;
       ELSE
         v_skipped := v_skipped + 1;
@@ -637,5 +607,84 @@ BEGIN
     'errors', v_errors
   );
 END;
-$function$
+$function$;
+
+CREATE OR REPLACE FUNCTION public.manual_mark_attendance(p_session_id uuid, p_user_id uuid)
+RETURNS attendance_records
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public', 'pg_catalog'
+AS $function$
+DECLARE
+  v_admin_id UUID;
+  v_event_id UUID;
+  v_event_state text;
+  v_new_record attendance_records;
+  v_existing_record attendance_records;
+BEGIN
+  v_admin_id := current_user_id();
+  IF v_admin_id IS NULL THEN
+    RAISE EXCEPTION 'UNAUTHORIZED' USING ERRCODE = 'U0001';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM users u WHERE u.id = v_admin_id AND u.global_role IN ('PLATFORM_ADMIN', 'FACULTY_ADMIN')
+  ) AND NOT EXISTS (
+    SELECT 1 FROM attendance_sessions s
+    JOIN event_clubs ec ON ec.event_id = s.event_id
+    JOIN club_memberships cm ON ec.club_id = cm.club_id
+    WHERE s.id = p_session_id
+      AND ec.is_primary = true
+      AND cm.user_id = v_admin_id
+      AND cm.role = 'CLUB_ADMIN'
+      AND cm.deleted_at IS NULL
+  ) THEN
+    RAISE EXCEPTION 'UNAUTHORIZED' USING ERRCODE = 'U0001';
+  END IF;
+
+  SELECT e.id, e.state
+  INTO v_event_id, v_event_state
+  FROM attendance_sessions s
+  JOIN events e ON s.event_id = e.id
+  WHERE s.id = p_session_id AND s.deleted_at IS NULL AND e.deleted_at IS NULL;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'SESSION_CLOSED' USING ERRCODE = 'U0005';
+  END IF;
+
+  IF v_event_state != 'PUBLISHED' THEN
+    RAISE EXCEPTION 'EVENT_LOCKED' USING ERRCODE = 'U0006';
+  END IF;
+
+  -- ── SHARED ELIGIBILITY PRIMITIVE ────────────────────────────────
+  PERFORM check_attendance_eligibility(v_event_id, p_user_id);
+
+  INSERT INTO attendance_records (
+    id, session_id, user_id, marked_by, marked_at, method, status, audit_metadata
+  ) VALUES (
+    gen_random_uuid(), p_session_id, p_user_id, v_admin_id, now(), 'MANUAL', 'PRESENT', jsonb_build_object('method', 'MANUAL')
+  ) 
+  ON CONFLICT (session_id, user_id) DO NOTHING
+  RETURNING * INTO v_new_record;
+
+  IF FOUND THEN
+    PERFORM set_config('app.attendance_is_new', 'true', true);
+
+    INSERT INTO audit_logs (actor_id, action, entity_type, entity_id, new_state, created_at)
+    VALUES (
+      v_admin_id, 'ATTENDANCE_MANUAL_MARK', 'attendance_records', v_new_record.id, row_to_json(v_new_record)::jsonb, now()
+    );
+
+    RETURN v_new_record;
+  ELSE
+    PERFORM set_config('app.attendance_is_new', 'false', true);
+
+    SELECT * INTO v_existing_record
+    FROM attendance_records
+    WHERE session_id = p_session_id AND user_id = p_user_id;
+
+    RETURN v_existing_record;
+  END IF;
+END;
+$function$;
 

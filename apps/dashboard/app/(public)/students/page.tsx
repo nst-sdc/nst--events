@@ -388,7 +388,9 @@ export default async function StudentDirectoryPage({ searchParams }: PageProps) 
     console.error('Failed to load student directory:', err);
   }
 
-  const { items, pagination, facets } = directoryData;
+  const items = directoryData?.items ?? [];
+  const pagination = directoryData?.pagination ?? { total: 0, page: 1, limit: 12, totalPages: 1 };
+  const facets = directoryData?.facets ?? { programs: [], batches: [], skills: [] };
 
   return (
     <ClubAdminProvider>
@@ -433,7 +435,7 @@ export default async function StudentDirectoryPage({ searchParams }: PageProps) 
                   />
                 </div>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {facets.programs && facets.programs.length > 0 && (
+                  {facets?.programs && facets.programs.length > 0 && (
                     <select name="program" defaultValue={program} className="dir-filter-select">
                       <option value="">All Programs</option>
                       {facets.programs.map((p) => (
@@ -443,7 +445,7 @@ export default async function StudentDirectoryPage({ searchParams }: PageProps) 
                       ))}
                     </select>
                   )}
-                  {facets.batches && facets.batches.length > 0 && (
+                  {facets?.batches && facets.batches.length > 0 && (
                     <select name="batch" defaultValue={batch} className="dir-filter-select">
                       <option value="">All Batches</option>
                       {facets.batches.map((b) => (
@@ -453,7 +455,7 @@ export default async function StudentDirectoryPage({ searchParams }: PageProps) 
                       ))}
                     </select>
                   )}
-                  {facets.skills && facets.skills.length > 0 && (
+                  {facets?.skills && facets.skills.length > 0 && (
                     <select name="skill" defaultValue={skill} className="dir-filter-select">
                       <option value="">All Skills</option>
                       {facets.skills.map((s) => (

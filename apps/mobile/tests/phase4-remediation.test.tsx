@@ -95,12 +95,10 @@ describe('Phase 4 Mobile UX & Performance Remediation Suite', () => {
     const resultsFilePath = path.resolve(__dirname, '../app/(app)/events/[id]/results.tsx');
     const studentsSlugFilePath = path.resolve(__dirname, '../app/(app)/students/[slug].tsx');
     const clubsFilePath = path.resolve(__dirname, '../app/(app)/clubs/index.tsx');
-    const leaderboardFilePath = path.resolve(__dirname, '../app/(app)/leaderboard.tsx');
 
     const resultsSrc = fs.readFileSync(resultsFilePath, 'utf8');
     const studentsSlugSrc = fs.readFileSync(studentsSlugFilePath, 'utf8');
     const clubsSrc = fs.readFileSync(clubsFilePath, 'utf8');
-    const leaderboardSrc = fs.readFileSync(leaderboardFilePath, 'utf8');
 
     it('results.tsx disables shell scrolling (scrollable={false}) when owning ScrollView', () => {
       expect(resultsSrc).toMatch(/<MobileShell[^>]*scrollable=\{false\}/);
@@ -112,10 +110,6 @@ describe('Phase 4 Mobile UX & Performance Remediation Suite', () => {
 
     it('clubs/index.tsx disables shell scrolling (scrollable={false}) when owning ScrollView', () => {
       expect(clubsSrc).toMatch(/<MobileShell[^>]*scrollable=\{false\}/);
-    });
-
-    it('leaderboard.tsx disables shell scrolling (scrollable={false}) when owning ScrollView', () => {
-      expect(leaderboardSrc).toMatch(/<MobileShell[^>]*scrollable=\{false\}/);
     });
 
     it('MobileShell renders non-scrolling container when scrollable={false}', () => {

@@ -166,7 +166,6 @@ export function useResolveAttendanceDispute(eventId?: string, clubId?: string) {
       }
       if (clubId) {
         queryClient.invalidateQueries({ queryKey: ['club-analytics', clubId] });
-        queryClient.invalidateQueries({ queryKey: ['club-leaderboard', 'students', clubId] });
       }
     }
   });

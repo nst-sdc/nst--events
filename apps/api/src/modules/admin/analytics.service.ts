@@ -335,29 +335,6 @@ export class AdminAnalyticsService {
       return { role_breakdown };
     });
   }
-
-  async getLeaderboardAnalytics(userId: string) {
-    return withUserContext(userId, async (tx) => {
-      const access = await this.getScope(tx, userId);
-      if (access.scope !== 'GLOBAL') {
-        throw new ForbiddenError('Leaderboard analytics is restricted to global admins');
-      }
-
-      const reasonBreakdownRaw = await tx.leaderboardScore.groupBy({
-        by: ['reason'],
-        _count: { id: true },
-        _sum: { points: true }
-      });
-
-      const reason_breakdown = reasonBreakdownRaw.map((r: any) => ({
-        reason: r.reason,
-        count: r._count.id,
-        total_points: r._sum.points || 0
-      }));
-
-      return { reason_breakdown };
-    });
-  }
 }
 
 export const adminAnalyticsService = new AdminAnalyticsService();

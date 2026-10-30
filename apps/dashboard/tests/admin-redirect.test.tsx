@@ -4,12 +4,13 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { NextRequest } from 'next/server';
-import { middleware } from '../middleware';
+import { proxy as middleware } from '../proxy';
 import LoginPage from '../app/(auth)/login/page';
 import AppLayout from '../app/(app)/layout';
 import { StudentAppShell } from '../components/layout/StudentAppShell';
 import { validateSafeRedirectPath } from '../lib/auth-helpers';
 import { getWebAuthStore } from '../lib/auth-store';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Mock window.matchMedia for Ant Design components
 Object.defineProperty(window, 'matchMedia', {
@@ -183,6 +184,26 @@ describe('Admin Ops Authentication & Redirect Flow', () => {
       expect(res.status).toBe(307);
       expect(res.headers.get('location')).toBe('http://localhost:3000/student/home');
     });
+
+    it('bypasses proxy HTML redirects for API requests with x-client-platform header', () => {
+      const req = new NextRequest('http://localhost:3000/clubs', {
+        headers: { 'x-client-platform': 'web' },
+      });
+      const res = middleware(req);
+
+      expect(res.status).toBe(200);
+      expect(res.headers.get('location')).toBeNull();
+    });
+
+    it('bypasses proxy HTML redirects for API requests with authorization header', () => {
+      const req = new NextRequest('http://localhost:3000/clubs', {
+        headers: { authorization: 'Bearer mock-token' },
+      });
+      const res = middleware(req);
+
+      expect(res.status).toBe(200);
+      expect(res.headers.get('location')).toBeNull();
+    });
   });
 
   describe('4. Login Page Redirect Handling & Authorization Enforcement', () => {
@@ -351,10 +372,13 @@ describe('Admin Ops Authentication & Redirect Flow', () => {
         club_memberships: [],
       };
 
+      const queryClient = new QueryClient();
       render(
-        <AppLayout>
-          <div>Admin Content</div>
-        </AppLayout>
+        <QueryClientProvider client={queryClient}>
+          <AppLayout>
+            <div>Admin Content</div>
+          </AppLayout>
+        </QueryClientProvider>
       );
 
       await waitFor(() => {
@@ -376,10 +400,13 @@ describe('Admin Ops Authentication & Redirect Flow', () => {
         club_memberships: [],
       };
 
+      const queryClient = new QueryClient();
       render(
-        <AppLayout>
-          <div>Privileged Content</div>
-        </AppLayout>
+        <QueryClientProvider client={queryClient}>
+          <AppLayout>
+            <div>Privileged Content</div>
+          </AppLayout>
+        </QueryClientProvider>
       );
 
       await waitFor(() => {

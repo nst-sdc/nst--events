@@ -100,14 +100,14 @@ describe('NST Events Mobile UX 2.0 — Navigation & Architecture Verification Su
       expect(exploreTabContent).toContain('<StudentCalendarView');
     });
 
-    it('provides campus shortcuts for Clubs, Student Directory, Leaderboard, and Projects', () => {
+    it('provides campus shortcuts for Clubs, Student Directory, and Projects', () => {
       expect(exploreTabContent).toContain('[ 👥 CLUBS ]');
       expect(exploreTabContent).toContain('[ 🔍 DIRECTORY ]');
-      expect(exploreTabContent).toContain('[ 🏆 LEADERBOARD ]');
+      expect(exploreTabContent).not.toContain('[ 🏆 LEADERBOARD ]');
       expect(exploreTabContent).toContain('[ 🚀 PROJECTS ↗ ]');
       expect(exploreTabContent).toContain("router.push('/(app)/clubs')");
       expect(exploreTabContent).toContain("router.push('/(app)/students')");
-      expect(exploreTabContent).toContain("router.push('/(app)/leaderboard')");
+      expect(exploreTabContent).not.toContain("router.push('/(app)/leaderboard')");
     });
   });
 

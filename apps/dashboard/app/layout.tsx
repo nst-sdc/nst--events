@@ -34,19 +34,26 @@ const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://events.nstsdc.org';
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'NST Events | Newton School of Technology (NST SDC)',
+    default: 'NST Events — Official Campus Portal | Newton School of Technology (NST SDC)',
     template: '%s | NST Events — Newton School of Technology',
   },
   description:
-    'Official events portal for Newton School of Technology (NST) and NST SDC. Discover upcoming campus hackathons, technical workshops, coding competitions, Neutron techno-cultural fest, and developer sessions.',
+    'NST Events (events.nstsdc.org) is the official events, hackathons, and student developer community portal for Newton School of Technology (NST) and NST SDC at ADYPU Pune. Discover campus hackathons, technical workshops, coding competitions, and the annual Neutron techno-cultural fest.',
   keywords: [
     'NST Events',
+    'nst events',
+    'events.nstsdc.org',
     'Newton School of Technology',
+    'Newton School of Technology Events',
+    'NST',
     'NST SDC',
+    'NST SDC Events',
     'NST ADYPU',
+    'NST Pune',
     'NST Hackathons',
     'Newton School Events',
     'Neutron Fest',
+    'Neutron NST',
     'Campus Technical Events',
     'Coding Competitions',
     'Tech Workshops Pune',
@@ -73,9 +80,9 @@ export const metadata: Metadata = {
     locale: 'en_IN',
     url: siteUrl,
     siteName: 'NST Events',
-    title: 'NST Events | Newton School of Technology (NST SDC)',
+    title: 'NST Events — Official Campus Portal | Newton School of Technology (NST SDC)',
     description:
-      'Official events portal for Newton School of Technology (NST) and NST SDC. Discover upcoming campus hackathons, technical workshops, coding competitions, and developer sessions.',
+      'NST Events is the official events, hackathons, and developer ecosystem portal for Newton School of Technology (NST) and NST SDC at ADYPU Pune.',
     images: [
       {
         url: '/icon.png',
@@ -87,7 +94,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'NST Events | Newton School of Technology (NST SDC)',
+    title: 'NST Events — Official Campus Portal | Newton School of Technology (NST SDC)',
     description:
       'Official events portal for Newton School of Technology (NST) and NST SDC. Discover upcoming campus hackathons, technical workshops, and coding competitions.',
     images: ['/icon.png'],
@@ -105,6 +112,9 @@ export const metadata: Metadata = {
   verification: {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
   },
+  other: {
+    'darkreader-lock': '',
+  },
 };
 
 const jsonLd = {
@@ -116,28 +126,46 @@ const jsonLd = {
       url: siteUrl,
       name: 'NST Events',
       alternateName: [
+        'NST Events Portal',
         'Newton School of Technology Events',
         'NST SDC Events',
         'NST ADYPU Events',
         'NST Campus Events',
       ],
       description:
-        'Official events portal for Newton School of Technology (NST) and NST SDC. Discover upcoming campus hackathons, technical workshops, coding competitions, Neutron techno-cultural fest, and developer sessions.',
+        'Official events, hackathons, and developer ecosystem platform for Newton School of Technology (NST) and NST SDC at ADYPU Pune.',
       publisher: {
         '@id': `${siteUrl}/#organization`,
       },
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: {
+          '@type': 'EntryPoint',
+          urlTemplate: `${siteUrl}/student/campus/discover?search={search_term_string}`,
+        },
+        'query-input': 'required name=search_term_string',
+      },
+      inLanguage: 'en-IN',
     },
     {
-      '@type': 'EducationalOrganization',
+      '@type': 'CollegeOrUniversity',
       '@id': `${siteUrl}/#organization`,
       name: 'Newton School of Technology',
-      alternateName: ['NST', 'NST SDC', 'NST ADYPU'],
-      url: siteUrl,
+      alternateName: ['NST', 'NST SDC', 'NST ADYPU', 'Newton School'],
+      url: 'https://www.newtonschool.co',
       logo: `${siteUrl}/icon.png`,
       sameAs: [
         'https://www.newtonschool.co',
         'https://github.com/nst-sdc',
+        'https://www.linkedin.com/school/newton-school-of-technology/',
+        'https://www.instagram.com/newtonschooloftechnology/',
       ],
+      address: {
+        '@type': 'PostalAddress',
+        addressLocality: 'Pune',
+        addressRegion: 'Maharashtra',
+        addressCountry: 'IN',
+      },
     },
   ],
 };
@@ -151,9 +179,11 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${syne.variable} ${inter.variable} ${jetbrainsMono.variable} h-full antialiased scroll-smooth`}
+      data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
       <head>
+        <meta name="darkreader-lock" content="" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

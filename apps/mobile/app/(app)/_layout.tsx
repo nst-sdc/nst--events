@@ -284,7 +284,6 @@ export default function AppLayout() {
       <Stack.Screen name="clubs/index" />
       <Stack.Screen name="students/index" />
       <Stack.Screen name="students/[slug]" />
-      <Stack.Screen name="leaderboard" />
       <Stack.Screen name="notifications" />
       <Stack.Screen name="settings" />
     </Stack>

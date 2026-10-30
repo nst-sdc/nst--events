@@ -4,7 +4,7 @@ import '@testing-library/jest-dom/vitest';
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { NextRequest } from 'next/server';
-import { middleware } from '../middleware';
+import { proxy as middleware } from '../proxy';
 import AppLayout from '../app/(app)/layout';
 import LoginPage from '../app/(auth)/login/page';
 import { getWebAuthStore } from '../lib/auth-store';
@@ -54,6 +54,10 @@ vi.mock('../lib/api', () => ({
   apiClient: vi.fn(),
   refreshToken: vi.fn(),
   API_BASE_URL: 'http://localhost:3001',
+}));
+
+vi.mock('../hooks/useLogout', () => ({
+  useLogout: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
 vi.mock('../hooks/useRealtimeNotifications', () => ({
@@ -144,8 +148,8 @@ describe('1. Server-Side Route Guard (Next.js Middleware)', () => {
     expect(res.headers.get('location')).toBe('http://localhost:3000/login?return_to=%2Fdashboard');
   });
 
-  it('allows public routes like /student/home without interference', () => {
-    const req = new NextRequest('http://localhost:3000/student/home');
+  it('allows public routes like /login without interference', () => {
+    const req = new NextRequest('http://localhost:3000/login');
     const res = middleware(req);
     expect(res.status).toBe(200);
   });

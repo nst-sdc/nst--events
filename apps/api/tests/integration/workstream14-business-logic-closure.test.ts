@@ -170,9 +170,6 @@ describe('Workstream 14: Business Logic & Transaction Integrity Closure Integrat
       await adminPrisma.project.deleteMany({
         where: { ownerId: projectOwnerId },
       });
-      await adminPrisma.leaderboardScore.deleteMany({
-        where: { userId: { in: allUserIds } },
-      });
       await adminPrisma.eventResultSet.deleteMany({
         where: { eventId: { in: allEventIds } },
       });

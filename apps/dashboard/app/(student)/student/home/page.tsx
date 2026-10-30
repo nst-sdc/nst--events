@@ -424,6 +424,51 @@ const homeStyles = `
     box-shadow: 6px 6px 0px #ffffff;
   }
 
+  .poster-photo-placeholder {
+    width: 100%;
+    height: 180px;
+    background: linear-gradient(135deg, #111 0%, #1a1a2e 50%, #0d0e12 100%);
+    border: 2px solid #000;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    transform: translateZ(0);
+    contain: paint;
+  }
+
+  .poster-photo-placeholder::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(0, 87, 255, 0.15) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  .poster-photo-placeholder-text {
+    font-family: var(--font-display);
+    font-size: 42px;
+    font-weight: 900;
+    color: rgba(255, 255, 255, 0.08);
+    text-transform: uppercase;
+    letter-spacing: -2px;
+    z-index: 1;
+    user-select: none;
+  }
+
+  .poster-wall-empty-box,
+  .poster-wall-error-box {
+    background: var(--bg-paper-white);
+    color: var(--bg-black);
+    border: 3px solid #000000;
+    padding: 40px 32px;
+    box-shadow: 10px 10px 0px #000000;
+    margin-top: 16px;
+    max-width: 680px;
+  }
+
   /* Responsive Scaling */
   @media (max-width: 900px) {
     .hero-stats-offset-row { flex-direction: column; gap: 16px; }
@@ -541,7 +586,12 @@ export default function StudentHomePage() {
   const { data: user, isLoading: isUserLoading, isError: isUserError, refetch: refetchUser } = useCurrentUser();
   const { data: registrations, isLoading: isRegLoading, isError: isRegError, refetch: refetchReg } = useMyRegistrations();
   const { data: summary, isLoading: isSummaryLoading, isError: isSummaryError, refetch: refetchSummary } = useDashboardSummary();
-  const { data: eventsResponse } = useEvents({ limit: 6 });
+  const {
+    data: eventsResponse,
+    isLoading: isEventsLoading,
+    isError: isEventsError,
+    refetch: refetchEvents
+  } = useEvents({ limit: 6 });
 
   if (isUserLoading || isRegLoading || isSummaryLoading) {
     return (
@@ -608,17 +658,18 @@ export default function StudentHomePage() {
   const attendedCount = String(summary?.eventsAttendedCount ?? 0).padStart(2, '0');
   const pointsCount = String(summary?.totalPoints ?? 0).padStart(2, '0');
 
-  // Build list of upcoming poster wall events from backend only
+  // Build list of upcoming poster wall events: genuine backend events only
   const backendEvents = eventsResponse?.data || [];
   const posterEvents = backendEvents.slice(0, 6).map((evt) => {
-    const meta = (evt.metadata as Record<string, string | undefined>) || {};
+    const meta = (evt.metadata as Record<string, unknown> | null | undefined) || {};
+    const bannerUrl = typeof meta.banner_url === 'string' && meta.banner_url.trim() ? meta.banner_url.trim() : null;
     return {
       id: evt.id,
       dateBadge: dayjs(evt.startTime).format('DD MMM • YYYY').toUpperCase(),
       category: evt.eventType || 'CAMPUS EVENT',
-      title: evt.title || 'UNTITLED EVENT',
-      image: meta.banner_url || '/events/hacknst.jpg',
-      description: evt.description || meta.description || 'Event details are available in the event dossier.',
+      title: evt.title,
+      bannerUrl,
+      description: evt.description || (typeof meta.description === 'string' ? meta.description : '') || 'Join this campus event and secure your pass.',
       venue: evt.locationName || 'Main Campus',
     };
   });
@@ -796,9 +847,68 @@ export default function StudentHomePage() {
             </button>
           </div>
 
-          <div className="poster-wall-grid">
-            {posterEvents.length > 0 ? (
-              posterEvents.map((evt) => (
+          {isEventsLoading ? (
+            <div className="poster-wall-grid">
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="poster-card-item" style={{ animation: 'pulse 1.5s ease-in-out infinite' }}>
+                  <div className="poster-card-header">
+                    <Skeleton className="h-5 w-24 bg-neutral-200 rounded-none" />
+                    <Skeleton className="h-4 w-16 bg-neutral-200 rounded-none" />
+                  </div>
+                  <Skeleton className="h-8 w-3/4 bg-neutral-200 rounded-none mb-4" />
+                  <div className="poster-photo-placeholder" style={{ background: '#e0e0dc' }} />
+                  <Skeleton className="h-4 w-full bg-neutral-200 rounded-none mb-2" />
+                  <Skeleton className="h-4 w-2/3 bg-neutral-200 rounded-none mb-4" />
+                  <div className="poster-meta-footer">
+                    <Skeleton className="h-4 w-20 bg-neutral-200 rounded-none" />
+                    <Skeleton className="h-8 w-24 bg-neutral-200 rounded-none" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : isEventsError ? (
+            <div className="poster-wall-error-box">
+              <div className="micro-annotation" style={{ color: '#0057FF', marginBottom: '8px' }}>
+                CAMPUS FEED // SYSTEM NOTICE
+              </div>
+              <h3 className="font-display-section" style={{ color: '#000', fontSize: '28px', marginBottom: '10px' }}>
+                FAILED TO LOAD UPCOMING EVENTS
+              </h3>
+              <p style={{ color: '#444', fontFamily: 'var(--font-body)', fontSize: '15px', maxWidth: '520px', marginBottom: '20px', lineHeight: 1.5 }}>
+                We could not retrieve the latest campus event schedule. Please verify your connection and try again.
+              </p>
+              <button
+                type="button"
+                onClick={() => refetchEvents()}
+                className="poster-register-btn"
+                style={{ padding: '10px 20px', fontSize: '12px' }}
+              >
+                RETRY CONNECTION ↻
+              </button>
+            </div>
+          ) : posterEvents.length === 0 ? (
+            <div className="poster-wall-empty-box">
+              <div className="micro-annotation" style={{ color: '#0057FF', marginBottom: '8px' }}>
+                CAMPUS POSTER WALL // 0 UPCOMING
+              </div>
+              <h3 className="font-display-section" style={{ color: '#000', fontSize: '28px', marginBottom: '10px' }}>
+                NO UPCOMING EVENTS SCHEDULED
+              </h3>
+              <p style={{ color: '#444', fontFamily: 'var(--font-body)', fontSize: '15px', maxWidth: '520px', marginBottom: '20px', lineHeight: 1.5 }}>
+                There are currently no upcoming events on the campus schedule. Check back soon for new hackathons, workshops, and tech meetups.
+              </p>
+              <button
+                type="button"
+                onClick={() => router.push('/student/campus/discover')}
+                className="poster-register-btn"
+                style={{ padding: '10px 20px', fontSize: '12px' }}
+              >
+                EXPLORE CAMPUS ↗
+              </button>
+            </div>
+          ) : (
+            <div className="poster-wall-grid">
+              {posterEvents.map((evt) => (
                 <div
                   key={evt.id}
                   className="poster-card-item"
@@ -812,8 +922,33 @@ export default function StudentHomePage() {
                   <h3 className="poster-title-text">{evt.title}</h3>
 
                   <div className="poster-photo-frame">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={evt.image} alt={evt.title} loading="lazy" decoding="async" />
+                    {evt.bannerUrl ? (
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={evt.bannerUrl}
+                          alt={evt.title}
+                          loading="lazy"
+                          decoding="async"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            const placeholder = e.currentTarget.nextElementSibling as HTMLElement;
+                            if (placeholder) placeholder.style.display = 'flex';
+                          }}
+                        />
+                        <div className="poster-photo-placeholder" style={{ display: 'none', height: '100%', marginBottom: 0 }}>
+                          <span className="poster-photo-placeholder-text">
+                            {evt.category?.slice(0, 4) || 'NST'}
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="poster-photo-placeholder">
+                        <span className="poster-photo-placeholder-text">
+                          {evt.category?.slice(0, 4) || 'NST'}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <p className="poster-desc-text">{evt.description}</p>
@@ -832,18 +967,9 @@ export default function StudentHomePage() {
                     </button>
                   </div>
                 </div>
-              ))
-            ) : (
-              <div className="empty-poster-container" style={{ marginTop: '12px', width: '100%' }}>
-                <div className="micro-annotation annotation-blue" style={{ marginBottom: '12px' }}>
-                  CAMPUS POSTER WALL // STATUS: IDLE
-                </div>
-                <h3 className="font-display-section" style={{ color: '#000', margin: 0 }}>
-                  NO UPCOMING EVENTS SCHEDULED
-                </h3>
-              </div>
-            )}
-          </div>
+              ))}
+            </div>
+          )}
 
         </div>
       </section>

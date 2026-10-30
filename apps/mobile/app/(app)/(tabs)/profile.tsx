@@ -439,18 +439,6 @@ export default function ProfileScreen() {
                   </View>
                   <MonoLabel style={styles.menuRowArrow}>→</MonoLabel>
                 </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.menuRow}
-                  onPress={() => router.push('/(app)/leaderboard')}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.menuRowLeft}>
-                    <MaterialIcons name="leaderboard" size={16} color={theme.colors.primary} />
-                    <Body style={styles.menuRowTitle}>CAMPUS LEADERBOARD</Body>
-                  </View>
-                  <MonoLabel style={styles.menuRowArrow}>→</MonoLabel>
-                </TouchableOpacity>
               </View>
             </View>
 

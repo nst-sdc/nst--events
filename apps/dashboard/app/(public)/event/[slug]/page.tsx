@@ -26,9 +26,7 @@ async function fetchPublicEvent(slug: string) {
       ? API_BASE_URL
       : process.env.INTERNAL_API_URL && process.env.INTERNAL_API_URL.startsWith('http')
         ? process.env.INTERNAL_API_URL
-        : process.env.NODE_ENV === 'production'
-          ? (process.env.INTERNAL_SERVICE_URL || 'http://nst-api-service')
-          : '';
+        : '';
   if (!apiBase) return null;
 
   try {
@@ -169,8 +167,50 @@ export default async function PublicEventPage({ params }: PageProps) {
   const formattedDate = startDate.format('dddd, MMMM D, YYYY');
   const formattedTimeRange = `${startDate.format('h:mm A')} – ${endDate.format('h:mm A')}`;
 
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://events.nstsdc.org';
+  const canonicalUrl = `${siteUrl}/event/${event.slug || slug}`;
+  const banner = event.banner_url || `${siteUrl}/icon.png`;
+
+  const eventJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Event',
+    name: event.title,
+    description: event.description || `Attend ${event.title} organized by ${event.primary_club?.name || 'NST Student Club'}.`,
+    startDate: event.start_time,
+    endDate: event.end_time || event.start_time,
+    eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+    eventStatus: 'https://schema.org/EventScheduled',
+    location: {
+      '@type': 'Place',
+      name: event.location_name || 'Newton School of Technology, ADYPU Campus',
+      address: {
+        '@type': 'PostalAddress',
+        addressLocality: 'Pune',
+        addressRegion: 'Maharashtra',
+        addressCountry: 'IN',
+      },
+    },
+    image: [banner],
+    organizer: {
+      '@type': 'Organization',
+      name: event.primary_club?.name || 'Newton School of Technology (NST SDC)',
+      url: siteUrl,
+    },
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'INR',
+      availability: 'https://schema.org/InStock',
+      url: canonicalUrl,
+    },
+  };
+
   return (
     <div className="min-h-screen bg-[#050505] text-[#F5F5F2] font-sans relative selection:bg-[#C8FF00] selection:text-black">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(eventJsonLd) }}
+      />
       {/* Background Grid Pattern */}
       <div
         className="fixed inset-0 pointer-events-none z-0 opacity-20"

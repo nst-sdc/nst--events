@@ -262,6 +262,7 @@ describe('FEAT-ADMIN-04: Policies API Express Router Integration', () => {
 
       const unrelatedOverRes = await request(app)
         .post('/auth/refresh')
+        .set('X-Client-Platform', 'web')
         .set('Content-Type', 'application/json')
         .send(unrelatedLargeBody);
 

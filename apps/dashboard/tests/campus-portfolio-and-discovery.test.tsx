@@ -316,5 +316,35 @@ describe('Campus Portfolio & Discovery Redesign Suite', () => {
       const profileLinks = screen.getAllByRole('link', { name: /Profile/i });
       expect(profileLinks.some((l) => l.getAttribute('href') === '/my/profile')).toBe(true);
     });
+
+    it('StudentAppShell renders Campus navigation item with Discover and Clubs dropdown links', () => {
+      vi.spyOn(useCurrentUserModule, 'useCurrentUser').mockReturnValue({
+        data: {
+          id: 'user-1',
+          full_name: 'Soham Dhande',
+          email: 'soham@adypu.edu.in',
+          global_role: 'STUDENT',
+        },
+        isLoading: false,
+        isError: false,
+      } as any);
+
+      renderWithQuery(
+        <StudentAppShell>
+          <div>Page content</div>
+        </StudentAppShell>
+      );
+
+      // Verifies Campus root link is present
+      const campusLinks = screen.getAllByRole('link', { name: /Campus/i });
+      expect(campusLinks.some((l) => l.getAttribute('href') === '/student/campus')).toBe(true);
+
+      // Verifies Discover and Clubs dropdown links are present
+      const discoverLinks = screen.getAllByRole('link', { name: /Discover/i });
+      expect(discoverLinks.some((l) => l.getAttribute('href') === '/student/campus/discover')).toBe(true);
+
+      const clubsLinks = screen.getAllByRole('link', { name: /Clubs/i });
+      expect(clubsLinks.some((l) => l.getAttribute('href') === '/student/campus/clubs')).toBe(true);
+    });
   });
 });

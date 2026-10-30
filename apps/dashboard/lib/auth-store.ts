@@ -31,6 +31,8 @@ export function extractJwtSubject(token: string | null): string | null {
 export interface WebAuthStore {
   accessToken: string | null;
   userId: string | null;
+  isLoggingOut: boolean;
+  setLoggingOut: (isLoggingOut: boolean) => void;
   setAccessToken: (token: string | null, userId?: string | null) => void;
   logout: () => void;
 }
@@ -38,7 +40,16 @@ export interface WebAuthStore {
 const authState: WebAuthStore = {
   accessToken: null,
   userId: null,
+  isLoggingOut: false,
+  setLoggingOut: (isLoggingOut: boolean) => {
+    authState.isLoggingOut = isLoggingOut;
+  },
   setAccessToken: (token: string | null, explicitUserId?: string | null) => {
+    // If user is logging out, ignore any token setting (e.g. from a racing in-flight refresh)
+    if (authState.isLoggingOut && token !== null) {
+      return;
+    }
+
     const prevUserId = authState.userId;
     const nextUserId = token
       ? (explicitUserId !== undefined ? explicitUserId : extractJwtSubject(token))
@@ -56,6 +67,7 @@ const authState: WebAuthStore = {
   logout: () => {
     authState.accessToken = null;
     authState.userId = null;
+    authState.isLoggingOut = false;
     getQueryClient().clear();
     if (typeof document !== 'undefined') {
       document.cookie = 'user_role=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax';

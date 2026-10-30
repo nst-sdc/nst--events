@@ -288,10 +288,12 @@ describe('Mobile Session Isolation & Teardown Security', () => {
       expect.stringContaining('/auth/logout'),
       expect.objectContaining({
         method: 'POST',
-        headers: expect.objectContaining({
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Client-Platform': 'mobile',
           Authorization: 'Bearer token-a',
-          Cookie: 'refreshToken=refresh-a',
-        }),
+        },
+        body: JSON.stringify({ refresh_token: 'refresh-a' }),
       })
     );
 
@@ -391,7 +393,7 @@ describe('Mobile Session Isolation & Teardown Security', () => {
     expect(useAuthStore.getState().userId).toBe('user-b-uuid');
   });
 
-  test('11. Mobile logout passes Cookie and Bearer authorization to POST /auth/logout for server revocation', async () => {
+  test('11. Mobile logout sends JSON body { refresh_token }, Content-Type, and no manual Cookie header', async () => {
     await useAuthStore.getState().setSession('user-a-uuid', 'active-access-token', 'active-refresh-token');
     mockFetch.mockResolvedValueOnce({ ok: true, status: 204 });
 
@@ -406,8 +408,85 @@ describe('Mobile Session Isolation & Teardown Security', () => {
     const [, options] = logoutCall;
     expect(options.method).toBe('POST');
     expect(options.headers).toEqual({
+      'Content-Type': 'application/json',
+      'X-Client-Platform': 'mobile',
       Authorization: 'Bearer active-access-token',
-      Cookie: 'refreshToken=active-refresh-token',
     });
+    expect(options.headers.Cookie).toBeUndefined();
+    expect(options.body).toBe(JSON.stringify({ refresh_token: 'active-refresh-token' }));
+  });
+
+  test('12. Mobile logout without accessToken still sends JSON body with refresh_token and no Cookie header', async () => {
+    useAuthStore.setState({
+      userId: 'user-a-uuid',
+      accessToken: null,
+      refreshToken: 'active-refresh-token',
+      isLoggedIn: true,
+    });
+    mockFetch.mockResolvedValueOnce({ ok: true, status: 204 });
+
+    await logout();
+
+    const logoutCall = mockFetch.mock.calls.find(
+      (c: any[]) => typeof c[0] === 'string' && c[0].includes('/auth/logout')
+    );
+    expect(logoutCall).toBeDefined();
+    if (!logoutCall) throw new Error('Logout call was not dispatched');
+
+    const [, options] = logoutCall;
+    expect(options.method).toBe('POST');
+    expect(options.headers).toEqual({
+      'Content-Type': 'application/json',
+      'X-Client-Platform': 'mobile',
+    });
+    expect(options.headers.Cookie).toBeUndefined();
+    expect(options.headers.Authorization).toBeUndefined();
+    expect(options.body).toBe(JSON.stringify({ refresh_token: 'active-refresh-token' }));
+  });
+
+  test('13. Scenario 8: Mobile logout sends body token and clears SecureStore even offline', async () => {
+    // 1. Establish authenticated mobile session with credentials and cached data
+    await useAuthStore.getState().setSession('offline-user-uuid', 'offline-access-token', 'offline-refresh-token');
+    queryClient.setQueryData(['offline-data'], { status: 'CONFIDENTIAL' });
+    expect(await SecureStore.getItemAsync('access_token')).toBe('offline-access-token');
+    expect(await SecureStore.getItemAsync('refresh_token')).toBe('offline-refresh-token');
+    expect(await SecureStore.getItemAsync('user_id')).toBe('offline-user-uuid');
+
+    // 2. Simulate offline condition: fetch rejects with NetworkError
+    mockFetch.mockRejectedValueOnce(new TypeError('Network request failed'));
+
+    // 3. Trigger mobile logout
+    await logout();
+
+    // 4. Verify request attempted to send refresh_token in JSON body with mobile platform header
+    const logoutCall = mockFetch.mock.calls.find(
+      (c: any[]) => typeof c[0] === 'string' && c[0].includes('/auth/logout')
+    );
+    expect(logoutCall).toBeDefined();
+    if (!logoutCall) throw new Error('Logout call was not dispatched');
+
+    const [, options] = logoutCall;
+    expect(options.method).toBe('POST');
+    expect(options.headers).toEqual({
+      'Content-Type': 'application/json',
+      'X-Client-Platform': 'mobile',
+      Authorization: 'Bearer offline-access-token',
+    });
+    expect(options.headers.Cookie).toBeUndefined();
+    expect(options.body).toBe(JSON.stringify({ refresh_token: 'offline-refresh-token' }));
+
+    // 5. Verify SecureStore credentials are purged despite network failure
+    expect(await SecureStore.getItemAsync('access_token')).toBeNull();
+    expect(await SecureStore.getItemAsync('refresh_token')).toBeNull();
+    expect(await SecureStore.getItemAsync('user_id')).toBeNull();
+
+    // 6. Verify in-memory state and React Query cache are wiped
+    expect(useAuthStore.getState().accessToken).toBeNull();
+    expect(useAuthStore.getState().refreshToken).toBeNull();
+    expect(useAuthStore.getState().userId).toBeNull();
+    expect(useAuthStore.getState().isLoggedIn).toBe(false);
+    expect(queryClient.getQueryData(['offline-data'])).toBeUndefined();
+    expect(router.replace).toHaveBeenCalledWith('/(auth)');
   });
 });
+

@@ -57,6 +57,53 @@ describe('Student Profiles & Directory Dashboard Suite', () => {
     expect(fetchMock.mock.calls[0][0]).toContain('skill=rust');
   });
 
+  it('studentsApi.getDirectory normalizes raw backend data without facets or items key', async () => {
+    const rawBackendResponse = {
+      data: [
+        {
+          id: 'user-2',
+          full_name: 'Bob Builder',
+          slug: 'bob-builder',
+          avatar_url: null,
+          headline: 'Full-Stack Craftsman',
+          bio: 'Building things',
+          campus: 'Rishihood',
+          academic: {
+            program_code: 'BTECH_CSE',
+            program_name: 'B.Tech CSE',
+            graduation_year: 2027,
+          },
+          skills: ['typescript', 'react'],
+          projects_count: 3,
+          achievements_count: 1,
+        },
+      ],
+      pagination: {
+        total: 1,
+        limit: 12,
+        offset: 0,
+        has_more: false,
+      },
+    };
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => rawBackendResponse,
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await studentsApi.getDirectory();
+    expect(result.items.length).toBe(1);
+    expect(result.items[0].fullName).toBe('Bob Builder');
+    expect(result.items[0].program).toBe('B.Tech CSE');
+    expect(result.items[0].batch).toBe('2027');
+    expect(result.facets).toBeDefined();
+    expect(result.facets.programs).toContain('B.Tech CSE');
+    expect(result.facets.batches).toContain('2027');
+    expect(result.facets.skills).toEqual(['react', 'typescript']);
+  });
+
   it('studentsApi.getPublicProfile fetches public dossier by slug', async () => {
     const mockProfile = {
       id: 'user-1',

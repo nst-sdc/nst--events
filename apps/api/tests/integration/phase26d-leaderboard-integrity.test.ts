@@ -21,7 +21,7 @@ function generateCustomQrPayload(sessionId: string, qrSecret: string, offsetWind
   return `v1:${sessionId}:${signature}`;
 }
 
-describe('Phase 26D: Leaderboard Point Deferral and Idempotency', () => {
+describe('Phase 26D: Attendance Collision Detection and Review Resolution', () => {
   let student1 = randomUUID();
   let student2 = randomUUID();
   let admin = randomUUID();
@@ -39,6 +39,7 @@ describe('Phase 26D: Leaderboard Point Deferral and Idempotency', () => {
     await adminPrisma.$executeRawUnsafe(`ALTER TABLE users DISABLE ROW LEVEL SECURITY`);
 
     // 1. Users
+    await adminPrisma.user.deleteMany({ where: { googleSub: { in: ['s1', 's2', 'a1', 'na1'] } } });
     await adminPrisma.user.createMany({
       data: [
         { id: student1, email: 's1@adypu.edu.in', googleSub: 's1', fullName: 'Student One', globalRole: 'STUDENT' },
@@ -49,14 +50,15 @@ describe('Phase 26D: Leaderboard Point Deferral and Idempotency', () => {
     });
 
     // 2. Club & Event
+    const runSuffix = randomUUID().slice(0, 8);
     await adminPrisma.club.create({
-      data: { id: clubId, name: 'C1' }
+      data: { id: clubId, name: `C1_${runSuffix}` }
     });
     
     await adminPrisma.event.create({
       data: {
         id: eventId,
-        title: 'E1',
+        title: `E1_${runSuffix}`,
         state: 'PUBLISHED',
         isLocked: false,
         startTime: new Date(Date.now() - 3600000),
@@ -106,7 +108,6 @@ describe('Phase 26D: Leaderboard Point Deferral and Idempotency', () => {
   });
 
   after(async () => {
-    await adminPrisma.leaderboardScore.deleteMany({ where: { userId: { in: [student1, student2] } } });
     await adminPrisma.attendanceRecord.deleteMany({ where: { sessionId } });
     await adminPrisma.attendanceSession.deleteMany({ where: { id: sessionId } });
     await adminPrisma.eventRegistration.deleteMany({ where: { eventId } });
@@ -121,7 +122,7 @@ describe('Phase 26D: Leaderboard Point Deferral and Idempotency', () => {
 
   let student2AttendanceId: string;
 
-  it('Normal scan awards exactly 5 points', async () => {
+  it('Normal scan records attendance as PRESENT without collision flag', async () => {
     // Current window
     const token = generateCustomQrPayload(sessionId, 'SECRET', 0);
 
@@ -145,14 +146,12 @@ describe('Phase 26D: Leaderboard Point Deferral and Idempotency', () => {
     const attendance = res.body;
     assert.strictEqual(attendance.status, 'PRESENT');
 
-    const points: any[] = await adminPrisma.$queryRaw`
-      SELECT points FROM leaderboard_scores WHERE source_id = ${attendance.attendance_id}::uuid
-    `;
-    assert.strictEqual(points.length, 1);
-    assert.strictEqual(points[0].points, 5);
+    const record = await adminPrisma.attendanceRecord.findUnique({ where: { id: attendance.attendance_id } });
+    assert.strictEqual(record?.status, 'PRESENT');
+    assert.strictEqual((record?.auditMetadata as any)?.device_collision_detected, undefined);
   });
 
-  it('Collision scan awards 0 points but remains PRESENT', async () => {
+  it('Collision scan records attendance as PRESENT with collision flag', async () => {
     // Previous window (valid, but different signature! offset by 1 to avoid time-rollover flakiness)
     const token = generateCustomQrPayload(sessionId, 'SECRET', 1);
 
@@ -180,14 +179,9 @@ describe('Phase 26D: Leaderboard Point Deferral and Idempotency', () => {
 
     const record = await adminPrisma.attendanceRecord.findUnique({ where: { id: student2AttendanceId } });
     assert.strictEqual((record?.auditMetadata as any)?.device_collision_detected, true);
-
-    const points: any[] = await adminPrisma.$queryRaw`
-      SELECT points FROM leaderboard_scores WHERE source_id = ${student2AttendanceId}::uuid
-    `;
-    assert.strictEqual(points.length, 0);
   });
 
-  it('Reviewing collision awards exactly 5 points', async () => {
+  it('Reviewing collision clears collision flag and logs audit entry', async () => {
     const failRes = await request(app)
       .patch(`/v1/attendance/${student2AttendanceId}/review`)
       .set('Authorization', `Bearer ${nonAdminToken}`)
@@ -204,25 +198,21 @@ describe('Phase 26D: Leaderboard Point Deferral and Idempotency', () => {
     const record = await adminPrisma.attendanceRecord.findUnique({ where: { id: student2AttendanceId } });
     assert.strictEqual((record?.auditMetadata as any)?.device_collision_detected, undefined); // Flag cleared
 
-    const points: any[] = await adminPrisma.$queryRaw`
-      SELECT points FROM leaderboard_scores WHERE source_id = ${student2AttendanceId}::uuid
-    `;
-    assert.strictEqual(points.length, 1);
-    assert.strictEqual(points[0].points, 5);
+    const auditLog = await adminPrisma.auditLog.findFirst({
+      where: {
+        entityId: student2AttendanceId,
+        action: 'ATTENDANCE_REVIEWED'
+      }
+    });
+    assert.ok(auditLog, 'Audit log must record ATTENDANCE_REVIEWED');
   });
 
-  it('Reviewing collision twice does not duplicate points', async () => {
+  it('Reviewing collision twice fails with 400', async () => {
     const res = await request(app)
       .patch(`/v1/attendance/${student2AttendanceId}/review`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send();
     
     assert.strictEqual(res.status, 400);
-
-    const points: any[] = await adminPrisma.$queryRaw`
-      SELECT points FROM leaderboard_scores WHERE source_id = ${student2AttendanceId}::uuid
-    `;
-    assert.strictEqual(points.length, 1); 
-    assert.strictEqual(points[0].points, 5);
   });
 });

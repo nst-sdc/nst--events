@@ -80,7 +80,6 @@ describe('Phase 26G: GPS Consistency', () => {
   });
 
   after(async () => {
-    await adminPrisma.leaderboardScore.deleteMany({ where: { userId: { in: [admin, student] } } });
     await adminPrisma.attendanceRecord.deleteMany({ where: { sessionId } });
     await adminPrisma.eventRegistration.deleteMany({ where: { eventId } });
     await adminPrisma.attendanceSession.deleteMany({ where: { eventId } });
@@ -160,7 +159,6 @@ describe('Phase 26G: GPS Consistency', () => {
     const token = generateCustomQrPayload(sessionId, 'SECRET', 0);
     
     // We need to delete the live attendance record first to test offline properly for the same user
-    await adminPrisma.leaderboardScore.deleteMany({ where: { userId: student } });
     await adminPrisma.attendanceRecord.deleteMany({ where: { userId: student } });
 
     const res = await request(app).post('/v1/attendance/sync-offline').set('Authorization', `Bearer ${studentToken}`).send({

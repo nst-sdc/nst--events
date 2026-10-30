@@ -4,10 +4,9 @@ import { adminPrisma } from '../helpers/adminDb';
 import { prisma } from '../../src/lib/prisma';
 import { createEvent, updateEvent, approveEvent } from '../../src/modules/events/events.service';
 import { publishRevision, withdrawResults, restoreResults } from '../../src/modules/event-results/event-results.service';
-import { leaderboardService } from '../../src/modules/leaderboard/leaderboard.service';
 import { randomUUID } from 'crypto';
 
-describe('Phase 4 Master Remediation: Registration Mode, Scoring Policy & Leaderboard Breakdown', { concurrency: false }, () => {
+describe('Phase 4 Master Remediation: Registration Mode & Competition Results', { concurrency: false }, () => {
   const runId = Date.now().toString().slice(-6);
 
   // Users
@@ -201,9 +200,6 @@ describe('Phase 4 Master Remediation: Registration Mode, Scoring Policy & Leader
 
   after(async () => {
     try {
-      await adminPrisma.leaderboardScore.deleteMany({
-        where: { userId: { in: [studentWinner1Id, studentWinner2Id, studentWinner3Id, studentTeamLeaderId, studentTeamMemberId, secretStudentId] } },
-      });
       await adminPrisma.studentAchievement.deleteMany({
         where: { userId: { in: [studentWinner1Id, studentWinner2Id, studentWinner3Id, studentTeamLeaderId, studentTeamMemberId] } },
       });
@@ -687,26 +683,25 @@ describe('Phase 4 Master Remediation: Registration Mode, Scoring Policy & Leader
     });
     assert.strictEqual(res.success, true);
 
-    // Verify points in leaderboard_scores
-    const scores1 = await adminPrisma.leaderboardScore.findMany({ where: { userId: studentWinner1Id } });
-    const scores2 = await adminPrisma.leaderboardScore.findMany({ where: { userId: studentWinner2Id } });
-    const scores3 = await adminPrisma.leaderboardScore.findMany({ where: { userId: studentWinner3Id } });
+    // Verify published achievements in studentAchievement
+    const ach1 = await adminPrisma.studentAchievement.findMany({ where: { userId: studentWinner1Id, isActive: true } });
+    const ach2 = await adminPrisma.studentAchievement.findMany({ where: { userId: studentWinner2Id, isActive: true } });
+    const ach3 = await adminPrisma.studentAchievement.findMany({ where: { userId: studentWinner3Id, isActive: true } });
 
-    assert.strictEqual(scores1.length, 1);
-    assert.strictEqual(scores1[0].points, 3, '1st place must receive 3 points');
-    assert.ok(scores1[0].reason.includes('COMPETITION'));
+    assert.strictEqual(ach1.length, 1);
+    assert.strictEqual(ach1[0].placement, 1, '1st place must receive placement 1');
 
-    assert.strictEqual(scores2.length, 1);
-    assert.strictEqual(scores2[0].points, 2, '2nd place must receive 2 points');
+    assert.strictEqual(ach2.length, 1);
+    assert.strictEqual(ach2[0].placement, 2, '2nd place must receive placement 2');
 
-    assert.strictEqual(scores3.length, 1);
-    assert.strictEqual(scores3[0].points, 1, '3rd place must receive 1 point');
+    assert.strictEqual(ach3.length, 1);
+    assert.strictEqual(ach3[0].placement, 3, '3rd place must receive placement 3');
   });
 
-  it('2.2: Publishes Correction Revision 2: revokes old awards and reconciles team & individual points without duplicates', async () => {
+  it('2.2: Publishes Correction Revision 2: revokes old awards and reconciles team & individual placements without duplicates', async () => {
     // In Revision 2:
-    // Winner 2 gets 1st place (3 pts)
-    // Alpha Squad gets 2nd place (2 pts to both Leader Winner 1 and Member studentTeamMemberId)
+    // Winner 2 gets 1st place
+    // Alpha Squad gets 2nd place (Leader Winner 1 and Member studentTeamMemberId)
     const rev2 = await adminPrisma.eventResultRevision.create({
       data: {
         resultSet: { connect: { id: resultSetId } },
@@ -769,283 +764,65 @@ describe('Phase 4 Master Remediation: Registration Mode, Scoring Policy & Leader
     });
     assert.strictEqual(res.success, true);
 
-    // Verify Winner 2 now has 3 points (1st place)
-    const scores2 = await adminPrisma.leaderboardScore.findMany({ where: { userId: studentWinner2Id } });
-    assert.strictEqual(scores2.length, 1);
-    assert.strictEqual(scores2[0].points, 3, 'Winner 2 now has 3 points from 1st place');
+    // Verify Winner 2 now has 1st place achievement
+    const ach2 = await adminPrisma.studentAchievement.findMany({ where: { userId: studentWinner2Id, isActive: true } });
+    assert.strictEqual(ach2.length, 1);
+    assert.strictEqual(ach2[0].placement, 1, 'Winner 2 now has 1st place');
 
-    // Verify Team Leader and Team Member each received 2 points from the 2nd place team award
-    const scoresTL = await adminPrisma.leaderboardScore.findMany({ where: { userId: studentTeamLeaderId } });
-    assert.strictEqual(scoresTL.length, 1);
-    assert.strictEqual(scoresTL[0].points, 2, 'Team Leader received 2 points from team 2nd place');
+    // Verify Team Leader and Team Member each received 2nd place team award
+    const achTL = await adminPrisma.studentAchievement.findMany({ where: { userId: studentTeamLeaderId, isActive: true } });
+    assert.strictEqual(achTL.length, 1);
+    assert.strictEqual(achTL[0].placement, 2, 'Team Leader received 2nd place');
 
-    const scoresTM = await adminPrisma.leaderboardScore.findMany({ where: { userId: studentTeamMemberId } });
-    assert.strictEqual(scoresTM.length, 1);
-    assert.strictEqual(scoresTM[0].points, 2, 'Team Member received 2 points from team 2nd place');
+    const achTM = await adminPrisma.studentAchievement.findMany({ where: { userId: studentTeamMemberId, isActive: true } });
+    assert.strictEqual(achTM.length, 1);
+    assert.strictEqual(achTM[0].placement, 2, 'Team Member received 2nd place');
 
-    // Verify Winner 1 and Winner 3 have 0 competition points (old awards revoked)
-    const scores1 = await adminPrisma.leaderboardScore.findMany({ where: { userId: studentWinner1Id } });
-    assert.strictEqual(scores1.length, 0, 'Winner 1 award was revoked in Revision 2');
+    // Verify Winner 1 and Winner 3 active achievements are 0 (old awards revoked/superseded)
+    const ach1 = await adminPrisma.studentAchievement.findMany({ where: { userId: studentWinner1Id, isActive: true } });
+    assert.strictEqual(ach1.length, 0, 'Winner 1 award was revoked/superseded in Revision 2');
 
-    const scores3 = await adminPrisma.leaderboardScore.findMany({ where: { userId: studentWinner3Id } });
-    assert.strictEqual(scores3.length, 0, 'Winner 3 award was revoked in Revision 2');
+    const ach3 = await adminPrisma.studentAchievement.findMany({ where: { userId: studentWinner3Id, isActive: true } });
+    assert.strictEqual(ach3.length, 0, 'Winner 3 award was revoked/superseded in Revision 2');
   });
 
-  it('2.3: Withdrawing results reverses competition awards without touching unrelated scores', async () => {
-    // First, add an unrelated attendance score to Winner 2
-    await adminPrisma.leaderboardScore.create({
-      data: {
-        userId: studentWinner2Id,
-        points: 5,
-        reason: 'ATTENDANCE',
-        sourceId: randomUUID(),
-      },
-    });
-
+  it('2.3: Withdrawing results deactivates achievements', async () => {
     // Withdraw results
     const res = await withdrawResults(competitionEventId, platformAdminId, 'Auditing competition logs');
     assert.strictEqual(res.success, true);
 
-    // Verify competition points for Winner 2, TeamLeader, and TeamMember were removed
-    const compScoresTL = await adminPrisma.leaderboardScore.findMany({
-      where: { userId: studentTeamLeaderId, reason: { startsWith: 'COMPETITION' } },
+    // Verify active achievements for Winner 2, TeamLeader, and TeamMember were deactivated
+    const activeTL = await adminPrisma.studentAchievement.findMany({
+      where: { userId: studentTeamLeaderId, isActive: true },
     });
-    assert.strictEqual(compScoresTL.length, 0, 'Team Leader competition scores reversed');
+    assert.strictEqual(activeTL.length, 0, 'Team Leader achievement deactivated');
 
-    const compScoresTM = await adminPrisma.leaderboardScore.findMany({
-      where: { userId: studentTeamMemberId, reason: { startsWith: 'COMPETITION' } },
+    const activeTM = await adminPrisma.studentAchievement.findMany({
+      where: { userId: studentTeamMemberId, isActive: true },
     });
-    assert.strictEqual(compScoresTM.length, 0, 'Team Member competition scores reversed');
+    assert.strictEqual(activeTM.length, 0, 'Team Member achievement deactivated');
 
-    // Winner 2 must STILL have their 5-point ATTENDANCE score!
-    const allScores2 = await adminPrisma.leaderboardScore.findMany({ where: { userId: studentWinner2Id } });
-    assert.strictEqual(allScores2.length, 1);
-    assert.strictEqual(allScores2[0].reason, 'ATTENDANCE');
-    assert.strictEqual(allScores2[0].points, 5, 'Unrelated attendance points must NOT be deleted upon withdrawal');
+    const active2 = await adminPrisma.studentAchievement.findMany({
+      where: { userId: studentWinner2Id, isActive: true },
+    });
+    assert.strictEqual(active2.length, 0, 'Winner 2 achievement deactivated');
   });
 
-  it('2.4: Restoring results re-applies competition awards idempotently', async () => {
+  it('2.4: Restoring results re-activates achievements', async () => {
     const res = await restoreResults(competitionEventId, platformAdminId, 'Audit verified results valid');
     assert.strictEqual(res.success, true);
 
-    // Competition points restored
-    const compScoresTL = await adminPrisma.leaderboardScore.findMany({
-      where: { userId: studentTeamLeaderId, reason: { startsWith: 'COMPETITION' } },
+    // Achievements restored
+    const compTL = await adminPrisma.studentAchievement.findMany({
+      where: { userId: studentTeamLeaderId, isActive: true },
     });
-    assert.strictEqual(compScoresTL.length, 1);
-    assert.strictEqual(compScoresTL[0].points, 2);
+    assert.strictEqual(compTL.length, 1);
+    assert.strictEqual(compTL[0].placement, 2);
 
-    const compScores2 = await adminPrisma.leaderboardScore.findMany({
-      where: { userId: studentWinner2Id, reason: { startsWith: 'COMPETITION' } },
+    const comp2 = await adminPrisma.studentAchievement.findMany({
+      where: { userId: studentWinner2Id, isActive: true },
     });
-    assert.strictEqual(compScores2.length, 1);
-    assert.strictEqual(compScores2[0].points, 3);
-  });
-
-  // =========================================================================
-  // WORKSTREAM 3: Leaderboard Category Breakdown & Privacy
-  // =========================================================================
-  it('3.1: Global leaderboard reconciles attendance_points, contribution_points, competition_points to total_points', async () => {
-    // Award attendance and contribution points to Team Leader (who has 2 competition points)
-    await adminPrisma.leaderboardScore.createMany({
-      data: [
-        {
-          userId: studentTeamLeaderId,
-          points: 10,
-          reason: 'ATTENDANCE',
-          sourceId: randomUUID(),
-          clubId,
-        },
-        {
-          userId: studentTeamLeaderId,
-          points: 5,
-          reason: 'CONTRIBUTION: Open Source Repo',
-          sourceId: randomUUID(),
-          clubId,
-        },
-      ],
-    });
-
-    // Award points to Secret Student
-    await adminPrisma.leaderboardScore.create({
-      data: {
-        userId: secretStudentId,
-        points: 100,
-        reason: 'ATTENDANCE',
-        sourceId: randomUUID(),
-        clubId,
-      },
-    });
-
-    // Refresh materialized view
-    await leaderboardService.refreshLeaderboards();
-
-    const { data } = await leaderboardService.getStudentLeaderboard({ limit: 10 });
-    const tlRecord = data.find((r) => r.user_id === studentTeamLeaderId);
-    assert.ok(tlRecord, 'Team Leader must exist on leaderboard');
-
-    assert.strictEqual(tlRecord.attendance_points, 10, 'Attendance points must be 10');
-    assert.strictEqual(tlRecord.contribution_points, 5, 'Contribution points must be 5');
-    assert.strictEqual(tlRecord.competition_points, 2, 'Competition points must be 2');
-    assert.strictEqual(
-      tlRecord.total_points,
-      tlRecord.attendance_points + tlRecord.contribution_points + tlRecord.competition_points,
-      'Categories must add up to total_points exactly'
-    );
-  });
-
-  it('3.2: Secret student with hidden identity is masked as "Anonymous Student" in real-time', async () => {
-    const { data } = await leaderboardService.getStudentLeaderboard({ limit: 10 });
-    const secretRecord = data.find((r) => r.user_id === secretStudentId);
-    assert.ok(secretRecord, 'Secret student must exist on leaderboard');
-    assert.strictEqual(secretRecord.display_name, 'Anonymous Student');
-  });
-
-  it('3.3: Club-scoped student leaderboard computes category breakdowns and masks hidden identities', async () => {
-    const { data } = await leaderboardService.getClubScopedStudentLeaderboard(platformAdminId, clubId, { limit: 10 });
-    assert.ok(data);
-    for (const row of data) {
-      if (row.user_id === secretStudentId) {
-        assert.strictEqual(row.display_name, 'Anonymous Student');
-      }
-      if (row.user_id === studentTeamLeaderId) {
-        assert.strictEqual(
-          row.total_points,
-          row.attendance_points + row.contribution_points + row.competition_points,
-          'Club-scoped categories must add up to total_points'
-        );
-      }
-    }
-  });
-
-  it('3.4: classify_leaderboard_score_category SQL function classifies all established reason categories deterministically', async () => {
-    const samples = [
-      // ATTENDANCE
-      { reason: 'ATTENDANCE', expected: 'ATTENDANCE' },
-      { reason: 'ATTENDANCE: Morning Session', expected: 'ATTENDANCE' },
-      { reason: 'ATTENDANCE - Workshop 1', expected: 'ATTENDANCE' },
-      { reason: 'ATTENDED: Guest Lecture', expected: 'ATTENDANCE' },
-      { reason: 'Attended Tech Symposium', expected: 'ATTENDANCE' },
-
-      // COMPETITION
-      { reason: 'COMPETITION', expected: 'COMPETITION' },
-      { reason: 'COMPETITION: AI Hackathon', expected: 'COMPETITION' },
-      { reason: 'COMPETITION - Finals', expected: 'COMPETITION' },
-      { reason: 'RESULT', expected: 'COMPETITION' },
-      { reason: 'RESULT: First Place', expected: 'COMPETITION' },
-      { reason: 'AWARD', expected: 'COMPETITION' },
-      { reason: 'AWARD: Best Innovation', expected: 'COMPETITION' },
-      { reason: 'PODIUM', expected: 'COMPETITION' },
-      { reason: 'PODIUM: Code Golf', expected: 'COMPETITION' },
-      { reason: '1ST_PLACE', expected: 'COMPETITION' },
-      { reason: '2ND_PLACE', expected: 'COMPETITION' },
-      { reason: '3RD_PLACE', expected: 'COMPETITION' },
-
-      // CONTRIBUTION
-      { reason: 'CONTRIBUTION', expected: 'CONTRIBUTION' },
-      { reason: 'CONTRIBUTION: Monorepo Clean', expected: 'CONTRIBUTION' },
-      { reason: 'CONTRIBUTION - Core Module', expected: 'CONTRIBUTION' },
-      { reason: 'PROJECT_CONTRIBUTION', expected: 'CONTRIBUTION' },
-      { reason: 'PROJECT_CONTRIBUTION: Mobile App', expected: 'CONTRIBUTION' },
-      { reason: 'OPEN_SOURCE', expected: 'CONTRIBUTION' },
-      { reason: 'OPEN_SOURCE: Next.js PR', expected: 'CONTRIBUTION' },
-      { reason: 'VOLUNTEER', expected: 'CONTRIBUTION' },
-      { reason: 'VOLUNTEER: Event Helpdesk', expected: 'CONTRIBUTION' },
-      { reason: 'MENTORSHIP', expected: 'CONTRIBUTION' },
-      { reason: 'MENTORSHIP: Freshman Guide', expected: 'CONTRIBUTION' },
-
-      // UNKNOWN / OTHER (must NOT silently become contribution!)
-      { reason: 'ARBITRARY_BONUS', expected: 'OTHER' },
-      { reason: 'SPECIAL_DISCRETIONARY_GRANT', expected: 'OTHER' },
-      { reason: 'RANDOM_REASON', expected: 'OTHER' },
-      { reason: '', expected: 'OTHER' },
-    ];
-
-    for (const { reason, expected } of samples) {
-      const res: any[] = await prisma.$queryRaw`
-        SELECT classify_leaderboard_score_category(${reason}) as category;
-      `;
-      assert.strictEqual(
-        res[0].category,
-        expected,
-        `Reason "${reason}" must classify as ${expected}, got ${res[0].category}`
-      );
-    }
-  });
-
-  it('3.5: Unknown score reasons contribute to total_points but do NOT silently become contribution points', async () => {
-    // Award 25 points with an unclassified reason to studentWinner3Id
-    await adminPrisma.leaderboardScore.create({
-      data: {
-        userId: studentWinner3Id,
-        points: 25,
-        reason: 'SPECIAL_DISCRETIONARY_GRANT',
-        sourceId: randomUUID(),
-        clubId,
-      },
-    });
-
-    await leaderboardService.refreshLeaderboards();
-
-    const { data } = await leaderboardService.getStudentLeaderboard({ limit: 10 });
-    const rec = data.find((r) => r.user_id === studentWinner3Id);
-    assert.ok(rec, 'Winner 3 must exist on leaderboard');
-
-    // Winner 3 had 0 competition points (omitted in Revision 2)
-    assert.strictEqual(rec.competition_points, 0, 'Competition points must be 0 (omitted in revision 2)');
-    assert.strictEqual(rec.attendance_points, 0, 'Attendance points must be 0');
-    assert.strictEqual(rec.contribution_points, 0, 'Unknown reason must NOT silently become contribution points');
-    assert.strictEqual(rec.total_points, 25, 'Total points must include unclassified score (25 points)');
-  });
-
-  it('3.6: Negative score adjustments subtract from category points and total points correctly', async () => {
-    // Award -1 attendance points (penalty) to studentWinner1Id
-    await adminPrisma.leaderboardScore.create({
-      data: {
-        userId: studentWinner1Id,
-        points: -1,
-        reason: 'ATTENDANCE: Late penalty',
-        sourceId: randomUUID(),
-        clubId,
-      },
-    });
-
-    await leaderboardService.refreshLeaderboards();
-
-    const mvRows = await adminPrisma.$queryRaw<any[]>`
-      SELECT * FROM student_leaderboard_mv WHERE user_id = ${studentWinner1Id}::uuid
-    `;
-    assert.strictEqual(mvRows.length, 1, 'Winner 1 must exist in student_leaderboard_mv');
-    const rec = mvRows[0];
-
-    assert.strictEqual(rec.attendance_points, -1, 'Negative adjustment must reflect in attendance_points');
-    assert.strictEqual(rec.total_points, -1, 'Total points must reflect negative adjustment');
-  });
-
-  it('3.7: Invariant check: category totals plus unclassified points reconcile to total_points', async () => {
-    const { data } = await leaderboardService.getStudentLeaderboard({ limit: 50 });
-    assert.ok(data.length > 0);
-
-    for (const student of data) {
-      // Fetch user's individual score breakdown from raw table
-      const rawScores = await adminPrisma.leaderboardScore.findMany({
-        where: { userId: student.user_id },
-      });
-      const expectedTotal = rawScores.reduce((sum, s) => sum + s.points, 0);
-
-      assert.strictEqual(
-        student.total_points,
-        expectedTotal,
-        `Student ${student.user_id} total_points must match sum of all ledger scores`
-      );
-
-      // Verify that category totals never exceed total points for purely positive scores
-      if (rawScores.every((s) => s.points >= 0)) {
-        assert.ok(
-          student.attendance_points + student.contribution_points + student.competition_points <= student.total_points,
-          'Sum of known categories cannot exceed total_points'
-        );
-      }
-    }
+    assert.strictEqual(comp2.length, 1);
+    assert.strictEqual(comp2[0].placement, 1);
   });
 });

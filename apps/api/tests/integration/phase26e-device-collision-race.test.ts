@@ -98,7 +98,6 @@ describe('Phase 26E: Device Collision Race and Hardening', () => {
   });
 
   after(async () => {
-    await adminPrisma.leaderboardScore.deleteMany({ where: { userId: { in: [student1, student2, student3] } } });
     await adminPrisma.attendanceRecord.deleteMany({ where: { sessionId } });
     await adminPrisma.attendanceSession.deleteMany({ where: { id: sessionId } });
     await adminPrisma.eventRegistration.deleteMany({ where: { eventId } });
@@ -135,20 +134,6 @@ describe('Phase 26E: Device Collision Race and Hardening', () => {
 
     // ONE must be flagged, one must be NOT flagged.
     assert.strictEqual(flag1 !== flag2, true);
-
-    const points1: any[] = await adminPrisma.$queryRaw`SELECT points FROM leaderboard_scores WHERE source_id = ${res1.body.attendance_id}::uuid`;
-    const points2: any[] = await adminPrisma.$queryRaw`SELECT points FROM leaderboard_scores WHERE source_id = ${res2.body.attendance_id}::uuid`;
-
-    // The one that is NOT flagged gets 5 points, the flagged gets 0
-    if (flag1) {
-      assert.strictEqual(points1.length, 0);
-      assert.strictEqual(points2.length, 1);
-      assert.strictEqual(points2[0].points, 5);
-    } else {
-      assert.strictEqual(points1.length, 1);
-      assert.strictEqual(points1[0].points, 5);
-      assert.strictEqual(points2.length, 0);
-    }
   });
 
   it('Offline collision correctly applies 0 points and offline non-collision applies 5 points', async () => {
@@ -218,23 +203,9 @@ describe('Phase 26E: Device Collision Race and Hardening', () => {
 
     // First one should not be flagged, second should be flagged. Or vice versa because of ordering by device_id (both are batch-device, so order is random/stable).
     assert.strictEqual(flag3 !== flag4, true);
-    
-    const pts3: any[] = await adminPrisma.$queryRaw`SELECT points FROM leaderboard_scores WHERE source_id = ${rec3?.id}::uuid`;
-    const pts4: any[] = await adminPrisma.$queryRaw`SELECT points FROM leaderboard_scores WHERE source_id = ${rec4?.id}::uuid`;
-    
-    if (flag3) {
-      assert.strictEqual(pts3.length, 0);
-      assert.strictEqual(pts4.length, 1);
-      assert.strictEqual(pts4[0].points, 5);
-    } else {
-      assert.strictEqual(pts3.length, 1);
-      assert.strictEqual(pts3[0].points, 5);
-      assert.strictEqual(pts4.length, 0);
-    }
 
     // Cleanup student 4
     await adminPrisma.attendanceRecord.deleteMany({ where: { userId: student4 } });
-    await adminPrisma.leaderboardScore.deleteMany({ where: { userId: student4 } });
     await adminPrisma.eventRegistration.deleteMany({ where: { userId: student4 } });
     await adminPrisma.user.deleteMany({ where: { id: student4 } });
   });
@@ -265,7 +236,6 @@ describe('Phase 26E: Device Collision Race and Hardening', () => {
     });
     assert.strictEqual(res3.status, 201);
 
-    await adminPrisma.leaderboardScore.deleteMany({ where: { userId: student5 } });
     await adminPrisma.attendanceRecord.deleteMany({ where: { userId: student5 } });
     await adminPrisma.eventRegistration.deleteMany({ where: { userId: student5 } });
     await adminPrisma.user.deleteMany({ where: { id: student5 } });

@@ -11,7 +11,6 @@ import RegistrationAnalytics from '../../../../../components/analytics/Registrat
 import ClubAnalytics from '../../../../../components/analytics/ClubAnalytics';
 import DisputeAnalytics from '../../../../../components/analytics/DisputeAnalytics';
 import UserAnalytics from '../../../../../components/analytics/UserAnalytics';
-import LeaderboardAnalytics from '../../../../../components/analytics/LeaderboardAnalytics';
 
 const { RangePicker } = DatePicker;
 
@@ -57,8 +56,6 @@ export default function AnalyticsTabPage() {
         return <DisputeAnalytics />;
       case 'users':
         return <UserAnalytics />;
-      case 'leaderboard':
-        return <LeaderboardAnalytics />;
       default:
         return (
           <div style={{ background: '#fff', borderRadius: 8, border: '1px solid #d9d9d9', padding: 32, textAlign: 'center', color: '#6b7280' }}>
