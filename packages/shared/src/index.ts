@@ -2,3 +2,4 @@
 export * from './api/client.js';
 export * from './notifications.js';
 export * from './dto/index.js';
+export * from './errors/tracker.js';

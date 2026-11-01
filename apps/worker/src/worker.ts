@@ -11,6 +11,11 @@ let consecutiveDbFailures = 0;
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 import { processFormReleaseSweep } from './jobs/form-release-sweep';
+import { processRateLimitOverridesPurge } from './jobs/rate-limits-purge';
+import { processAuthEventsRetention } from './jobs/auth-events-retention';
+import { processNotificationJobsRetention } from './jobs/notification-jobs-retention';
+
+let lastNotificationRetentionRun = 0;
 
 export async function startWorkerLoop() {
   logger.info('🔄 Worker polling loop started.');
@@ -25,6 +30,31 @@ export async function startWorkerLoop() {
       await processFormReleaseSweep();
     } catch (e: any) {
       logger.error('Failed to run form release sweep', e);
+    }
+
+    // Purge expired rate limit overrides
+    try {
+      await processRateLimitOverridesPurge();
+    } catch (e: any) {
+      logger.error('Failed to run rate limit overrides purge', e);
+    }
+
+    // Purge old auth events exceeding retention threshold
+    try {
+      await processAuthEventsRetention();
+    } catch (e: any) {
+      logger.error('Failed to run auth events retention purge', e);
+    }
+
+    // Purge old completed/archived notification jobs exceeding retention threshold at controlled interval
+    const now = Date.now();
+    if (now - lastNotificationRetentionRun >= config.NOTIFICATION_JOBS_RETENTION_INTERVAL_MS) {
+      try {
+        await processNotificationJobsRetention();
+        lastNotificationRetentionRun = now;
+      } catch (e: any) {
+        logger.error('Failed to run notification jobs retention purge', e);
+      }
     }
 
     if (!isShuttingDown) {

@@ -446,10 +446,29 @@ export const listEvents = async (callerId: string, query: ListEventsQuery): Prom
   });
 };
 
+export const ATTENDANCE_SESSION_SAFE_SELECT = {
+  id: true,
+  eventId: true,
+  title: true,
+  startTime: true,
+  endTime: true,
+  openAt: true,
+  closeAt: true,
+  geofenceRadius: true,
+  venueLatitude: true,
+  venueLongitude: true,
+  locationAccuracy: true,
+  createdBy: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
 type GetEventByIdResponse = Prisma.EventGetPayload<{
   include: {
     eventClubs: { include: { club: true } };
-    attendanceSessions: true;
+    attendanceSessions: {
+      select: typeof ATTENDANCE_SESSION_SAFE_SELECT;
+    };
     _count: { select: { eventRegistrations: true } };
   };
 }> & {
@@ -473,7 +492,10 @@ export const getEventById = async (callerId: string, eventId: string): Promise<G
       where: { id: eventId },
       include: {
         eventClubs: { include: { club: true } },
-        attendanceSessions: { where: { deletedAt: null } },
+        attendanceSessions: {
+          where: { deletedAt: null },
+          select: ATTENDANCE_SESSION_SAFE_SELECT,
+        },
         _count: { select: { eventRegistrations: { where: { deletedAt: null, registrationStatus: 'REGISTERED' } } } },
         eventAudienceBatches: true,
       },
@@ -1115,6 +1137,7 @@ export const createSession = async (
         createdBy: callerId,
         qrSecret,
       },
+      select: ATTENDANCE_SESSION_SAFE_SELECT,
     });
   });
 };
@@ -1133,6 +1156,7 @@ export const listSessions = async (callerId: string, eventId: string) => {
     return tx.attendanceSession.findMany({
       where: { eventId, deletedAt: null },
       orderBy: { startTime: 'asc' },
+      select: ATTENDANCE_SESSION_SAFE_SELECT,
     });
   });
 };
@@ -1190,6 +1214,7 @@ export const updateSession = async (
         closeAt: data.close_at,
         geofenceRadius: data.geofence_radius,
       },
+      select: ATTENDANCE_SESSION_SAFE_SELECT,
     });
   });
 };

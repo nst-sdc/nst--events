@@ -141,10 +141,9 @@ attendanceRouter.get(
   canManageEvent((req) => req.params.id, ['CLUB_ADMIN', 'CORE_MEMBER', 'FACULTY_MENTOR']),
   async (req, res, next) => {
     try {
-      const csvData = await attendanceService.exportEventAttendance(req.user!.id, req.params.id);
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', `attachment; filename="attendance-export-${req.params.id}.csv"`);
-      res.status(200).send(csvData);
+      await attendanceService.exportEventAttendance(req.user!.id, req.params.id, res);
     } catch (error) {
       next(error);
     }

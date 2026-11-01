@@ -467,7 +467,27 @@ export class AttendanceService {
         take: limit + 1,
         ...(cursor && { cursor: { id: cursor }, skip: 1 }),
         orderBy: { markedAt: 'desc' },
-        include: { session: { include: { event: { select: { title: true } } } } },
+        include: {
+          session: {
+            select: {
+              id: true,
+              eventId: true,
+              title: true,
+              startTime: true,
+              endTime: true,
+              openAt: true,
+              closeAt: true,
+              geofenceRadius: true,
+              venueLatitude: true,
+              venueLongitude: true,
+              locationAccuracy: true,
+              createdBy: true,
+              createdAt: true,
+              updatedAt: true,
+              event: { select: { title: true } },
+            },
+          },
+        },
       });
       let nextCursor = undefined;
       if (records.length > limit) {
@@ -673,42 +693,129 @@ export class AttendanceService {
     }
   }
 
-  async exportEventAttendance(userId: string, eventId: string): Promise<string> {
-    return withUserContext(userId, async (tx) => {
-      const records = await tx.attendanceRecord.findMany({
-        where: {
-          session: { eventId }
-        },
-        include: {
-          user: { select: { fullName: true, email: true } },
-          session: { select: { title: true } }
-        },
-        orderBy: { markedAt: 'asc' }
-      });
+  /**
+   * Streams event attendance records in cursor-based batches as CSV.
+   * - Uses cursor pagination (500 rows per batch) ordered by (markedAt, id) for stable, bounded-memory streaming
+   * - Sanitizes all cell values to protect against CSV / Spreadsheet formula injection (=, +, -, @)
+   * - Streams directly to outputStream (e.g. Express Response) if provided, or returns accumulated CSV string
+   */
+  async exportEventAttendance(
+    userId: string,
+    eventId: string,
+    outputStream?: NodeJS.WritableStream
+  ): Promise<string> {
+    const BATCH_SIZE = 500;
+    const header = 'user_name,user_email,session_title,status,method,marked_at\n';
 
-      // Prevent CSV Injection (Spreadsheet formula injection)
-      const sanitizeCsv = (val: string) => {
-        const str = val.replace(/"/g, '""');
-        return /^[=+\-@]/.test(str) ? "'" + str : str;
-      };
+    // Formula injection (CSV injection) sanitizer
+    const sanitizeCsv = (val: unknown): string => {
+      if (val === null || val === undefined) return '';
+      const str = String(val).replace(/"/g, '""');
+      return /^[=+\-@]/.test(str) ? "'" + str : str;
+    };
 
-      // Create CSV header
-      let csv = 'user_name,user_email,session_title,status,method,marked_at\n';
+    const writeChunk = async (chunk: string) => {
+      if (!outputStream) return;
+      const canWrite = outputStream.write(chunk);
+      if (!canWrite && 'once' in outputStream && typeof (outputStream as any).once === 'function') {
+        await new Promise<void>((resolve) => {
+          (outputStream as any).once('drain', resolve);
+        });
+      }
+    };
 
-      // Append rows
-      for (const record of records) {
-        const name = `"${sanitizeCsv(record.user.fullName)}"`;
-        const email = `"${sanitizeCsv(record.user.email)}"`;
-        const sessionTitle = `"${sanitizeCsv(record.session.title)}"`;
-        const status = record.status;
-        const method = record.method;
-        const markedAt = record.markedAt.toISOString();
+    if (outputStream) {
+      await writeChunk(header);
+    }
 
-        csv += `${name},${email},${sessionTitle},${status},${method},${markedAt}\n`;
+    // 1. Pre-fetch sessions belonging to this event with user context for authorization
+    const sessions = await withUserContext(userId, (tx) =>
+      tx.attendanceSession.findMany({
+        where: { eventId },
+        select: { id: true, title: true },
+      })
+    );
+
+    const sessionIds = sessions.map((s) => s.id);
+    if (sessionIds.length === 0) {
+      if (outputStream) {
+        outputStream.end();
+        return '';
+      }
+      return header;
+    }
+
+    const sessionMap = new Map<string, string>();
+    for (const s of sessions) {
+      sessionMap.set(s.id, s.title);
+    }
+
+    let accumulatedCsv = outputStream ? '' : header;
+    let cursor: string | undefined = undefined;
+    let hasMore = true;
+
+    while (hasMore) {
+      // Fetch each 500-row batch independently to ensure bounded memory and avoid transaction timeouts
+      const batch: any[] = await withUserContext(userId, (tx) =>
+        tx.attendanceRecord.findMany({
+          where: {
+            sessionId: { in: sessionIds },
+          },
+          take: BATCH_SIZE,
+          ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+          select: {
+            id: true,
+            sessionId: true,
+            status: true,
+            method: true,
+            markedAt: true,
+            user: { select: { fullName: true, email: true } },
+          },
+          orderBy: [
+            { markedAt: 'asc' },
+            { id: 'asc' },
+          ],
+        })
+      );
+
+      if (batch.length === 0) {
+        break;
       }
 
-      return csv;
-    });
+      let batchCsv = '';
+      for (const record of batch) {
+        const name = `"${sanitizeCsv(record.user?.fullName)}"`;
+        const email = `"${sanitizeCsv(record.user?.email)}"`;
+        const sessionTitle = `"${sanitizeCsv(sessionMap.get(record.sessionId) || '')}"`;
+        const status = record.status;
+        const method = record.method;
+        const markedAt =
+          record.markedAt instanceof Date
+            ? record.markedAt.toISOString()
+            : String(record.markedAt);
+
+        batchCsv += `${name},${email},${sessionTitle},${status},${method},${markedAt}\n`;
+      }
+
+      if (outputStream) {
+        await writeChunk(batchCsv);
+      } else {
+        accumulatedCsv += batchCsv;
+      }
+
+      if (batch.length < BATCH_SIZE) {
+        hasMore = false;
+      } else {
+        cursor = batch[batch.length - 1].id;
+      }
+    }
+
+    if (outputStream) {
+      outputStream.end();
+      return '';
+    }
+
+    return accumulatedCsv;
   }
 }
 

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { env } from '../config/env';
 import { AppError } from '../lib/errors';
 import { logger } from '../lib/logger';
+import { captureException } from '@nst/shared';
 
 export function errorHandler(
   err: unknown,
@@ -17,6 +18,11 @@ export function errorHandler(
   if (err instanceof AppError) {
     if (err.statusCode >= 500) {
       logger.error({ err, request_id: requestId, instance }, err.message);
+      captureException(err, {
+        requestId,
+        userId: (req as any).user?.id,
+        tags: { instance, method: req.method },
+      });
     }
     let detail = err.message;
 
@@ -37,7 +43,6 @@ export function errorHandler(
   }
 
   if (err instanceof z.ZodError) {
-    console.error("ZodError Issues:", JSON.stringify(err.issues, null, 2));
     const detail = err.issues.map((issue) => issue.message).join(', ');
     res.status(400).json({
       type: 'https://api.nstsdc.org/errors/bad-request',
@@ -76,6 +81,11 @@ export function errorHandler(
 
   // Log unhandled exceptions as critical
   logger.error({ err, request_id: requestId, instance }, message);
+  captureException(err, {
+    requestId,
+    userId: (req as any).user?.id,
+    tags: { instance, method: req.method },
+  });
 
   res.status(500).json({
     type: 'https://api.nstsdc.org/errors/internal-server-error',

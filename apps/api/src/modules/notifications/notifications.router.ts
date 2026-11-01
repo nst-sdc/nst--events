@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { validate } from '../../middleware/validate';
+import { NotFoundError } from '../../lib/errors';
 import { GetNotificationsQuerySchema, UpdatePreferencesSchema } from './notifications.schema';
 import * as notificationsService from './notifications.service';
 
@@ -54,7 +55,7 @@ router.patch(
     try {
       const result = await notificationsService.markAsRead(req.user!.id, req.params.id);
       if (!result) {
-        return res.status(404).json({ error: 'Notification not found' });
+        throw new NotFoundError('Notification not found');
       }
       res.status(200).json(result);
     } catch (err) {

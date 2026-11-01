@@ -10,6 +10,10 @@ import { logger } from './lib/logger';
 import { Server } from 'http';
 import { prisma } from './lib/prisma';
 import { pgListener } from './modules/sse/pg-listener';
+import { rateLimitSettingsCache } from './lib/rate-limit-settings';
+import { env, assertProductionConfig } from './config/env';
+import { authEventsService } from './modules/auth/auth-events.service';
+
 
 const PORT = process.env.PORT || 3001;
 
@@ -17,11 +21,17 @@ let server: Server | null = null;
 let isShuttingDown = false;
 
 export async function bootstrap(): Promise<Server> {
+  assertProductionConfig(env);
+
   await prisma.$connect();
   logger.info('[nst-api] Database connected successfully');
 
   pgListener.connect().catch((err) => {
     logger.error({ err }, '[nst-api] Failed to initialize Postgres SSE listener bridge');
+  });
+
+  rateLimitSettingsCache.init().catch((err) => {
+    logger.error({ err }, '[nst-api] Failed to initialize rate limit settings cache');
   });
 
   const app = createApp();
@@ -57,6 +67,12 @@ export async function gracefulShutdown(signal: string, shouldExit = true) {
       logger.info('[nst-api] HTTP server closed');
     }
 
+    // Flush and stop asynchronous auth events buffer before database teardown
+    authEventsService.stop();
+    await authEventsService.flushSync();
+    logger.info('[nst-api] Auth events in-memory buffer flushed cleanly');
+
+    rateLimitSettingsCache.stop();
     await pgListener.disconnect();
     logger.info('[nst-api] PG listener disconnected');
 
@@ -67,6 +83,7 @@ export async function gracefulShutdown(signal: string, shouldExit = true) {
     logger.info('[nst-api] Graceful shutdown completed cleanly');
     if (shouldExit) process.exit(0);
   } catch (err) {
+
     logger.error({ err }, '[nst-api] Error during graceful shutdown');
     clearTimeout(timeout);
     if (shouldExit) process.exit(1);

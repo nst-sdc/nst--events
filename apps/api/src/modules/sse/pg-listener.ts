@@ -18,12 +18,12 @@ class PGListener {
       });
 
       this.client.on('notification', (msg: Notification) => {
-        if (!msg.channel || !msg.payload) return;
+        if (!msg.channel) return;
         try {
-          const parsed = JSON.parse(msg.payload);
+          const parsed = msg.payload ? JSON.parse(msg.payload) : {};
           sseEventBus.emit(msg.channel, parsed);
-        } catch (e) {
-          console.error('PGListener JSON parse error:', e);
+        } catch {
+          sseEventBus.emit(msg.channel, { raw: msg.payload });
         }
       });
 

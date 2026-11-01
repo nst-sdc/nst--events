@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
+import { BadRequestError } from '../../lib/errors';
 import { adminAnalyticsService } from './analytics.service';
 
 export const adminAnalyticsRouter: Router = Router();
@@ -36,7 +37,7 @@ adminAnalyticsRouter.get(
     try {
       const { start, end } = req.query as { start: string; end: string };
       if (!start || !end) {
-        return res.status(400).json({ error: 'Missing start or end date' });
+        throw new BadRequestError('Missing start or end date');
       }
       const data = await adminAnalyticsService.getAttendanceAnalytics(req.user!.id, { start, end });
       res.json(data);
@@ -64,7 +65,7 @@ adminAnalyticsRouter.get(
     try {
       const { start, end } = req.query as { start: string; end: string };
       if (!start || !end) {
-        return res.status(400).json({ error: 'Missing start or end date' });
+        throw new BadRequestError('Missing start or end date');
       }
       const data = await adminAnalyticsService.getRegistrationAnalytics(req.user!.id, { start, end });
       res.json(data);

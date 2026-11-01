@@ -348,6 +348,40 @@ describe('AdminAnalyticsService - getEventAnalytics', () => {
     assert.strictEqual(data.pipeline_counts['PUBLISHED'], 1);
     assert.strictEqual(data.pipeline_counts['DRAFT'], 0);
   });
+
+  it('should compute pipeline counts via SQL groupBy across multiple states and cap recent_events at 50', async () => {
+    const adminId = uuidv4();
+    await adminPrisma.user.create({
+      data: {
+        id: adminId,
+        email: `global_ev_${Date.now()}@test.com`,
+        fullName: 'Global Event Admin',
+        globalRole: 'PLATFORM_ADMIN',
+        googleSub: `sub_g_ev_${Date.now()}`,
+      },
+    });
+
+    const states = ['DRAFT', 'DRAFT', 'PUBLISHED', 'ARCHIVED', 'CANCELLED', 'PENDING_APPROVAL'] as const;
+    for (let i = 0; i < states.length; i++) {
+      await adminPrisma.event.create({
+        data: {
+          title: `State Event ${i} ${Date.now()}`,
+          startTime: new Date(),
+          endTime: new Date(),
+          eventType: 'WORKSHOP',
+          state: states[i],
+          createdBy: adminId,
+        },
+      });
+    }
+
+    const data = await adminAnalyticsService.getEventAnalytics(adminId);
+    assert.ok(data.pipeline_counts['DRAFT'] >= 2);
+    assert.ok(data.pipeline_counts['PUBLISHED'] >= 1);
+    assert.ok(data.pipeline_counts['ARCHIVED'] >= 1);
+    assert.ok(data.pipeline_counts['PENDING_APPROVAL'] >= 1);
+    assert.ok(data.recent_events.length <= 50);
+  });
 });
 
 describe('AdminAnalyticsService - getRegistrationAnalytics', () => {

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { sseEventBus } from './event-bus';
 import { sseConnectionManager } from './sse-connection-manager';
 import { authenticate } from '../../middleware/authenticate';
+import { sseActiveConnections } from '../../lib/metrics';
 
 import { buildEventChannel } from './sse.utils';
 import * as eventsService from '../events/events.service';
@@ -31,6 +32,7 @@ sseRouter.get('/events/:id/live', sseAuthMiddleware, async (req, res, next) => {
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('X-Accel-Buffering', 'no');
     res.flushHeaders();
+    sseActiveConnections.inc({ stream_type: 'event_live' });
 
     // Subscribe to DB notifications via manager
     await sseConnectionManager.subscribe(eventId);
@@ -53,6 +55,7 @@ sseRouter.get('/events/:id/live', sseAuthMiddleware, async (req, res, next) => {
 
     // Strict connection cleanup
     req.on('close', async () => {
+      sseActiveConnections.dec({ stream_type: 'event_live' });
       clearInterval(heartbeatInterval);
       sseEventBus.off(channel, onEvent);
       sseEventBus.off('system:disconnect', onSystemDisconnect);
@@ -76,6 +79,7 @@ sseRouter.get('/notifications/live', sseAuthMiddleware, async (req, res, next) =
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('X-Accel-Buffering', 'no');
     res.flushHeaders();
+    sseActiveConnections.inc({ stream_type: 'notifications_live' });
 
     await sseConnectionManager.subscribeUserNotifications(userId);
 
@@ -98,6 +102,7 @@ sseRouter.get('/notifications/live', sseAuthMiddleware, async (req, res, next) =
 
     // Strict connection cleanup
     req.on('close', async () => {
+      sseActiveConnections.dec({ stream_type: 'notifications_live' });
       clearInterval(heartbeatInterval);
       sseEventBus.off(channel, onEvent);
       sseEventBus.off('system:disconnect', onSystemDisconnect);

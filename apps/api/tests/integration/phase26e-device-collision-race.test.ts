@@ -110,7 +110,7 @@ describe('Phase 26E: Device Collision Race and Hardening', () => {
 
   it('Concurrent live scan (Promise.all) safely flags exactly one and awards 5 points to the other', async () => {
     const token1 = generateCustomQrPayload(sessionId, 'SECRET', 0);
-    const token2 = generateCustomQrPayload(sessionId, 'SECRET', -1);
+    const token2 = generateCustomQrPayload(sessionId, 'SECRET', 0);
     const deviceId = 'race-device';
 
     // Fire both requests concurrently!

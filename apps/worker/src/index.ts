@@ -5,6 +5,7 @@ import { config } from './config';
 import { startWorkerLoop, stopWorkerLoop, isShuttingDown } from './worker';
 import { logger, generateCorrelationId } from './lib/logger';
 import { registry, queueDepth } from './lib/metrics';
+import { captureException } from '@nst/shared';
 
 // Initialize Prisma
 export const prisma: PrismaClient = new PrismaClient({
@@ -139,9 +140,20 @@ async function shutdown(signal: string) {
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
 
+process.on('uncaughtException', (err) => {
+  logger.error({ error: { failure_reason: 'UncaughtException', stack: err.stack } }, '❌ Uncaught exception');
+  captureException(err, { tags: { process: 'worker', fatal: 'true' } });
+});
+
+process.on('unhandledRejection', (reason) => {
+  logger.error({ error: { failure_reason: 'UnhandledRejection', reason } }, '❌ Unhandled rejection');
+  captureException(reason, { tags: { process: 'worker', fatal: 'false' } });
+});
+
 if (require.main === module || process.argv[1]?.includes('worker/src/index')) {
   startup().catch((err: any) => {
     logger.error({ correlation_id: generateCorrelationId(), error: { failure_reason: 'FatalStartupError', stack: err.stack } }, '❌ Fatal error during startup');
+    captureException(err, { tags: { process: 'worker', phase: 'startup' } });
     process.exitCode = 1;
   });
 }

@@ -15,6 +15,10 @@ const configSchema = z.object({
   
   EXPO_RECEIPT_DELAY_MINUTES: z.coerce.number().int().positive().default(15),
   EXPO_MAX_BATCH_SIZE: z.coerce.number().int().positive().default(100),
+  AUTH_EVENTS_RETENTION_DAYS: z.coerce.number().int().positive().default(90),
+  NOTIFICATION_JOBS_RETENTION_DAYS: z.coerce.number().int().positive().default(7),
+  NOTIFICATION_JOBS_RETENTION_INTERVAL_MS: z.coerce.number().int().positive().default(3600000), // 1 hour
+  NOTIFICATION_JOBS_PURGE_BATCH_SIZE: z.coerce.number().int().positive().default(500),
 });
 
 const parsed = configSchema.safeParse(process.env);

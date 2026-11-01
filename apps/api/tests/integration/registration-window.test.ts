@@ -358,8 +358,9 @@ describe('Registration Window Edge Cases & Authoritative Enforcement', () => {
     });
     eventIds.push(testEv.id);
 
-    // Since 2026-11-01 is in the future relative to test execution, status must be UPCOMING
-    const futureStatus = calculateRegistrationStatus(new Date(), testEv.registrationStartTime, testEv.registrationEndTime);
+    // Before the DST window starts, status must be UPCOMING
+    const evalTime = new Date('2026-10-31T12:00:00Z');
+    const futureStatus = calculateRegistrationStatus(evalTime, testEv.registrationStartTime, testEv.registrationEndTime);
     assert.strictEqual(futureStatus, 'UPCOMING', 'Future DST-spanning registration window must report UPCOMING');
   });
 

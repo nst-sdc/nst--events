@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { requireRole, canManageClubDetails, canManageClubMembers, canViewClubOversight } from '../../middleware/authorize';
 import { validate } from '../../middleware/validate';
-import { ConflictError } from '../../lib/errors';
+import { BadRequestError, ConflictError, NotFoundError } from '../../lib/errors';
 import {
   CreateClubSchema,
   UpdateClubSchema,
@@ -26,7 +26,7 @@ router.get('/search', authenticate, validate(ListClubsQuerySchema), async (req, 
     const limit = parseInt((req.query.limit as string) || '20', 10);
 
     if (type && type !== 'clubs') {
-      return res.status(400).json({ error: 'Only type=clubs is supported currently' });
+      throw new BadRequestError('Only type=clubs is supported currently');
     }
 
     if (!q) {
@@ -63,7 +63,7 @@ router.get('/:id', authenticate, async (req, res, next) => {
   try {
     const club = await clubsService.getClub(req.user!.id, req.params.id);
     if (!club) {
-      return res.status(404).json({ error: 'Club not found' });
+      throw new NotFoundError('Club not found');
     }
     res.json(club);
   } catch (err) {
@@ -125,7 +125,7 @@ router.patch(
     try {
       const club = await clubsService.updateClub(req.user!.id, req.params.id, req.body);
       if (!club) {
-        return res.status(404).json({ error: 'Club not found' });
+        throw new NotFoundError('Club not found');
       }
       res.json(club);
     } catch (err) {
@@ -147,7 +147,7 @@ router.patch(
         req.body.status
       );
       if (!club) {
-        return res.status(404).json({ error: 'Club not found' });
+        throw new NotFoundError('Club not found');
       }
       res.json(club);
     } catch (err) {
@@ -190,7 +190,7 @@ router.patch(
         req.body.role
       );
       if (!member) {
-        return res.status(404).json({ error: 'Membership not found' });
+        throw new NotFoundError('Membership not found');
       }
       res.json(member);
     } catch (err) {
@@ -211,7 +211,7 @@ router.delete(
         req.params.userId
       );
       if (!deleted) {
-        return res.status(404).json({ error: 'Membership not found' });
+        throw new NotFoundError('Membership not found');
       }
       res.status(204).send();
     } catch (err) {

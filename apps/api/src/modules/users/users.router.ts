@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { validate } from '../../middleware/validate';
+import { NotFoundError } from '../../lib/errors';
 import { RegisterPushTokenSchema, UpdateProfileSchema } from './users.schema';
 import * as usersService from './users.service';
 
@@ -8,9 +9,9 @@ const router = Router();
 
 router.get('/me', authenticate, async (req, res, next) => {
   try {
-    console.error("GET ME USER ID:", req.user!.id); const user = await usersService.getMe(req.user!.id); console.error("GET ME RETURNED:", user);
+    const user = await usersService.getMe(req.user!.id);
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      throw new NotFoundError('User not found');
     }
     res.json(user);
   } catch (err) {
@@ -45,7 +46,7 @@ router.get('/:id/profile', authenticate, async (req, res, next) => {
   try {
     const user = await usersService.getPublicProfile(req.user!.id, req.params.id);
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      throw new NotFoundError('User not found');
     }
     res.json(user);
   } catch (err) {
