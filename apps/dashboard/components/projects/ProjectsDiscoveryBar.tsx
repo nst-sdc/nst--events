@@ -114,46 +114,24 @@ export function ProjectsDiscoveryBar({
         </div>
 
         {/* Search Input Bar */}
-        <form onSubmit={handleSearchSubmit} style={{ position: 'relative', minWidth: '280px', flex: '1', maxWidth: '420px' }}>
+        <form onSubmit={handleSearchSubmit} className="relative min-w-[280px] flex-1 max-w-[420px]">
           <Search
             size={16}
-            style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#a0a4b8' }}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-[#a0a4b8]"
           />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search projects, tags, tech..."
-            style={{
-              width: '100%',
-              padding: '10px 36px 10px 38px',
-              background: '#0d0e12',
-              border: '2px solid rgba(245,245,242,0.25)',
-              color: '#F5F5F2',
-              fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-              fontSize: '11px',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '1px',
-              borderRadius: 0,
-              outline: 'none',
-            }}
-            className="focus:border-[#0057FF] transition-colors"
+            className="w-full pl-9 pr-9 py-2.5 bg-white dark:bg-[#0d0e12] border-2 border-black/20 dark:border-white/25 text-zinc-950 dark:text-[#F5F5F2] font-mono text-[11px] font-bold uppercase tracking-wider rounded-none outline-none focus:border-[#0057FF] transition-colors placeholder:text-zinc-500 dark:placeholder:text-[#a0a4b8]"
           />
           {searchTerm && (
             <button
               type="button"
               onClick={handleClearSearch}
-              style={{
-                position: 'absolute',
-                right: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                background: 'none',
-                border: 'none',
-                color: '#a0a4b8',
-                cursor: 'pointer',
-              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-0 text-zinc-500 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white cursor-pointer p-0"
+              aria-label="Clear search"
             >
               <X size={14} />
             </button>
@@ -190,22 +168,11 @@ export function ProjectsDiscoveryBar({
               <button
                 key={cat}
                 onClick={() => updateFilters({ category: isAll ? null : cat })}
-                style={{
-                  background: isSelected ? 'var(--bg-paper-white, #F5F5F2)' : 'transparent',
-                  color: isSelected ? '#000000' : '#a0a4b8',
-                  border: isSelected ? '2px solid #F5F5F2' : '2px solid rgba(245,245,242,0.25)',
-                  padding: '8px 16px',
-                  fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '1px',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  borderRadius: 0,
-                  transition: 'all 0.15s ease',
-                }}
-                className="hover:border-white hover:text-white"
+                className={`transition-all duration-150 uppercase tracking-wider font-mono text-[11px] font-bold px-4 py-2 border-2 cursor-pointer whitespace-nowrap rounded-none ${
+                  isSelected
+                    ? 'bg-black text-white border-black dark:bg-[#F5F5F2] dark:text-black dark:border-[#F5F5F2] shadow-[3px_3px_0px_#0057FF]'
+                    : 'bg-transparent text-zinc-600 dark:text-[#a0a4b8] border-black/20 dark:border-white/25 hover:border-black dark:hover:border-white hover:text-black dark:hover:text-white'
+                }`}
                 type="button"
               >
                 {cat}
@@ -216,28 +183,14 @@ export function ProjectsDiscoveryBar({
 
         {/* Development Status Filter Dropdown */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-          <Filter size={14} style={{ color: '#a0a4b8' }} />
+          <Filter size={14} className="text-zinc-500 dark:text-[#a0a4b8]" />
           <select
             value={currentStatus || ''}
             onChange={(e) => updateFilters({ status: e.target.value || null })}
-            style={{
-              background: '#0d0e12',
-              border: '2px solid rgba(245,245,242,0.25)',
-              color: '#F5F5F2',
-              fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-              fontSize: '11px',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '1px',
-              padding: '8px 14px',
-              borderRadius: 0,
-              outline: 'none',
-              cursor: 'pointer',
-            }}
-            className="focus:border-[#0057FF] transition-colors"
+            className="bg-white dark:bg-[#0d0e12] border-2 border-black/20 dark:border-white/25 text-zinc-950 dark:text-[#F5F5F2] font-mono text-[11px] font-bold uppercase tracking-wider px-3.5 py-2 rounded-none outline-none cursor-pointer focus:border-[#0057FF] transition-colors"
           >
             {STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value} style={{ background: '#050505', color: '#F5F5F2' }}>
+              <option key={opt.value} value={opt.value} className="bg-white dark:bg-[#050505] text-zinc-950 dark:text-[#F5F5F2]">
                 {opt.label}
               </option>
             ))}

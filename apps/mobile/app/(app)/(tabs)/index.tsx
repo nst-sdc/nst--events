@@ -14,22 +14,18 @@ import { StatusBadge } from '../../../src/ui/core/StatusBadge';
 import { StudentCalendarView } from '../../../src/ui/StudentCalendarView';
 import { useAttendanceHistory } from '../../../src/hooks/use-attendance-history';
 import { usePendingInvitations } from '../../../src/hooks/use-invitations';
+import { FilterChip } from '../../../src/ui/FilterChip';
 import { 
   classifyAndSortHomeEvents, 
   findActiveAttendanceSession, 
   isSessionAttendancePresent, 
   isEventCurrentlyLive 
 } from '../../../src/lib/home-events';
+import { EVENT_TYPES } from '@nst/shared';
 
 const CATEGORIES = [
   'ALL',
-  'HACKATHON',
-  'WORKSHOP',
-  'SEMINAR',
-  'COMPETITION',
-  'CULTURAL',
-  'SPORTS',
-  'MEETUP',
+  ...EVENT_TYPES.map((t) => t.value),
 ] as const;
 
 function EventRow({ 
@@ -593,7 +589,9 @@ export default function HomeAttendanceScreen() {
             <TouchableOpacity
               onPress={() => setSearchInput('')}
               style={styles.clearSearchBtn}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityRole="button"
+              accessibilityLabel="Clear search text"
               testID="btn-clear-search"
             >
               <MonoLabel style={{ color: theme.colors.onSurfaceVariant, fontSize: 11 }}>[CLEAR]</MonoLabel>
@@ -606,17 +604,15 @@ export default function HomeAttendanceScreen() {
           {CATEGORIES.map((cat) => {
             const isSelected = selectedCategory === cat;
             return (
-              <TouchableOpacity
+              <FilterChip
                 key={cat}
+                label={cat}
+                selected={isSelected}
                 onPress={() => setSelectedCategory(cat)}
-                style={[styles.categoryChip, isSelected && styles.categoryChipActive]}
-                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={`Filter by ${cat}`}
                 testID={`category-chip-${cat}`}
-              >
-                <Mono style={[styles.categoryChipText, isSelected && styles.categoryChipTextActive]}>
-                  {cat}
-                </Mono>
-              </TouchableOpacity>
+              />
             );
           })}
         </ScrollView>
@@ -624,53 +620,49 @@ export default function HomeAttendanceScreen() {
         {/* Dual Segmented Controls: Scope & View Mode */}
         <View style={styles.controlsBar}>
           {/* Scope Filter: All Events vs My Passes */}
-          <View style={styles.segmentGroup}>
-            <TouchableOpacity
+          <View style={styles.segmentGroup} accessibilityRole="tablist">
+            <FilterChip
+              label="ALL EVENTS"
+              variant="segment"
+              selected={scopeFilter === 'ALL'}
               onPress={() => setScopeFilter('ALL')}
-              style={[styles.segmentBtn, scopeFilter === 'ALL' && styles.segmentBtnActive]}
-              activeOpacity={0.8}
+              accessibilityRole="tab"
+              accessibilityLabel="Show all events"
               testID="tab-all-events"
-            >
-              <Mono style={[styles.segmentText, scopeFilter === 'ALL' && styles.segmentTextActive]}>
-                ALL EVENTS
-              </Mono>
-            </TouchableOpacity>
+            />
 
-            <TouchableOpacity
+            <FilterChip
+              label="MY EVENTS"
+              variant="segment"
+              selected={scopeFilter === 'MY_EVENTS'}
               onPress={() => setScopeFilter('MY_EVENTS')}
-              style={[styles.segmentBtn, scopeFilter === 'MY_EVENTS' && styles.segmentBtnActive]}
-              activeOpacity={0.8}
+              accessibilityRole="tab"
+              accessibilityLabel="Show my events"
               testID="tab-my-events"
-            >
-              <Mono style={[styles.segmentText, scopeFilter === 'MY_EVENTS' && styles.segmentTextActive]}>
-                MY EVENTS
-              </Mono>
-            </TouchableOpacity>
+            />
           </View>
 
           {/* View Mode: List vs Calendar */}
-          <View style={styles.segmentGroup}>
-            <TouchableOpacity
+          <View style={styles.segmentGroup} accessibilityRole="tablist">
+            <FilterChip
+              label="LIST"
+              variant="segment"
+              selected={viewMode === 'LIST'}
               onPress={() => setViewMode('LIST')}
-              style={[styles.segmentBtn, viewMode === 'LIST' && styles.segmentBtnActive]}
-              activeOpacity={0.8}
+              accessibilityRole="tab"
+              accessibilityLabel="List view mode"
               testID="view-toggle-list"
-            >
-              <Mono style={[styles.segmentText, viewMode === 'LIST' && styles.segmentTextActive]}>
-                LIST
-              </Mono>
-            </TouchableOpacity>
+            />
 
-            <TouchableOpacity
+            <FilterChip
+              label="CALENDAR"
+              variant="segment"
+              selected={viewMode === 'CALENDAR'}
               onPress={() => setViewMode('CALENDAR')}
-              style={[styles.segmentBtn, viewMode === 'CALENDAR' && styles.segmentBtnActive]}
-              activeOpacity={0.8}
+              accessibilityRole="tab"
+              accessibilityLabel="Calendar view mode"
               testID="view-toggle-calendar"
-            >
-              <Mono style={[styles.segmentText, viewMode === 'CALENDAR' && styles.segmentTextActive]}>
-                CALENDAR
-              </Mono>
-            </TouchableOpacity>
+            />
           </View>
         </View>
       </View>

@@ -126,7 +126,7 @@ describe('Phase 8 — iOS Parity & Regression Tests', () => {
     expect(resolveNotificationRoute({
       type: 'ROLE_CHANGED',
       metadata: { entity_ids: {} },
-    })).toBe('/(app)/profile');
+    })).toBe('/(app)/(tabs)/profile');
   });
 
   // 8. iOS Logout and Keychain Clearance Parity

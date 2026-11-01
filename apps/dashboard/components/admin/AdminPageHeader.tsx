@@ -5,7 +5,7 @@ import Link from 'next/link';
 const { Title, Text } = Typography;
 
 export interface AdminPageHeaderProps {
-  breadcrumbs: { title: string; href?: string }[];
+  breadcrumbs?: { title: string; href?: string }[];
   title: string;
   description: string;
   action?: {
@@ -26,12 +26,14 @@ export function AdminPageHeader({
 }: AdminPageHeaderProps) {
   return (
     <div className="mb-6 space-y-4">
-      <Breadcrumb
-        items={breadcrumbs.map((bc, index) => ({
-          title: bc.href ? <Link href={bc.href}>{bc.title}</Link> : bc.title,
-          key: index,
-        }))}
-      />
+      {breadcrumbs && breadcrumbs.length > 0 && (
+        <Breadcrumb
+          items={breadcrumbs.map((bc, index) => ({
+            title: bc.href ? <Link href={bc.href}>{bc.title}</Link> : bc.title,
+            key: index,
+          }))}
+        />
+      )}
       
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>

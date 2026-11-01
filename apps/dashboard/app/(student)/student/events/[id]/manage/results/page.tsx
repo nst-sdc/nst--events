@@ -600,9 +600,9 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 bg-[#090a0f] border-2 border-white/10">
+      <div className="flex flex-col items-center justify-center py-24 bg-white dark:bg-[#090a0f] border-2 border-black/10 dark:border-white/10">
         <div className="h-8 w-8 border-3 border-[#0057FF] border-t-transparent rounded-full animate-spin"></div>
-        <p className="mt-4 text-xs font-mono text-[#a0a4b8] uppercase tracking-widest">
+        <p className="mt-4 text-xs font-mono text-zinc-500 dark:text-[#a0a4b8] uppercase tracking-widest">
           Loading Event Results & Awards...
         </p>
       </div>
@@ -612,18 +612,18 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
   const isLockedForEdits = isPublished && !workspace?.draft;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 font-sans">
       {/* 1. Header & Lifecycle Status Banner */}
-      <div className="p-6 bg-[#090a0f] border-2 border-white/15 shadow-[4px_4px_0px_#000] relative">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+      <div className="p-6 bg-white dark:bg-[#090a0f] border-2 border-black/15 dark:border-white/15 shadow-[4px_4px_0px_#000] relative">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-black/10 dark:border-white/10">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <Trophy className="w-5 h-5 text-[#C8FF00]" />
+              <Trophy className="w-5 h-5 text-amber-500 dark:text-[#C8FF00]" />
               <span className="font-mono text-xs font-bold uppercase tracking-widest text-[#0057FF]">
                 Official Event Results & Recognition
               </span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black uppercase text-[#F5F5F2]" style={{ fontFamily: "'Syne', sans-serif" }}>
+            <h2 className="text-xl sm:text-2xl font-black uppercase text-zinc-900 dark:text-[#F5F5F2]" style={{ fontFamily: "'Syne', sans-serif" }}>
               Awards, Podium & Winner Snapshots
             </h2>
           </div>
@@ -653,7 +653,7 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
                 <button
                   onClick={handleSaveDraft}
                   disabled={saving}
-                  className="flex items-center gap-2 px-3 py-2 bg-[#090a0f] border border-white/20 text-[#F5F5F2] font-mono text-xs font-bold uppercase tracking-wider hover:border-white transition-all shadow-[2px_2px_0px_#000] disabled:opacity-50"
+                  className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-[#090a0f] border border-black/20 dark:border-white/20 text-zinc-900 dark:text-[#F5F5F2] font-mono text-xs font-bold uppercase tracking-wider hover:border-black dark:hover:border-white transition-all shadow-[2px_2px_0px_#000] disabled:opacity-50"
                 >
                   <Save className="w-3.5 h-3.5 text-[#0057FF]" />
                   <span>{saving ? 'Saving...' : 'Save Draft'}</span>
@@ -673,7 +673,7 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
             {isPublished && !isWithdrawn && (
               <button
                 onClick={() => setWithdrawModalOpen(true)}
-                className="flex items-center gap-2 px-3 py-2 bg-red-950/40 border border-red-500/50 text-red-400 font-mono text-xs font-bold uppercase tracking-wider hover:bg-red-900/60 transition-all shadow-[2px_2px_0px_#000]"
+                className="flex items-center gap-2 px-3 py-2 bg-red-50 dark:bg-red-950/40 border border-red-300 dark:border-red-500/50 text-red-600 dark:text-red-400 font-mono text-xs font-bold uppercase tracking-wider hover:bg-red-100 dark:hover:bg-red-900/60 transition-all shadow-[2px_2px_0px_#000]"
               >
                 <AlertTriangle className="w-3.5 h-3.5" />
                 <span>Withdraw</span>
@@ -683,7 +683,7 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
             {isWithdrawn && (
               <button
                 onClick={() => setRestoreModalOpen(true)}
-                className="flex items-center gap-2 px-3 py-2 bg-emerald-950/40 border border-emerald-500/50 text-emerald-400 font-mono text-xs font-bold uppercase tracking-wider hover:bg-emerald-900/60 transition-all shadow-[2px_2px_0px_#000]"
+                className="flex items-center gap-2 px-3 py-2 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-500/50 text-emerald-700 dark:text-emerald-400 font-mono text-xs font-bold uppercase tracking-wider hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-all shadow-[2px_2px_0px_#000]"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>Restore Results</span>
@@ -693,8 +693,8 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
         </div>
 
         {/* State Banner */}
-        <div className="mt-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             <span className={clsx(
               "px-2.5 py-1 text-xs font-mono font-black uppercase tracking-wider shadow-[2px_2px_0px_#000]",
               isWithdrawn ? "bg-red-500 text-white" :
@@ -704,14 +704,14 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
               {isWithdrawn ? 'WITHDRAWN' : isPublished ? (workspace?.draft ? 'PUBLISHED (DRAFT CORRECTION)' : `PUBLISHED (REV #${revisionNumber})`) : `DRAFT (REV #${revisionNumber})`}
             </span>
 
-            <span className="text-xs font-mono text-[#a0a4b8]">
+            <span className="text-xs font-mono text-zinc-600 dark:text-[#a0a4b8]">
               {isWithdrawn ? 'Results withdrawn from public discovery' :
                isPublished ? (workspace?.draft ? 'A draft correction is in progress. Current published results remain live.' : 'Active official results visible to all authorized attendees.') :
                'Draft results are visible only to event managers.'}
             </span>
           </div>
 
-          <div className="text-xs font-mono text-white/50">
+          <div className="text-xs font-mono text-zinc-500 dark:text-white/50">
             Version {version} • {awards.length} Award{awards.length === 1 ? '' : 's'}
           </div>
         </div>
@@ -719,9 +719,9 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
         {statusMessage && (
           <div className={clsx(
             "mt-4 p-3 border font-mono text-xs flex items-center gap-2 shadow-[2px_2px_0px_#000]",
-            statusMessage.type === 'success' ? "bg-emerald-950/40 border-emerald-500 text-emerald-300" : "bg-red-950/40 border-red-500 text-red-300"
+            statusMessage.type === 'success' ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-800 dark:text-emerald-300" : "bg-red-50 dark:bg-red-950/40 border-red-500 text-red-800 dark:text-red-300"
           )}>
-            {statusMessage.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
+            {statusMessage.type === 'success' ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> : <AlertTriangle className="w-4 h-4 flex-shrink-0" />}
             <span>{statusMessage.text}</span>
           </div>
         )}
@@ -731,10 +731,10 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
       <div className="flex flex-col gap-5">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-mono text-sm font-bold uppercase tracking-wider text-[#F5F5F2]">
+            <h3 className="font-mono text-sm font-bold uppercase tracking-wider text-zinc-900 dark:text-[#F5F5F2]">
               Configured Awards & Winner Placements
             </h3>
-            <p className="text-xs text-[#a0a4b8] mt-0.5">
+            <p className="text-xs text-zinc-500 dark:text-[#a0a4b8] mt-0.5">
               Ranked podium placements (1st, 2nd, 3rd), special category awards, and verified recipient rosters.
             </p>
           </div>
@@ -751,9 +751,9 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
         </div>
 
         {awards.length === 0 ? (
-          <div className="p-12 text-center border-2 border-dashed border-white/15 bg-[#090a0f]">
-            <Trophy className="w-10 h-10 text-white/20 mx-auto mb-3" />
-            <p className="text-sm font-mono text-[#a0a4b8] uppercase tracking-wider">
+          <div className="p-12 text-center border-2 border-dashed border-black/15 dark:border-white/15 bg-white dark:bg-[#090a0f]">
+            <Trophy className="w-10 h-10 text-zinc-400 dark:text-white/20 mx-auto mb-3" />
+            <p className="text-sm font-mono text-zinc-500 dark:text-[#a0a4b8] uppercase tracking-wider">
               No awards configured yet. Click &quot;Add Award&quot; above to create 1st place, runner-up, or special awards.
             </p>
           </div>
@@ -765,11 +765,11 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
               <div
                 key={aIndex}
                 className={clsx(
-                  "p-5 bg-[#090a0f] border-2 shadow-[4px_4px_0px_#000] flex flex-col gap-4 relative",
-                  isRanked && award.placement === 1 ? "border-[#C8FF00]" :
-                  isRanked && award.placement === 2 ? "border-slate-300" :
+                  "p-5 bg-white dark:bg-[#090a0f] border-2 shadow-[4px_4px_0px_#000] flex flex-col gap-4 relative",
+                  isRanked && award.placement === 1 ? "border-[#0057FF] dark:border-[#C8FF00]" :
+                  isRanked && award.placement === 2 ? "border-slate-500 dark:border-slate-300" :
                   isRanked && award.placement === 3 ? "border-amber-600" :
-                  "border-white/15"
+                  "border-black/15 dark:border-white/15"
                 )}
               >
                 {/* Award Header Line */}
@@ -778,9 +778,9 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
                     <span className={clsx(
                       "w-8 h-8 flex items-center justify-center font-mono font-black text-sm border-2 shadow-[2px_2px_0px_#000]",
                       isRanked && award.placement === 1 ? "bg-[#C8FF00] text-black border-black" :
-                      isRanked && award.placement === 2 ? "bg-slate-300 text-black border-black" :
+                      isRanked && award.placement === 2 ? "bg-slate-200 dark:bg-slate-300 text-black border-black" :
                       isRanked && award.placement === 3 ? "bg-amber-600 text-white border-black" :
-                      "bg-white/10 text-white border-white/20"
+                      "bg-zinc-100 dark:bg-white/10 text-zinc-900 dark:text-white border-black/20 dark:border-white/20"
                     )}>
                       {isRanked ? (award.placement || aIndex + 1) : '★'}
                     </span>
@@ -791,7 +791,7 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
                       value={award.title}
                       onChange={(e) => handleUpdateAward(aIndex, { title: e.target.value })}
                       placeholder="Award Title (e.g. 1st Place Grand Winner)"
-                      className="bg-[#050505] border border-white/20 px-3 py-1.5 text-sm font-bold text-[#F5F5F2] uppercase tracking-wide focus:border-[#0057FF] outline-none w-72 max-w-full"
+                      className="bg-zinc-50 dark:bg-[#050505] border border-black/20 dark:border-white/20 px-3 py-1.5 text-sm font-bold text-zinc-900 dark:text-[#F5F5F2] uppercase tracking-wide focus:border-[#0057FF] outline-none w-72 max-w-full"
                     />
                   </div>
 
@@ -801,7 +801,7 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
                       disabled={isLockedForEdits}
                       value={award.award_type}
                       onChange={(e) => handleUpdateAward(aIndex, { award_type: e.target.value as AwardType })}
-                      className="bg-[#050505] border border-white/20 px-3 py-1.5 text-xs font-mono font-bold text-[#F5F5F2] uppercase tracking-wide focus:border-[#0057FF] outline-none"
+                      className="bg-zinc-50 dark:bg-[#050505] border border-black/20 dark:border-white/20 px-3 py-1.5 text-xs font-mono font-bold text-zinc-900 dark:text-[#F5F5F2] uppercase tracking-wide focus:border-[#0057FF] outline-none"
                     >
                       <option value="RANKED_PLACEMENT">Ranked Placement</option>
                       <option value="SPECIAL_AWARD">Special Award</option>
@@ -811,14 +811,14 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
 
                     {isRanked && (
                       <div className="flex items-center gap-1.5">
-                        <span className="font-mono text-xs text-[#a0a4b8]">Rank:</span>
+                        <span className="font-mono text-xs text-zinc-500 dark:text-[#a0a4b8]">Rank:</span>
                         <input
                           type="number"
                           min={1}
                           disabled={isLockedForEdits}
                           value={award.placement ?? ''}
                           onChange={(e) => handleUpdateAward(aIndex, { placement: parseInt(e.target.value, 10) || null })}
-                          className="w-16 bg-[#050505] border border-white/20 px-2 py-1 text-xs font-mono font-bold text-center text-[#F5F5F2] outline-none"
+                          className="w-16 bg-zinc-50 dark:bg-[#050505] border border-black/20 dark:border-white/20 px-2 py-1 text-xs font-mono font-bold text-center text-zinc-900 dark:text-[#F5F5F2] outline-none"
                         />
                       </div>
                     )}
@@ -826,7 +826,7 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
                     {!isLockedForEdits && (
                       <button
                         onClick={() => handleRemoveAward(aIndex)}
-                        className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-950/30 transition-all border border-transparent hover:border-red-500/40"
+                        className="p-1.5 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all border border-transparent hover:border-red-500/40"
                         title="Delete Award"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -836,7 +836,7 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
                 </div>
 
                 {/* Description & Ties Config */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 border-t border-white/5">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 border-t border-black/5 dark:border-white/5">
                   <div className="md:col-span-2">
                     <input
                       type="text"
@@ -844,13 +844,13 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
                       value={award.description}
                       onChange={(e) => handleUpdateAward(aIndex, { description: e.target.value })}
                       placeholder="Optional award description or criteria..."
-                      className="w-full bg-[#050505] border border-white/10 px-3 py-1 text-xs text-[#a0a4b8] focus:border-white/30 outline-none"
+                      className="w-full bg-zinc-50 dark:bg-[#050505] border border-black/10 dark:border-white/10 px-3 py-1 text-xs text-zinc-700 dark:text-[#a0a4b8] focus:border-black/30 dark:focus:border-white/30 outline-none"
                     />
                   </div>
 
                   {isRanked && (
-                    <div className="flex items-center gap-4 bg-[#050505] border border-white/10 px-3 py-1">
-                      <label className="flex items-center gap-2 cursor-pointer text-xs font-mono text-[#a0a4b8]">
+                    <div className="flex items-center gap-4 bg-zinc-50 dark:bg-[#050505] border border-black/10 dark:border-white/10 px-3 py-1">
+                      <label className="flex items-center gap-2 cursor-pointer text-xs font-mono text-zinc-600 dark:text-[#a0a4b8]">
                         <input
                           type="checkbox"
                           disabled={isLockedForEdits}
@@ -866,7 +866,7 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
                           disabled={isLockedForEdits}
                           value={award.tie_ranking_type}
                           onChange={(e) => handleUpdateAward(aIndex, { tie_ranking_type: e.target.value as TieRankingType })}
-                          className="bg-transparent border-none text-[11px] font-mono text-[#C8FF00] outline-none"
+                          className="bg-transparent border-none text-[11px] font-mono text-[#0057FF] dark:text-[#C8FF00] font-bold outline-none"
                         >
                           <option value="COMPETITION">Competition (1, 1, 3)</option>
                           <option value="DENSE">Dense (1, 1, 2)</option>
@@ -877,9 +877,9 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
                 </div>
 
                 {/* Recipients Section */}
-                <div className="mt-2 bg-[#050505] border border-white/10 p-3">
+                <div className="mt-2 bg-zinc-50 dark:bg-[#050505] border border-black/10 dark:border-white/10 p-3">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="font-mono text-xs font-bold uppercase tracking-wider text-[#a0a4b8] flex items-center gap-2">
+                    <span className="font-mono text-xs font-bold uppercase tracking-wider text-zinc-600 dark:text-[#a0a4b8] flex items-center gap-2">
                       <Users className="w-3.5 h-3.5 text-[#0057FF]" />
                       Recipients ({award.recipients.length})
                     </span>
@@ -892,7 +892,7 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
                             setPickerType('INDIVIDUAL');
                             setParticipantSearch('');
                           }}
-                          className="px-2 py-1 bg-white/5 border border-white/15 text-xs font-mono font-medium hover:border-[#0057FF] hover:text-[#0057FF] transition-all flex items-center gap-1.5"
+                          className="px-2 py-1 bg-white dark:bg-white/5 border border-black/15 dark:border-white/15 text-xs font-mono font-medium hover:border-[#0057FF] hover:text-[#0057FF] transition-all flex items-center gap-1.5 text-zinc-800 dark:text-zinc-200"
                         >
                           <User className="w-3 h-3" />
                           <span>+ Student</span>
@@ -904,7 +904,7 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
                             setPickerType('TEAM');
                             setTeamSearch('');
                           }}
-                          className="px-2 py-1 bg-white/5 border border-white/15 text-xs font-mono font-medium hover:border-[#C8FF00] hover:text-[#C8FF00] transition-all flex items-center gap-1.5"
+                          className="px-2 py-1 bg-white dark:bg-white/5 border border-black/15 dark:border-white/15 text-xs font-mono font-medium hover:border-[#0057FF] dark:hover:border-[#C8FF00] hover:text-[#0057FF] dark:hover:text-[#C8FF00] transition-all flex items-center gap-1.5 text-zinc-800 dark:text-zinc-200"
                         >
                           <Users className="w-3 h-3" />
                           <span>+ Team</span>
@@ -912,7 +912,7 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
 
                         <button
                           onClick={() => handleAddExternalRecipient(aIndex)}
-                          className="px-2 py-1 bg-white/5 border border-white/15 text-xs font-mono font-medium hover:border-amber-400 hover:text-amber-400 transition-all flex items-center gap-1.5"
+                          className="px-2 py-1 bg-white dark:bg-white/5 border border-black/15 dark:border-white/15 text-xs font-mono font-medium hover:border-amber-500 hover:text-amber-600 dark:hover:text-amber-400 transition-all flex items-center gap-1.5 text-zinc-800 dark:text-zinc-200"
                         >
                           <Globe className="w-3 h-3" />
                           <span>+ External Winner</span>
@@ -923,8 +923,8 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
 
                   {/* Active Picker Drawer */}
                   {activePickerAwardIndex === aIndex && (
-                    <div className="mb-4 p-3 bg-[#0d0f18] border-2 border-[#0057FF] shadow-[2px_2px_0px_#000]">
-                      <div className="flex items-center justify-between mb-2 pb-2 border-b border-white/10">
+                    <div className="mb-4 p-3 bg-zinc-100 dark:bg-[#0d0f18] border-2 border-[#0057FF] shadow-[2px_2px_0px_#000]">
+                      <div className="flex items-center justify-between mb-2 pb-2 border-b border-black/10 dark:border-white/10">
                         <span className="font-mono text-xs font-bold text-[#0057FF] uppercase tracking-wider">
                           Select {pickerType === 'INDIVIDUAL' ? 'Individually Registered Student' : 'Registered Team'}
                         </span>
@@ -933,7 +933,7 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
                             setActivePickerAwardIndex(null);
                             setPickerType(null);
                           }}
-                          className="text-[#a0a4b8] hover:text-white"
+                          className="text-zinc-500 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -941,21 +941,21 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
 
                       {pickerType === 'INDIVIDUAL' && (
                         <div>
-                          <div className="flex items-center gap-2 bg-[#050505] border border-white/20 px-3 py-1.5 mb-2">
-                            <Search className="w-3.5 h-3.5 text-[#a0a4b8]" />
+                          <div className="flex items-center gap-2 bg-white dark:bg-[#050505] border border-black/20 dark:border-white/20 px-3 py-1.5 mb-2">
+                            <Search className="w-3.5 h-3.5 text-zinc-500 dark:text-[#a0a4b8]" />
                             <input
                               type="text"
                               autoFocus
                               value={participantSearch}
                               onChange={(e) => setParticipantSearch(e.target.value)}
                               placeholder="Search registered student by name or roll number..."
-                              className="bg-transparent border-none text-xs text-[#F5F5F2] outline-none w-full"
+                              className="bg-transparent border-none text-xs text-zinc-900 dark:text-[#F5F5F2] outline-none w-full"
                             />
                           </div>
 
                           <div className="max-h-48 overflow-y-auto flex flex-col gap-1.5">
                             {participantResults.length === 0 ? (
-                              <p className="text-xs font-mono text-[#a0a4b8] py-2 text-center">
+                              <p className="text-xs font-mono text-zinc-500 dark:text-[#a0a4b8] py-2 text-center">
                                 No registered students found matching search.
                               </p>
                             ) : (
@@ -963,15 +963,15 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
                                 <div
                                   key={p.registration_id}
                                   onClick={() => handleAddIndividualRecipient(aIndex, p)}
-                                  className="flex items-center justify-between p-2 bg-[#050505] border border-white/10 hover:border-[#0057FF] cursor-pointer transition-all"
+                                  className="flex items-center justify-between p-2 bg-white dark:bg-[#050505] border border-black/10 dark:border-white/10 hover:border-[#0057FF] cursor-pointer transition-all"
                                 >
                                   <div className="flex items-center gap-2.5">
-                                    <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center font-mono text-[10px] text-white">
+                                    <div className="w-6 h-6 rounded-full bg-zinc-200 dark:bg-white/10 flex items-center justify-center font-mono text-[10px] text-zinc-800 dark:text-white">
                                       {p.full_name[0]}
                                     </div>
                                     <div>
-                                      <p className="text-xs font-bold text-[#F5F5F2]">{p.full_name}</p>
-                                      <p className="text-[10px] font-mono text-[#a0a4b8]">
+                                      <p className="text-xs font-bold text-zinc-900 dark:text-[#F5F5F2]">{p.full_name}</p>
+                                      <p className="text-[10px] font-mono text-zinc-500 dark:text-[#a0a4b8]">
                                         {p.roll_number || 'N/A'} • {p.program || 'Student'} {p.batch ? `'${p.batch.slice(-2)}` : ''}
                                       </p>
                                     </div>
@@ -986,21 +986,21 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
 
                       {pickerType === 'TEAM' && (
                         <div>
-                          <div className="flex items-center gap-2 bg-[#050505] border border-white/20 px-3 py-1.5 mb-2">
-                            <Search className="w-3.5 h-3.5 text-[#a0a4b8]" />
+                          <div className="flex items-center gap-2 bg-white dark:bg-[#050505] border border-black/20 dark:border-white/20 px-3 py-1.5 mb-2">
+                            <Search className="w-3.5 h-3.5 text-zinc-500 dark:text-[#a0a4b8]" />
                             <input
                               type="text"
                               autoFocus
                               value={teamSearch}
                               onChange={(e) => setTeamSearch(e.target.value)}
                               placeholder="Search registered team by name..."
-                              className="bg-transparent border-none text-xs text-[#F5F5F2] outline-none w-full"
+                              className="bg-transparent border-none text-xs text-zinc-900 dark:text-[#F5F5F2] outline-none w-full"
                             />
                           </div>
 
                           <div className="max-h-48 overflow-y-auto flex flex-col gap-1.5">
                             {teamResults.length === 0 ? (
-                              <p className="text-xs font-mono text-[#a0a4b8] py-2 text-center">
+                              <p className="text-xs font-mono text-zinc-500 dark:text-[#a0a4b8] py-2 text-center">
                                 No registered teams found matching search.
                               </p>
                             ) : (
@@ -1008,15 +1008,15 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
                                 <div
                                   key={t.team_id}
                                   onClick={() => handleAddTeamRecipient(aIndex, t)}
-                                  className="flex items-center justify-between p-2 bg-[#050505] border border-white/10 hover:border-[#C8FF00] cursor-pointer transition-all"
+                                  className="flex items-center justify-between p-2 bg-white dark:bg-[#050505] border border-black/10 dark:border-white/10 hover:border-[#0057FF] dark:hover:border-[#C8FF00] cursor-pointer transition-all"
                                 >
                                   <div>
-                                    <p className="text-xs font-bold text-[#F5F5F2]">{t.name}</p>
-                                    <p className="text-[10px] font-mono text-[#a0a4b8]">
+                                    <p className="text-xs font-bold text-zinc-900 dark:text-[#F5F5F2]">{t.name}</p>
+                                    <p className="text-[10px] font-mono text-zinc-500 dark:text-[#a0a4b8]">
                                       {t.members.length} member{t.members.length === 1 ? '' : 's'} registered
                                     </p>
                                   </div>
-                                  <span className="font-mono text-[10px] text-[#C8FF00] uppercase font-bold">Select Team</span>
+                                  <span className="font-mono text-[10px] text-[#0057FF] dark:text-[#C8FF00] uppercase font-bold">Select Team</span>
                                 </div>
                               ))
                             )}
@@ -1028,7 +1028,7 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
 
                   {/* Recipient Cards */}
                   {award.recipients.length === 0 ? (
-                    <p className="text-xs font-mono text-white/30 italic py-1">
+                    <p className="text-xs font-mono text-zinc-400 dark:text-white/30 italic py-1">
                       No recipients assigned yet. Add a student, team, or external winner above.
                     </p>
                   ) : (
@@ -1038,15 +1038,15 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
                           return (
                             <div
                               key={rIndex}
-                              className="flex items-center justify-between p-2.5 bg-[#090a0f] border border-white/15"
+                              className="flex items-center justify-between p-2.5 bg-white dark:bg-[#090a0f] border border-black/15 dark:border-white/15"
                             >
                               <div className="flex items-center gap-3">
-                                <span className="px-1.5 py-0.5 bg-[#0057FF]/20 text-[#0057FF] border border-[#0057FF]/40 text-[10px] font-mono font-bold uppercase">
+                                <span className="px-1.5 py-0.5 bg-[#0057FF]/10 dark:bg-[#0057FF]/20 text-[#0057FF] border border-[#0057FF]/40 text-[10px] font-mono font-bold uppercase">
                                   Student
                                 </span>
                                 <div>
-                                  <p className="text-xs font-bold text-[#F5F5F2]">{rec.student?.name || 'Verified Student'}</p>
-                                  <p className="text-[11px] font-mono text-[#a0a4b8]">
+                                  <p className="text-xs font-bold text-zinc-900 dark:text-[#F5F5F2]">{rec.student?.name || 'Verified Student'}</p>
+                                  <p className="text-[11px] font-mono text-zinc-500 dark:text-[#a0a4b8]">
                                     {rec.student?.roll_number} • {rec.student?.program || 'NST'} {rec.student?.batch ? `'${rec.student.batch.slice(-2)}` : ''}
                                   </p>
                                 </div>
@@ -1055,7 +1055,7 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
                               {!isLockedForEdits && (
                                 <button
                                   onClick={() => handleRemoveRecipient(aIndex, rIndex)}
-                                  className="text-[#a0a4b8] hover:text-red-400 p-1"
+                                  className="text-zinc-500 dark:text-[#a0a4b8] hover:text-red-500 p-1"
                                 >
                                   <X className="w-3.5 h-3.5" />
                                 </button>
@@ -1068,20 +1068,20 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
                           return (
                             <div
                               key={rIndex}
-                              className="p-3 bg-[#090a0f] border border-[#C8FF00]/40 flex flex-col gap-2.5"
+                              className="p-3 bg-white dark:bg-[#090a0f] border border-[#0057FF]/30 dark:border-[#C8FF00]/40 flex flex-col gap-2.5"
                             >
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                  <span className="px-1.5 py-0.5 bg-[#C8FF00]/20 text-[#C8FF00] border border-[#C8FF00]/40 text-[10px] font-mono font-black uppercase">
+                                  <span className="px-1.5 py-0.5 bg-[#0057FF]/10 dark:bg-[#C8FF00]/20 text-[#0057FF] dark:text-[#C8FF00] border border-[#0057FF]/30 dark:border-[#C8FF00]/40 text-[10px] font-mono font-black uppercase">
                                     Team
                                   </span>
-                                  <span className="text-xs font-bold text-[#F5F5F2]">{rec.team?.name}</span>
+                                  <span className="text-xs font-bold text-zinc-900 dark:text-[#F5F5F2]">{rec.team?.name}</span>
                                 </div>
 
                                 {!isLockedForEdits && (
                                   <button
                                     onClick={() => handleRemoveRecipient(aIndex, rIndex)}
-                                    className="text-[#a0a4b8] hover:text-red-400 p-1"
+                                    className="text-zinc-500 dark:text-[#a0a4b8] hover:text-red-500 p-1"
                                   >
                                     <X className="w-3.5 h-3.5" />
                                   </button>
@@ -1089,8 +1089,8 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
                               </div>
 
                               {/* Explicit Member Snapshot Confirmation */}
-                              <div className="pl-3 border-l-2 border-white/10 flex flex-col gap-1.5">
-                                <span className="text-[10px] font-mono uppercase tracking-wider text-[#a0a4b8]">
+                              <div className="pl-3 border-l-2 border-black/10 dark:border-white/10 flex flex-col gap-1.5">
+                                <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 dark:text-[#a0a4b8]">
                                   Recognized Member Snapshots (Check to confirm for awards & student achievements):
                                 </span>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
@@ -1099,7 +1099,7 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
                                       key={mIndex}
                                       className={clsx(
                                         "flex items-center gap-2 p-1.5 border text-xs cursor-pointer transition-all",
-                                        m.confirmed ? "bg-white/5 border-white/20 text-[#F5F5F2]" : "bg-black/30 border-white/5 text-white/30 line-through"
+                                        m.confirmed ? "bg-zinc-50 dark:bg-white/5 border-black/20 dark:border-white/20 text-zinc-900 dark:text-[#F5F5F2]" : "bg-zinc-100 dark:bg-black/30 border-black/5 dark:border-white/5 text-zinc-400 dark:text-white/30 line-through"
                                       )}
                                     >
                                       <input
@@ -1107,10 +1107,10 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
                                         disabled={isLockedForEdits}
                                         checked={m.confirmed}
                                         onChange={() => handleToggleMemberConfirmed(aIndex, rIndex, mIndex)}
-                                        className="accent-[#C8FF00]"
+                                        className="accent-[#0057FF] dark:accent-[#C8FF00]"
                                       />
                                       <span className="truncate">{m.name}</span>
-                                      <span className="text-[10px] font-mono text-[#a0a4b8] ml-auto">
+                                      <span className="text-[10px] font-mono text-zinc-500 dark:text-[#a0a4b8] ml-auto">
                                         {m.team_role || 'MEMBER'}
                                       </span>
                                     </label>
@@ -1125,10 +1125,10 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
                           return (
                             <div
                               key={rIndex}
-                              className="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 bg-[#090a0f] border border-amber-500/40 gap-2"
+                              className="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 bg-white dark:bg-[#090a0f] border border-amber-500/40 gap-2"
                             >
-                              <div className="flex items-center gap-2">
-                                <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/40 text-[10px] font-mono font-bold uppercase">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="px-1.5 py-0.5 bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 text-[10px] font-mono font-bold uppercase">
                                   External
                                 </span>
                                 <input
@@ -1142,7 +1142,7 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
                                     handleUpdateAward(aIndex, { recipients });
                                   }}
                                   placeholder="External Winner Name"
-                                  className="bg-[#050505] border border-white/10 px-2 py-0.5 text-xs text-[#F5F5F2] font-bold outline-none"
+                                  className="bg-zinc-50 dark:bg-[#050505] border border-black/10 dark:border-white/10 px-2 py-0.5 text-xs text-zinc-900 dark:text-[#F5F5F2] font-bold outline-none"
                                 />
                                 <input
                                   type="text"
@@ -1155,14 +1155,14 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
                                     handleUpdateAward(aIndex, { recipients });
                                   }}
                                   placeholder="Organization / Role"
-                                  className="bg-[#050505] border border-white/10 px-2 py-0.5 text-xs text-[#a0a4b8] outline-none"
+                                  className="bg-zinc-50 dark:bg-[#050505] border border-black/10 dark:border-white/10 px-2 py-0.5 text-xs text-zinc-600 dark:text-[#a0a4b8] outline-none"
                                 />
                               </div>
 
                               {!isLockedForEdits && (
                                 <button
                                   onClick={() => handleRemoveRecipient(aIndex, rIndex)}
-                                  className="text-[#a0a4b8] hover:text-red-400 p-1"
+                                  className="text-zinc-500 dark:text-[#a0a4b8] hover:text-red-500 p-1"
                                 >
                                   <X className="w-3.5 h-3.5" />
                                 </button>
@@ -1185,30 +1185,30 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
       {/* 3. Publish Confirmation Modal */}
       {publishModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="w-full max-w-lg bg-[#090a0f] border-3 border-[#C8FF00] p-6 shadow-[8px_8px_0px_#000] flex flex-col gap-4">
-            <div className="flex items-center gap-2 text-[#C8FF00]">
+          <div className="w-full max-w-lg bg-white dark:bg-[#090a0f] border-3 border-[#0057FF] dark:border-[#C8FF00] p-6 shadow-[8px_8px_0px_#000] flex flex-col gap-4">
+            <div className="flex items-center gap-2 text-[#0057FF] dark:text-[#C8FF00]">
               <Trophy className="w-6 h-6" />
-              <h3 className="font-mono text-base font-black uppercase tracking-wider text-[#F5F5F2]">
+              <h3 className="font-mono text-base font-black uppercase tracking-wider text-zinc-900 dark:text-[#F5F5F2]">
                 Publish Official Event Results
               </h3>
             </div>
 
-            <p className="text-xs text-[#a0a4b8] leading-relaxed">
+            <p className="text-xs text-zinc-600 dark:text-[#a0a4b8] leading-relaxed">
               Publishing will make these results visible to all authorized participants and students. Official student achievements will be permanently issued to all recognized winners.
             </p>
 
-            <div className="p-3 bg-[#050505] border border-white/10 flex flex-col gap-2.5">
-              <label className="flex items-center gap-2.5 cursor-pointer text-xs font-mono text-[#F5F5F2]">
+            <div className="p-3 bg-zinc-50 dark:bg-[#050505] border border-black/10 dark:border-white/10 flex flex-col gap-2.5">
+              <label className="flex items-center gap-2.5 cursor-pointer text-xs font-mono text-zinc-900 dark:text-[#F5F5F2]">
                 <input
                   type="checkbox"
                   checked={notifyWinners}
                   onChange={(e) => setNotifyWinners(e.target.checked)}
-                  className="accent-[#C8FF00]"
+                  className="accent-[#0057FF] dark:accent-[#C8FF00]"
                 />
                 <span>Send in-app trophy notification to recognized winners</span>
               </label>
 
-              <label className="flex items-center gap-2.5 cursor-pointer text-xs font-mono text-[#a0a4b8]">
+              <label className="flex items-center gap-2.5 cursor-pointer text-xs font-mono text-zinc-600 dark:text-[#a0a4b8]">
                 <input
                   type="checkbox"
                   checked={announceParticipants}
@@ -1219,10 +1219,10 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
               </label>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-black/10 dark:border-white/10">
               <button
                 onClick={() => setPublishModalOpen(false)}
-                className="px-4 py-2 bg-transparent text-[#a0a4b8] hover:text-white font-mono text-xs uppercase"
+                className="px-4 py-2 bg-transparent text-zinc-600 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white font-mono text-xs uppercase"
               >
                 Cancel
               </button>
@@ -1242,20 +1242,20 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
       {/* 4. Issue Correction Draft Modal */}
       {correctionModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="w-full max-w-lg bg-[#090a0f] border-3 border-[#FF9500] p-6 shadow-[8px_8px_0px_#000] flex flex-col gap-4">
+          <div className="w-full max-w-lg bg-white dark:bg-[#090a0f] border-3 border-[#FF9500] p-6 shadow-[8px_8px_0px_#000] flex flex-col gap-4">
             <div className="flex items-center gap-2 text-[#FF9500]">
               <FileEdit className="w-6 h-6" />
-              <h3 className="font-mono text-base font-black uppercase tracking-wider text-[#F5F5F2]">
+              <h3 className="font-mono text-base font-black uppercase tracking-wider text-zinc-900 dark:text-[#F5F5F2]">
                 Issue Result Correction Draft
               </h3>
             </div>
 
-            <p className="text-xs text-[#a0a4b8] leading-relaxed">
+            <p className="text-xs text-zinc-600 dark:text-[#a0a4b8] leading-relaxed">
               Published revisions are immutable. To correct an award, winner placement, or team member roster, specify a reason. A new draft revision will be initialized copying all existing awards.
             </p>
 
             <div>
-              <label className="block text-[11px] font-mono uppercase text-[#a0a4b8] mb-1">
+              <label className="block text-[11px] font-mono uppercase text-zinc-600 dark:text-[#a0a4b8] mb-1">
                 Correction Reason (Publicly audited):
               </label>
               <textarea
@@ -1263,14 +1263,14 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
                 value={correctionReason}
                 onChange={(e) => setCorrectionReason(e.target.value)}
                 placeholder="e.g., Corrected 2nd place team member roster after dispute review..."
-                className="w-full bg-[#050505] border border-white/20 p-2.5 text-xs text-[#F5F5F2] focus:border-[#FF9500] outline-none"
+                className="w-full bg-zinc-50 dark:bg-[#050505] border border-black/20 dark:border-white/20 p-2.5 text-xs text-zinc-900 dark:text-[#F5F5F2] focus:border-[#FF9500] outline-none"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-black/10 dark:border-white/10">
               <button
                 onClick={() => setCorrectionModalOpen(false)}
-                className="px-4 py-2 bg-transparent text-[#a0a4b8] hover:text-white font-mono text-xs uppercase"
+                className="px-4 py-2 bg-transparent text-zinc-600 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white font-mono text-xs uppercase"
               >
                 Cancel
               </button>
@@ -1289,20 +1289,20 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
       {/* 5. Withdraw Results Modal */}
       {withdrawModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="w-full max-w-lg bg-[#090a0f] border-3 border-red-500 p-6 shadow-[8px_8px_0px_#000] flex flex-col gap-4">
+          <div className="w-full max-w-lg bg-white dark:bg-[#090a0f] border-3 border-red-500 p-6 shadow-[8px_8px_0px_#000] flex flex-col gap-4">
             <div className="flex items-center gap-2 text-red-500">
               <AlertTriangle className="w-6 h-6" />
-              <h3 className="font-mono text-base font-black uppercase tracking-wider text-[#F5F5F2]">
+              <h3 className="font-mono text-base font-black uppercase tracking-wider text-zinc-900 dark:text-[#F5F5F2]">
                 Withdraw Official Results
               </h3>
             </div>
 
-            <p className="text-xs text-[#a0a4b8] leading-relaxed">
+            <p className="text-xs text-zinc-600 dark:text-[#a0a4b8] leading-relaxed">
               Withdrawing results will hide them from public view and deactivate all associated student achievements pending investigation or correction.
             </p>
 
             <div>
-              <label className="block text-[11px] font-mono uppercase text-[#a0a4b8] mb-1">
+              <label className="block text-[11px] font-mono uppercase text-zinc-600 dark:text-[#a0a4b8] mb-1">
                 Withdrawal Reason:
               </label>
               <textarea
@@ -1310,14 +1310,14 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
                 value={withdrawReason}
                 onChange={(e) => setWithdrawReason(e.target.value)}
                 placeholder="e.g., Pending dispute resolution on project submission originality..."
-                className="w-full bg-[#050505] border border-white/20 p-2.5 text-xs text-[#F5F5F2] focus:border-red-500 outline-none"
+                className="w-full bg-zinc-50 dark:bg-[#050505] border border-black/20 dark:border-white/20 p-2.5 text-xs text-zinc-900 dark:text-[#F5F5F2] focus:border-red-500 outline-none"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-black/10 dark:border-white/10">
               <button
                 onClick={() => setWithdrawModalOpen(false)}
-                className="px-4 py-2 bg-transparent text-[#a0a4b8] hover:text-white font-mono text-xs uppercase"
+                className="px-4 py-2 bg-transparent text-zinc-600 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white font-mono text-xs uppercase"
               >
                 Cancel
               </button>
@@ -1336,20 +1336,20 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
       {/* 6. Restore Results Modal */}
       {restoreModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="w-full max-w-lg bg-[#090a0f] border-3 border-emerald-500 p-6 shadow-[8px_8px_0px_#000] flex flex-col gap-4">
-            <div className="flex items-center gap-2 text-emerald-400">
+          <div className="w-full max-w-lg bg-white dark:bg-[#090a0f] border-3 border-emerald-500 p-6 shadow-[8px_8px_0px_#000] flex flex-col gap-4">
+            <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
               <RotateCcw className="w-6 h-6" />
-              <h3 className="font-mono text-base font-black uppercase tracking-wider text-[#F5F5F2]">
+              <h3 className="font-mono text-base font-black uppercase tracking-wider text-zinc-900 dark:text-[#F5F5F2]">
                 Restore Withdrawn Results
               </h3>
             </div>
 
-            <p className="text-xs text-[#a0a4b8] leading-relaxed">
+            <p className="text-xs text-zinc-600 dark:text-[#a0a4b8] leading-relaxed">
               Restoring results will reactivate the previous published revision and reinstate verified student achievements.
             </p>
 
             <div>
-              <label className="block text-[11px] font-mono uppercase text-[#a0a4b8] mb-1">
+              <label className="block text-[11px] font-mono uppercase text-zinc-600 dark:text-[#a0a4b8] mb-1">
                 Restoration Reason:
               </label>
               <textarea
@@ -1357,14 +1357,14 @@ export default function EventResultsManagePage({ params }: { params: Promise<{ i
                 value={restoreReason}
                 onChange={(e) => setRestoreReason(e.target.value)}
                 placeholder="e.g., Review completed; all scores verified original..."
-                className="w-full bg-[#050505] border border-white/20 p-2.5 text-xs text-[#F5F5F2] focus:border-emerald-500 outline-none"
+                className="w-full bg-zinc-50 dark:bg-[#050505] border border-black/20 dark:border-white/20 p-2.5 text-xs text-zinc-900 dark:text-[#F5F5F2] focus:border-emerald-500 outline-none"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-black/10 dark:border-white/10">
               <button
                 onClick={() => setRestoreModalOpen(false)}
-                className="px-4 py-2 bg-transparent text-[#a0a4b8] hover:text-white font-mono text-xs uppercase"
+                className="px-4 py-2 bg-transparent text-zinc-600 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white font-mono text-xs uppercase"
               >
                 Cancel
               </button>

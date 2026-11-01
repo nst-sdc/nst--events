@@ -223,11 +223,11 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
   const logoTargetHref = isClubAdminMode ? '/student/manage/club' : (user ? '/student/home' : '/login');
 
   return (
-    <div className="min-h-screen flex flex-col font-sans pb-[64px] md:pb-0 bg-[#050505] text-[#F5F5F2] student-shell-wrapper">
+    <div className="min-h-screen flex flex-col font-sans pb-[64px] md:pb-0 bg-[#F8F9FA] text-[#0A0D14] dark:bg-[#050505] dark:text-[#F5F5F2] student-shell-wrapper">
       <style dangerouslySetInnerHTML={{ __html: shellStyles }} />
       
       {/* Global Header (Desktop & Mobile) */}
-      <header className="sticky top-0 z-50 bg-[#050505] border-b border-[#F5F5F2]/15 text-[#F5F5F2] transform-gpu student-app-header">
+      <header className="sticky top-0 z-50 bg-white/95 dark:bg-[#050505] border-b border-black/10 dark:border-[#F5F5F2]/15 text-[#0A0D14] dark:text-[#F5F5F2] backdrop-blur-md transform-gpu student-app-header">
         <div className="flex justify-between items-center w-full px-4 md:px-8 py-3 max-w-[1360px] mx-auto">
           
           {/* Brand & Mobile Back Button */}
@@ -239,16 +239,21 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
               aria-label="NST Events Home"
               href={logoTargetHref}
               className={clsx(
-                "flex items-center gap-3 transition-opacity hover:opacity-90",
+                "flex items-center gap-2.5 transition-all duration-200 hover:opacity-95 group",
                 isDeepRoute ? "hidden md:flex" : "flex"
               )}
             >
-              <div className="w-8 h-8 bg-[#0057FF] flex items-center justify-center shadow-[2px_2px_0px_#ffffff] shrink-0 text-white">
-                <NstLogoMark className="w-5 h-5 fill-current" />
+              <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-[#0066FF] to-[#0047FF] flex items-center justify-center border border-white/20 shadow-[0_0_12px_rgba(0,87,255,0.4)] shrink-0 text-white group-hover:scale-105 transition-transform">
+                <NstLogoMark size={18} color="#FFFFFF" className="shrink-0" />
               </div>
-              <span className="font-['Syne',sans-serif] font-black text-lg tracking-wider uppercase text-[#F5F5F2] brand-logo-text">
-                NST EVENTS
-              </span>
+              <div className="flex items-baseline gap-1.5 leading-none select-none">
+                <span className="font-['Syne',sans-serif] font-black text-lg tracking-tight text-[#0A0D14] dark:text-[#F5F5F2] brand-logo-text">
+                  NST
+                </span>
+                <span className="font-['Syne',sans-serif] font-black text-lg tracking-tight text-[#0057FF]">
+                  EVENTS
+                </span>
+              </div>
             </Link>
           </div>
 
@@ -429,7 +434,7 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
               {(!user || isPlatformAdmin(user) || isFacultyAdmin(user)) && (
                 <Link
                   href="/admin"
-                  className="hidden md:inline-flex items-center text-[10px] font-mono font-bold text-[#a0a4b8] hover:text-[#0057FF] border border-white/20 px-2.5 py-1 uppercase tracking-wider transition-colors"
+                  className="hidden md:inline-flex items-center text-[10px] font-mono font-bold text-zinc-600 dark:text-[#a0a4b8] hover:text-[#0057FF] border border-black/20 dark:border-white/20 px-2.5 py-1 uppercase tracking-wider transition-colors"
                 >
                   ADMIN OPS &rarr;
                 </Link>
@@ -444,7 +449,7 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
                   aria-label={`Switch to ${resolvedTheme === 'light' ? 'dark' : 'light'} mode`}
                   title={`Switch to ${resolvedTheme === 'light' ? 'dark' : 'light'} mode`}
                   style={{ width: '36px', height: '36px', borderRadius: 0 }}
-                  className="flex items-center justify-center border-2 border-[#F5F5F2]/25 text-[#ffffff] cursor-pointer transition-all hover:border-white hover:shadow-[3px_3px_0px_#ffffff] student-theme-toggle-btn"
+                  className="flex items-center justify-center border-2 border-black/25 dark:border-[#F5F5F2]/25 text-black dark:text-[#ffffff] cursor-pointer transition-all hover:border-black dark:hover:border-white hover:shadow-[3px_3px_0px_#000000] dark:hover:shadow-[3px_3px_0px_#ffffff] student-theme-toggle-btn"
                 >
                   {resolvedTheme === 'light' ? (
                     <Moon size={17} strokeWidth={2} />
@@ -464,14 +469,14 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
                 <Link aria-label="User Profile" href="/my/profile" className="hidden md:flex items-center gap-2 group">
                   <div
                     title={displayFirstName}
-                    className="font-['JetBrains_Mono',monospace] text-[11px] font-bold tracking-wider text-[#ffffff] bg-[#0057FF] px-3.5 py-1.5 uppercase shadow-[3px_3px_0px_#ffffff] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 max-w-[140px] truncate student-user-badge"
+                    className="font-['JetBrains_Mono',monospace] text-[11px] font-bold tracking-wider text-[#ffffff] bg-[#0057FF] px-3.5 py-1.5 uppercase shadow-[3px_3px_0px_#000000] dark:shadow-[3px_3px_0px_#ffffff] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 max-w-[140px] truncate student-user-badge"
                   >
                     {displayFirstName}
                   </div>
                 </Link>
               ) : (
                 <Link aria-label="Sign In" href="/login" className="hidden md:flex items-center gap-2 group">
-                  <div className="font-['JetBrains_Mono',monospace] text-[11px] font-bold tracking-wider text-[#ffffff] bg-[#0057FF] px-3.5 py-1.5 uppercase shadow-[3px_3px_0px_#ffffff] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5">
+                  <div className="font-['JetBrains_Mono',monospace] text-[11px] font-bold tracking-wider text-[#ffffff] bg-[#0057FF] px-3.5 py-1.5 uppercase shadow-[3px_3px_0px_#000000] dark:shadow-[3px_3px_0px_#ffffff] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5">
                     SIGN IN
                   </div>
                 </Link>
@@ -491,7 +496,7 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Bottom Navigation (Hidden on Desktop & Deep Routes) */}
       <nav className={clsx(
-        "fixed bottom-0 w-full bg-[#050505] border-t border-[#F5F5F2]/15 z-50 md:hidden student-bottom-nav",
+        "fixed bottom-0 w-full bg-white/95 dark:bg-[#050505] border-t border-black/10 dark:border-[#F5F5F2]/15 z-50 md:hidden backdrop-blur-md student-bottom-nav",
         isDeepRoute && "hidden"
       )}>
         <div className="flex justify-around items-center h-[64px]">
@@ -503,7 +508,7 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
                 href={item.href}
                 className={clsx(
                   "flex flex-col items-center justify-center w-full h-full relative transition-colors nav-link-item",
-                  active ? "text-[#0057FF] nav-link-item-active" : "text-[#a0a4b8] hover:text-[#0057FF]"
+                  active ? "text-[#0057FF] nav-link-item-active" : "text-zinc-600 dark:text-[#a0a4b8] hover:text-[#0057FF]"
                 )}
               >
                 <item.icon className="w-6 h-6" strokeWidth={active ? 2.5 : 2} />

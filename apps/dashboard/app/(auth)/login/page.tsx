@@ -134,20 +134,31 @@ const responsiveStyles = `
     line-height: 1.02;
     letter-spacing: -0.02em;
     text-transform: uppercase;
-    color: #FFFFFF;
+    color: #0A0D14;
     word-break: keep-all;
     overflow-wrap: normal;
   }
+  html.dark .lp-title-responsive {
+    color: #FFFFFF;
+  }
 
   .lp-bg-glow {
+    background: radial-gradient(circle at 50% 45%, rgba(0, 87, 255, 0.15) 0%, rgba(248, 249, 250, 0) 70%);
+  }
+  html.dark .lp-bg-glow {
     background: radial-gradient(circle at 50% 45%, rgba(0, 87, 255, 0.2) 0%, rgba(5, 5, 5, 0) 70%);
   }
 
   .lp-bg-grid {
     background-image: 
+      linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+  html.dark .lp-bg-grid {
+    background-image: 
       linear-gradient(to right, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
-    background-size: 32px 32px;
   }
 
   .lp-watermark {
@@ -336,15 +347,15 @@ function LoginContent() {
       </style>
 
       {/* Top Branding / Environment Strip */}
-      <div className="relative z-10 w-full max-w-xl mb-3 sm:mb-4 flex items-center justify-between font-mono text-[10px] sm:text-[11px] text-[#71768a] px-1 tracking-wider uppercase">
+      <div className="relative z-10 w-full max-w-xl mb-3 sm:mb-4 flex items-center justify-between font-mono text-[10px] sm:text-[11px] text-[#475467] dark:text-[#71768a] px-1 tracking-wider uppercase">
         <div className="flex items-center gap-2">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0057FF] opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-[#0057FF]"></span>
           </span>
-          <span className="font-semibold text-[#a0a4b8]">NST EVENTS PLATFORM</span>
+          <span className="font-semibold text-[#0A0D14] dark:text-[#a0a4b8]">NST EVENTS PLATFORM</span>
         </div>
-        <div suppressHydrationWarning className="flex items-center gap-1.5 text-[#5e6378]">
+        <div suppressHydrationWarning className="flex items-center gap-1.5 text-[#475467] dark:text-[#5e6378]">
           <Activity className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#0057FF]" />
           <span className="hidden xs:inline">AUTH_GATEWAY_ACTIVE</span>
           <span className="xs:hidden">ACTIVE</span>
@@ -352,22 +363,22 @@ function LoginContent() {
       </div>
 
       {/* Main Brutalist Poster Card */}
-      <div className="lp-card-responsive relative z-10 w-full max-w-xl bg-[#0c0d12]/95 border-2 border-white/20 p-4 sm:p-7 md:p-10 shadow-[12px_12px_0px_#0057FF] backdrop-blur-xl">
+      <div className="lp-card-responsive relative z-10 w-full max-w-xl bg-white dark:bg-[#0c0d12]/95 border-2 border-black dark:border-white/20 p-4 sm:p-7 md:p-10 shadow-[12px_12px_0px_#0057FF] backdrop-blur-xl">
         {/* Tactical Corner Crosshairs */}
-        <div className="absolute -top-1.5 -left-1.5 w-2.5 h-2.5 sm:w-3 sm:h-3 border-t-2 border-l-2 border-[#C8FF00]" />
-        <div className="absolute -top-1.5 -right-1.5 w-2.5 h-2.5 sm:w-3 sm:h-3 border-t-2 border-r-2 border-[#C8FF00]" />
+        <div className="absolute -top-1.5 -left-1.5 w-2.5 h-2.5 sm:w-3 sm:h-3 border-t-2 border-l-2 border-[#0057FF] dark:border-[#C8FF00]" />
+        <div className="absolute -top-1.5 -right-1.5 w-2.5 h-2.5 sm:w-3 sm:h-3 border-t-2 border-r-2 border-[#0057FF] dark:border-[#C8FF00]" />
         <div className="absolute -bottom-1.5 -left-1.5 w-2.5 h-2.5 sm:w-3 sm:h-3 border-b-2 border-l-2 border-[#0057FF]" />
         <div className="absolute -bottom-1.5 -right-1.5 w-2.5 h-2.5 sm:w-3 sm:h-3 border-b-2 border-r-2 border-[#0057FF]" />
 
         {/* Card Header: System Status Bar */}
-        <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-2 border-b border-white/10 pb-3 sm:pb-4 mb-4 sm:mb-6">
+        <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-2 border-b border-black/10 dark:border-white/10 pb-3 sm:pb-4 mb-4 sm:mb-6">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 bg-[#0057FF] inline-block animate-pulse shrink-0"></span>
             <span className="font-mono text-[10px] sm:text-[11px] font-bold tracking-[1.5px] sm:tracking-[2px] uppercase text-[#0057FF]">
               AUTH GATEWAY // PROTOCOL SEC-02
             </span>
           </div>
-          <span className="font-mono text-[9px] sm:text-[10px] text-[#C8FF00] uppercase tracking-widest bg-[#C8FF00]/10 px-2 py-0.5 border border-[#C8FF00]/30 font-semibold shrink-0">
+          <span className="font-mono text-[9px] sm:text-[10px] text-[#0057FF] dark:text-[#C8FF00] uppercase tracking-widest bg-[#0057FF]/10 dark:bg-[#C8FF00]/10 px-2 py-0.5 border border-[#0057FF]/30 dark:border-[#C8FF00]/30 font-semibold shrink-0">
             INSTITUTIONAL SSO
           </span>
         </div>
@@ -384,12 +395,12 @@ function LoginContent() {
         </div>
 
         {/* Primary Explanation Box */}
-        <div className="p-3.5 sm:p-4 bg-white/[0.03] border border-white/10 mb-4 sm:mb-6 font-mono text-[11px] sm:text-xs text-[#a0a4b8] leading-relaxed">
-          <p className="mb-2.5 sm:mb-3 text-[#d0d4e4]">
+        <div className="p-3.5 sm:p-4 bg-black/[0.02] dark:bg-white/[0.03] border border-black/10 dark:border-white/10 mb-4 sm:mb-6 font-mono text-[11px] sm:text-xs text-[#475467] dark:text-[#a0a4b8] leading-relaxed">
+          <p className="mb-2.5 sm:mb-3 text-[#0A0D14] dark:text-[#d0d4e4]">
             Sign in with your verified institutional Google account to synchronize event attendance, ticket passes, and club leadership roles.
           </p>
-          <div suppressHydrationWarning className="flex items-center gap-2 text-[10px] sm:text-[11px] text-[#C8FF00]">
-            <ShieldCheck className="w-4 h-4 text-[#C8FF00] shrink-0" />
+          <div suppressHydrationWarning className="flex items-center gap-2 text-[10px] sm:text-[11px] text-[#0057FF] dark:text-[#C8FF00]">
+            <ShieldCheck className="w-4 h-4 text-[#0057FF] dark:text-[#C8FF00] shrink-0" />
             <span>Authorized: @adypu.edu.in (students) &bull; @newtonschool.co (faculty)</span>
           </div>
         </div>
@@ -452,8 +463,8 @@ function LoginContent() {
 
         {/* Status Telemetry Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 mb-5 sm:mb-7 font-mono text-xs">
-          <div suppressHydrationWarning className="p-2.5 sm:p-3 bg-black/40 border border-white/10 flex flex-col gap-1">
-            <div suppressHydrationWarning className="text-[10px] text-[#6b7280] uppercase tracking-wider flex items-center gap-1.5">
+          <div suppressHydrationWarning className="p-2.5 sm:p-3 bg-black/[0.03] dark:bg-black/40 border border-black/10 dark:border-white/10 flex flex-col gap-1">
+            <div suppressHydrationWarning className="text-[10px] text-[#667085] dark:text-[#6b7280] uppercase tracking-wider flex items-center gap-1.5">
               <Lock className="w-3 h-3 text-[#0057FF] shrink-0" />
               SESSION ENCRYPTION
             </div>
@@ -462,12 +473,12 @@ function LoginContent() {
             </div>
           </div>
 
-          <div suppressHydrationWarning className="p-2.5 sm:p-3 bg-black/40 border border-white/10 flex flex-col gap-1">
-            <div suppressHydrationWarning className="text-[10px] text-[#6b7280] uppercase tracking-wider flex items-center gap-1.5">
-              <ShieldCheck className="w-3 h-3 text-[#C8FF00] shrink-0" />
+          <div suppressHydrationWarning className="p-2.5 sm:p-3 bg-black/[0.03] dark:bg-black/40 border border-black/10 dark:border-white/10 flex flex-col gap-1">
+            <div suppressHydrationWarning className="text-[10px] text-[#667085] dark:text-[#6b7280] uppercase tracking-wider flex items-center gap-1.5">
+              <ShieldCheck className="w-3 h-3 text-[#0057FF] dark:text-[#C8FF00] shrink-0" />
               DIRECTORY SSO GATEWAY
             </div>
-            <div className="text-[11px] font-semibold text-[#C8FF00]">
+            <div className="text-[11px] font-semibold text-[#0057FF] dark:text-[#C8FF00]">
               100% OPERATIONAL
             </div>
           </div>
@@ -502,18 +513,18 @@ function LoginContent() {
         </div>
 
         {/* Card Footer Micro-Metadata */}
-        <div className="mt-6 sm:mt-8 pt-3 sm:pt-4 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-2 font-mono text-[9px] sm:text-[10px] text-[#555a6d]">
+        <div className="mt-6 sm:mt-8 pt-3 sm:pt-4 border-t border-black/10 dark:border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-2 font-mono text-[9px] sm:text-[10px] text-[#667085] dark:text-[#555a6d]">
           <span>GATEWAY: TLS 1.3 // REGION: IN-BOM</span>
           <span>DISPATCH TICK: #{1420 + pulseTick}</span>
         </div>
       </div>
 
       {/* Bottom Sub-Footer with Dev Club Credits */}
-      <div className="relative z-10 mt-4 sm:mt-6 flex flex-col items-center gap-2 font-mono text-[9px] sm:text-[10px] text-[#424654] tracking-wider sm:tracking-widest uppercase text-center px-4">
+      <div className="relative z-10 mt-4 sm:mt-6 flex flex-col items-center gap-2 font-mono text-[9px] sm:text-[10px] text-[#667085] dark:text-[#424654] tracking-wider sm:tracking-widest uppercase text-center px-4">
         <button
           type="button"
           onClick={() => setIsCreditsOpen(true)}
-          className="text-[#71768a] hover:text-[#0057FF] transition-colors border-b border-dashed border-[#71768a]/40 pb-0.5 cursor-pointer uppercase font-mono"
+          className="text-[#475467] dark:text-[#71768a] hover:text-[#0057FF] transition-colors border-b border-dashed border-[#475467]/40 dark:border-[#71768a]/40 pb-0.5 cursor-pointer uppercase font-mono"
         >
           CRAFTED BY NST SOFTWARE DEVELOPERS CLUB
         </button>
@@ -532,7 +543,7 @@ export default function LoginPage() {
     <QueryClientProvider client={queryClient}>
       <div
         suppressHydrationWarning
-        className="relative min-h-screen w-full flex flex-col items-center justify-center bg-[#050505] text-[#F5F5F2] px-3 py-6 sm:p-6 md:p-8 overflow-x-hidden select-none"
+        className="relative min-h-screen w-full flex flex-col items-center justify-center bg-[#F8F9FA] text-[#0A0D14] dark:bg-[#050505] dark:text-[#F5F5F2] px-3 py-6 sm:p-6 md:p-8 overflow-x-hidden select-none"
       >
         {/* Dynamic Background Glow */}
         <div
@@ -549,16 +560,16 @@ export default function LoginPage() {
         {/* Huge Background Brutalist Watermark */}
         <div
           suppressHydrationWarning
-          className="lp-watermark pointer-events-none absolute z-0 text-[20vw] sm:text-[18vw] font-black uppercase text-white/[0.02] tracking-tighter leading-none select-none"
+          className="lp-watermark pointer-events-none absolute z-0 text-[20vw] sm:text-[18vw] font-black uppercase text-black/[0.03] dark:text-white/[0.02] tracking-tighter leading-none select-none"
         >
           NST AUTH
         </div>
 
         <Suspense
           fallback={
-            <div className="relative z-10 w-full max-w-xl bg-[#0c0d12]/95 border-2 border-white/20 p-8 shadow-[12px_12px_0px_#0057FF] backdrop-blur-xl flex flex-col items-center justify-center min-h-[360px]">
+            <div className="relative z-10 w-full max-w-xl bg-white dark:bg-[#0c0d12]/95 border-2 border-black/20 dark:border-white/20 p-8 shadow-[12px_12px_0px_#0057FF] backdrop-blur-xl flex flex-col items-center justify-center min-h-[360px]">
               <div className="w-8 h-8 border-3 border-[#0057FF] border-t-transparent rounded-full animate-spin mb-4" />
-              <span className="font-mono text-xs uppercase tracking-widest text-[#888]">
+              <span className="font-mono text-xs uppercase tracking-widest text-[#667085] dark:text-[#888]">
                 INITIALIZING AUTH GATEWAY...
               </span>
             </div>

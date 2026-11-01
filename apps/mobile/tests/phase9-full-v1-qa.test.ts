@@ -209,7 +209,7 @@ describe('Phase 9 — Full Mobile V1 End-to-End QA Test Suite', () => {
     expect(resolveNotificationRoute({
       type: 'ROLE_CHANGED',
       metadata: { entity_ids: {} },
-    })).toBe('/(app)/profile');
+    })).toBe('/(app)/(tabs)/profile');
 
     expect(resolveNotificationRoute({
       type: 'TEAM_INVITATION_RECEIVED',

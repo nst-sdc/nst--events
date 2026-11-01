@@ -15,6 +15,7 @@ import { useUpdateEvent, UpdateEventInput } from '../../../../../hooks/useUpdate
 import { useEventLifecycle } from '../../../../../hooks/useEventLifecycle';
 import { FormStudio } from '../../../../../components/forms/FormStudio';
 import { ApiError, API_BASE_URL } from '../../../../../lib/api';
+import { EVENT_TYPES } from '@nst/shared';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -428,7 +429,7 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
             >
               <Input
                 placeholder="e.g. ai-hackathon-2026"
-                addonBefore="/event/"
+                prefix={<span className="text-neutral-500 select-none font-mono">/event/</span>}
                 onChange={(e) => {
                   validateSlugLive(e.target.value);
                 }}
@@ -448,16 +449,7 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
               rules={[{ required: true, message: 'Please select an event type' }]}
             >
               <Select
-                options={[
-                  { label: 'Workshop', value: 'WORKSHOP' },
-                  { label: 'Seminar', value: 'SEMINAR' },
-                  { label: 'Competition', value: 'COMPETITION' },
-                  { label: 'Meetup', value: 'MEETUP' },
-                  { label: 'Hackathon', value: 'HACKATHON' },
-                  { label: 'Cultural', value: 'CULTURAL' },
-                  { label: 'Sports', value: 'SPORTS' },
-                  { label: 'Other', value: 'OTHER' },
-                ]}
+                options={EVENT_TYPES.map(t => ({ label: t.label, value: t.value }))}
               />
             </Form.Item>
             <Form.Item
@@ -472,7 +464,7 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
               <Input placeholder="https://images.unsplash.com/... or https://cdn.example.com/banner.jpg" allowClear />
             </Form.Item>
             {form.getFieldValue('banner_url') && (
-              <div style={{ marginBottom: 16, border: '1px solid #d9d9d9', borderRadius: 6, overflow: 'hidden', maxHeight: 200, backgroundColor: '#050505' }}>
+              <div style={{ marginBottom: 16, border: '1px solid var(--ant-color-border-secondary, #E5E7EB)', borderRadius: 6, overflow: 'hidden', maxHeight: 200, backgroundColor: 'var(--ant-color-bg-layout, #F8F9FA)' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                   src={form.getFieldValue('banner_url')} 
@@ -719,7 +711,7 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
                     rules={[{ required: true, message: 'Please select visibility' }]}
                   >
                     <Radio.Group style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      <Radio value="PUBLIC" style={{ border: '1px solid var(--ant-color-border-secondary, #333)', padding: '10px 14px', borderRadius: 8, width: '100%' }}>
+                      <Radio value="PUBLIC" style={{ border: '1px solid var(--ant-color-border-secondary, #E5E7EB)', padding: '10px 14px', borderRadius: 8, width: '100%' }}>
                         <div style={{ display: 'inline-block', verticalAlign: 'top', marginLeft: 6 }}>
                           <div style={{ fontWeight: 600 }}>Public Discovery</div>
                           <div style={{ fontSize: 12, opacity: 0.75 }}>
@@ -727,7 +719,7 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
                           </div>
                         </div>
                       </Radio>
-                      <Radio value="UNLISTED" style={{ border: '1px solid var(--ant-color-border-secondary, #333)', padding: '10px 14px', borderRadius: 8, width: '100%' }}>
+                      <Radio value="UNLISTED" style={{ border: '1px solid var(--ant-color-border-secondary, #E5E7EB)', padding: '10px 14px', borderRadius: 8, width: '100%' }}>
                         <div style={{ display: 'inline-block', verticalAlign: 'top', marginLeft: 6 }}>
                           <div style={{ fontWeight: 600 }}>Unlisted Link</div>
                           <div style={{ fontSize: 12, opacity: 0.75 }}>
@@ -735,7 +727,7 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
                           </div>
                         </div>
                       </Radio>
-                      <Radio value="RESTRICTED" style={{ border: '1px solid var(--ant-color-border-secondary, #333)', padding: '10px 14px', borderRadius: 8, width: '100%' }}>
+                      <Radio value="RESTRICTED" style={{ border: '1px solid var(--ant-color-border-secondary, #E5E7EB)', padding: '10px 14px', borderRadius: 8, width: '100%' }}>
                         <div style={{ display: 'inline-block', verticalAlign: 'top', marginLeft: 6 }}>
                           <div style={{ fontWeight: 600 }}>Restricted Institutional</div>
                           <div style={{ fontSize: 12, opacity: 0.75 }}>

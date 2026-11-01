@@ -293,10 +293,10 @@ export default function ManageAttendancePage({ params }: { params: Promise<{ id:
   // Loading state
   if (isLoadingEvent) {
     return (
-      <div className="w-full h-32 flex items-center justify-center border-2 border-white/15 bg-[#090a0f]">
+      <div className="w-full h-32 flex items-center justify-center border-2 border-black/15 dark:border-white/15 bg-white dark:bg-[#090a0f]">
         <div className="animate-pulse flex items-center gap-2">
           <div className="w-4 h-4 border-2 border-[#0057FF] border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-[10px] font-mono uppercase tracking-widest text-[#a0a4b8]">Loading Attendance...</span>
+          <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 dark:text-[#a0a4b8]">Loading Attendance...</span>
         </div>
       </div>
     );
@@ -307,10 +307,10 @@ export default function ManageAttendancePage({ params }: { params: Promise<{ id:
     return (
       <div className="p-8 border-2 border-red-600/30 bg-red-500/5 text-center">
         <ShieldAlert className="w-12 h-12 text-red-500 mx-auto mb-4" />
-        <h2 className="text-xl font-black text-[#F5F5F2] uppercase tracking-tight mb-2" style={{ fontFamily: 'Syne, sans-serif' }}>
+        <h2 className="text-xl font-black text-zinc-900 dark:text-[#F5F5F2] uppercase tracking-tight mb-2" style={{ fontFamily: 'Syne, sans-serif' }}>
           Access Denied
         </h2>
-        <p className="text-sm font-mono text-[#a0a4b8] uppercase tracking-widest max-w-md mx-auto">
+        <p className="text-sm font-mono text-zinc-600 dark:text-[#a0a4b8] uppercase tracking-widest max-w-md mx-auto">
           You are not authorized to manage attendance for this event.
         </p>
       </div>
@@ -389,12 +389,12 @@ export default function ManageAttendancePage({ params }: { params: Promise<{ id:
       {/* Event Locked Warning Banner */}
       {isEffectivelyLocked && (
         <div className="p-4 border-2 border-yellow-600 bg-yellow-500/10 flex items-start gap-3">
-          <Lock className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+          <Lock className="w-5 h-5 text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" />
           <div>
-            <span className="text-xs font-mono font-bold uppercase tracking-widest text-yellow-400 block">
+            <span className="text-xs font-mono font-bold uppercase tracking-widest text-yellow-700 dark:text-yellow-400 block">
               Event Locked ({lockState})
             </span>
-            <span className="text-xs text-[#a0a4b8] font-mono">
+            <span className="text-xs text-zinc-600 dark:text-[#a0a4b8] font-mono">
               Attendance management is read-only. Manual marking and QR generation are disabled.
             </span>
           </div>
@@ -402,20 +402,20 @@ export default function ManageAttendancePage({ params }: { params: Promise<{ id:
       )}
       
       {/* Session Selection (Multi-Session & Single-Session Support) */}
-      <div className="p-6 border-2 border-white/15 bg-[#090a0f] shadow-[4px_4px_0px_#000]">
+      <div className="p-6 border-2 border-black/15 dark:border-white/15 bg-white dark:bg-[#090a0f] shadow-[4px_4px_0px_#000]">
         
         {/* Session Selector Tabs */}
         {sessions.length > 0 && (
-          <div className="mb-6 border-b border-white/15 pb-4">
+          <div className="mb-6 border-b border-black/15 dark:border-white/15 pb-4">
             <div className="flex justify-between items-center mb-3">
-              <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-[#a0a4b8] uppercase">
+              <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-zinc-500 dark:text-[#a0a4b8] uppercase">
                 {event?.attendanceType === 'MULTI_SESSION' || sessions.length > 1 ? 'Select Session' : 'Attendance Session'}
               </span>
               <div className="flex items-center gap-2">
                 {auth.canManageAttendance && (
                   <button
                     onClick={handleExport}
-                    className="flex items-center gap-1.5 px-3 py-1.5 border border-white/20 text-[#a0a4b8] font-mono text-[10px] uppercase tracking-widest hover:bg-white/5 hover:text-white transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 border border-black/20 dark:border-white/20 text-zinc-600 dark:text-[#a0a4b8] font-mono text-[10px] uppercase tracking-widest hover:bg-black/5 dark:hover:bg-white/5 hover:text-black dark:hover:text-white transition-colors"
                   >
                     <Download className="w-3 h-3" /> Export CSV
                   </button>
@@ -450,12 +450,12 @@ export default function ManageAttendancePage({ params }: { params: Promise<{ id:
                       "px-4 py-2 border text-xs font-mono uppercase tracking-widest transition-colors flex items-center gap-2 whitespace-nowrap",
                       isSelected
                         ? "bg-[#0057FF] border-[#0057FF] text-white font-bold"
-                        : "border-white/15 bg-[#0d0e12] hover:bg-[#090a0f] text-[#a0a4b8] hover:text-white"
+                        : "border-black/15 dark:border-white/15 bg-zinc-100 dark:bg-[#0d0e12] hover:bg-zinc-200 dark:hover:bg-[#090a0f] text-zinc-600 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white"
                     )}
                   >
                     <span className={clsx(
                       "w-2 h-2 rounded-full",
-                      sessActive ? "bg-green-500" : "bg-red-500"
+                      sessActive ? "bg-emerald-500" : "bg-red-500"
                     )}></span>
                     <span>{sess.title || `Session ${idx + 1}`}</span>
                   </button>
@@ -468,24 +468,24 @@ export default function ManageAttendancePage({ params }: { params: Promise<{ id:
         {/* Active Session Details & Controls */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
-            <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-[#F5F5F2] uppercase mb-1">
+            <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-zinc-900 dark:text-[#F5F5F2] uppercase mb-1">
               {activeSession ? (activeSession.title || 'Attendance Session') : 'Attendance Session'}
             </h2>
             {activeSession ? (
               <div className="flex items-center gap-2">
                 <span className={clsx(
                   "w-2 h-2 rounded-full",
-                  isSessionActive ? "bg-green-500" : "bg-red-500"
+                  isSessionActive ? "bg-emerald-500" : "bg-red-500"
                 )}></span>
-                <span className="text-sm font-semibold text-[#F5F5F2] uppercase font-mono tracking-widest">
+                <span className="text-sm font-semibold text-zinc-900 dark:text-[#F5F5F2] uppercase font-mono tracking-widest">
                   {isSessionActive ? "Active" : "Closed"}
                 </span>
-                <span className="text-xs font-mono text-[#a0a4b8]">
+                <span className="text-xs font-mono text-zinc-500 dark:text-[#a0a4b8]">
                   ({formatTime(activeSession.openAt)} - {formatTime(activeSession.closeAt)})
                 </span>
               </div>
             ) : (
-              <p className="text-sm text-[#a0a4b8] font-mono">No attendance session has been started.</p>
+              <p className="text-sm text-zinc-500 dark:text-[#a0a4b8] font-mono">No attendance session has been started.</p>
             )}
           </div>
           
@@ -540,13 +540,13 @@ export default function ManageAttendancePage({ params }: { params: Promise<{ id:
             {qrData ? (
               <div 
                 onClick={() => setIsFullscreen(true)}
-                className="p-6 border-2 border-white/15 bg-[#0d0e12] flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#0057FF] transition-colors shadow-[3px_3px_0px_#000]"
+                className="p-6 border-2 border-black/15 dark:border-white/15 bg-zinc-50 dark:bg-[#0d0e12] flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#0057FF] transition-colors shadow-[3px_3px_0px_#000]"
               >
-                <div className="p-4 bg-white rounded-none mb-4 shadow-sm">
+                <div className="p-4 bg-white rounded-none mb-4 shadow-sm border border-zinc-200 dark:border-none">
                   <QRCodeSVG value={qrData.payload} size={200} />
                 </div>
                 
-                <h3 className="text-sm font-bold text-[#F5F5F2] uppercase tracking-widest mb-1 flex items-center gap-2" style={{ fontFamily: 'Syne, sans-serif' }}>
+                <h3 className="text-sm font-bold text-zinc-900 dark:text-[#F5F5F2] uppercase tracking-widest mb-1 flex items-center gap-2" style={{ fontFamily: 'Syne, sans-serif' }}>
                   <QrCode className="w-4 h-4" /> Click to Present
                 </h3>
                 
@@ -556,19 +556,19 @@ export default function ManageAttendancePage({ params }: { params: Promise<{ id:
                   <p className="text-xs text-[#FF3B30] font-mono mt-2 uppercase tracking-widest">Error: {refreshError}. Retrying...</p>
                 ) : (
                   <div className="flex items-center gap-2 mt-2">
-                    {isGeneratingQr && <RefreshCw className="w-3 h-3 text-[#a0a4b8] animate-spin" />}
-                    <p className="text-xs text-[#a0a4b8] font-mono tracking-widest uppercase">
+                    {isGeneratingQr && <RefreshCw className="w-3 h-3 text-zinc-500 dark:text-[#a0a4b8] animate-spin" />}
+                    <p className="text-xs text-zinc-500 dark:text-[#a0a4b8] font-mono tracking-widest uppercase">
                       Refreshing in {countdown ?? '-'}s
                     </p>
                   </div>
                 )}
               </div>
             ) : (
-              <div className="p-6 border-2 border-white/15 bg-[#0d0e12] flex flex-col items-center justify-center text-center">
-                <QrCode className="w-8 h-8 text-[#a0a4b8] mb-3" />
-                <h3 className="text-sm font-bold text-[#F5F5F2] uppercase tracking-widest mb-2" style={{ fontFamily: 'Syne, sans-serif' }}>Display QR Code</h3>
+              <div className="p-6 border-2 border-black/15 dark:border-white/15 bg-zinc-50 dark:bg-[#0d0e12] flex flex-col items-center justify-center text-center">
+                <QrCode className="w-8 h-8 text-zinc-400 dark:text-[#a0a4b8] mb-3" />
+                <h3 className="text-sm font-bold text-zinc-900 dark:text-[#F5F5F2] uppercase tracking-widest mb-2" style={{ fontFamily: 'Syne, sans-serif' }}>Display QR Code</h3>
                 {isGeneratingQr ? (
-                  <p className="text-xs text-[#a0a4b8] font-mono flex items-center gap-2 tracking-widest uppercase">
+                  <p className="text-xs text-zinc-500 dark:text-[#a0a4b8] font-mono flex items-center gap-2 tracking-widest uppercase">
                     <RefreshCw className="w-3 h-3 animate-spin" /> Generating...
                   </p>
                 ) : (
@@ -590,45 +590,45 @@ export default function ManageAttendancePage({ params }: { params: Promise<{ id:
       {activeSession && (
         <div className="space-y-3">
           <div className="flex justify-between items-center">
-            <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-[#F5F5F2] uppercase">
+            <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-zinc-900 dark:text-[#F5F5F2] uppercase">
               Check-ins ({attendees.length})
             </h2>
-            <span className="text-[10px] font-mono text-[#a0a4b8] uppercase tracking-widest">
+            <span className="text-[10px] font-mono text-zinc-500 dark:text-[#a0a4b8] uppercase tracking-widest">
               Session: {activeSession.title || 'Main Session'}
             </span>
           </div>
 
-          <div className="overflow-x-auto border-2 border-white/15 bg-[#090a0f] shadow-[4px_4px_0px_#000]">
+          <div className="overflow-x-auto border-2 border-black/15 dark:border-white/15 bg-white dark:bg-[#090a0f] shadow-[4px_4px_0px_#000]">
             <table className="w-full text-left border-collapse font-sans">
               <thead>
-                <tr className="border-b-2 border-white/15 bg-[#0e1017]">
-                  <th className="px-4 py-3 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#a0a4b8]">User</th>
-                  <th className="px-4 py-3 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#a0a4b8]">Status</th>
-                  <th className="px-4 py-3 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#a0a4b8]">Method</th>
-                  <th className="px-4 py-3 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#a0a4b8]">Time</th>
+                <tr className="border-b-2 border-black/15 dark:border-white/15 bg-zinc-100 dark:bg-[#0e1017]">
+                  <th className="px-4 py-3 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-600 dark:text-[#a0a4b8]">User</th>
+                  <th className="px-4 py-3 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-600 dark:text-[#a0a4b8]">Status</th>
+                  <th className="px-4 py-3 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-600 dark:text-[#a0a4b8]">Method</th>
+                  <th className="px-4 py-3 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-600 dark:text-[#a0a4b8]">Time</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoadingAttendance ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-12 text-center text-[#a0a4b8] text-sm font-mono uppercase tracking-widest">
+                    <td colSpan={4} className="px-4 py-12 text-center text-zinc-500 dark:text-[#a0a4b8] text-sm font-mono uppercase tracking-widest">
                       Loading...
                     </td>
                   </tr>
                 ) : attendees.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-12 text-center text-[#a0a4b8] text-sm font-mono uppercase tracking-widest">
+                    <td colSpan={4} className="px-4 py-12 text-center text-zinc-500 dark:text-[#a0a4b8] text-sm font-mono uppercase tracking-widest">
                       No check-ins yet for this session.
                     </td>
                   </tr>
                 ) : (
                   attendees.map((record) => (
-                    <tr key={record.id} className="border-b border-white/10 last:border-b-0 hover:bg-white/5 transition-colors">
+                    <tr key={record.id} className="border-b border-black/10 dark:border-white/10 last:border-b-0 hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                       <td className="px-4 py-4">
-                        <div className="text-sm font-semibold text-[#F5F5F2]">
+                        <div className="text-sm font-semibold text-zinc-900 dark:text-[#F5F5F2]">
                           {record.user?.fullName || 'Unknown User'}
                         </div>
-                        <div className="text-xs text-[#a0a4b8] font-mono">
+                        <div className="text-xs text-zinc-500 dark:text-[#a0a4b8] font-mono">
                           {record.user?.email}
                         </div>
                       </td>
@@ -636,19 +636,19 @@ export default function ManageAttendancePage({ params }: { params: Promise<{ id:
                         <span className={clsx(
                           "text-[10px] font-mono font-bold tracking-widest uppercase px-2 py-0.5 border flex items-center gap-1 w-fit shadow-[2px_2px_0px_#000]",
                           record.status === 'PRESENT' ? "border-black bg-[#C8FF00] text-black font-black" :
-                          record.status === 'EXCUSED' ? "border-[#0057FF] text-white bg-[#0057FF]/20" :
-                          "border-[#FF3B30] text-[#FF3B30] bg-[#FF3B30]/20"
+                          record.status === 'EXCUSED' ? "border-[#0057FF] text-[#0057FF] dark:text-white bg-[#0057FF]/10 dark:bg-[#0057FF]/20" :
+                          "border-[#FF3B30] text-[#FF3B30] bg-[#FF3B30]/10 dark:bg-[#FF3B30]/20"
                         )}>
                           {record.status === 'PRESENT' ? <CheckCircle className="w-3 h-3" /> : record.status === 'EXCUSED' ? <Check className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
                           {record.status}
                         </span>
                       </td>
                       <td className="px-4 py-4">
-                        <span className="text-[10px] font-mono tracking-widest uppercase text-[#a0a4b8] border border-white/20 px-2 py-0.5 bg-white/5">
+                        <span className="text-[10px] font-mono tracking-widest uppercase text-zinc-600 dark:text-[#a0a4b8] border border-black/20 dark:border-white/20 px-2 py-0.5 bg-zinc-100 dark:bg-white/5">
                           {record.method}
                         </span>
                       </td>
-                      <td className="px-4 py-4 text-xs font-mono text-[#a0a4b8] tabular-nums">
+                      <td className="px-4 py-4 text-xs font-mono text-zinc-500 dark:text-[#a0a4b8] tabular-nums">
                         {formatTime(record.markedAt)}
                       </td>
                     </tr>
@@ -663,7 +663,7 @@ export default function ManageAttendancePage({ params }: { params: Promise<{ id:
               <button
                 onClick={() => fetchNextAttendancePage()}
                 disabled={isFetchingNextAttendancePage}
-                className="px-6 py-2 border-2 border-white/20 text-[#a0a4b8] font-mono text-xs uppercase tracking-widest hover:text-white hover:border-white transition-colors disabled:opacity-50"
+                className="px-6 py-2 border-2 border-black/20 dark:border-white/20 text-zinc-600 dark:text-[#a0a4b8] font-mono text-xs uppercase tracking-widest hover:text-black dark:hover:text-white hover:border-black dark:hover:border-white transition-colors disabled:opacity-50"
               >
                 {isFetchingNextAttendancePage ? 'Loading more...' : 'Load More'}
               </button>
@@ -675,63 +675,63 @@ export default function ManageAttendancePage({ params }: { params: Promise<{ id:
       {/* Attendance Disputes Section */}
       {auth.canManageAttendance && (
         <div className="space-y-3 mt-8">
-          <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-[#F5F5F2] uppercase">
+          <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-zinc-900 dark:text-[#F5F5F2] uppercase">
             Attendance Disputes ({disputes.length})
           </h2>
 
-          <div className="overflow-x-auto border-2 border-white/15 bg-[#090a0f] shadow-[4px_4px_0px_#000]">
+          <div className="overflow-x-auto border-2 border-black/15 dark:border-white/15 bg-white dark:bg-[#090a0f] shadow-[4px_4px_0px_#000]">
             <table className="w-full text-left border-collapse font-sans">
               <thead>
-                <tr className="border-b-2 border-white/15 bg-[#0e1017]">
-                  <th className="px-4 py-3 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#a0a4b8]">Student</th>
-                  <th className="px-4 py-3 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#a0a4b8]">Session</th>
-                  <th className="px-4 py-3 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#a0a4b8]">Status</th>
-                  <th className="px-4 py-3 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#a0a4b8]">Reason</th>
-                  <th className="px-4 py-3 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#a0a4b8]">Submitted</th>
-                  <th className="px-4 py-3 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#a0a4b8] text-right">Actions</th>
+                <tr className="border-b-2 border-black/15 dark:border-white/15 bg-zinc-100 dark:bg-[#0e1017]">
+                  <th className="px-4 py-3 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-600 dark:text-[#a0a4b8]">Student</th>
+                  <th className="px-4 py-3 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-600 dark:text-[#a0a4b8]">Session</th>
+                  <th className="px-4 py-3 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-600 dark:text-[#a0a4b8]">Status</th>
+                  <th className="px-4 py-3 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-600 dark:text-[#a0a4b8]">Reason</th>
+                  <th className="px-4 py-3 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-600 dark:text-[#a0a4b8]">Submitted</th>
+                  <th className="px-4 py-3 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-600 dark:text-[#a0a4b8] text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoadingDisputes ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-12 text-center text-[#a0a4b8] text-sm font-mono uppercase tracking-widest">
+                    <td colSpan={6} className="px-4 py-12 text-center text-zinc-500 dark:text-[#a0a4b8] text-sm font-mono uppercase tracking-widest">
                       Loading disputes...
                     </td>
                   </tr>
                 ) : disputes.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-12 text-center text-[#a0a4b8] text-sm font-mono uppercase tracking-widest">
+                    <td colSpan={6} className="px-4 py-12 text-center text-zinc-500 dark:text-[#a0a4b8] text-sm font-mono uppercase tracking-widest">
                       No attendance disputes.
                     </td>
                   </tr>
                 ) : (
                   disputes.map((dispute) => (
-                    <tr key={dispute.id} className="border-b border-white/10 last:border-b-0 hover:bg-white/5 transition-colors">
+                    <tr key={dispute.id} className="border-b border-black/10 dark:border-white/10 last:border-b-0 hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                       <td className="px-4 py-4">
-                        <div className="text-sm font-semibold text-[#F5F5F2]">
+                        <div className="text-sm font-semibold text-zinc-900 dark:text-[#F5F5F2]">
                           {dispute.user?.fullName || 'Unknown'}
                         </div>
-                        <div className="text-xs text-[#a0a4b8] font-mono">
+                        <div className="text-xs text-zinc-500 dark:text-[#a0a4b8] font-mono">
                           ID: {dispute.userId}
                         </div>
                       </td>
-                      <td className="px-4 py-4 text-xs font-mono text-[#a0a4b8]">
+                      <td className="px-4 py-4 text-xs font-mono text-zinc-500 dark:text-[#a0a4b8]">
                         {dispute.sessionId.split('-')[0]}
                       </td>
                       <td className="px-4 py-4">
                         <span className={clsx(
                           "text-[10px] font-mono font-bold tracking-widest uppercase px-2 py-0.5 border flex items-center gap-1 w-fit shadow-[2px_2px_0px_#000]",
                           dispute.status === 'APPROVED' ? "border-black bg-[#C8FF00] text-black font-black" :
-                          dispute.status === 'REJECTED' ? "border-[#FF3B30] text-[#FF3B30] bg-[#FF3B30]/20" :
-                          "border-[#0057FF] text-white bg-[#0057FF]/20"
+                          dispute.status === 'REJECTED' ? "border-[#FF3B30] text-[#FF3B30] bg-[#FF3B30]/10 dark:bg-[#FF3B30]/20" :
+                          "border-[#0057FF] text-[#0057FF] dark:text-white bg-[#0057FF]/10 dark:bg-[#0057FF]/20"
                         )}>
                           {dispute.status}
                         </span>
                       </td>
-                      <td className="px-4 py-4 text-xs font-mono text-[#a0a4b8] max-w-[200px] truncate" title={dispute.reason}>
+                      <td className="px-4 py-4 text-xs font-mono text-zinc-600 dark:text-[#a0a4b8] max-w-[200px] truncate" title={dispute.reason}>
                         {dispute.reason}
                       </td>
-                      <td className="px-4 py-4 text-xs font-mono text-[#a0a4b8] tabular-nums">
+                      <td className="px-4 py-4 text-xs font-mono text-zinc-500 dark:text-[#a0a4b8] tabular-nums">
                         {new Date(dispute.submittedAt).toLocaleDateString()}
                       </td>
                       <td className="px-4 py-4 text-right">
@@ -750,7 +750,7 @@ export default function ManageAttendancePage({ params }: { params: Promise<{ id:
                             onClick={() => {
                               alert(`Reason: ${dispute.reason}\nNotes: ${dispute.reviewNotes || 'None'}`);
                             }}
-                            className="px-3 py-1 border border-white/20 text-[#a0a4b8] font-mono text-[10px] uppercase tracking-widest hover:bg-white/10 hover:text-white transition-colors"
+                            className="px-3 py-1 border border-black/20 dark:border-white/20 text-zinc-600 dark:text-[#a0a4b8] font-mono text-[10px] uppercase tracking-widest hover:bg-black/5 dark:hover:bg-white/10 hover:text-black dark:hover:text-white transition-colors"
                           >
                             Details
                           </button>
@@ -771,26 +771,26 @@ export default function ManageAttendancePage({ params }: { params: Promise<{ id:
         onClose={() => setResolveModalOpen(false)}
         title="Resolve Attendance Dispute"
       >
-        <div className="p-6 bg-[#0d0e12] text-[#F5F5F2]">
+        <div className="p-6 bg-white dark:bg-[#0d0e12] text-zinc-900 dark:text-[#F5F5F2]">
           <form onSubmit={handleResolveSubmit} className="space-y-6">
             <div>
-              <label className="block text-[10px] font-mono font-bold uppercase tracking-widest text-[#a0a4b8] mb-1">
+              <label className="block text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-500 dark:text-[#a0a4b8] mb-1">
                 Student Reason
               </label>
-              <div className="p-3 bg-black border-2 border-white/20 text-sm font-mono text-[#F5F5F2]">
+              <div className="p-3 bg-zinc-50 dark:bg-black border-2 border-black/20 dark:border-white/20 text-sm font-mono text-zinc-900 dark:text-[#F5F5F2]">
                 {selectedDispute?.reason || 'No reason provided.'}
               </div>
             </div>
 
             <div>
-              <label className="block text-[10px] font-mono font-bold uppercase tracking-widest text-[#a0a4b8] mb-1">
+              <label className="block text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-500 dark:text-[#a0a4b8] mb-1">
                 Decision <span className="text-[#FF3B30]">*</span>
               </label>
               <select
                 required
                 value={resolveStatus}
                 onChange={(e) => setResolveStatus(e.target.value as 'APPROVED' | 'REJECTED')}
-                className="w-full bg-black border-2 border-white/20 px-3 py-2 text-sm font-mono text-[#F5F5F2] focus:outline-none focus:border-[#0057FF]"
+                className="w-full bg-white dark:bg-black border-2 border-black/20 dark:border-white/20 px-3 py-2 text-sm font-mono text-zinc-900 dark:text-[#F5F5F2] focus:outline-none focus:border-[#0057FF]"
               >
                 <option value="APPROVED">Approve (Mark Excused)</option>
                 <option value="REJECTED">Reject</option>
@@ -798,14 +798,14 @@ export default function ManageAttendancePage({ params }: { params: Promise<{ id:
             </div>
 
             <div>
-              <label className="block text-[10px] font-mono font-bold uppercase tracking-widest text-[#a0a4b8] mb-1">
+              <label className="block text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-500 dark:text-[#a0a4b8] mb-1">
                 Review Notes (Optional)
               </label>
               <textarea
                 value={reviewNotes}
                 onChange={(e) => setReviewNotes(e.target.value)}
                 placeholder="Provide a reason for the decision..."
-                className="w-full h-24 bg-black border-2 border-white/20 px-3 py-2 text-sm font-mono text-[#F5F5F2] focus:outline-none focus:border-[#0057FF] resize-none"
+                className="w-full h-24 bg-white dark:bg-black border-2 border-black/20 dark:border-white/20 px-3 py-2 text-sm font-mono text-zinc-900 dark:text-[#F5F5F2] focus:outline-none focus:border-[#0057FF] resize-none"
               />
             </div>
 
@@ -813,7 +813,7 @@ export default function ManageAttendancePage({ params }: { params: Promise<{ id:
               <button
                 type="button"
                 onClick={() => setResolveModalOpen(false)}
-                className="px-4 py-2 border-2 border-white/20 text-[#a0a4b8] font-mono text-xs uppercase tracking-widest hover:bg-white/10 hover:text-white transition-colors"
+                className="px-4 py-2 border-2 border-black/20 dark:border-white/20 text-zinc-600 dark:text-[#a0a4b8] font-mono text-xs uppercase tracking-widest hover:bg-black/5 dark:hover:bg-white/10 hover:text-black dark:hover:text-white transition-colors"
               >
                 Cancel
               </button>
@@ -839,15 +839,15 @@ export default function ManageAttendancePage({ params }: { params: Promise<{ id:
         }}
         title="Mark Attendance Manually"
       >
-        <div className="p-6 bg-[#0d0e12] text-[#F5F5F2] space-y-4">
-          <p className="text-xs font-mono text-[#a0a4b8] uppercase tracking-widest">
-            Select a REGISTERED student for {event?.title} to manually mark PRESENT for session: <strong className="text-white">{activeSession?.title || 'Main Session'}</strong>.
+        <div className="p-6 bg-white dark:bg-[#0d0e12] text-zinc-900 dark:text-[#F5F5F2] space-y-4">
+          <p className="text-xs font-mono text-zinc-500 dark:text-[#a0a4b8] uppercase tracking-widest">
+            Select a REGISTERED student for {event?.title} to manually mark PRESENT for session: <strong className="text-zinc-900 dark:text-white">{activeSession?.title || 'Main Session'}</strong>.
           </p>
 
           {manualMarkStatus && (
             <div className={clsx(
               "p-3 border text-xs font-mono flex items-center gap-2",
-              manualMarkStatus.type === 'success' ? "border-green-600/40 bg-green-500/10 text-green-400" : "border-[#FF3B30]/40 bg-[#FF3B30]/10 text-[#FF3B30]"
+              manualMarkStatus.type === 'success' ? "border-green-600/40 bg-green-500/10 text-green-600 dark:text-green-400" : "border-[#FF3B30]/40 bg-[#FF3B30]/10 text-[#FF3B30]"
             )}>
               {manualMarkStatus.type === 'success' ? <CheckCircle className="w-4 h-4 flex-shrink-0" /> : <AlertTriangle className="w-4 h-4 flex-shrink-0" />}
               <span>{manualMarkStatus.message}</span>
@@ -856,24 +856,24 @@ export default function ManageAttendancePage({ params }: { params: Promise<{ id:
 
           {/* Student Search Input */}
           <div className="relative">
-            <Search className="w-4 h-4 text-[#a0a4b8] absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-zinc-400 dark:text-[#a0a4b8] absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search registered student by name or email..."
-              className="w-full bg-black border-2 border-white/20 pl-9 pr-3 py-2 text-xs font-mono text-[#F5F5F2] focus:outline-none focus:border-[#0057FF]"
+              className="w-full bg-white dark:bg-black border-2 border-black/20 dark:border-white/20 pl-9 pr-3 py-2 text-xs font-mono text-zinc-900 dark:text-[#F5F5F2] focus:outline-none focus:border-[#0057FF]"
             />
           </div>
 
           {/* Registered Student Roster List */}
-          <div className="max-h-60 overflow-y-auto border-2 border-white/20 divide-y divide-white/10 bg-black">
+          <div className="max-h-60 overflow-y-auto border-2 border-black/20 dark:border-white/20 divide-y divide-black/10 dark:divide-white/10 bg-white dark:bg-black">
             {isLoadingRegistrations ? (
-              <div className="p-6 text-center text-xs font-mono text-[#a0a4b8] uppercase tracking-widest">
+              <div className="p-6 text-center text-xs font-mono text-zinc-500 dark:text-[#a0a4b8] uppercase tracking-widest">
                 Loading registrants...
               </div>
             ) : registeredStudents.length === 0 ? (
-              <div className="p-6 text-center text-xs font-mono text-[#a0a4b8] uppercase tracking-widest">
+              <div className="p-6 text-center text-xs font-mono text-zinc-500 dark:text-[#a0a4b8] uppercase tracking-widest">
                 {searchQuery ? 'No matching registered students found.' : 'No registered students found for this event.'}
               </div>
             ) : (
@@ -887,15 +887,15 @@ export default function ManageAttendancePage({ params }: { params: Promise<{ id:
                     className={clsx(
                       "w-full px-4 py-3 text-left flex items-center justify-between transition-colors",
                       isSelected
-                        ? "bg-[#0057FF]/20 border-l-4 border-l-[#0057FF]"
-                        : "hover:bg-white/5"
+                        ? "bg-[#0057FF]/10 dark:bg-[#0057FF]/20 border-l-4 border-l-[#0057FF]"
+                        : "hover:bg-black/5 dark:hover:bg-white/5"
                     )}
                   >
                     <div>
-                      <div className="text-xs font-semibold text-[#F5F5F2]">
+                      <div className="text-xs font-semibold text-zinc-900 dark:text-[#F5F5F2]">
                         {reg.user.fullName || 'Unknown User'}
                       </div>
-                      <div className="text-[10px] font-mono text-[#a0a4b8]">
+                      <div className="text-[10px] font-mono text-zinc-500 dark:text-[#a0a4b8]">
                         {reg.user.email}
                       </div>
                     </div>
@@ -915,7 +915,7 @@ export default function ManageAttendancePage({ params }: { params: Promise<{ id:
                 setSelectedUserId(null);
                 setManualMarkStatus(null);
               }}
-              className="px-4 py-2 border-2 border-white/20 text-[#a0a4b8] font-mono text-xs uppercase tracking-widest hover:bg-white/10 hover:text-white transition-colors"
+              className="px-4 py-2 border-2 border-black/20 dark:border-white/20 text-zinc-600 dark:text-[#a0a4b8] font-mono text-xs uppercase tracking-widest hover:bg-black/5 dark:hover:bg-white/10 hover:text-black dark:hover:text-white transition-colors"
             >
               Close
             </button>
@@ -943,9 +943,9 @@ export default function ManageAttendancePage({ params }: { params: Promise<{ id:
         onClose={() => setIsCreateModalOpen(false)}
         title="Create Attendance Session"
       >
-        <div className="p-6 bg-[#0d0e12] text-[#F5F5F2] space-y-4">
+        <div className="p-6 bg-white dark:bg-[#0d0e12] text-zinc-900 dark:text-[#F5F5F2] space-y-4">
           <div>
-            <label className="block text-[10px] font-mono font-bold uppercase tracking-widest text-[#a0a4b8] mb-1">
+            <label className="block text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-500 dark:text-[#a0a4b8] mb-1">
               Session Title
             </label>
             <input
@@ -953,7 +953,7 @@ export default function ManageAttendancePage({ params }: { params: Promise<{ id:
               value={newSessionTitle}
               onChange={(e) => setNewSessionTitle(e.target.value)}
               placeholder="e.g. Session 1, Afternoon Session"
-              className="w-full bg-black border-2 border-white/20 px-3 py-2 text-xs font-mono text-[#F5F5F2] focus:outline-none focus:border-[#0057FF]"
+              className="w-full bg-white dark:bg-black border-2 border-black/20 dark:border-white/20 px-3 py-2 text-xs font-mono text-zinc-900 dark:text-[#F5F5F2] focus:outline-none focus:border-[#0057FF]"
             />
           </div>
 
@@ -961,7 +961,7 @@ export default function ManageAttendancePage({ params }: { params: Promise<{ id:
             <button
               type="button"
               onClick={() => setIsCreateModalOpen(false)}
-              className="px-4 py-2 border-2 border-white/20 text-[#a0a4b8] font-mono text-xs uppercase tracking-widest hover:bg-white/10 hover:text-white transition-colors"
+              className="px-4 py-2 border-2 border-black/20 dark:border-white/20 text-zinc-600 dark:text-[#a0a4b8] font-mono text-xs uppercase tracking-widest hover:bg-black/5 dark:hover:bg-white/10 hover:text-black dark:hover:text-white transition-colors"
             >
               Cancel
             </button>
@@ -983,14 +983,14 @@ export default function ManageAttendancePage({ params }: { params: Promise<{ id:
         onClose={() => setIsEndSessionModalOpen(false)}
         title="End Session"
       >
-        <div className="p-6 bg-[#0d0e12] text-[#F5F5F2]">
-          <p className="text-xs font-mono text-[#a0a4b8] uppercase tracking-widest mb-6">
+        <div className="p-6 bg-white dark:bg-[#0d0e12] text-zinc-900 dark:text-[#F5F5F2]">
+          <p className="text-xs font-mono text-zinc-600 dark:text-[#a0a4b8] uppercase tracking-widest mb-6">
             Are you sure you want to end this attendance session? Active QR codes will immediately expire.
           </p>
           <div className="flex gap-4 justify-end">
             <button
               onClick={() => setIsEndSessionModalOpen(false)}
-              className="px-4 py-2 border-2 border-white/20 font-mono text-xs uppercase tracking-widest text-[#a0a4b8] hover:bg-white/10 hover:text-white transition-colors"
+              className="px-4 py-2 border-2 border-black/20 dark:border-white/20 font-mono text-xs uppercase tracking-widest text-zinc-600 dark:text-[#a0a4b8] hover:bg-black/5 dark:hover:bg-white/10 hover:text-black dark:hover:text-white transition-colors"
             >
               Cancel
             </button>
@@ -1005,9 +1005,9 @@ export default function ManageAttendancePage({ params }: { params: Promise<{ id:
         </div>
       </Modal>
 
-      {/* Fullscreen Modal */}
+      {/* Fullscreen Modal (Isolated Dark Kiosk Experience) */}
       {isFullscreen && qrData && (
-        <div className="fixed inset-0 z-50 bg-black/95 flex flex-col items-center justify-center p-8 backdrop-blur-md">
+        <div data-theme="dark" className="dark select-none fixed inset-0 z-50 bg-black/95 flex flex-col items-center justify-center p-8 backdrop-blur-md">
           <div className="absolute top-8 right-8 flex gap-4">
             <button 
               onClick={handleManualGenerate}

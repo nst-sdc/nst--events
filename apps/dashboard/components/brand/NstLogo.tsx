@@ -17,7 +17,7 @@ interface NstLogoMarkProps {
 export function NstLogoMark({
   size = 32,
   className = '',
-  color = '#0047FF',
+  color = 'currentColor',
   withSquircle = false,
 }: NstLogoMarkProps) {
   const dimension = typeof size === 'number' ? `${size}px` : size;

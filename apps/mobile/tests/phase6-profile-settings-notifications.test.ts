@@ -205,14 +205,14 @@ describe('Phase 6 — Profile, Settings & Notifications UI & Contract Tests', ()
   });
 
   // 15. ROLE_CHANGED → profile
-  it('15. Notification deep link routes type ROLE_CHANGED → /(app)/profile when dispute/event IDs are absent', () => {
+  it('15. Notification deep link routes type ROLE_CHANGED → /(app)/(tabs)/profile when dispute/event IDs are absent', () => {
     const route = resolveNotificationRoute({
       type: 'ROLE_CHANGED',
       metadata: {
         entity_ids: {},
       },
     });
-    expect(route).toBe('/(app)/profile');
+    expect(route).toBe('/(app)/(tabs)/profile');
   });
 
   // 16. Unknown/no-navigation notification behavior

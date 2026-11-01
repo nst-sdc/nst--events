@@ -129,7 +129,7 @@ const modalStyles = `
     font-family: 'JetBrains Mono', monospace;
     font-size: 12px; font-weight: 700;
     letter-spacing: 0.14em; text-transform: uppercase;
-    color: #888; margin-bottom: 6px;
+    color: #475467; margin-bottom: 6px;
   }
   .dcm-mission-text {
     font-family: 'Inter', sans-serif;
@@ -150,7 +150,7 @@ const modalStyles = `
   .dcm-meta-key {
     font-family: 'JetBrains Mono', monospace;
     font-size: 12px; font-weight: 700;
-    letter-spacing: 0.12em; text-transform: uppercase; color: #888;
+    letter-spacing: 0.12em; text-transform: uppercase; color: #475467;
   }
   .dcm-meta-val {
     font-family: 'JetBrains Mono', monospace;
@@ -163,7 +163,7 @@ const modalStyles = `
     font-family: 'JetBrains Mono', monospace;
     font-size: 12px; font-weight: 700;
     letter-spacing: 0.14em; text-transform: uppercase;
-    color: #888; margin-bottom: 8px;
+    color: #475467; margin-bottom: 8px;
   }
 
   .dcm-link-row {

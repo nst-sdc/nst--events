@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -31,10 +31,10 @@ import {
 } from '@/lib/projects-api';
 import { getWebAuthStore } from '@/lib/auth-store';
 import { refreshToken } from '@/lib/api';
-import { NstLogoMark } from '@/components/brand/NstLogo';
 import { StudentAppShell } from '@/components/layout/StudentAppShell';
 import { ClubAdminProvider } from '@/components/layout/ClubAdminProvider';
 import { MarkdownRenderer } from '@/components/projects/MarkdownRenderer';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 export default function MyProjectsDashboardPage() {
   const router = useRouter();
@@ -44,6 +44,7 @@ export default function MyProjectsDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'published' | 'draft' | 'unpublished' | 'contributing'>('all');
+  const [leaveConfirmTarget, setLeaveConfirmTarget] = useState<{ projectId: string; contributorId: string } | null>(null);
 
   // Modal States
   const [slugModalProject, setSlugModalProject] = useState<ProjectDetail | null>(null);
@@ -66,7 +67,7 @@ export default function MyProjectsDashboardPage() {
   const [previewMarkdownProject, setPreviewMarkdownProject] = useState<ProjectDetail | null>(null);
   const [deleteModalProject, setDeleteModalProject] = useState<ProjectDetail | null>(null);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -77,7 +78,7 @@ export default function MyProjectsDashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const bootstrap = async () => {
@@ -99,6 +100,7 @@ export default function MyProjectsDashboardPage() {
     };
 
     bootstrap();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchContributors = async (projectId: string) => {
@@ -236,9 +238,15 @@ export default function MyProjectsDashboardPage() {
     }
   };
 
-  const handleLeaveProject = async (projectId: string, contributorId: string) => {
+  const handleLeaveProject = (projectId: string, contributorId: string) => {
     if (respondingId) return;
-    if (!confirm('Are you sure you want to leave this project collaboration?')) return;
+    setLeaveConfirmTarget({ projectId, contributorId });
+  };
+
+  const confirmLeaveProject = async () => {
+    if (!leaveConfirmTarget || respondingId) return;
+    const { projectId, contributorId } = leaveConfirmTarget;
+    setLeaveConfirmTarget(null);
     setRespondingId(contributorId);
     try {
       await projectsApi.removeContributor(projectId, contributorId);
@@ -275,12 +283,12 @@ export default function MyProjectsDashboardPage() {
   return (
     <ClubAdminProvider>
       <StudentAppShell>
-        <div className="min-h-screen bg-[#050505] text-zinc-100 font-sans selection:bg-[#0057FF] selection:text-white">
+        <div className="min-h-screen bg-[#F8F9FA] dark:bg-[#050505] text-zinc-950 dark:text-zinc-100 font-sans selection:bg-[#0057FF] selection:text-white">
           {/* Background Dot Texture */}
           <div 
-            className="pointer-events-none fixed inset-0 opacity-[0.03]" 
+            className="pointer-events-none fixed inset-0 opacity-[0.03] text-zinc-950 dark:text-white" 
             style={{ 
-              backgroundImage: 'radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)', 
+              backgroundImage: 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)', 
               backgroundSize: '24px 24px' 
             }} 
           />
@@ -288,10 +296,10 @@ export default function MyProjectsDashboardPage() {
           {/* Main Container */}
           <main className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
             {/* Sub-Navigation Breadcrumb */}
-            <div className="flex items-center justify-between border-b border-[#F5F5F2]/20 pb-4 mb-8">
+            <div className="flex items-center justify-between border-b border-zinc-200 dark:border-[#F5F5F2]/20 pb-4 mb-8">
               <Link
                 href="/projects"
-                className="flex items-center space-x-2 text-[#a0a4b8] hover:text-[#0057FF] font-['JetBrains_Mono',monospace] text-xs uppercase tracking-wider transition-colors"
+                className="flex items-center space-x-2 text-zinc-600 dark:text-[#a0a4b8] hover:text-[#0057FF] font-['JetBrains_Mono',monospace] text-xs uppercase tracking-wider transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>ALL PROJECTS</span>
@@ -300,17 +308,17 @@ export default function MyProjectsDashboardPage() {
                 <span className="font-['JetBrains_Mono',monospace] text-xs font-bold text-[#0057FF] uppercase tracking-wider">
                   CREATOR DASHBOARD
                 </span>
-                <span className="text-zinc-600">/</span>
+                <span className="text-zinc-300 dark:text-zinc-600">/</span>
                 <Link
                   href="/projects/submit"
-                  className="font-['JetBrains_Mono',monospace] text-xs font-bold text-[#a0a4b8] hover:text-white uppercase tracking-wider transition-colors"
+                  className="font-['JetBrains_Mono',monospace] text-xs font-bold text-zinc-600 dark:text-[#a0a4b8] hover:text-zinc-950 dark:hover:text-white uppercase tracking-wider transition-colors"
                 >
                   SUBMIT A PROJECT
                 </Link>
-                <span className="text-zinc-600">/</span>
+                <span className="text-zinc-300 dark:text-zinc-600">/</span>
                 <Link
                   href="/my/profile"
-                  className="font-['JetBrains_Mono',monospace] text-xs font-bold text-[#a0a4b8] hover:text-white uppercase tracking-wider transition-colors"
+                  className="font-['JetBrains_Mono',monospace] text-xs font-bold text-zinc-600 dark:text-[#a0a4b8] hover:text-zinc-950 dark:hover:text-white uppercase tracking-wider transition-colors"
                 >
                   MY PORTFOLIO
                 </Link>
@@ -319,21 +327,21 @@ export default function MyProjectsDashboardPage() {
         {/* Title Section */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-mono font-semibold uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20 mb-3">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-mono font-semibold uppercase tracking-wider bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 mb-3">
               <FolderHeart className="w-3.5 h-3.5" />
               <span>Student Creator Dashboard</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-zinc-950 dark:text-white">
               My Projects
             </h1>
-            <p className="text-xs sm:text-sm text-zinc-400 mt-1.5">
+            <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1.5">
               Manage your showcase submissions, track audience engagement, and coordinate peer contributors.
             </p>
           </div>
         </div>
 
         {error && (
-          <div className="p-4 mb-6 rounded-xl border border-red-500/30 bg-red-500/10 text-xs text-red-300 font-mono">
+          <div className="p-4 mb-6 rounded-xl border border-red-500/30 bg-red-500/10 text-xs text-red-600 dark:text-red-300 font-mono">
             {error}
           </div>
         )}
@@ -341,38 +349,38 @@ export default function MyProjectsDashboardPage() {
         {/* Metrics Grid */}
         {data?.stats && (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-10">
-            <div className="p-5 rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-sm">
-              <div className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">Total Projects</div>
-              <div className="font-mono text-2xl font-bold text-white mt-1">
+            <div className="p-5 rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-950/70 shadow-sm backdrop-blur-sm">
+              <div className="text-[11px] font-mono uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Total Projects</div>
+              <div className="font-mono text-2xl font-bold text-zinc-950 dark:text-white mt-1">
                 {data.stats.total ?? 0}
               </div>
             </div>
 
-            <div className="p-5 rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-sm">
-              <div className="text-[11px] font-mono uppercase tracking-wider text-emerald-400">Published</div>
-              <div className="font-mono text-2xl font-bold text-emerald-400 mt-1">
+            <div className="p-5 rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-950/70 shadow-sm backdrop-blur-sm">
+              <div className="text-[11px] font-mono uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Published</div>
+              <div className="font-mono text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
                 {data.stats.published ?? 0}
               </div>
             </div>
 
-            <div className="p-5 rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-sm">
-              <div className="text-[11px] font-mono uppercase tracking-wider text-amber-400">Drafts</div>
-              <div className="font-mono text-2xl font-bold text-amber-400 mt-1">
+            <div className="p-5 rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-950/70 shadow-sm backdrop-blur-sm">
+              <div className="text-[11px] font-mono uppercase tracking-wider text-amber-600 dark:text-amber-400">Drafts</div>
+              <div className="font-mono text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">
                 {data.stats.drafts ?? 0}
               </div>
             </div>
 
-            <div className="p-5 rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-sm">
-              <div className="text-[11px] font-mono uppercase tracking-wider text-rose-400">Likes Received</div>
-              <div className="font-mono text-2xl font-bold text-rose-400 mt-1 flex items-center gap-1.5">
+            <div className="p-5 rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-950/70 shadow-sm backdrop-blur-sm">
+              <div className="text-[11px] font-mono uppercase tracking-wider text-rose-600 dark:text-rose-400">Likes Received</div>
+              <div className="font-mono text-2xl font-bold text-rose-600 dark:text-rose-400 mt-1 flex items-center gap-1.5">
                 <Heart className="w-5 h-5 fill-current" />
                 <span>{data.stats.totalLikes ?? 0}</span>
               </div>
             </div>
 
-            <div className="p-5 rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-sm col-span-2 sm:col-span-1">
-              <div className="text-[11px] font-mono uppercase tracking-wider text-cyan-400">Showcase Views</div>
-              <div className="font-mono text-2xl font-bold text-cyan-400 mt-1 flex items-center gap-1.5">
+            <div className="p-5 rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-950/70 shadow-sm backdrop-blur-sm col-span-2 sm:col-span-1">
+              <div className="text-[11px] font-mono uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Showcase Views</div>
+              <div className="font-mono text-2xl font-bold text-cyan-600 dark:text-cyan-400 mt-1 flex items-center gap-1.5">
                 <Eye className="w-5 h-5" />
                 <span>{data.stats.totalViews ?? 0}</span>
               </div>
@@ -385,19 +393,19 @@ export default function MyProjectsDashboardPage() {
           <div className="mb-6 p-4 sm:p-5 rounded-xl border border-amber-500/30 bg-amber-500/10 backdrop-blur-sm">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-amber-500/20 text-amber-400 shrink-0">
+                <div className="p-2 rounded-lg bg-amber-500/20 text-amber-500 dark:text-amber-400 shrink-0">
                   <Clock className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-zinc-950 dark:text-white flex items-center gap-2">
                     <span>
                       You have {contributingProjects.filter((p) => p.status === 'PENDING').length} pending collaborator invitation{contributingProjects.filter((p) => p.status === 'PENDING').length > 1 ? 's' : ''}
                     </span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
                       Action Required
                     </span>
                   </h3>
-                  <p className="text-xs text-zinc-300 mt-1">
+                  <p className="text-xs text-zinc-600 dark:text-zinc-300 mt-1">
                     Peers have invited you to collaborate on showcase projects. Review and respond to your invitations.
                   </p>
                 </div>
@@ -416,7 +424,7 @@ export default function MyProjectsDashboardPage() {
         )}
 
         {/* Navigation Tabs */}
-        <div className="flex items-center gap-1.5 p-1.5 bg-zinc-900 border border-zinc-800 rounded-lg mb-6 overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-1.5 p-1.5 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg mb-6 overflow-x-auto no-scrollbar">
           {(['all', 'published', 'draft', 'unpublished', 'contributing'] as const).map((tab) => {
             const pendingCount = contributingProjects.filter((p) => p.status === 'PENDING').length;
             const count = tab === 'all'
@@ -435,8 +443,8 @@ export default function MyProjectsDashboardPage() {
                 onClick={() => setActiveTab(tab)}
                 className={`px-3.5 py-1.5 rounded-md text-xs font-mono font-bold uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-1.5 ${
                   activeTab === tab
-                    ? 'bg-zinc-100 text-black shadow-sm'
-                    : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                    ? 'bg-white dark:bg-zinc-100 text-zinc-950 dark:text-black shadow-sm'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-200/60 dark:hover:bg-zinc-800'
                 }`}
               >
                 <span>
@@ -476,20 +484,20 @@ export default function MyProjectsDashboardPage() {
                 return (
                   <div
                     key={contributorRecordId || `${item.project?.id || 'contrib'}-${idx}`}
-                    className="p-5 rounded-xl border border-zinc-800/80 bg-zinc-950/70 hover:border-zinc-700 hover:bg-zinc-900/40 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
+                    className="p-5 rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-950/70 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/40 shadow-sm transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
                   >
                     <div>
                       <div className="flex items-center gap-2 mb-1.5">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
                           {item.role}
                         </span>
                         <span
                           className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border ${
                             item.status === 'ACCEPTED'
-                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
                               : item.status === 'PENDING'
-                              ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                              : 'bg-zinc-800 text-zinc-400 border-zinc-700'
+                              ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20'
+                              : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-300 dark:border-zinc-700'
                           }`}
                         >
                           {item.status}
@@ -500,11 +508,11 @@ export default function MyProjectsDashboardPage() {
                           </span>
                         )}
                       </div>
-                      <h3 className="text-base font-bold text-white">
+                      <h3 className="text-base font-bold text-zinc-950 dark:text-white">
                         {item.project?.title}
                       </h3>
                       {item.project?.tagline && (
-                        <p className="text-xs text-zinc-400 mt-0.5">{item.project.tagline}</p>
+                        <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">{item.project.tagline}</p>
                       )}
                     </div>
 
@@ -522,7 +530,7 @@ export default function MyProjectsDashboardPage() {
                           <button
                             disabled={isCurrentResponding}
                             onClick={() => handleRespondInvitation(contributorRecordId, 'DECLINED')}
-                            className="px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-zinc-300 border border-zinc-700 transition-colors"
+                            className="px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-50 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700 transition-colors"
                           >
                             Decline
                           </button>
@@ -532,7 +540,7 @@ export default function MyProjectsDashboardPage() {
                         <button
                           disabled={isCurrentResponding}
                           onClick={() => handleLeaveProject(item.project.id, contributorRecordId)}
-                          className="px-3 py-1.5 rounded-lg text-xs font-mono font-bold uppercase text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all flex items-center gap-1"
+                          className="px-3 py-1.5 rounded-lg text-xs font-mono font-bold uppercase text-zinc-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20 transition-all flex items-center gap-1"
                           title="Leave this collaboration"
                         >
                           <LogOut className="w-3.5 h-3.5" />
@@ -542,7 +550,7 @@ export default function MyProjectsDashboardPage() {
                       {item.project?.slug && (
                         <Link
                           href={`/projects/${item.project.slug}`}
-                          className="px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-white transition-colors"
+                          className="px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-white transition-colors"
                         >
                           View Project
                         </Link>
@@ -553,7 +561,7 @@ export default function MyProjectsDashboardPage() {
               })}
             </div>
           ) : (
-            <div className="py-16 text-center rounded-xl border border-dashed border-zinc-800 bg-zinc-950/40 text-zinc-400 text-xs font-mono">
+            <div className="py-16 text-center rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-950/40 text-zinc-500 dark:text-zinc-400 text-xs font-mono">
               You have not been added as a collaborator to any other student projects yet.
             </div>
           )
@@ -563,12 +571,12 @@ export default function MyProjectsDashboardPage() {
             {filteredOwned.map((project: MyProjectsResponse['owned'][number]) => (
               <div
                 key={project.id}
-                className="p-5 rounded-xl border border-zinc-800/80 bg-zinc-950/70 hover:border-zinc-700 hover:bg-zinc-900/40 transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-5"
+                className="p-5 rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-950/70 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-50/50 dark:hover:bg-zinc-900/40 shadow-sm transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-5"
               >
                 {/* Project Info */}
                 <div className="flex items-start gap-4 min-w-0">
                   {project.cover_image_url ? (
-                    <div className="w-24 h-16 rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden shrink-0">
+                    <div className="w-24 h-16 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 overflow-hidden shrink-0">
                       <img
                         src={project.cover_image_url}
                         alt={project.title}
@@ -582,40 +590,40 @@ export default function MyProjectsDashboardPage() {
                       <span
                         className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider border ${
                           project.visibility === 'PUBLISHED'
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
                             : project.visibility === 'DRAFT'
-                            ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                            : 'bg-zinc-800 text-zinc-400 border-zinc-700'
+                            ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20'
+                            : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-300 dark:border-zinc-700'
                         }`}
                       >
                         {project.visibility}
                       </span>
-                      <span className="text-[11px] font-mono text-zinc-400">
+                      <span className="text-[11px] font-mono text-zinc-500 dark:text-zinc-400">
                         {project.category}
                       </span>
-                      <span className="text-[11px] font-mono text-zinc-500">
+                      <span className="text-[11px] font-mono text-zinc-400 dark:text-zinc-500">
                         /projects/{project.slug}
                       </span>
                     </div>
 
-                    <h3 className="text-base font-bold text-white truncate">
+                    <h3 className="text-base font-bold text-zinc-950 dark:text-white truncate">
                       {project.title}
                     </h3>
-                    <p className="text-xs text-zinc-400 line-clamp-1 mt-0.5 max-w-xl">
+                    <p className="text-xs text-zinc-600 dark:text-zinc-400 line-clamp-1 mt-0.5 max-w-xl">
                       {project.tagline}
                     </p>
 
-                    <div className="flex items-center gap-4 mt-2 text-xs font-mono text-zinc-400">
-                      <span className="flex items-center gap-1 text-rose-400">
+                    <div className="flex items-center gap-4 mt-2 text-xs font-mono text-zinc-500 dark:text-zinc-400">
+                      <span className="flex items-center gap-1 text-rose-600 dark:text-rose-400">
                         <Heart className="w-3.5 h-3.5 fill-current" />
                         <span>{project.like_count} likes</span>
                       </span>
-                      <span className="flex items-center gap-1 text-cyan-400">
+                      <span className="flex items-center gap-1 text-cyan-600 dark:text-cyan-400">
                         <Eye className="w-3.5 h-3.5" />
                         <span>{project.view_count} views</span>
                       </span>
                       {project.contributors && project.contributors.length > 0 && (
-                        <span className="flex items-center gap-1 text-zinc-300">
+                        <span className="flex items-center gap-1 text-zinc-600 dark:text-zinc-300">
                           <Users className="w-3.5 h-3.5" />
                           <span>{project.contributors.length} collaborators</span>
                         </span>
@@ -623,7 +631,7 @@ export default function MyProjectsDashboardPage() {
                     </div>
 
                     {project.latest_moderation && (
-                      <div className="mt-2.5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-mono">
+                      <div className="mt-2.5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs font-mono">
                         <span className="font-bold">Moderator Notice ({project.latest_moderation.action}):</span>{' '}
                         {project.latest_moderation.reason}
                       </div>
@@ -632,11 +640,11 @@ export default function MyProjectsDashboardPage() {
                 </div>
 
                 {/* Actions Toolbar */}
-                <div className="flex flex-wrap items-center gap-2 lg:shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-zinc-800/60">
+                <div className="flex flex-wrap items-center gap-2 lg:shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-zinc-200 dark:border-zinc-800/60">
                   {/* View Live */}
                   <Link
                     href={`/projects/${project.slug}`}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono uppercase font-semibold bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono uppercase font-semibold bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-800 transition-colors"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                     <span>View</span>
@@ -646,17 +654,17 @@ export default function MyProjectsDashboardPage() {
                   <button
                     type="button"
                     onClick={() => setPreviewMarkdownProject(project)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono uppercase font-semibold bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono uppercase font-semibold bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 transition-colors"
                     title="Quick Preview Markdown document"
                   >
-                    <FileText className="w-3.5 h-3.5 text-cyan-400" />
+                    <FileText className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
                     <span>Preview</span>
                   </button>
 
                   {/* Edit Project */}
                   <Link
                     href={`/projects/${project.slug}/edit`}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono uppercase font-semibold bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/30 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono uppercase font-semibold bg-blue-50 dark:bg-blue-600/10 hover:bg-blue-100 dark:hover:bg-blue-600/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30 transition-colors"
                     title="Edit Project"
                   >
                     <Pencil className="w-3.5 h-3.5" />
@@ -668,7 +676,7 @@ export default function MyProjectsDashboardPage() {
                     onClick={() => handleTogglePublish(project)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold uppercase tracking-wider transition-colors border ${
                       project.visibility === 'PUBLISHED'
-                        ? 'bg-zinc-900 hover:bg-zinc-800 text-amber-300 border-amber-500/30'
+                        ? 'bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-500/30'
                         : 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500'
                     }`}
                   >
@@ -681,7 +689,7 @@ export default function MyProjectsDashboardPage() {
                       setSlugModalProject(project);
                       setNewSlug(project.slug);
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono uppercase font-semibold text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono uppercase font-semibold text-zinc-700 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 transition-colors"
                     title="Change Project URL Slug"
                   >
                     <Link2 className="w-3.5 h-3.5" />
@@ -698,7 +706,7 @@ export default function MyProjectsDashboardPage() {
                       setInviteError(null);
                       setInviteSuccess(null);
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono uppercase font-semibold text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono uppercase font-semibold text-zinc-700 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 transition-colors"
                     title="Manage Project Collaborators"
                   >
                     <Users className="w-3.5 h-3.5" />
@@ -708,7 +716,7 @@ export default function MyProjectsDashboardPage() {
                   {/* Delete */}
                   <button
                     onClick={() => setDeleteModalProject(project)}
-                    className="p-2 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                    className="p-2 rounded-lg text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
                     title="Delete Project"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -718,11 +726,11 @@ export default function MyProjectsDashboardPage() {
             ))}
           </div>
         ) : (
-          <div className="py-16 text-center rounded-xl border border-dashed border-zinc-800 bg-zinc-950/40">
-            <h3 className="text-base font-bold text-white">
+          <div className="py-16 text-center rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800 bg-white/60 dark:bg-zinc-950/40 shadow-sm">
+            <h3 className="text-base font-bold text-zinc-950 dark:text-white">
               No projects found in this tab
             </h3>
-            <p className="mt-1 text-xs text-zinc-400">
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
               You haven&apos;t created any projects matching this filter yet.
             </p>
             <Link
@@ -738,30 +746,30 @@ export default function MyProjectsDashboardPage() {
         {/* Change Slug Modal */}
         {slugModalProject && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div className="w-full max-w-md bg-zinc-950 border border-zinc-800 p-6 sm:p-8 rounded-2xl shadow-2xl relative">
+            <div className="w-full max-w-md bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 p-6 sm:p-8 rounded-2xl shadow-2xl relative text-zinc-950 dark:text-white">
               <button
                 onClick={() => setSlugModalProject(null)}
-                className="absolute top-4 right-4 p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors"
+                className="absolute top-4 right-4 p-1.5 rounded-lg text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
 
-              <h3 className="text-lg font-extrabold tracking-tight text-white mb-2">
+              <h3 className="text-lg font-extrabold tracking-tight text-zinc-950 dark:text-white mb-2">
                 Change Project Slug
               </h3>
-              <p className="text-xs text-zinc-400 mb-4 leading-relaxed">
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-4 leading-relaxed">
                 Updating your slug will preserve historical redirects from your old URL directly to the new URL without redirect loops.
               </p>
 
               {slugError && (
-                <div className="p-3 mb-4 rounded-lg bg-red-500/10 border border-red-500/30 text-xs font-mono text-red-300">
+                <div className="p-3 mb-4 rounded-lg bg-red-500/10 border border-red-500/30 text-xs font-mono text-red-600 dark:text-red-300">
                   {slugError}
                 </div>
               )}
 
               <form onSubmit={handleChangeSlug} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-mono uppercase tracking-wider text-zinc-400 mb-1.5">
+                  <label className="block text-xs font-mono uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5">
                     New Slug * (lowercase, numbers, and hyphens)
                   </label>
                   <input
@@ -770,15 +778,15 @@ export default function MyProjectsDashboardPage() {
                     onChange={(e) => setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
                     placeholder="my-new-project-slug"
                     required
-                    className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3.5 py-2.5 text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#0057FF]"
+                    className="w-full rounded-lg border border-zinc-300 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-3.5 py-2.5 text-xs font-mono text-zinc-950 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#0057FF]"
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-800">
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-200 dark:border-zinc-800">
                   <button
                     type="button"
                     onClick={() => setSlugModalProject(null)}
-                    className="px-4 py-2 rounded-lg text-xs font-mono font-bold uppercase text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors"
+                    className="px-4 py-2 rounded-lg text-xs font-mono font-bold uppercase text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
                   >
                     Cancel
                   </button>
@@ -797,53 +805,53 @@ export default function MyProjectsDashboardPage() {
         {/* Manage Collaborators & Invitations Modal */}
         {manageTeamProject && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-            <div className="w-full max-w-lg bg-zinc-950 border border-zinc-800 p-6 sm:p-8 rounded-2xl shadow-2xl relative my-8">
+            <div className="w-full max-w-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 p-6 sm:p-8 rounded-2xl shadow-2xl relative my-8 text-zinc-950 dark:text-white">
               <button
                 onClick={closeManageTeamModal}
-                className="absolute top-4 right-4 p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors"
+                className="absolute top-4 right-4 p-1.5 rounded-lg text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
                 title="Close"
               >
                 <X className="w-4 h-4" />
               </button>
 
               <div className="flex items-center gap-2 mb-1">
-                <span className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                <span className="p-1.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
                   <Users className="w-4 h-4" />
                 </span>
-                <h3 className="text-lg font-extrabold tracking-tight text-white">
+                <h3 className="text-lg font-extrabold tracking-tight text-zinc-950 dark:text-white">
                   Project Collaborators
                 </h3>
               </div>
-              <p className="text-xs text-zinc-400 mb-6 leading-relaxed">
-                Manage peer contributors for <strong className="text-white">{manageTeamProject.title}</strong>. Accepted collaborators are displayed publicly on your showcase.
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-6 leading-relaxed">
+                Manage peer contributors for <strong className="text-zinc-950 dark:text-white">{manageTeamProject.title}</strong>. Accepted collaborators are displayed publicly on your showcase.
               </p>
 
               {/* Section 1: Active Collaborators & Pending Invites */}
               <div className="mb-6">
-                <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-300 mb-3 flex items-center justify-between">
+                <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 mb-3 flex items-center justify-between">
                   <span>Team Members & Invitations</span>
                   {teamContributors.length > 0 && (
-                    <span className="text-[10px] text-zinc-500 lowercase font-normal">
+                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500 lowercase font-normal">
                       ({teamContributors.length} total)
                     </span>
                   )}
                 </h4>
 
                 {isLoadingContributors ? (
-                  <div className="p-4 rounded-xl border border-zinc-800/80 bg-zinc-900/30 text-center text-xs font-mono text-zinc-500 flex items-center justify-center gap-2">
+                  <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-zinc-900/30 text-center text-xs font-mono text-zinc-500 flex items-center justify-center gap-2">
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     <span>Loading collaborators...</span>
                   </div>
                 ) : contributorsError ? (
-                  <div className="p-4 rounded-xl border border-red-500/30 bg-red-500/10 text-xs font-mono text-red-300 flex items-center justify-between gap-3">
+                  <div className="p-4 rounded-xl border border-red-500/30 bg-red-500/10 text-xs font-mono text-red-600 dark:text-red-300 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+                      <AlertCircle className="w-4 h-4 shrink-0 text-red-500 dark:text-red-400" />
                       <span>Failed to load collaborators: {contributorsError}</span>
                     </div>
                     <button
                       type="button"
                       onClick={() => fetchContributors(manageTeamProject.id)}
-                      className="px-2.5 py-1 rounded bg-red-500/20 hover:bg-red-500/30 text-white text-[10px] font-bold uppercase transition-colors shrink-0"
+                      className="px-2.5 py-1 rounded bg-red-500/20 hover:bg-red-500/30 text-red-700 dark:text-white text-[10px] font-bold uppercase transition-colors shrink-0"
                     >
                       Retry
                     </button>
@@ -855,26 +863,26 @@ export default function MyProjectsDashboardPage() {
                       return (
                         <div
                           key={c.id}
-                          className="p-3 rounded-xl border border-zinc-800/80 bg-zinc-900/50 flex items-center justify-between gap-3 text-xs"
+                          className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-zinc-900/50 flex items-center justify-between gap-3 text-xs"
                         >
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 mb-0.5">
-                              <span className="font-semibold text-white truncate">
+                              <span className="font-semibold text-zinc-950 dark:text-white truncate">
                                 {c.name || c.email || c.invited_email}
                               </span>
                               <span
                                 className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase border ${
                                   c.status === 'ACCEPTED'
-                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
                                     : c.status === 'PENDING'
-                                    ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                                    : 'bg-zinc-800 text-zinc-400 border-zinc-700'
+                                    ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20'
+                                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-300 dark:border-zinc-700'
                                 }`}
                               >
                                 {c.status}
                               </span>
                             </div>
-                            <div className="text-[11px] text-zinc-400 font-mono truncate">
+                            <div className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono truncate">
                               {c.role} {c.email ? `• ${c.email}` : c.invited_email ? `• ${c.invited_email}` : ''}
                             </div>
                           </div>
@@ -882,7 +890,7 @@ export default function MyProjectsDashboardPage() {
                           <button
                             disabled={isRevoking}
                             onClick={() => handleRevokeContributor(c.id)}
-                            className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all flex items-center gap-1 shrink-0"
+                            className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20 transition-all flex items-center gap-1 shrink-0"
                             title={c.status === 'PENDING' ? 'Cancel Invitation' : 'Revoke Collaborator'}
                           >
                             {isRevoking ? (
@@ -899,28 +907,28 @@ export default function MyProjectsDashboardPage() {
                     })}
                   </div>
                 ) : (
-                  <div className="p-4 rounded-xl border border-dashed border-zinc-800/80 bg-zinc-900/20 text-center text-xs text-zinc-500 font-mono">
+                  <div className="p-4 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/20 text-center text-xs text-zinc-500 font-mono">
                     No collaborators invited yet. Use the form below to add peers.
                   </div>
                 )}
               </div>
 
               {/* Section 2: Invite Collaborator Form */}
-              <div className="pt-5 border-t border-zinc-800">
-                <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-300 mb-3 flex items-center gap-1.5">
-                  <UserPlus className="w-3.5 h-3.5 text-blue-400" />
+              <div className="pt-5 border-t border-zinc-200 dark:border-zinc-800">
+                <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 mb-3 flex items-center gap-1.5">
+                  <UserPlus className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                   <span>Invite a Peer Collaborator</span>
                 </h4>
 
                 {inviteError && (
-                  <div className="p-3 mb-3 rounded-lg bg-red-500/10 border border-red-500/30 text-xs font-mono text-red-300 flex items-start gap-2">
+                  <div className="p-3 mb-3 rounded-lg bg-red-500/10 border border-red-500/30 text-xs font-mono text-red-600 dark:text-red-300 flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                     <span>{inviteError}</span>
                   </div>
                 )}
 
                 {inviteSuccess && (
-                  <div className="p-3 mb-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-xs font-mono text-emerald-300 flex items-start gap-2">
+                  <div className="p-3 mb-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-xs font-mono text-emerald-700 dark:text-emerald-300 flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
                     <span>{inviteSuccess}</span>
                   </div>
@@ -928,7 +936,7 @@ export default function MyProjectsDashboardPage() {
 
                 <form onSubmit={handleInviteCollaborator} className="space-y-3.5">
                   <div>
-                    <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">
+                    <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1">
                       Institutional Email *
                     </label>
                     <input
@@ -938,7 +946,7 @@ export default function MyProjectsDashboardPage() {
                       placeholder="peer.name@adypu.edu.in or @newtonschool.co"
                       required
                       disabled={isSendingInvite}
-                      className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3.5 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#0057FF]"
+                      className="w-full rounded-lg border border-zinc-300 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-3.5 py-2 text-xs text-zinc-950 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#0057FF]"
                     />
                     <p className="text-[10px] text-zinc-500 font-mono mt-1">
                       Permitted domains: @adypu.edu.in and @newtonschool.co
@@ -946,7 +954,7 @@ export default function MyProjectsDashboardPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-400 mb-1">
+                    <label className="block text-[11px] font-mono uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1">
                       Role Description * (e.g. Frontend Engineer, ML Researcher)
                     </label>
                     <input
@@ -956,7 +964,7 @@ export default function MyProjectsDashboardPage() {
                       placeholder="e.g. Lead Designer & Prototyper"
                       required
                       disabled={isSendingInvite}
-                      className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3.5 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#0057FF]"
+                      className="w-full rounded-lg border border-zinc-300 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-3.5 py-2 text-xs text-zinc-950 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#0057FF]"
                     />
                   </div>
 
@@ -964,7 +972,7 @@ export default function MyProjectsDashboardPage() {
                     <button
                       type="button"
                       onClick={closeManageTeamModal}
-                      className="px-4 py-2 rounded-lg text-xs font-mono font-bold uppercase text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors"
+                      className="px-4 py-2 rounded-lg text-xs font-mono font-bold uppercase text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
                     >
                       Done
                     </button>
@@ -992,21 +1000,21 @@ export default function MyProjectsDashboardPage() {
         {/* Markdown Document Preview Modal */}
         {previewMarkdownProject && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-            <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
+            <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden text-zinc-950 dark:text-white">
               {/* Modal Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/80 bg-zinc-900/60">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-zinc-900/60">
                 <div className="min-w-0 pr-4">
-                  <span className="text-[10px] font-mono text-cyan-400 uppercase tracking-wider font-bold">
+                  <span className="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 uppercase tracking-wider font-bold">
                     PROJECT MARKDOWN PREVIEW
                   </span>
-                  <h3 className="text-lg font-bold text-white truncate">
+                  <h3 className="text-lg font-bold text-zinc-950 dark:text-white truncate">
                     {previewMarkdownProject.title}
                   </h3>
                 </div>
                 <button
                   type="button"
                   onClick={() => setPreviewMarkdownProject(null)}
-                  className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                  className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                   aria-label="Close preview"
                 >
                   <X className="w-5 h-5" />
@@ -1015,11 +1023,11 @@ export default function MyProjectsDashboardPage() {
 
               {/* Modal Body */}
               <div className="p-6 sm:p-8 overflow-y-auto max-h-[calc(90vh-130px)]">
-                <div className="mb-4 pb-3 border-b border-zinc-900 flex items-center justify-between">
-                  <span className="text-xs font-mono text-zinc-400">
+                <div className="mb-4 pb-3 border-b border-zinc-200 dark:border-zinc-900 flex items-center justify-between">
+                  <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">
                     Rendered with NST GitHub-Flavored Markdown Engine
                   </span>
-                  <span className="px-2.5 py-1 text-xs font-mono rounded bg-zinc-900 text-zinc-300 border border-zinc-800">
+                  <span className="px-2.5 py-1 text-xs font-mono rounded bg-zinc-100 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800">
                     {previewMarkdownProject.category}
                   </span>
                 </div>
@@ -1027,7 +1035,7 @@ export default function MyProjectsDashboardPage() {
               </div>
 
               {/* Modal Footer */}
-              <div className="flex items-center justify-between px-6 py-3.5 border-t border-zinc-800/80 bg-zinc-900/40">
+              <div className="flex items-center justify-between px-6 py-3.5 border-t border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-zinc-900/40">
                 <span className="text-xs font-mono text-zinc-500">
                   /projects/{previewMarkdownProject.slug}
                 </span>
@@ -1041,7 +1049,7 @@ export default function MyProjectsDashboardPage() {
                   <button
                     type="button"
                     onClick={() => setPreviewMarkdownProject(null)}
-                    className="px-4 py-1.5 rounded-lg text-xs font-mono font-semibold bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 transition-colors"
+                    className="px-4 py-1.5 rounded-lg text-xs font-mono font-semibold bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 transition-colors"
                   >
                     Close
                   </button>
@@ -1054,19 +1062,19 @@ export default function MyProjectsDashboardPage() {
         {/* Delete Confirmation Modal */}
         {deleteModalProject && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div className="w-full max-w-sm bg-zinc-950 border border-zinc-800 p-6 sm:p-8 rounded-2xl shadow-2xl relative">
-              <h3 className="text-base font-extrabold tracking-tight text-white mb-2">
+            <div className="w-full max-w-sm bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 p-6 sm:p-8 rounded-2xl shadow-2xl relative text-zinc-950 dark:text-white">
+              <h3 className="text-base font-extrabold tracking-tight text-zinc-950 dark:text-white mb-2">
                 Delete Project?
               </h3>
-              <p className="text-xs text-zinc-400 mb-6 leading-relaxed">
-                Are you sure you want to delete <strong className="text-white">{deleteModalProject.title}</strong>? This will soft-delete the project and remove it from public discovery.
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-6 leading-relaxed">
+                Are you sure you want to delete <strong className="text-zinc-950 dark:text-white">{deleteModalProject.title}</strong>? This will soft-delete the project and remove it from public discovery.
               </p>
 
               <div className="flex items-center justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setDeleteModalProject(null)}
-                  className="px-4 py-2 rounded-lg text-xs font-mono font-bold uppercase text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors"
+                  className="px-4 py-2 rounded-lg text-xs font-mono font-bold uppercase text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
                 >
                   Cancel
                 </button>
@@ -1081,6 +1089,17 @@ export default function MyProjectsDashboardPage() {
             </div>
           </div>
         )}
+
+        <ConfirmDialog
+          isOpen={!!leaveConfirmTarget}
+          onClose={() => setLeaveConfirmTarget(null)}
+          onConfirm={confirmLeaveProject}
+          title="Leave Project"
+          message="Are you sure you want to leave this project collaboration? You will no longer be listed as a collaborator."
+          confirmText="LEAVE PROJECT"
+          isDestructive={true}
+          isLoading={!!respondingId}
+        />
           </main>
         </div>
       </StudentAppShell>

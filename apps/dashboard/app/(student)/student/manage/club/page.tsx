@@ -402,20 +402,168 @@ const manageClubStyles = `
     background: #0d0e12;
     color: var(--bg-paper-white);
   }
-  .mc-modal-notice {
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-    padding: 12px 14px;
-    background: rgba(245,245,242,0.04);
-    border: 1px solid rgba(245,245,242,0.15);
-    margin-bottom: 20px;
+  .mc-header-border {
+    border-bottom: 3px solid #fff;
   }
-  .mc-modal-notice-text {
-    font-family: var(--font-body);
-    font-size: 13px;
+  .mc-header-title {
+    color: #fff;
+  }
+  .mc-loading-screen {
+    background: #050505;
+  }
+  .mc-text-contrast {
+    color: #fff;
+  }
+  .mc-text-muted {
     color: #a0a4b8;
-    line-height: 1.5;
+  }
+  .mc-border-subtle {
+    border-color: rgba(245,245,242,0.1);
+  }
+
+  /* ── LIGHT THEME OVERRIDES (Scoped to html.light) ── */
+  html.light .mc-page {
+    background: #F8F9FA;
+    color: #0A0D14;
+  }
+  html.light .mc-header-border {
+    border-bottom: 3px solid #0A0D14 !important;
+  }
+  html.light .mc-header-title {
+    color: #0A0D14 !important;
+  }
+  html.light .mc-loading-screen {
+    background: #F8F9FA;
+  }
+  html.light .mc-micro {
+    color: #475467;
+  }
+  html.light .mc-card {
+    border-color: #0A0D14;
+    background: #FFFFFF;
+    box-shadow: 6px 6px 0px #000000;
+  }
+  html.light .mc-card-title {
+    color: #0A0D14;
+    border-bottom: 2px solid rgba(10, 13, 20, 0.12);
+  }
+  html.light .mc-input, html.light .mc-textarea, html.light .mc-select {
+    background: #FFFFFF;
+    border: 2px solid rgba(10, 13, 20, 0.2);
+    color: #0A0D14;
+  }
+  html.light .mc-input:focus, html.light .mc-textarea:focus, html.light .mc-select:focus {
+    border-color: var(--electric-blue);
+  }
+  html.light .mc-input::placeholder, html.light .mc-textarea::placeholder {
+    color: #98A2B3;
+  }
+  html.light .mc-label {
+    color: #475467;
+  }
+  html.light .mc-btn-primary {
+    border-color: #0A0D14;
+    box-shadow: 3px 3px 0px #000000;
+  }
+  html.light .mc-btn-primary:hover:not(:disabled) {
+    box-shadow: 5px 5px 0px #000000;
+  }
+  html.light .mc-btn-secondary {
+    color: #0A0D14;
+    border: 2px solid rgba(10, 13, 20, 0.3);
+  }
+  html.light .mc-btn-secondary:hover:not(:disabled) {
+    border-color: #0A0D14;
+    background: rgba(10, 13, 20, 0.05);
+  }
+  html.light .mc-btn-danger {
+    border: 2px solid #000000;
+    box-shadow: 3px 3px 0px #000000;
+  }
+  html.light .mc-btn-danger:hover:not(:disabled) {
+    box-shadow: 5px 5px 0px #000000;
+  }
+  html.light .mc-banner-frame {
+    border: 2px solid rgba(10, 13, 20, 0.15);
+    background: #EAECF0;
+  }
+  html.light .mc-banner-placeholder {
+    color: #667085;
+  }
+  html.light .mc-table-wrap {
+    border: 2px solid rgba(10, 13, 20, 0.12);
+  }
+  html.light .mc-table thead tr {
+    background: #F8F9FA;
+    border-bottom: 2px solid rgba(10, 13, 20, 0.12);
+  }
+  html.light .mc-table th {
+    color: #475467;
+  }
+  html.light .mc-table tbody tr {
+    border-bottom: 1px solid rgba(10, 13, 20, 0.08);
+  }
+  html.light .mc-table tbody tr:hover {
+    background: rgba(0, 87, 255, 0.04);
+  }
+  html.light .mc-table td {
+    color: #0A0D14;
+  }
+  html.light .mc-role-pill {
+    border: 1px solid rgba(10, 13, 20, 0.15);
+    background: rgba(10, 13, 20, 0.05);
+    color: #344054;
+  }
+  html.light .mc-avatar {
+    border: 1px solid rgba(10, 13, 20, 0.15);
+    background: #EAECF0;
+  }
+  html.light .mc-avatar-initials {
+    color: #0A0D14;
+  }
+  html.light .mc-stat-card {
+    border: 2px solid rgba(10, 13, 20, 0.12);
+    background: #F8F9FA;
+  }
+  html.light .mc-stat-label {
+    color: #475467;
+  }
+  html.light .mc-stat-value {
+    color: #0A0D14;
+  }
+  html.light .mc-suggestion-box {
+    border: 2px solid rgba(10, 13, 20, 0.18);
+    background: #FFFFFF;
+  }
+  html.light .mc-suggestion-item {
+    border-bottom: 1px solid rgba(10, 13, 20, 0.08);
+  }
+  html.light .mc-suggestion-item:hover {
+    background: rgba(0, 87, 255, 0.08);
+  }
+  html.light .mc-selected-card {
+    border: 2px solid var(--electric-blue);
+    background: rgba(0, 87, 255, 0.06);
+  }
+  html.light .mc-modal-inner {
+    background: #FFFFFF;
+    color: #0A0D14;
+  }
+  html.light .mc-modal-notice {
+    background: rgba(10, 13, 20, 0.03);
+    border: 1px solid rgba(10, 13, 20, 0.12);
+  }
+  html.light .mc-modal-notice-text {
+    color: #475467;
+  }
+  html.light .mc-text-contrast {
+    color: #0A0D14 !important;
+  }
+  html.light .mc-text-muted {
+    color: #475467 !important;
+  }
+  html.light .mc-border-subtle {
+    border-color: rgba(10, 13, 20, 0.12) !important;
   }
 `;
 
@@ -602,15 +750,15 @@ function AddMemberModal({ clubId, isOpen, onClose }: { clubId: string, isOpen: b
                   </div>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14, color: '#fff' }}>
+                      <span className="mc-text-contrast" style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14 }}>
                         {selectedStudent.fullName}
                       </span>
                       <Check style={{ width: 14, height: 14, color: 'var(--acid-green)' }} />
                     </div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#a0a4b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div className="mc-text-muted" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {selectedStudent.email}
                     </div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#666', marginTop: 2 }}>
+                    <div className="mc-text-muted" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, marginTop: 2, opacity: 0.7 }}>
                       ID: {selectedStudent.id}
                     </div>
                   </div>
@@ -638,7 +786,7 @@ function AddMemberModal({ clubId, isOpen, onClose }: { clubId: string, isOpen: b
                   style={{ paddingLeft: 36 }}
                   autoFocus
                 />
-                <Search style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: '#666' }} />
+                <Search className="mc-text-muted" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14 }} />
               </div>
 
               {/* Live Dropdown / Suggestions */}
@@ -657,7 +805,7 @@ function AddMemberModal({ clubId, isOpen, onClose }: { clubId: string, isOpen: b
                         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--acid-green)' }}>
                           ADD VIA DIRECT USER ID
                         </div>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#aaa' }}>
+                        <div className="mc-text-muted" style={{ fontFamily: 'var(--font-mono)', fontSize: 10 }}>
                           {searchTerm.trim()}
                         </div>
                       </div>
@@ -675,10 +823,10 @@ function AddMemberModal({ clubId, isOpen, onClose }: { clubId: string, isOpen: b
                         <span className="mc-avatar-initials">{c.fullName.charAt(0) || 'S'}</span>
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600, color: '#fff' }}>
+                        <div className="mc-text-contrast" style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600 }}>
                           {c.fullName}
                         </div>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#a0a4b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <div className="mc-text-muted" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {c.email}
                         </div>
                       </div>
@@ -687,7 +835,7 @@ function AddMemberModal({ clubId, isOpen, onClose }: { clubId: string, isOpen: b
                   ))}
 
                   {filteredCandidates.length === 0 && !isUUID && (
-                    <div style={{ padding: '14px 16px', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, color: '#666' }}>
+                    <div className="mc-text-muted" style={{ padding: '14px 16px', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
                       {isAdminUsersLoading ? 'SEARCHING DIRECTORY...' : 'NO MATCHING STUDENTS FOUND. TRY PASTING A USER UUID.'}
                     </div>
                   )}
@@ -760,8 +908,8 @@ function ChangeRoleModal({ clubId, member, isOpen, onClose }: { clubId: string, 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="CHANGE ROLE">
       <div className="mc-modal-inner">
-        <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#a0a4b8', marginBottom: 20, lineHeight: 1.5 }}>
-          Update role for <strong style={{ color: '#fff' }}>{member.full_name}</strong>.
+        <p className="mc-text-muted" style={{ fontFamily: 'var(--font-body)', fontSize: 14, marginBottom: 20, lineHeight: 1.5 }}>
+          Update role for <strong className="mc-text-contrast">{member.full_name}</strong>.
         </p>
 
         {error && <div className="mc-error-banner">{error}</div>}
@@ -844,14 +992,14 @@ export default function ClubManagePage() {
 
   if (!isHydrated || isLoading) {
     return (
-      <div style={{ minHeight: '100vh', background: '#050505', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="mc-loading-screen" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{
             width: 32, height: 32, border: '3px solid #0057FF',
             borderTopColor: 'transparent', borderRadius: '50%',
             animation: 'spin 0.8s linear infinite', margin: '0 auto 12px',
           }} />
-          <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', color: '#a0a4b8' }}>
+          <p className="mc-text-muted" style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase' }}>
             LOADING CLUB...
           </p>
         </div>
@@ -881,9 +1029,9 @@ export default function ClubManagePage() {
         <div className="mc-inner">
 
           {/* Page Header */}
-          <div style={{ borderBottom: '3px solid #fff', paddingBottom: 24, marginBottom: 40 }}>
+          <div className="mc-header-border" style={{ paddingBottom: 24, marginBottom: 40 }}>
             <div className="mc-micro mc-micro-blue" style={{ marginBottom: 8 }}>CLUB HUB // MANAGEMENT</div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(36px, 5.5vw, 64px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: -1, lineHeight: 0.92, color: '#fff' }}>
+            <h1 className="mc-header-title" style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(36px, 5.5vw, 64px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: -1, lineHeight: 0.92 }}>
               {club.name}
             </h1>
           </div>
@@ -960,11 +1108,11 @@ export default function ClubManagePage() {
                     <div>
                       <div className="mc-label">Description</div>
                       {club.description ? (
-                        <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#a0a4b8', lineHeight: 1.65, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                        <p className="mc-text-muted" style={{ fontFamily: 'var(--font-body)', fontSize: 14, lineHeight: 1.65, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                           {club.description}
                         </p>
                       ) : (
-                        <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#444', fontStyle: 'italic' }}>No description set.</p>
+                        <p className="mc-text-muted" style={{ fontFamily: 'var(--font-body)', fontSize: 14, fontStyle: 'italic' }}>No description set.</p>
                       )}
                     </div>
                   </div>
@@ -1014,9 +1162,9 @@ export default function ClubManagePage() {
                                         <span className="mc-avatar-initials">{member.full_name.substring(0, 2)}</span>
                                       )}
                                     </div>
-                                    <span style={{ fontWeight: 600, color: '#fff' }}>
+                                    <span className="mc-text-contrast" style={{ fontWeight: 600 }}>
                                       {member.full_name}
-                                      {isSelf && <span style={{ color: '#a0a4b8', fontWeight: 400, marginLeft: 6, fontSize: 11 }}>(You)</span>}
+                                      {isSelf && <span className="mc-text-muted" style={{ fontWeight: 400, marginLeft: 6, fontSize: 11 }}>(You)</span>}
                                     </span>
                                   </div>
                                 </td>
@@ -1035,7 +1183,7 @@ export default function ClubManagePage() {
                                         </button>
                                       </>
                                     ) : (
-                                      <span style={{ color: '#333', fontFamily: 'JetBrains Mono, monospace', fontSize: 11 }}>—</span>
+                                      <span className="mc-text-muted" style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11 }}>—</span>
                                     )}
                                   </div>
                                 </td>
@@ -1087,8 +1235,8 @@ export default function ClubManagePage() {
 
       <Modal isOpen={!!selectedMemberRemove} onClose={() => !removeMemberMutation.isPending && setSelectedMemberRemove(null)} title="REMOVE MEMBER">
         <div className="mc-modal-inner">
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: '#a0a4b8', marginBottom: 20, lineHeight: 1.5 }}>
-            Are you sure you want to remove <strong style={{ color: '#fff' }}>{selectedMemberRemove?.full_name}</strong> from {club.name}?
+          <p className="mc-text-muted" style={{ fontFamily: 'var(--font-body)', fontSize: 14, marginBottom: 20, lineHeight: 1.5 }}>
+            Are you sure you want to remove <strong className="mc-text-contrast">{selectedMemberRemove?.full_name}</strong> from {club.name}?
           </p>
 
           {removeError && <div className="mc-error-banner">{removeError}</div>}

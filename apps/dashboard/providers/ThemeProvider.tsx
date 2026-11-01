@@ -6,76 +6,99 @@ import { ConfigProvider, theme as antdTheme, App } from "antd";
 import { ThemeProvider as NextThemeProvider, useTheme } from "next-themes";
 
 const sharedToken = {
-  colorPrimary: "#1677ff",
-  colorInfo: "#1677ff",
+  colorPrimary: "#0057FF",
+  colorInfo: "#0057FF",
   borderRadius: 6,
   wireframe: false,
   fontFamily:
     'var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
 };
 
-const lightTheme = {
+export const lightTheme = {
   token: {
     ...sharedToken,
-    colorSuccess: "#3f8600",
-    colorWarning: "#faad14",
-    colorError: "#cf1322",
-    colorText: "#111827",
-    colorTextSecondary: "#667085",
-    colorBorder: "#E5E7EB",
-    colorBorderSecondary: "#E5E7EB",
-    colorBgLayout: "#F5F7FA",
+    colorSuccess: "#16A34A",
+    colorWarning: "#D97706",
+    colorError: "#DC2626",
+    colorText: "#0A0D14",
+    colorTextSecondary: "#475467",
+    colorTextDescription: "#667085",
+    colorBorder: "#E4E7EC",
+    colorBorderSecondary: "#E4E7EC",
+    colorBgLayout: "#F8F9FA",
     colorBgContainer: "#FFFFFF",
     colorBgElevated: "#FFFFFF",
   },
   components: {
     Layout: {
       headerBg: "#FFFFFF",
-      siderBg: "#0F172A",
+      siderBg: "#FFFFFF",
+      bodyBg: "#F8F9FA",
     },
     Menu: {
-      darkItemBg: "#0F172A",
-      darkItemSelectedBg: "rgba(22, 119, 255, 0.1)",
-      darkItemSelectedColor: "#1677ff",
-      darkItemColor: "#94A3B8",
-      darkItemHoverBg: "rgba(255, 255, 255, 0.05)",
-      darkItemHoverColor: "#F8FAFC",
-    },
-    Card: {
-      paddingLG: 20,
-    },
-  },
-};
-
-const darkTheme = {
-  token: {
-    ...sharedToken,
-    colorSuccess: "#73D13D",
-    colorWarning: "#FFC53D",
-    colorError: "#FF7875",
-    colorText: "#F3F4F6",
-    colorTextSecondary: "#9CA3AF",
-    colorBorder: "#263244",
-    colorBorderSecondary: "#263244",
-    colorBgLayout: "#111827",
-    colorBgContainer: "#18212F",
-    colorBgElevated: "#1F2937",
-  },
-  components: {
-    Layout: {
-      headerBg: "#111827",
-      siderBg: "#0B1220",
-    },
-    Menu: {
+      itemBg: "#FFFFFF",
+      itemSelectedBg: "rgba(0, 87, 255, 0.08)",
+      itemSelectedColor: "#0057FF",
+      itemColor: "#475467",
+      itemHoverBg: "rgba(0, 87, 255, 0.04)",
+      itemHoverColor: "#0057FF",
       darkItemBg: "#0B1220",
-      darkItemSelectedBg: "rgba(22, 119, 255, 0.15)",
-      darkItemSelectedColor: "#1677ff",
+      darkItemSelectedBg: "rgba(0, 87, 255, 0.15)",
+      darkItemSelectedColor: "#337BFF",
       darkItemColor: "#9CA3AF",
       darkItemHoverBg: "rgba(255, 255, 255, 0.05)",
       darkItemHoverColor: "#F3F4F6",
     },
     Card: {
       paddingLG: 20,
+      colorBgContainer: "#FFFFFF",
+      colorBorderSecondary: "#E4E7EC",
+    },
+    Table: {
+      headerBg: "#F8F9FA",
+      headerColor: "#0A0D14",
+      rowHoverBg: "#F1F4F9",
+      borderColor: "#E4E7EC",
+    },
+  },
+};
+
+export const darkTheme = {
+  token: {
+    ...sharedToken,
+    colorSuccess: "#73D13D",
+    colorWarning: "#FFC53D",
+    colorError: "#FF7875",
+    colorText: "#F5F5F2",
+    colorTextSecondary: "#A0A4B8",
+    colorTextDescription: "#71768A",
+    colorBorder: "rgba(245, 245, 242, 0.15)",
+    colorBorderSecondary: "rgba(245, 245, 242, 0.12)",
+    colorBgLayout: "#050505",
+    colorBgContainer: "#0D0E12",
+    colorBgElevated: "#141721",
+  },
+  components: {
+    Layout: {
+      headerBg: "#0D0E12",
+      siderBg: "#090A0F",
+      bodyBg: "#050505",
+    },
+    Menu: {
+      darkItemBg: "#090A0F",
+      darkItemSelectedBg: "rgba(0, 87, 255, 0.15)",
+      darkItemSelectedColor: "#337BFF",
+      darkItemColor: "#A0A4B8",
+      darkItemHoverBg: "rgba(255, 255, 255, 0.05)",
+      darkItemHoverColor: "#F5F5F2",
+    },
+    Card: {
+      paddingLG: 20,
+    },
+    Table: {
+      headerBg: "#141721",
+      rowHoverBg: "rgba(255, 255, 255, 0.03)",
+      borderColor: "rgba(245, 245, 242, 0.12)",
     },
   },
 };

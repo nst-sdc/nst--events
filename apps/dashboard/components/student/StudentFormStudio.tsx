@@ -519,33 +519,33 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
   );
 
   return (
-    <section className="mb-8 border-2 border-white/10 bg-[#0e1017]">
+    <section className="mb-8 border-2 border-black/15 dark:border-white/10 bg-white dark:bg-[#0e1017]">
       {/* STUDIO HEADER */}
-      <div className="bg-[#141721] border-b-2 border-white/10 px-6 py-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-zinc-100 dark:bg-[#141721] border-b-2 border-black/10 dark:border-white/10 px-6 py-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2.5 h-2.5 bg-[#0057FF]"></span>
-            <span className="font-mono text-xs font-bold text-[#00E5FF] tracking-widest uppercase">
+            <span className="font-mono text-xs font-bold text-[#0057FF] dark:text-[#00E5FF] tracking-widest uppercase">
               ORGANIZER CONTROL
             </span>
           </div>
-          <h2 className="font-mono font-black text-white text-xl tracking-wide uppercase">
+          <h2 className="font-mono font-black text-zinc-900 dark:text-white text-xl tracking-wide uppercase">
             FORM STUDIO
           </h2>
-          <p className="text-xs font-mono text-[#a0a4b8] mt-0.5">
+          <p className="text-xs font-mono text-zinc-500 dark:text-[#a0a4b8] mt-0.5">
             Configure registration requirements and scheduled milestone forms
           </p>
         </div>
 
         {/* TAB SWITCHER */}
-        <div className="flex border-2 border-white/20 bg-[#090a0f] p-1 gap-1">
+        <div className="flex border-2 border-black/20 dark:border-white/20 bg-zinc-200 dark:bg-[#090a0f] p-1 gap-1">
           <button
             type="button"
             onClick={() => setActiveTab('registration')}
             className={`px-4 py-2 font-mono text-xs font-bold tracking-wider uppercase flex items-center gap-2 transition-all ${
               activeTab === 'registration'
                 ? 'bg-[#0057FF] text-white shadow-[2px_2px_0px_#000]'
-                : 'text-[#a0a4b8] hover:text-white'
+                : 'text-zinc-600 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white'
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
@@ -557,7 +557,7 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
             className={`px-4 py-2 font-mono text-xs font-bold tracking-wider uppercase flex items-center gap-2 transition-all ${
               activeTab === 'forms'
                 ? 'bg-[#0057FF] text-white shadow-[2px_2px_0px_#000]'
-                : 'text-[#a0a4b8] hover:text-white'
+                : 'text-zinc-600 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white'
             }`}
           >
             <Calendar className="w-3.5 h-3.5" />
@@ -569,10 +569,10 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
       {/* NOTIFICATION FEEDBACK TOAST */}
       {feedbackMsg && (
         <div
-          className={`px-6 py-3 border-b border-white/10 font-mono text-xs flex items-center gap-2 uppercase tracking-wide ${
+          className={`px-6 py-3 border-b border-black/10 dark:border-white/10 font-mono text-xs flex items-center gap-2 uppercase tracking-wide ${
             feedbackMsg.type === 'success'
-              ? 'bg-[#C8FF00]/15 text-[#C8FF00] border-[#C8FF00]/30'
-              : 'bg-[#FF3B30]/15 text-[#FF3B30] border-[#FF3B30]/30'
+              ? 'bg-[#C8FF00]/15 text-emerald-800 dark:text-[#C8FF00] border-emerald-500/30 dark:border-[#C8FF00]/30'
+              : 'bg-red-500/15 text-red-700 dark:text-[#FF3B30] border-red-500/30 dark:border-[#FF3B30]/30'
           }`}
         >
           {feedbackMsg.type === 'success' ? (
@@ -595,10 +595,10 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
               <div className="flex items-center gap-3">
                 <AlertCircle className="w-5 h-5 text-[#FF9500] shrink-0" />
                 <div>
-                  <div className="font-mono font-bold text-xs text-white uppercase tracking-wider">
+                  <div className="font-mono font-bold text-xs text-zinc-900 dark:text-white uppercase tracking-wider">
                     Unsaved Questionnaire Changes
                   </div>
-                  <div className="font-mono text-[11px] text-[#a0a4b8]">
+                  <div className="font-mono text-[11px] text-zinc-600 dark:text-[#a0a4b8]">
                     Questions or requirement rules have been modified. Click Save to persist.
                   </div>
                 </div>
@@ -610,7 +610,7 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
                     setLocalQuestions(serverEventFields || []);
                     setIsDirty(false);
                   }}
-                  className="px-3 py-2 border border-white/20 text-[#a0a4b8] hover:text-white font-mono text-xs font-bold uppercase tracking-wider"
+                  className="px-3 py-2 border border-black/20 dark:border-white/20 text-zinc-600 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white font-mono text-xs font-bold uppercase tracking-wider"
                 >
                   Discard
                 </button>
@@ -628,10 +628,10 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
           )}
 
           {/* PRESETS BAR */}
-          <div className="p-4 bg-[#141721] border-2 border-white/10 space-y-3">
+          <div className="p-4 bg-zinc-50 dark:bg-[#141721] border-2 border-black/10 dark:border-white/10 space-y-3">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#C8FF00]" />
-              <span className="font-mono text-xs font-bold text-white uppercase tracking-wider">
+              <Sparkles className="w-4 h-4 text-amber-500 dark:text-[#C8FF00]" />
+              <span className="font-mono text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
                 Instant Presets (1-Click Add)
               </span>
             </div>
@@ -646,17 +646,17 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
                     onClick={() => handleAddPreset(preset)}
                     className={`p-3 text-left border font-mono transition-all flex flex-col justify-between ${
                       isAdded
-                        ? 'bg-[#090a0f] border-white/5 opacity-50 cursor-not-allowed'
-                        : 'bg-[#090a0f] border-white/15 hover:border-[#0057FF] hover:bg-white/5'
+                        ? 'bg-zinc-100 dark:bg-[#090a0f] border-black/5 dark:border-white/5 opacity-50 cursor-not-allowed'
+                        : 'bg-white dark:bg-[#090a0f] border-black/15 dark:border-white/15 hover:border-[#0057FF] hover:bg-zinc-50 dark:hover:bg-white/5'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <span className="text-xs font-bold text-white">{preset.label}</span>
-                      <span className="text-[10px] text-[#00E5FF] px-1.5 py-0.5 border border-[#00E5FF]/30">
+                      <span className="text-xs font-bold text-zinc-900 dark:text-white">{preset.label}</span>
+                      <span className="text-[10px] text-[#0057FF] dark:text-[#00E5FF] px-1.5 py-0.5 border border-[#0057FF]/30 dark:border-[#00E5FF]/30">
                         {preset.fieldType}
                       </span>
                     </div>
-                    <span className="text-[10px] text-[#a0a4b8] mt-1 line-clamp-1">
+                    <span className="text-[10px] text-zinc-500 dark:text-[#a0a4b8] mt-1 line-clamp-1">
                       {isAdded ? '✓ Already Added' : preset.description}
                     </span>
                   </button>
@@ -666,20 +666,20 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
           </div>
 
           {/* IMMUTABILITY BANNER */}
-          <div className="p-3 bg-[#0057FF]/10 border border-[#0057FF]/30 flex items-start gap-2.5">
-            <AlertCircle className="w-4 h-4 text-[#00E5FF] shrink-0 mt-0.5" />
-            <p className="font-mono text-[11px] text-[#a0a4b8] leading-relaxed">
-              <strong className="text-white">FIELD DEFINITIONS ARE IMMUTABLE:</strong> Field types, choice options, and machine keys cannot be altered once created to preserve historical responses. You can freely reorder questions, toggle required status, or remove/replace them.
+          <div className="p-3 bg-[#0057FF]/5 dark:bg-[#0057FF]/10 border border-[#0057FF]/20 dark:border-[#0057FF]/30 flex items-start gap-2.5">
+            <AlertCircle className="w-4 h-4 text-[#0057FF] dark:text-[#00E5FF] shrink-0 mt-0.5" />
+            <p className="font-mono text-[11px] text-zinc-600 dark:text-[#a0a4b8] leading-relaxed">
+              <strong className="text-zinc-900 dark:text-white">FIELD DEFINITIONS ARE IMMUTABLE:</strong> Field types, choice options, and machine keys cannot be altered once created to preserve historical responses. You can freely reorder questions, toggle required status, or remove/replace them.
             </p>
           </div>
 
           {/* TOOLBAR */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
             <div>
-              <h3 className="font-mono text-sm font-bold text-white uppercase tracking-wide">
+              <h3 className="font-mono text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-wide">
                 Registration Questions ({localQuestions.length})
               </h3>
-              <p className="font-mono text-xs text-[#a0a4b8]">
+              <p className="font-mono text-xs text-zinc-500 dark:text-[#a0a4b8]">
                 Questions presented to students during the event registration flow
               </p>
             </div>
@@ -687,7 +687,7 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
               <button
                 type="button"
                 onClick={() => setIsAttachModalOpen(true)}
-                className="px-3 py-2 border-2 border-white/20 text-[#a0a4b8] hover:text-white font-mono text-xs font-bold tracking-wider uppercase transition-all"
+                className="px-3 py-2 border-2 border-black/20 dark:border-white/20 text-zinc-600 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white font-mono text-xs font-bold tracking-wider uppercase transition-all"
               >
                 Attach Pool Field
               </button>
@@ -702,7 +702,7 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
                   setCustomRequired(true);
                   setIsCreateQuestionModalOpen(true);
                 }}
-                className="px-4 py-2 bg-[#00E5FF] text-black border-2 border-[#00E5FF] hover:bg-[#00b8cc] font-mono text-xs font-bold tracking-widest uppercase flex items-center gap-2 shadow-[2px_2px_0px_#000] transition-all"
+                className="px-4 py-2 bg-[#0057FF] text-white border-2 border-[#0057FF] hover:bg-[#0042c7] font-mono text-xs font-bold tracking-widest uppercase flex items-center gap-2 shadow-[2px_2px_0px_#000] transition-all"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Custom Question
@@ -721,12 +721,12 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
 
           {/* QUESTION CARDS LIST */}
           {localQuestions.length === 0 ? (
-            <div className="p-8 border-2 border-dashed border-white/15 bg-[#090a0f] text-center space-y-3">
-              <FileText className="w-8 h-8 text-white/30 mx-auto" />
-              <div className="font-mono text-sm font-bold text-white uppercase tracking-wider">
+            <div className="p-8 border-2 border-dashed border-black/15 dark:border-white/15 bg-zinc-50 dark:bg-[#090a0f] text-center space-y-3">
+              <FileText className="w-8 h-8 text-zinc-400 dark:text-white/30 mx-auto" />
+              <div className="font-mono text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
                 No Registration Questions Added
               </div>
-              <p className="font-mono text-xs text-[#a0a4b8] max-w-md mx-auto">
+              <p className="font-mono text-xs text-zinc-500 dark:text-[#a0a4b8] max-w-md mx-auto">
                 Students will register with standard profile information only. Click any preset above or create custom questions to ask for project repos, food preferences, or T-shirt sizes.
               </p>
               <button
@@ -744,33 +744,33 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
                 return (
                   <div
                     key={q.fieldDefinitionId}
-                    className="p-5 border-2 border-white/15 bg-[#141721] space-y-4 shadow-[3px_3px_0px_#000]"
+                    className="p-5 border-2 border-black/15 dark:border-white/15 bg-white dark:bg-[#141721] space-y-4 shadow-[3px_3px_0px_#000]"
                   >
                     {/* CARD HEADER */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-black/10 dark:border-white/10 pb-3">
                       <div className="flex items-start gap-3">
                         <span className="px-2 py-0.5 bg-[#0057FF] text-white font-mono text-xs font-bold">
                           #{idx + 1}
                         </span>
                         <div>
-                          <h4 className="font-mono font-bold text-white text-base tracking-wide flex items-center gap-2">
+                          <h4 className="font-mono font-bold text-zinc-900 dark:text-white text-base tracking-wide flex items-center gap-2">
                             {def.label}
                             {q.isRequired && <span className="text-[#FF3B30]">*</span>}
                           </h4>
                           <div className="flex flex-wrap items-center gap-2 mt-1">
-                            <span className="px-1.5 py-0.5 bg-black/40 border border-[#00E5FF]/40 text-[#00E5FF] font-mono text-[10px] uppercase">
+                            <span className="px-1.5 py-0.5 bg-zinc-100 dark:bg-black/40 border border-[#0057FF]/30 dark:border-[#00E5FF]/40 text-[#0057FF] dark:text-[#00E5FF] font-mono text-[10px] uppercase">
                               {def.fieldType}
                             </span>
                             <span
                               className={`px-1.5 py-0.5 border font-mono text-[10px] uppercase ${
                                 def.isReusable
-                                  ? 'border-[#0057FF]/40 text-[#60a5fa] bg-[#0057FF]/10'
-                                  : 'border-white/20 text-[#a0a4b8] bg-white/5'
+                                  ? 'border-[#0057FF]/40 text-[#0057FF] dark:text-[#60a5fa] bg-[#0057FF]/10'
+                                  : 'border-black/20 dark:border-white/20 text-zinc-600 dark:text-[#a0a4b8] bg-black/5 dark:bg-white/5'
                               }`}
                             >
                               {def.isReusable ? 'Saves to Student Profile' : 'Event-Only Answer'}
                             </span>
-                            <span className="font-mono text-[11px] text-white/40">
+                            <span className="font-mono text-[11px] text-zinc-400 dark:text-white/40">
                               key: {def.key}
                             </span>
                           </div>
@@ -779,7 +779,7 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
 
                       {/* CARD CONTROLS */}
                       <div className="flex items-center gap-3">
-                        <label className="flex items-center gap-2 font-mono text-xs text-[#F5F5F2] cursor-pointer">
+                        <label className="flex items-center gap-2 font-mono text-xs text-zinc-900 dark:text-[#F5F5F2] cursor-pointer">
                           <input
                             type="checkbox"
                             checked={q.isRequired}
@@ -791,12 +791,12 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
                           <span>Required</span>
                         </label>
 
-                        <div className="flex border border-white/20 bg-black/40">
+                        <div className="flex border border-black/20 dark:border-white/20 bg-zinc-100 dark:bg-black/40">
                           <button
                             type="button"
                             disabled={idx === 0}
                             onClick={() => handleMoveQuestion(idx, 'up')}
-                            className="p-1.5 hover:bg-white/10 text-[#a0a4b8] hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
+                            className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 text-zinc-600 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
                             title="Move Up"
                           >
                             <ArrowUp className="w-3.5 h-3.5" />
@@ -805,7 +805,7 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
                             type="button"
                             disabled={idx === localQuestions.length - 1}
                             onClick={() => handleMoveQuestion(idx, 'down')}
-                            className="p-1.5 hover:bg-white/10 text-[#a0a4b8] hover:text-white disabled:opacity-30 disabled:hover:bg-transparent border-l border-white/20"
+                            className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 text-zinc-600 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white disabled:opacity-30 disabled:hover:bg-transparent border-l border-black/20 dark:border-white/20"
                             title="Move Down"
                           >
                             <ArrowDown className="w-3.5 h-3.5" />
@@ -815,7 +815,7 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
                         <button
                           type="button"
                           onClick={() => setQuestionToRemove(q)}
-                          className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/30 transition-all"
+                          className="p-1.5 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 border border-red-500/30 transition-all"
                           title="Remove from form"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -847,10 +847,10 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
           {/* TOOLBAR */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="font-mono text-sm font-bold text-white uppercase tracking-wide">
+              <h3 className="font-mono text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-wide">
                 In-Event Forms & Milestones ({eventForms?.length || 0})
               </h3>
-              <p className="font-mono text-xs text-[#a0a4b8]">
+              <p className="font-mono text-xs text-zinc-500 dark:text-[#a0a4b8]">
                 Independently scheduled project milestone submissions, surveys, and checkpoints
               </p>
             </div>
@@ -865,8 +865,8 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
           </div>
 
           {/* TIMEZONE & AVAILABILITY NOTICE */}
-          <div className="p-3 bg-[#090a0f] border border-white/10 flex items-center gap-2 text-xs font-mono text-[#a0a4b8]">
-            <Clock className="w-4 h-4 text-[#00E5FF] shrink-0" />
+          <div className="p-3 bg-zinc-50 dark:bg-[#090a0f] border border-black/10 dark:border-white/10 flex items-center gap-2 text-xs font-mono text-zinc-600 dark:text-[#a0a4b8]">
+            <Clock className="w-4 h-4 text-[#0057FF] dark:text-[#00E5FF] shrink-0" />
             <span>
               Server-enforced availability interval is <code>[releaseAt, closeAt)</code>. Timestamps reflect {getLocalTimezoneDisplay()}.
             </span>
@@ -874,12 +874,12 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
 
           {/* SCHEDULED FORM CARDS LIST */}
           {(!eventForms || eventForms.length === 0) ? (
-            <div className="p-8 border-2 border-dashed border-white/15 bg-[#090a0f] text-center space-y-3">
-              <Calendar className="w-8 h-8 text-white/30 mx-auto" />
-              <div className="font-mono text-sm font-bold text-white uppercase tracking-wider">
+            <div className="p-8 border-2 border-dashed border-black/15 dark:border-white/15 bg-zinc-50 dark:bg-[#090a0f] text-center space-y-3">
+              <Calendar className="w-8 h-8 text-zinc-400 dark:text-white/30 mx-auto" />
+              <div className="font-mono text-sm font-bold text-zinc-900 dark:text-white uppercase tracking-wider">
                 No In-Event Forms Created
               </div>
-              <p className="font-mono text-xs text-[#a0a4b8] max-w-md mx-auto">
+              <p className="font-mono text-xs text-zinc-500 dark:text-[#a0a4b8] max-w-md mx-auto">
                 Create milestone checkpoints, project repo submissions, or post-event feedback surveys scheduled around your event schedule.
               </p>
               <button
@@ -895,26 +895,26 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
               {eventForms.map((formItem) => {
                 const avail = getFormAvailability(formItem);
                 const purposeBadges: Record<string, string> = {
-                  SUBMISSION: 'text-blue-400 border-blue-500/30 bg-blue-500/10',
-                  FEEDBACK: 'text-orange-400 border-orange-500/30 bg-orange-500/10',
-                  CUSTOM: 'text-purple-400 border-purple-500/30 bg-purple-500/10',
-                  REGISTRATION: 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10',
+                  SUBMISSION: 'text-blue-600 dark:text-blue-400 border-blue-500/30 bg-blue-500/10',
+                  FEEDBACK: 'text-orange-600 dark:text-orange-400 border-orange-500/30 bg-orange-500/10',
+                  CUSTOM: 'text-purple-600 dark:text-purple-400 border-purple-500/30 bg-purple-500/10',
+                  REGISTRATION: 'text-cyan-700 dark:text-cyan-400 border-cyan-500/30 bg-cyan-500/10',
                 };
 
                 return (
                   <div
                     key={formItem.id}
-                    className="p-5 border-2 border-white/15 bg-[#141721] space-y-4 shadow-[3px_3px_0px_#000]"
+                    className="p-5 border-2 border-black/15 dark:border-white/15 bg-white dark:bg-[#141721] space-y-4 shadow-[3px_3px_0px_#000]"
                   >
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <h4 className="font-mono font-bold text-white text-base tracking-wide">
+                          <h4 className="font-mono font-bold text-zinc-900 dark:text-white text-base tracking-wide">
                             {formItem.title}
                           </h4>
                           <span
                             className={`px-2 py-0.5 border font-mono text-[10px] uppercase font-bold ${
-                              purposeBadges[formItem.purpose] || 'text-white border-white/20'
+                              purposeBadges[formItem.purpose] || 'text-zinc-700 dark:text-white border-black/20 dark:border-white/20'
                             }`}
                           >
                             {formItem.purpose}
@@ -922,23 +922,23 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
                           <span
                             className={`px-2 py-0.5 border font-mono text-[10px] uppercase font-bold flex items-center gap-1.5 ${
                               avail.status === 'open'
-                                ? 'text-[#C8FF00] border-[#C8FF00]/40 bg-[#C8FF00]/10'
+                                ? 'text-emerald-800 dark:text-[#C8FF00] border-emerald-500/40 dark:border-[#C8FF00]/40 bg-emerald-500/10 dark:bg-[#C8FF00]/10'
                                 : avail.status === 'scheduled'
-                                  ? 'text-[#00E5FF] border-[#00E5FF]/40 bg-[#00E5FF]/10'
+                                  ? 'text-[#0057FF] dark:text-[#00E5FF] border-[#0057FF]/40 dark:border-[#00E5FF]/40 bg-[#0057FF]/10 dark:bg-[#00E5FF]/10'
                                   : avail.status === 'closed'
-                                    ? 'text-[#a0a4b8] border-white/20 bg-white/5'
-                                    : 'text-[#FFD700] border-[#FFD700]/40 bg-[#FFD700]/10'
+                                    ? 'text-zinc-600 dark:text-[#a0a4b8] border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5'
+                                    : 'text-amber-700 dark:text-[#FFD700] border-amber-500/40 dark:border-[#FFD700]/40 bg-amber-500/10 dark:bg-[#FFD700]/10'
                             }`}
                           >
                             <span
                               className={`w-1.5 h-1.5 rounded-full ${
                                 avail.status === 'open'
-                                  ? 'bg-[#C8FF00]'
+                                  ? 'bg-emerald-500 dark:bg-[#C8FF00]'
                                   : avail.status === 'scheduled'
-                                    ? 'bg-[#00E5FF]'
+                                    ? 'bg-[#0057FF] dark:bg-[#00E5FF]'
                                     : avail.status === 'closed'
                                       ? 'bg-gray-400'
-                                      : 'bg-[#FFD700]'
+                                      : 'bg-amber-500 dark:bg-[#FFD700]'
                               }`}
                             ></span>
                             {avail.label}
@@ -946,16 +946,16 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
                         </div>
 
                         {/* SCHEDULE DETAILS */}
-                        <div className="mt-2 text-xs font-mono text-[#a0a4b8] space-y-0.5">
+                        <div className="mt-2 text-xs font-mono text-zinc-600 dark:text-[#a0a4b8] space-y-0.5">
                           {avail.status === 'draft' && (
-                            <div className="text-yellow-400/90 text-xs font-mono font-medium">
+                            <div className="text-amber-700 dark:text-yellow-400/90 text-xs font-mono font-medium">
                               Draft: Hidden from students. Publish when ready.
                             </div>
                           )}
                           <div>
-                            <span className="text-white/60">Release: </span>
+                            <span className="text-zinc-500 dark:text-white/60">Release: </span>
                             {formItem.releaseAt ? (
-                              <span className="text-white">
+                              <span className="text-zinc-900 dark:text-white">
                                 {new Date(formItem.releaseAt).toLocaleString()}
                               </span>
                             ) : (
@@ -963,9 +963,9 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
                             )}
                           </div>
                           <div>
-                            <span className="text-white/60">Close Deadline: </span>
+                            <span className="text-zinc-500 dark:text-white/60">Close Deadline: </span>
                             {formItem.closeAt ? (
-                              <span className="text-white">
+                              <span className="text-zinc-900 dark:text-white">
                                 {new Date(formItem.closeAt).toLocaleString()}
                               </span>
                             ) : (
@@ -981,7 +981,7 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
                           <button
                             type="button"
                             onClick={() => setUnpublishingFormItem(formItem)}
-                            className="px-3 py-1.5 border border-orange-500/40 text-orange-400 hover:bg-orange-500/10 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all"
+                            className="px-3 py-1.5 border border-orange-500/40 text-orange-600 dark:text-orange-400 hover:bg-orange-500/10 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all"
                           >
                             Unpublish
                           </button>
@@ -998,7 +998,7 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
                         <button
                           type="button"
                           onClick={() => setSelectedFormForFields(formItem)}
-                          className="px-3 py-1.5 bg-[#090a0f] border border-white/20 hover:border-white text-white font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all"
+                          className="px-3 py-1.5 bg-white dark:bg-[#090a0f] border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white text-zinc-900 dark:text-white font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all"
                         >
                           <Settings className="w-3.5 h-3.5" />
                           Questions
@@ -1006,7 +1006,7 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
                         <button
                           type="button"
                           onClick={() => setSelectedFormForResponses(formItem)}
-                          className="px-3 py-1.5 bg-[#090a0f] border border-white/20 hover:border-white text-white font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all"
+                          className="px-3 py-1.5 bg-white dark:bg-[#090a0f] border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white text-zinc-900 dark:text-white font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all"
                         >
                           <Eye className="w-3.5 h-3.5" />
                           Responses
@@ -1014,7 +1014,7 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
                         <button
                           type="button"
                           onClick={() => handleOpenEditForm(formItem)}
-                          className="px-3 py-1.5 bg-[#090a0f] border border-white/20 hover:border-white text-white font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all"
+                          className="px-3 py-1.5 bg-white dark:bg-[#090a0f] border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white text-zinc-900 dark:text-white font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                           Edit
@@ -1023,7 +1023,7 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
                           type="button"
                           disabled={isDuplicatingForm}
                           onClick={() => handleDuplicateForm(formItem)}
-                          className="px-3 py-1.5 bg-[#090a0f] border border-white/20 hover:border-white text-white font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50 transition-all"
+                          className="px-3 py-1.5 bg-white dark:bg-[#090a0f] border border-black/20 dark:border-white/20 hover:border-black dark:hover:border-white text-zinc-900 dark:text-white font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50 transition-all"
                         >
                           <Copy className="w-3.5 h-3.5" />
                           Clone
@@ -1031,7 +1031,7 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
                         <button
                           type="button"
                           onClick={() => setDeletingFormId(formItem.id)}
-                          className="px-3 py-1.5 border border-red-500/30 text-red-400 hover:bg-red-500/10 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all"
+                          className="px-3 py-1.5 border border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                           Delete
@@ -1052,9 +1052,9 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
         onClose={() => setIsCreateQuestionModalOpen(false)}
         title="CREATE CUSTOM QUESTION"
       >
-        <form onSubmit={handleCreateCustomQuestion} className="p-6 bg-[#0d0e12] text-white space-y-4">
+        <form onSubmit={handleCreateCustomQuestion} className="p-6 bg-white dark:bg-[#0d0e12] text-zinc-900 dark:text-white space-y-4">
           <div>
-            <label className="block font-mono text-xs uppercase text-[#a0a4b8] mb-1">
+            <label className="block font-mono text-xs uppercase text-zinc-600 dark:text-[#a0a4b8] mb-1">
               Question Prompt / Label *
             </label>
             <input
@@ -1066,12 +1066,12 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
                 setCustomKey(generateFieldKey(e.target.value, existingKeys));
               }}
               placeholder="e.g. Project Repository URL or T-Shirt Size"
-              className="w-full bg-[#141721] border border-white/20 px-3 py-2 text-white font-mono text-xs focus:border-[#0057FF] focus:outline-none"
+              className="w-full bg-zinc-50 dark:bg-[#141721] border border-black/20 dark:border-white/20 px-3 py-2 text-zinc-900 dark:text-white font-mono text-xs focus:border-[#0057FF] focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="block font-mono text-xs uppercase text-[#a0a4b8] mb-1">
+            <label className="block font-mono text-xs uppercase text-zinc-600 dark:text-[#a0a4b8] mb-1">
               Machine Key (Auto-Generated) *
             </label>
             <input
@@ -1080,18 +1080,18 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
               value={customKey}
               onChange={(e) => setCustomKey(e.target.value)}
               placeholder="e.g. project_repository_url"
-              className="w-full bg-[#141721] border border-white/20 px-3 py-2 text-white font-mono text-xs focus:border-[#0057FF] focus:outline-none"
+              className="w-full bg-zinc-50 dark:bg-[#141721] border border-black/20 dark:border-white/20 px-3 py-2 text-zinc-900 dark:text-white font-mono text-xs focus:border-[#0057FF] focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="block font-mono text-xs uppercase text-[#a0a4b8] mb-1">
+            <label className="block font-mono text-xs uppercase text-zinc-600 dark:text-[#a0a4b8] mb-1">
               Supported Field Type *
             </label>
             <select
               value={customType}
               onChange={(e) => setCustomType(e.target.value as FieldType)}
-              className="w-full bg-[#141721] border border-white/20 px-3 py-2 text-white font-mono text-xs focus:border-[#0057FF] focus:outline-none"
+              className="w-full bg-zinc-50 dark:bg-[#141721] border border-black/20 dark:border-white/20 px-3 py-2 text-zinc-900 dark:text-white font-mono text-xs focus:border-[#0057FF] focus:outline-none"
             >
               <option value="TEXT">TEXT (Single line free text)</option>
               <option value="URL">URL (Validated web address)</option>
@@ -1106,7 +1106,7 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
 
           {['SELECT', 'MULTI_SELECT', 'RADIO'].includes(customType) && (
             <div>
-              <label className="block font-mono text-xs uppercase text-[#a0a4b8] mb-1">
+              <label className="block font-mono text-xs uppercase text-zinc-600 dark:text-[#a0a4b8] mb-1">
                 Options (comma-separated) *
               </label>
               <input
@@ -1115,13 +1115,13 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
                 value={customOptions}
                 onChange={(e) => setCustomOptions(e.target.value)}
                 placeholder="Option 1, Option 2, Option 3"
-                className="w-full bg-[#141721] border border-white/20 px-3 py-2 text-white font-mono text-xs focus:border-[#0057FF] focus:outline-none"
+                className="w-full bg-zinc-50 dark:bg-[#141721] border border-black/20 dark:border-white/20 px-3 py-2 text-zinc-900 dark:text-white font-mono text-xs focus:border-[#0057FF] focus:outline-none"
               />
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-4 pt-2">
-            <label className="flex items-center gap-2 font-mono text-xs text-[#a0a4b8] cursor-pointer">
+            <label className="flex items-center gap-2 font-mono text-xs text-zinc-600 dark:text-[#a0a4b8] cursor-pointer">
               <input
                 type="checkbox"
                 checked={customReusable}
@@ -1130,7 +1130,7 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
               />
               <span>Save to Student Profile</span>
             </label>
-            <label className="flex items-center gap-2 font-mono text-xs text-[#a0a4b8] cursor-pointer">
+            <label className="flex items-center gap-2 font-mono text-xs text-zinc-600 dark:text-[#a0a4b8] cursor-pointer">
               <input
                 type="checkbox"
                 checked={customRequired}
@@ -1141,11 +1141,11 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
             </label>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4 border-t border-white/10">
+          <div className="flex justify-end gap-2 pt-4 border-t border-black/10 dark:border-white/10">
             <button
               type="button"
               onClick={() => setIsCreateQuestionModalOpen(false)}
-              className="px-4 py-2 border border-white/20 text-[#a0a4b8] hover:text-white font-mono text-xs uppercase"
+              className="px-4 py-2 border border-black/20 dark:border-white/20 text-zinc-600 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white font-mono text-xs uppercase"
             >
               Cancel
             </button>
@@ -1166,24 +1166,24 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
         onClose={() => setIsAttachModalOpen(false)}
         title="ATTACH POOL QUESTION"
       >
-        <div className="p-6 bg-[#0d0e12] text-white space-y-3 max-h-[420px] overflow-y-auto">
+        <div className="p-6 bg-white dark:bg-[#0d0e12] text-zinc-900 dark:text-white space-y-3 max-h-[420px] overflow-y-auto">
           {availableToAttach.length === 0 ? (
-            <p className="font-mono text-xs text-[#a0a4b8] text-center py-6">
+            <p className="font-mono text-xs text-zinc-500 dark:text-[#a0a4b8] text-center py-6">
               All existing pool questions have already been attached.
             </p>
           ) : (
             availableToAttach.map((field) => (
               <div
                 key={field.id}
-                className="p-3 border border-white/10 bg-[#141721] flex items-center justify-between gap-3"
+                className="p-3 border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-[#141721] flex items-center justify-between gap-3"
               >
                 <div>
-                  <div className="font-mono font-bold text-xs text-white">{field.label}</div>
+                  <div className="font-mono font-bold text-xs text-zinc-900 dark:text-white">{field.label}</div>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="font-mono text-[10px] text-[#00E5FF] px-1 bg-black/40 border border-[#00E5FF]/30">
+                    <span className="font-mono text-[10px] text-[#0057FF] dark:text-[#00E5FF] px-1 bg-zinc-100 dark:bg-black/40 border border-[#0057FF]/30 dark:border-[#00E5FF]/30">
                       {field.fieldType}
                     </span>
-                    <span className="font-mono text-[10px] text-[#a0a4b8]">
+                    <span className="font-mono text-[10px] text-zinc-500 dark:text-[#a0a4b8]">
                       {field.isReusable ? 'Reusable' : 'Event-Only'}
                     </span>
                   </div>
@@ -1207,7 +1207,7 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
         onClose={() => setIsCreateFormModalOpen(false)}
         title="CREATE IN-EVENT FORM"
       >
-        <form onSubmit={handleCreateFormSubmit} className="p-6 bg-[#0d0e12] text-white space-y-4">
+        <form onSubmit={handleCreateFormSubmit} className="p-6 bg-white dark:bg-[#0d0e12] text-zinc-900 dark:text-white space-y-4">
           {formError && (
             <div className="p-3 bg-red-500/10 border border-[#FF3B30] text-[#FF3B30] font-mono text-xs uppercase">
               {formError}
@@ -1215,7 +1215,7 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
           )}
 
           <div>
-            <label className="block font-mono text-xs uppercase text-[#a0a4b8] mb-1">
+            <label className="block font-mono text-xs uppercase text-zinc-600 dark:text-[#a0a4b8] mb-1">
               Form Title *
             </label>
             <input
@@ -1224,18 +1224,18 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
               value={formTitle}
               onChange={(e) => setFormTitle(e.target.value)}
               placeholder="e.g. Midpoint Milestone Submission, Post-Event Feedback"
-              className="w-full bg-[#141721] border border-white/20 px-3 py-2 text-white font-mono text-xs focus:border-[#0057FF] focus:outline-none"
+              className="w-full bg-zinc-50 dark:bg-[#141721] border border-black/20 dark:border-white/20 px-3 py-2 text-zinc-900 dark:text-white font-mono text-xs focus:border-[#0057FF] focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="block font-mono text-xs uppercase text-[#a0a4b8] mb-1">
+            <label className="block font-mono text-xs uppercase text-zinc-600 dark:text-[#a0a4b8] mb-1">
               Form Purpose *
             </label>
             <select
               value={formPurpose}
               onChange={(e) => setFormPurpose(e.target.value as any)}
-              className="w-full bg-[#141721] border border-white/20 px-3 py-2 text-white font-mono text-xs focus:border-[#0057FF] focus:outline-none"
+              className="w-full bg-zinc-50 dark:bg-[#141721] border border-black/20 dark:border-white/20 px-3 py-2 text-zinc-900 dark:text-white font-mono text-xs focus:border-[#0057FF] focus:outline-none"
             >
               <option value="SUBMISSION">SUBMISSION (Milestone or project artifacts)</option>
               <option value="FEEDBACK">FEEDBACK (Event ratings and surveys)</option>
@@ -1245,40 +1245,40 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block font-mono text-xs uppercase text-[#a0a4b8] mb-1">
+              <label className="block font-mono text-xs uppercase text-zinc-600 dark:text-[#a0a4b8] mb-1">
                 Release Time (Opening)
               </label>
               <input
                 type="datetime-local"
                 value={formReleaseAt}
                 onChange={(e) => setFormReleaseAt(e.target.value)}
-                className="w-full bg-[#141721] border border-white/20 px-3 py-2 text-white font-mono text-xs focus:border-[#0057FF] focus:outline-none"
+                className="w-full bg-zinc-50 dark:bg-[#141721] border border-black/20 dark:border-white/20 px-3 py-2 text-zinc-900 dark:text-white font-mono text-xs focus:border-[#0057FF] focus:outline-none"
               />
-              <span className="block font-mono text-[10px] text-white/40 mt-1">
+              <span className="block font-mono text-[10px] text-zinc-500 dark:text-white/40 mt-1">
                 Leave empty for immediate opening
               </span>
             </div>
             <div>
-              <label className="block font-mono text-xs uppercase text-[#a0a4b8] mb-1">
+              <label className="block font-mono text-xs uppercase text-zinc-600 dark:text-[#a0a4b8] mb-1">
                 Closing Deadline
               </label>
               <input
                 type="datetime-local"
                 value={formCloseAt}
                 onChange={(e) => setFormCloseAt(e.target.value)}
-                className="w-full bg-[#141721] border border-white/20 px-3 py-2 text-white font-mono text-xs focus:border-[#0057FF] focus:outline-none"
+                className="w-full bg-zinc-50 dark:bg-[#141721] border border-black/20 dark:border-white/20 px-3 py-2 text-zinc-900 dark:text-white font-mono text-xs focus:border-[#0057FF] focus:outline-none"
               />
-              <span className="block font-mono text-[10px] text-white/40 mt-1">
+              <span className="block font-mono text-[10px] text-zinc-500 dark:text-white/40 mt-1">
                 Leave empty for no closing deadline
               </span>
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4 border-t border-white/10">
+          <div className="flex justify-end gap-2 pt-4 border-t border-black/10 dark:border-white/10">
             <button
               type="button"
               onClick={() => setIsCreateFormModalOpen(false)}
-              className="px-4 py-2 border border-white/20 text-[#a0a4b8] hover:text-white font-mono text-xs uppercase"
+              className="px-4 py-2 border border-black/20 dark:border-white/20 text-zinc-600 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white font-mono text-xs uppercase"
             >
               Cancel
             </button>
@@ -1299,7 +1299,7 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
         onClose={() => setEditingForm(null)}
         title="EDIT FORM SCHEDULE"
       >
-        <form onSubmit={handleEditFormSubmit} className="p-6 bg-[#0d0e12] text-white space-y-4">
+        <form onSubmit={handleEditFormSubmit} className="p-6 bg-white dark:bg-[#0d0e12] text-zinc-900 dark:text-white space-y-4">
           {formError && (
             <div className="p-3 bg-red-500/10 border border-[#FF3B30] text-[#FF3B30] font-mono text-xs uppercase">
               {formError}
@@ -1307,7 +1307,7 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
           )}
 
           <div>
-            <label className="block font-mono text-xs uppercase text-[#a0a4b8] mb-1">
+            <label className="block font-mono text-xs uppercase text-zinc-600 dark:text-[#a0a4b8] mb-1">
               Form Title *
             </label>
             <input
@@ -1315,40 +1315,40 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
               required
               value={formTitle}
               onChange={(e) => setFormTitle(e.target.value)}
-              className="w-full bg-[#141721] border border-white/20 px-3 py-2 text-white font-mono text-xs focus:border-[#0057FF] focus:outline-none"
+              className="w-full bg-zinc-50 dark:bg-[#141721] border border-black/20 dark:border-white/20 px-3 py-2 text-zinc-900 dark:text-white font-mono text-xs focus:border-[#0057FF] focus:outline-none"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block font-mono text-xs uppercase text-[#a0a4b8] mb-1">
+              <label className="block font-mono text-xs uppercase text-zinc-600 dark:text-[#a0a4b8] mb-1">
                 Release Time (Opening)
               </label>
               <input
                 type="datetime-local"
                 value={formReleaseAt}
                 onChange={(e) => setFormReleaseAt(e.target.value)}
-                className="w-full bg-[#141721] border border-white/20 px-3 py-2 text-white font-mono text-xs focus:border-[#0057FF] focus:outline-none"
+                className="w-full bg-zinc-50 dark:bg-[#141721] border border-black/20 dark:border-white/20 px-3 py-2 text-zinc-900 dark:text-white font-mono text-xs focus:border-[#0057FF] focus:outline-none"
               />
             </div>
             <div>
-              <label className="block font-mono text-xs uppercase text-[#a0a4b8] mb-1">
+              <label className="block font-mono text-xs uppercase text-zinc-600 dark:text-[#a0a4b8] mb-1">
                 Closing Deadline
               </label>
               <input
                 type="datetime-local"
                 value={formCloseAt}
                 onChange={(e) => setFormCloseAt(e.target.value)}
-                className="w-full bg-[#141721] border border-white/20 px-3 py-2 text-white font-mono text-xs focus:border-[#0057FF] focus:outline-none"
+                className="w-full bg-zinc-50 dark:bg-[#141721] border border-black/20 dark:border-white/20 px-3 py-2 text-zinc-900 dark:text-white font-mono text-xs focus:border-[#0057FF] focus:outline-none"
               />
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4 border-t border-white/10">
+          <div className="flex justify-end gap-2 pt-4 border-t border-black/10 dark:border-white/10">
             <button
               type="button"
               onClick={() => setEditingForm(null)}
-              className="px-4 py-2 border border-white/20 text-[#a0a4b8] hover:text-white font-mono text-xs uppercase"
+              className="px-4 py-2 border border-black/20 dark:border-white/20 text-zinc-600 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white font-mono text-xs uppercase"
             >
               Cancel
             </button>
@@ -1369,15 +1369,15 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
         onClose={() => setDeletingFormId(null)}
         title="DELETE SCHEDULED FORM"
       >
-        <div className="p-6 bg-[#0d0e12] text-white space-y-4">
-          <p className="font-mono text-xs text-[#a0a4b8] leading-relaxed">
+        <div className="p-6 bg-white dark:bg-[#0d0e12] text-zinc-900 dark:text-white space-y-4">
+          <p className="font-mono text-xs text-zinc-600 dark:text-[#a0a4b8] leading-relaxed">
             Are you sure you want to delete this scheduled form? All attached form questions and submitted answers will be deleted.
           </p>
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
               onClick={() => setDeletingFormId(null)}
-              className="px-4 py-2 border border-white/20 text-[#a0a4b8] hover:text-white font-mono text-xs uppercase"
+              className="px-4 py-2 border border-black/20 dark:border-white/20 text-zinc-600 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white font-mono text-xs uppercase"
             >
               Cancel
             </button>
@@ -1420,18 +1420,18 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
         title="UNPUBLISH FORM"
         maxWidth="max-w-md"
       >
-        <div className="p-6 bg-[#0d0e12] text-white space-y-4">
-          <p className="font-mono text-xs text-[#a0a4b8] leading-relaxed">
-            Are you sure you want to unpublish <span className="text-white font-bold">{unpublishingFormItem?.title}</span>?
+        <div className="p-6 bg-white dark:bg-[#0d0e12] text-zinc-900 dark:text-white space-y-4">
+          <p className="font-mono text-xs text-zinc-600 dark:text-[#a0a4b8] leading-relaxed">
+            Are you sure you want to unpublish <span className="text-zinc-900 dark:text-white font-bold">{unpublishingFormItem?.title}</span>?
           </p>
-          <p className="font-mono text-xs text-[#FF9500] bg-orange-500/10 p-3 border border-orange-500/20 leading-relaxed">
+          <p className="font-mono text-xs text-amber-700 dark:text-[#FF9500] bg-amber-500/10 p-3 border border-amber-500/20 leading-relaxed">
             Students will no longer be able to see or submit responses to this form. All existing questions and responses will remain preserved.
           </p>
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
               onClick={() => setUnpublishingFormItem(null)}
-              className="px-4 py-2 border border-white/20 text-[#a0a4b8] hover:text-white font-mono text-xs uppercase"
+              className="px-4 py-2 border border-black/20 dark:border-white/20 text-zinc-600 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white font-mono text-xs uppercase"
             >
               Cancel
             </button>
@@ -1454,18 +1454,18 @@ export function StudentFormStudio({ eventId, defaultTab = 'registration' }: Stud
         title="REMOVE QUESTION"
         maxWidth="max-w-md"
       >
-        <div className="p-6 bg-[#0d0e12] text-white space-y-4">
-          <p className="font-mono text-xs text-[#a0a4b8] leading-relaxed">
-            Are you sure you want to remove <span className="text-white font-bold">{questionToRemove?.fieldDefinition.label}</span> from this event's registration questions?
+        <div className="p-6 bg-white dark:bg-[#0d0e12] text-zinc-900 dark:text-white space-y-4">
+          <p className="font-mono text-xs text-zinc-600 dark:text-[#a0a4b8] leading-relaxed">
+            Are you sure you want to remove <span className="text-zinc-900 dark:text-white font-bold">{questionToRemove?.fieldDefinition.label}</span> from this event's registration questions?
           </p>
-          <p className="font-mono text-xs text-[#00E5FF] bg-[#00E5FF]/10 p-3 border border-[#00E5FF]/20 leading-relaxed">
+          <p className="font-mono text-xs text-[#0057FF] dark:text-[#00E5FF] bg-[#0057FF]/10 dark:bg-[#00E5FF]/10 p-3 border border-[#0057FF]/20 dark:border-[#00E5FF]/20 leading-relaxed">
             Any existing registration answers submitted by students will remain safely preserved in the database.
           </p>
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
               onClick={() => setQuestionToRemove(null)}
-              className="px-4 py-2 border border-white/20 text-[#a0a4b8] hover:text-white font-mono text-xs uppercase"
+              className="px-4 py-2 border border-black/20 dark:border-white/20 text-zinc-600 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white font-mono text-xs uppercase"
             >
               Cancel
             </button>

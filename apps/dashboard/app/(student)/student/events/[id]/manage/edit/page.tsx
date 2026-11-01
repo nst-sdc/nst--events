@@ -14,6 +14,7 @@ import { useClubs } from '../../../../../../../hooks/useClubs';
 import { StudentFormStudio } from '../../../../../../../components/student/StudentFormStudio';
 import { MultiSelect } from '../../../../../components/MultiSelect';
 import { Modal } from '../../../../../../../components/ui/Modal';
+import { EVENT_TYPES } from '@nst/shared';
 
 const BANNER_PRESETS = [
   {
@@ -372,10 +373,10 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
 
   if (isLoadingEvent || !event) {
     return (
-      <div className="w-full h-32 flex items-center justify-center border-2 border-white/15 bg-[#090a0f]">
+      <div className="w-full h-32 flex items-center justify-center border-2 border-black/15 dark:border-white/15 bg-white dark:bg-[#090a0f]">
         <div className="flex items-center gap-2.5">
           <div className="w-4 h-4 border-2 border-[#0057FF] border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-[10px] font-mono uppercase tracking-widest text-[#a0a4b8]">Loading Event Specification...</span>
+          <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 dark:text-[#a0a4b8]">Loading Event Specification...</span>
         </div>
       </div>
     );
@@ -385,15 +386,15 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
     <div className="space-y-6 font-sans">
       
       {/* Top action bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b-2 border-white/15 pb-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b-2 border-black/15 dark:border-white/15 pb-4">
         <div>
           <Link 
             href={`/student/events/${eventId}/manage`}
-            className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-widest text-[#0057FF] hover:text-white transition-colors mb-1"
+            className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-widest text-[#0057FF] hover:text-black dark:hover:text-white transition-colors mb-1"
           >
             <ArrowLeft className="w-4 h-4" /> Discard Edits
           </Link>
-          <h1 className="text-2xl font-black text-[#F5F5F2] uppercase tracking-tight" style={{ fontFamily: "'Syne', sans-serif" }}>
+          <h1 className="text-2xl font-black text-zinc-900 dark:text-[#F5F5F2] uppercase tracking-tight" style={{ fontFamily: "'Syne', sans-serif" }}>
             Edit Event Parameters
           </h1>
         </div>
@@ -401,7 +402,7 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
           <button 
             onClick={() => setIsSubmitModalOpen(true)}
             disabled={submitMutation.isPending || updateEvent.isPending}
-            className="px-6 py-3 bg-[#C8FF00] text-black font-mono font-black text-xs tracking-widest hover:bg-white transition-all uppercase flex items-center gap-2 border-2 border-black shadow-[3px_3px_0px_#000] whitespace-nowrap disabled:opacity-50"
+            className="px-6 py-3 bg-[#C8FF00] text-black font-mono font-black text-xs tracking-widest hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all uppercase flex items-center gap-2 border-2 border-black shadow-[3px_3px_0px_#000] whitespace-nowrap disabled:opacity-50"
           >
             <Send className="w-4 h-4" />
             {submitMutation.isPending ? 'Submitting...' : 'Submit for Approval ↗'}
@@ -409,20 +410,20 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
         )}
       </div>
 
-      <form onSubmit={handleSaveDraft} className="space-y-8 p-6 md:p-8 border-2 border-white/15 bg-[#090a0f] shadow-[8px_8px_0px_#000]">
+      <form onSubmit={handleSaveDraft} className="space-y-8 p-6 md:p-8 border-2 border-black/15 dark:border-white/15 bg-white dark:bg-[#090a0f] shadow-[8px_8px_0px_#000]">
         
         {saveError && (
           <div className="p-4 bg-red-500/10 border-2 border-[#FF3B30] text-[#FF3B30] flex items-start gap-3">
             <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
             <div>
               <h4 className="text-xs font-mono font-bold uppercase tracking-wider">Cannot Save Changes</h4>
-              <p className="text-xs font-mono mt-1 text-[#FF857F]">{saveError}</p>
+              <p className="text-xs font-mono mt-1 text-red-600 dark:text-[#FF857F]">{saveError}</p>
             </div>
           </div>
         )}
 
         {saveSuccess && (
-          <div className="p-4 bg-[#C8FF00]/10 border-2 border-[#C8FF00] text-[#C8FF00] flex items-center gap-3">
+          <div className="p-4 bg-[#C8FF00]/10 border-2 border-[#0057FF] dark:border-[#C8FF00] text-[#0057FF] dark:text-[#C8FF00] flex items-center gap-3">
             <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
             <span className="text-xs font-mono uppercase tracking-wider font-bold">
               {event.state === 'DRAFT' ? 'Draft changes saved successfully! Redirecting...' : 'Changes saved successfully! Redirecting...'}
@@ -432,13 +433,13 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
 
         {/* Basic Info */}
         <section className="space-y-4">
-          <div className="flex items-center gap-2 border-b-2 border-white/10 pb-2 mb-4">
+          <div className="flex items-center gap-2 border-b-2 border-black/10 dark:border-white/10 pb-2 mb-4">
             <span className="w-2 h-2 bg-[#0057FF] inline-block"></span>
-            <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-[#F5F5F2] uppercase">Core Specification</h2>
+            <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-zinc-900 dark:text-[#F5F5F2] uppercase">Core Specification</h2>
           </div>
           
           <div>
-            <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Event Title *</label>
+            <label className="block text-[10px] font-mono font-bold text-zinc-600 dark:text-[#a0a4b8] uppercase tracking-widest mb-1.5">Event Title *</label>
             <input 
               required
               minLength={3}
@@ -447,27 +448,27 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
               name="title"
               value={formData.title}
               onChange={handleChange}
-              className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-sm font-sans text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+              className="w-full bg-white dark:bg-[#0e1017] border-2 border-black/20 dark:border-white/20 px-3.5 py-2.5 text-sm font-sans text-zinc-900 dark:text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
             />
           </div>
 
           <div>
-            <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Description</label>
+            <label className="block text-[10px] font-mono font-bold text-zinc-600 dark:text-[#a0a4b8] uppercase tracking-widest mb-1.5">Description</label>
             <textarea 
               name="description"
               value={formData.description}
               onChange={handleChange}
               rows={4}
-              className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-sm font-sans text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors resize-y"
+              className="w-full bg-white dark:bg-[#0e1017] border-2 border-black/20 dark:border-white/20 px-3.5 py-2.5 text-sm font-sans text-zinc-900 dark:text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors resize-y"
             />
           </div>
 
           <div>
-            <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Event Banner Poster (Optional)</label>
+            <label className="block text-[10px] font-mono font-bold text-zinc-600 dark:text-[#a0a4b8] uppercase tracking-widest mb-1.5">Event Banner Poster (Optional)</label>
             
             {/* Curated Presets Library */}
             <div className="mb-3">
-              <span className="text-[10px] font-mono text-[#a0a4b8] uppercase tracking-wider block mb-2">
+              <span className="text-[10px] font-mono text-zinc-600 dark:text-[#a0a4b8] uppercase tracking-wider block mb-2">
                 Quick Curated Posters:
               </span>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
@@ -482,7 +483,7 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
                         if (saveError) setSaveError(null);
                       }}
                       className={`relative aspect-video rounded overflow-hidden border-2 text-left transition-all group ${
-                        isSelected ? 'border-[#C8FF00] shadow-[0_0_8px_rgba(200,255,0,0.5)]' : 'border-white/15 hover:border-white/40'
+                        isSelected ? 'border-[#0057FF] dark:border-[#C8FF00] shadow-[0_0_8px_rgba(0,87,255,0.4)] dark:shadow-[0_0_8px_rgba(200,255,0,0.5)]' : 'border-black/15 dark:border-white/15 hover:border-black/40 dark:hover:border-white/40'
                       }`}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -497,7 +498,7 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
                         </span>
                       </div>
                       {isSelected && (
-                        <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-[#C8FF00] rounded-full border border-black shadow" />
+                        <div className="absolute top-1 right-1 w-2.5 h-2.5 bg-[#0057FF] dark:bg-[#C8FF00] rounded-full border border-black shadow" />
                       )}
                     </button>
                   );
@@ -507,7 +508,7 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
 
             {/* Custom Banner URL */}
             <div>
-              <span className="text-[10px] font-mono text-[#a0a4b8] uppercase tracking-wider block mb-1.5">
+              <span className="text-[10px] font-mono text-zinc-600 dark:text-[#a0a4b8] uppercase tracking-wider block mb-1.5">
                 Or Custom Image URL:
               </span>
               <div className="flex gap-2">
@@ -516,14 +517,14 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
                   name="banner_url"
                   value={formData.banner_url}
                   onChange={handleChange}
-                  className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+                  className="w-full bg-white dark:bg-[#0e1017] border-2 border-black/20 dark:border-white/20 px-3.5 py-2.5 text-xs font-mono text-zinc-900 dark:text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
                   placeholder="https://images.unsplash.com/... or https://cdn.example.com/banner.jpg"
                 />
                 {formData.banner_url && (
                   <button
                     type="button"
                     onClick={() => setFormData((prev) => ({ ...prev, banner_url: '' }))}
-                    className="px-3 py-2 border-2 border-white/20 text-[#a0a4b8] hover:text-white font-mono text-xs uppercase"
+                    className="px-3 py-2 border-2 border-black/20 dark:border-white/20 text-zinc-600 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white font-mono text-xs uppercase"
                   >
                     Clear
                   </button>
@@ -532,7 +533,7 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
             </div>
 
             {formData.banner_url && (
-              <div className="mt-3 border-2 border-white/15 overflow-hidden max-h-48 bg-black shadow-[4px_4px_0px_#000] rounded relative">
+              <div className="mt-3 border-2 border-black/15 dark:border-white/15 overflow-hidden max-h-48 bg-black shadow-[4px_4px_0px_#000] rounded relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                   src={formData.banner_url} 
@@ -547,107 +548,107 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
 
         {/* Date & Time */}
         <section className="space-y-4">
-          <div className="flex items-center gap-2 border-b-2 border-white/10 pb-2 mb-4">
+          <div className="flex items-center gap-2 border-b-2 border-black/10 dark:border-white/10 pb-2 mb-4">
             <span className="w-2 h-2 bg-[#0057FF] inline-block"></span>
-            <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-[#F5F5F2] uppercase">Schedule & Duration</h2>
+            <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-zinc-900 dark:text-[#F5F5F2] uppercase">Schedule & Duration</h2>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Start Date *</label>
+              <label className="block text-[10px] font-mono font-bold text-zinc-600 dark:text-[#a0a4b8] uppercase tracking-widest mb-1.5">Start Date *</label>
               <input 
                 required
                 type="date"
                 name="startDate"
                 value={formData.startDate}
                 onChange={handleChange}
-                className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+                className="w-full bg-white dark:bg-[#0e1017] border-2 border-black/20 dark:border-white/20 px-3.5 py-2.5 text-xs font-mono text-zinc-900 dark:text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Start Time *</label>
+              <label className="block text-[10px] font-mono font-bold text-zinc-600 dark:text-[#a0a4b8] uppercase tracking-widest mb-1.5">Start Time *</label>
               <input 
                 required
                 type="time"
                 name="startTime"
                 value={formData.startTime}
                 onChange={handleChange}
-                className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+                className="w-full bg-white dark:bg-[#0e1017] border-2 border-black/20 dark:border-white/20 px-3.5 py-2.5 text-xs font-mono text-zinc-900 dark:text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">End Date *</label>
+              <label className="block text-[10px] font-mono font-bold text-zinc-600 dark:text-[#a0a4b8] uppercase tracking-widest mb-1.5">End Date *</label>
               <input 
                 required
                 type="date"
                 name="endDate"
                 value={formData.endDate}
                 onChange={handleChange}
-                className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+                className="w-full bg-white dark:bg-[#0e1017] border-2 border-black/20 dark:border-white/20 px-3.5 py-2.5 text-xs font-mono text-zinc-900 dark:text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">End Time *</label>
+              <label className="block text-[10px] font-mono font-bold text-zinc-600 dark:text-[#a0a4b8] uppercase tracking-widest mb-1.5">End Time *</label>
               <input 
                 required
                 type="time"
                 name="endTime"
                 value={formData.endTime}
                 onChange={handleChange}
-                className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+                className="w-full bg-white dark:bg-[#0e1017] border-2 border-black/20 dark:border-white/20 px-3.5 py-2.5 text-xs font-mono text-zinc-900 dark:text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Registration Start Date *</label>
+              <label className="block text-[10px] font-mono font-bold text-zinc-600 dark:text-[#a0a4b8] uppercase tracking-widest mb-1.5">Registration Start Date *</label>
               <input 
                 required
                 type="date"
                 name="registrationStartDate"
                 value={formData.registrationStartDate}
                 onChange={handleChange}
-                className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+                className="w-full bg-white dark:bg-[#0e1017] border-2 border-black/20 dark:border-white/20 px-3.5 py-2.5 text-xs font-mono text-zinc-900 dark:text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Registration Start Time *</label>
+              <label className="block text-[10px] font-mono font-bold text-zinc-600 dark:text-[#a0a4b8] uppercase tracking-widest mb-1.5">Registration Start Time *</label>
               <input 
                 required
                 type="time"
                 name="registrationStartTime"
                 value={formData.registrationStartTime}
                 onChange={handleChange}
-                className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+                className="w-full bg-white dark:bg-[#0e1017] border-2 border-black/20 dark:border-white/20 px-3.5 py-2.5 text-xs font-mono text-zinc-900 dark:text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Registration End Date *</label>
+              <label className="block text-[10px] font-mono font-bold text-zinc-600 dark:text-[#a0a4b8] uppercase tracking-widest mb-1.5">Registration End Date *</label>
               <input 
                 required
                 type="date"
                 name="registrationEndDate"
                 value={formData.registrationEndDate}
                 onChange={handleChange}
-                className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+                className="w-full bg-white dark:bg-[#0e1017] border-2 border-black/20 dark:border-white/20 px-3.5 py-2.5 text-xs font-mono text-zinc-900 dark:text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Registration End Time *</label>
+              <label className="block text-[10px] font-mono font-bold text-zinc-600 dark:text-[#a0a4b8] uppercase tracking-widest mb-1.5">Registration End Time *</label>
               <input 
                 required
                 type="time"
                 name="registrationEndTime"
                 value={formData.registrationEndTime}
                 onChange={handleChange}
-                className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+                className="w-full bg-white dark:bg-[#0e1017] border-2 border-black/20 dark:border-white/20 px-3.5 py-2.5 text-xs font-mono text-zinc-900 dark:text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
               />
             </div>
           </div>
@@ -655,49 +656,44 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
 
         {/* Location & Format */}
         <section className="space-y-4">
-          <div className="flex items-center gap-2 border-b-2 border-white/10 pb-2 mb-4">
+          <div className="flex items-center gap-2 border-b-2 border-black/10 dark:border-white/10 pb-2 mb-4">
             <span className="w-2 h-2 bg-[#0057FF] inline-block"></span>
-            <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-[#F5F5F2] uppercase">Format & Venue</h2>
+            <h2 className="text-xs font-mono font-bold tracking-[0.2em] text-zinc-900 dark:text-[#F5F5F2] uppercase">Format & Venue</h2>
           </div>
           
           <div>
-            <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Campus Venue / Location Name</label>
+            <label className="block text-[10px] font-mono font-bold text-zinc-600 dark:text-[#a0a4b8] uppercase tracking-widest mb-1.5">Campus Venue / Location Name</label>
             <input 
               type="text"
               name="location_name"
               value={formData.location_name}
               onChange={handleChange}
-              className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-sm font-sans text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+              className="w-full bg-white dark:bg-[#0e1017] border-2 border-black/20 dark:border-white/20 px-3.5 py-2.5 text-sm font-sans text-zinc-900 dark:text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Event Type</label>
+              <label className="block text-[10px] font-mono font-bold text-zinc-600 dark:text-[#a0a4b8] uppercase tracking-widest mb-1.5">Event Type</label>
               <select 
                 name="event_type"
                 value={formData.event_type}
                 onChange={handleChange}
-                className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+                className="w-full bg-white dark:bg-[#0e1017] border-2 border-black/20 dark:border-white/20 px-3.5 py-2.5 text-xs font-mono text-zinc-900 dark:text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
               >
-                <option value="WORKSHOP">Workshop</option>
-                <option value="HACKATHON">Hackathon</option>
-                <option value="SEMINAR">Seminar</option>
-                <option value="COMPETITION">Competition</option>
-                <option value="MEETUP">Meetup</option>
-                <option value="CULTURAL">Cultural</option>
-                <option value="SPORTS">Sports</option>
-                <option value="OTHER">Other</option>
+                {EVENT_TYPES.map(t => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
               </select>
             </div>
             
             <div>
-              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Visibility</label>
+              <label className="block text-[10px] font-mono font-bold text-zinc-600 dark:text-[#a0a4b8] uppercase tracking-widest mb-1.5">Visibility</label>
               <select 
                 name="visibility"
                 value={formData.visibility}
                 onChange={handleChange}
-                className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+                className="w-full bg-white dark:bg-[#0e1017] border-2 border-black/20 dark:border-white/20 px-3.5 py-2.5 text-xs font-mono text-zinc-900 dark:text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
               >
                 <option value="PUBLIC">Public</option>
                 <option value="PRIVATE">Private</option>
@@ -705,12 +701,12 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
             </div>
 
             <div>
-              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Attendance Ledger</label>
+              <label className="block text-[10px] font-mono font-bold text-zinc-600 dark:text-[#a0a4b8] uppercase tracking-widest mb-1.5">Attendance Ledger</label>
               <select 
                 name="attendance_type"
                 value={formData.attendance_type}
                 onChange={handleChange}
-                className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+                className="w-full bg-white dark:bg-[#0e1017] border-2 border-black/20 dark:border-white/20 px-3.5 py-2.5 text-xs font-mono text-zinc-900 dark:text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
               >
                 <option value="SINGLE">Single Session</option>
                 <option value="MULTI_SESSION">Multi Session</option>
@@ -718,17 +714,17 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
             </div>
           </div>
           
-          <div className="mt-6 pt-6 border-t-2 border-white/10">
-            <h3 className="text-xs font-mono font-bold tracking-widest text-[#F5F5F2] uppercase mb-4">Audience & Access Scope</h3>
+          <div className="mt-6 pt-6 border-t-2 border-black/10 dark:border-white/10">
+            <h3 className="text-xs font-mono font-bold tracking-widest text-zinc-900 dark:text-[#F5F5F2] uppercase mb-4">Audience & Access Scope</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Audience</label>
+                <label className="block text-[10px] font-mono font-bold text-zinc-600 dark:text-[#a0a4b8] uppercase tracking-widest mb-1.5">Audience</label>
                 <select 
                   name="audience"
                   value={formData.audience}
                   onChange={handleChange}
-                  className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+                  className="w-full bg-white dark:bg-[#0e1017] border-2 border-black/20 dark:border-white/20 px-3.5 py-2.5 text-xs font-mono text-zinc-900 dark:text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
                 >
                   <option value="ALL_STUDENTS">All Students</option>
                   <option value="SPECIFIC_BATCHES">Specific Batches</option>
@@ -737,7 +733,7 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
 
               {formData.audience === 'SPECIFIC_BATCHES' && (
                 <div>
-                  <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Eligible Batches</label>
+                  <label className="block text-[10px] font-mono font-bold text-zinc-600 dark:text-[#a0a4b8] uppercase tracking-widest mb-1.5">Eligible Batches</label>
                   <MultiSelect
                     options={batchesData?.map(b => ({ value: b.id, label: b.display_name })) || []}
                     selectedValues={formData.audience_batch_ids}
@@ -749,7 +745,7 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
             </div>
 
             <div className="mt-4">
-              <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Collaborating Clubs</label>
+              <label className="block text-[10px] font-mono font-bold text-zinc-600 dark:text-[#a0a4b8] uppercase tracking-widest mb-1.5">Collaborating Clubs</label>
               <MultiSelect
                 disabled
                 options={eligibleClubs.map(c => ({ value: c.id, label: c.name }))}
@@ -757,23 +753,23 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
                 onChange={(values: string[]) => handleMultiSelectChange('collaborating_club_ids', values)}
                 placeholder="Select clubs..."
               />
-              <p className="text-[10px] font-mono text-[#a0a4b8] mt-1">
+              <p className="text-[10px] font-mono text-zinc-500 dark:text-[#a0a4b8] mt-1">
                 Collaborating clubs are locked after initial creation.
               </p>
             </div>
           </div>
 
-          <div className="mt-6 pt-6 border-t-2 border-white/10">
-            <h3 className="text-xs font-mono font-bold tracking-widest text-[#F5F5F2] uppercase mb-4">Registration & Quota</h3>
+          <div className="mt-6 pt-6 border-t-2 border-black/10 dark:border-white/10">
+            <h3 className="text-xs font-mono font-bold tracking-widest text-zinc-900 dark:text-[#F5F5F2] uppercase mb-4">Registration & Quota</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Registration Type</label>
+                <label className="block text-[10px] font-mono font-bold text-zinc-600 dark:text-[#a0a4b8] uppercase tracking-widest mb-1.5">Registration Type</label>
                 <select 
                   name="registration_type"
                   value={formData.registration_type}
                   onChange={handleChange}
-                  className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+                  className="w-full bg-white dark:bg-[#0e1017] border-2 border-black/20 dark:border-white/20 px-3.5 py-2.5 text-xs font-mono text-zinc-900 dark:text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
                 >
                   <option value="INDIVIDUAL">Individual</option>
                   <option value="TEAM">Team</option>
@@ -781,7 +777,7 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
               </div>
 
               <div>
-                <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">
+                <label className="block text-[10px] font-mono font-bold text-zinc-600 dark:text-[#a0a4b8] uppercase tracking-widest mb-1.5">
                   {formData.registration_type === 'TEAM' ? "Maximum Teams" : "Maximum Participants"}
                 </label>
                 <input 
@@ -791,13 +787,13 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
                   value={formData.max_capacity}
                   onChange={handleChange}
                   placeholder="Leave empty for unlimited"
-                  className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+                  className="w-full bg-white dark:bg-[#0e1017] border-2 border-black/20 dark:border-white/20 px-3.5 py-2.5 text-xs font-mono text-zinc-900 dark:text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
                 />
               </div>
 
               {formData.registration_type === 'TEAM' && (
                 <div>
-                  <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">
+                  <label className="block text-[10px] font-mono font-bold text-zinc-600 dark:text-[#a0a4b8] uppercase tracking-widest mb-1.5">
                     Maximum Participants
                   </label>
                   <input 
@@ -807,7 +803,7 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
                     value={formData.max_participants}
                     onChange={handleChange}
                     placeholder="Leave empty for unlimited"
-                    className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+                    className="w-full bg-white dark:bg-[#0e1017] border-2 border-black/20 dark:border-white/20 px-3.5 py-2.5 text-xs font-mono text-zinc-900 dark:text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
                   />
                 </div>
               )}
@@ -815,7 +811,7 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
               {formData.registration_type === 'TEAM' && (
                 <>
                   <div>
-                    <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Minimum Team Size *</label>
+                    <label className="block text-[10px] font-mono font-bold text-zinc-600 dark:text-[#a0a4b8] uppercase tracking-widest mb-1.5">Minimum Team Size *</label>
                     <input 
                       required
                       type="number"
@@ -824,11 +820,11 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
                       value={formData.minimum_team_size}
                       onChange={handleChange}
                       placeholder="e.g. 2"
-                      className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+                      className="w-full bg-white dark:bg-[#0e1017] border-2 border-black/20 dark:border-white/20 px-3.5 py-2.5 text-xs font-mono text-zinc-900 dark:text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-mono font-bold text-[#a0a4b8] uppercase tracking-widest mb-1.5">Maximum Team Size *</label>
+                    <label className="block text-[10px] font-mono font-bold text-zinc-600 dark:text-[#a0a4b8] uppercase tracking-widest mb-1.5">Maximum Team Size *</label>
                     <input 
                       required
                       type="number"
@@ -837,7 +833,7 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
                       value={formData.maximum_team_size}
                       onChange={handleChange}
                       placeholder="e.g. 4"
-                      className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
+                      className="w-full bg-white dark:bg-[#0e1017] border-2 border-black/20 dark:border-white/20 px-3.5 py-2.5 text-xs font-mono text-zinc-900 dark:text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
                     />
                   </div>
                 </>
@@ -853,10 +849,10 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
           </div>
         )}
 
-        <div className="pt-6 border-t-2 border-white/10 flex justify-end gap-3">
+        <div className="pt-6 border-t-2 border-black/10 dark:border-white/10 flex justify-end gap-3">
           <Link 
             href={`/student/events/${eventId}/manage`}
-            className="px-6 py-3 border-2 border-white/20 text-[#a0a4b8] hover:text-white hover:border-white font-mono font-bold text-xs tracking-widest uppercase transition-all"
+            className="px-6 py-3 border-2 border-black/20 dark:border-white/20 text-zinc-600 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white hover:border-black dark:hover:border-white font-mono font-bold text-xs tracking-widest uppercase transition-all"
           >
             Cancel
           </Link>
@@ -886,9 +882,9 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
         onClose={() => !submitMutation.isPending && setIsSubmitModalOpen(false)} 
         title="SUBMIT FOR APPROVAL"
       >
-        <div className="p-6 bg-[#0d0e12] text-[#F5F5F2]">
-          <p className="font-sans text-sm text-[#a0a4b8] mb-6 leading-relaxed">
-            Are you sure you want to submit <strong className="text-white">{event.title}</strong> for approval? Once submitted, the draft specification will be locked from further edits while pending review.
+        <div className="p-6 bg-white dark:bg-[#0d0e12] text-zinc-900 dark:text-[#F5F5F2]">
+          <p className="font-sans text-sm text-zinc-600 dark:text-[#a0a4b8] mb-6 leading-relaxed">
+            Are you sure you want to submit <strong className="text-zinc-900 dark:text-white">{event.title}</strong> for approval? Once submitted, the draft specification will be locked from further edits while pending review.
           </p>
 
           {submitError && (
@@ -902,7 +898,7 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
               type="button"
               onClick={() => setIsSubmitModalOpen(false)}
               disabled={submitMutation.isPending}
-              className="px-5 py-2.5 border-2 border-white/20 text-[#a0a4b8] hover:text-white font-mono text-xs font-bold uppercase tracking-wider transition-colors"
+              className="px-5 py-2.5 border-2 border-black/20 dark:border-white/20 text-zinc-600 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white font-mono text-xs font-bold uppercase tracking-wider transition-colors"
             >
               Cancel
             </button>
@@ -910,7 +906,7 @@ export default function ManageEventEditPage({ params }: { params: Promise<{ id: 
               type="button"
               onClick={handleConfirmSubmit}
               disabled={submitMutation.isPending}
-              className="px-5 py-2.5 bg-[#C8FF00] text-black hover:bg-white border-2 border-black font-mono text-xs font-bold uppercase tracking-wider shadow-[3px_3px_0px_#000] disabled:opacity-50 transition-all flex items-center gap-2"
+              className="px-5 py-2.5 bg-[#C8FF00] text-black hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black border-2 border-black font-mono text-xs font-bold uppercase tracking-wider shadow-[3px_3px_0px_#000] disabled:opacity-50 transition-all flex items-center gap-2"
             >
               {submitMutation.isPending ? 'Submitting...' : 'Confirm Submission ↗'}
             </button>

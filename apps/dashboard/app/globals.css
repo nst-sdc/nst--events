@@ -2,6 +2,37 @@
 
 @layer base {
   :root {
+    /* Semantic Surfaces */
+    --surface-canvas: #F8F9FA;
+    --surface-card: #FFFFFF;
+    --surface-raised: #FFFFFF;
+    --surface-sunken: #EFF2F5;
+    --surface-overlay: rgba(255, 255, 255, 0.95);
+
+    /* Semantic Text */
+    --text-primary: #0A0D14;
+    --text-secondary: #475467;
+    --text-muted: #667085;
+    --text-inverse: #F5F5F2;
+
+    /* Semantic Brand */
+    --brand-primary: #0057FF;
+    --brand-primary-hover: #0047E0;
+    --brand-accent: #C8FF00;
+    --brand-accent-text: #0A0D14;
+
+    /* Semantic Borders */
+    --border-subtle: #E4E7EC;
+    --border-default: #D0D5DD;
+    --border-strong: #0A0D14;
+    --border-brand: #0057FF;
+
+    /* Neo-brutalist Shadows */
+    --shadow-brutal-sm: 2px 2px 0px #0A0D14;
+    --shadow-brutal-md: 4px 4px 0px #0A0D14;
+    --shadow-brutal-lg: 8px 8px 0px #0057FF;
+
+    /* M3 Tokens */
     --m3-primary: #0061a4;
     --m3-on-primary: #ffffff;
     --m3-primary-container: #d1e4ff;
@@ -46,6 +77,37 @@
   }
 
   .dark {
+    /* Semantic Surfaces */
+    --surface-canvas: #050505;
+    --surface-card: #0D0E12;
+    --surface-raised: #141721;
+    --surface-sunken: #090A0F;
+    --surface-overlay: rgba(13, 14, 18, 0.95);
+
+    /* Semantic Text */
+    --text-primary: #F5F5F2;
+    --text-secondary: #A0A4B8;
+    --text-muted: #71768A;
+    --text-inverse: #0A0D14;
+
+    /* Semantic Brand */
+    --brand-primary: #0057FF;
+    --brand-primary-hover: #337BFF;
+    --brand-accent: #C8FF00;
+    --brand-accent-text: #0A0D14;
+
+    /* Semantic Borders */
+    --border-subtle: rgba(245, 245, 242, 0.12);
+    --border-default: rgba(245, 245, 242, 0.22);
+    --border-strong: #F5F5F2;
+    --border-brand: #0057FF;
+
+    /* Neo-brutalist Shadows */
+    --shadow-brutal-sm: 2px 2px 0px #000000;
+    --shadow-brutal-md: 4px 4px 0px #0057FF;
+    --shadow-brutal-lg: 8px 8px 0px #0057FF;
+
+    /* M3 Tokens */
     --m3-primary: #9ecafe;
     --m3-on-primary: #003258;
     --m3-primary-container: #00497d;
@@ -91,6 +153,32 @@
 }
 
 @theme inline {
+  /* Semantic Tokens for Tailwind v4 */
+  --color-surface-canvas: var(--surface-canvas);
+  --color-surface-card: var(--surface-card);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-overlay: var(--surface-overlay);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-inverse: var(--text-inverse);
+
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-primary-hover: var(--brand-primary-hover);
+  --color-brand-accent: var(--brand-accent);
+  --color-brand-accent-text: var(--brand-accent-text);
+
+  --color-border-subtle: var(--border-subtle);
+  --color-border-default: var(--border-default);
+  --color-border-strong: var(--border-strong);
+  --color-border-brand: var(--border-brand);
+
+  --shadow-brutal-sm: var(--shadow-brutal-sm);
+  --shadow-brutal-md: var(--shadow-brutal-md);
+  --shadow-brutal-lg: var(--shadow-brutal-lg);
+
   --color-primary-base: #2563eb;
   --color-primary-hover: #1d4ed8;
   --color-primary-surface: #eff6ff;
@@ -250,6 +338,22 @@ html {
 body {
   font-family: var(--font-sans);
   -webkit-overflow-scrolling: touch;
+}
+
+/* Accessible focus indicators for keyboard navigation (WCAG 2.4.7) */
+:focus-visible {
+  outline: 2px solid var(--color-primary-base, #2563eb);
+  outline-offset: 2px;
+}
+
+/* Ensure keyboard focus indicator is always visible on interactive elements */
+input:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--color-primary-base, #2563eb);
+  outline-offset: 2px;
 }
 
 

@@ -16,7 +16,8 @@ import {
   Zap,
   Wrench,
   Mic,
-  PartyPopper,
+  Palette,
+  Activity,
   Trophy,
   Globe,
   Lock,
@@ -33,6 +34,7 @@ import {
 import Link from 'next/link';
 import { useClubs } from '../../../../../../hooks/useClubs';
 import { MultiSelect } from '../../../../components/MultiSelect';
+import { EVENT_TYPES, EventType } from '@nst/shared';
 
 const BANNER_PRESETS = [
   {
@@ -47,7 +49,7 @@ const BANNER_PRESETS = [
   },
   {
     label: 'Design & Neon Jam',
-    category: 'DESIGN',
+    category: 'CULTURAL',
     url: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80',
   },
   {
@@ -56,25 +58,27 @@ const BANNER_PRESETS = [
     url: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80',
   },
   {
-    label: 'Campus Social & Mixer',
-    category: 'SOCIAL',
+    label: 'Campus Meetup & Mixer',
+    category: 'MEETUP',
     url: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=80',
   },
   {
     label: 'E-Sports & Gaming Arena',
-    category: 'COMPETITION',
+    category: 'SPORTS',
     url: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1200&q=80',
   },
 ];
 
-const EVENT_TYPES = [
-  { value: 'HACKATHON', label: 'Hackathon', icon: Zap, desc: 'Build & sprint' },
-  { value: 'WORKSHOP', label: 'Workshop', icon: Wrench, desc: 'Hands-on learning' },
-  { value: 'SEMINAR', label: 'Seminar', icon: Mic, desc: 'Talks & keynotes' },
-  { value: 'COMPETITION', label: 'Competition', icon: Trophy, desc: 'Tournaments & awards' },
-  { value: 'SOCIAL', label: 'Social', icon: PartyPopper, desc: 'Mixers & gaming' },
-  { value: 'OTHER', label: 'Other', icon: Sparkles, desc: 'Community meetup' },
-] as const;
+const EVENT_TYPE_ICONS: Record<EventType, React.ElementType> = {
+  HACKATHON: Zap,
+  WORKSHOP: Wrench,
+  SEMINAR: Mic,
+  COMPETITION: Trophy,
+  MEETUP: Users,
+  CULTURAL: Palette,
+  SPORTS: Activity,
+  OTHER: Sparkles,
+};
 
 const VISIBILITY_OPTIONS = [
   { value: 'PUBLIC', label: 'Public', icon: Globe, desc: 'Visible to everyone on campus' },
@@ -805,6 +809,166 @@ const createEventStyles = `
     align-items: center;
     justify-content: space-between;
   }
+
+  .ce-header-border {
+    border-bottom: 3px solid #fff;
+  }
+  .ce-header-title {
+    color: #fff;
+  }
+  .ce-team-rule-box {
+    padding: 18px;
+    background: rgba(0,0,0,0.6);
+    border: 2px dashed rgba(200, 255, 0, 0.35);
+    margin-bottom: 20px;
+  }
+
+  /* ── LIGHT THEME OVERRIDES (Scoped to html.light) ── */
+  html.light .ce-page {
+    background: #F8F9FA;
+    color: #0A0D14;
+  }
+  html.light .ce-micro {
+    color: #475467;
+  }
+  html.light .ce-back {
+    color: #475467;
+  }
+  html.light .ce-back:hover {
+    color: var(--electric-blue);
+  }
+  html.light .ce-header-border {
+    border-bottom: 3px solid #0A0D14 !important;
+  }
+  html.light .ce-header-title {
+    color: #0A0D14 !important;
+  }
+  html.light .ce-section {
+    border: 3px solid #0A0D14;
+    background: #FFFFFF;
+    box-shadow: 6px 6px 0px #000000;
+  }
+  html.light .ce-section-header {
+    border-bottom: 2px solid rgba(10, 13, 20, 0.12);
+  }
+  html.light .ce-section-title {
+    color: #0A0D14;
+  }
+  html.light .ce-label {
+    color: #475467;
+  }
+  html.light .ce-input, html.light .ce-textarea, html.light .ce-select {
+    background: #FFFFFF;
+    border: 2px solid rgba(10, 13, 20, 0.2);
+    color: #0A0D14;
+  }
+  html.light .ce-input:focus, html.light .ce-textarea:focus, html.light .ce-select:focus {
+    border-color: var(--electric-blue);
+    box-shadow: 0 0 0 1px var(--electric-blue);
+  }
+  html.light .ce-input::placeholder, html.light .ce-textarea::placeholder {
+    color: #98A2B3;
+  }
+  html.light .ce-preset-card {
+    border: 2px solid rgba(10, 13, 20, 0.18);
+    background: #F8F9FA;
+  }
+  html.light .ce-choice-card {
+    border: 2px solid rgba(10, 13, 20, 0.18);
+    background: #FFFFFF;
+  }
+  html.light .ce-choice-card:hover {
+    border-color: var(--electric-blue);
+    background: rgba(0, 87, 255, 0.05);
+  }
+  html.light .ce-choice-card.active {
+    border-color: var(--electric-blue);
+    background: rgba(0, 87, 255, 0.07);
+    box-shadow: 3px 3px 0px #000000;
+  }
+  html.light .ce-choice-header {
+    color: #0A0D14;
+  }
+  html.light .ce-choice-card.active .ce-choice-header {
+    color: var(--electric-blue);
+  }
+  html.light .ce-choice-desc {
+    color: #475467;
+  }
+  html.light .ce-date-chip {
+    background: #FFFFFF;
+    border: 1px solid rgba(10, 13, 20, 0.2);
+    color: #0A0D14;
+  }
+  html.light .ce-date-chip:hover {
+    border-color: var(--electric-blue);
+    background: rgba(0, 87, 255, 0.08);
+  }
+  html.light .ce-stepper {
+    border: 2px solid rgba(10, 13, 20, 0.2);
+    background: #FFFFFF;
+  }
+  html.light .ce-stepper-btn {
+    color: #0A0D14;
+  }
+  html.light .ce-stepper-btn:hover:not(:disabled) {
+    background: rgba(10, 13, 20, 0.06);
+  }
+  html.light .ce-stepper-val {
+    color: #0A0D14;
+  }
+  html.light .ce-team-rule-box {
+    background: rgba(0, 87, 255, 0.04);
+    border: 2px dashed rgba(0, 87, 255, 0.35);
+  }
+  html.light .ce-preview-box {
+    border: 3px solid #0A0D14;
+    background: #FFFFFF;
+    box-shadow: 8px 8px 0px #000000;
+  }
+  html.light .ce-preview-header {
+    background: #F8F9FA;
+    border-bottom: 2px solid rgba(10, 13, 20, 0.12);
+  }
+  html.light .ce-preview-badge-live {
+    color: #059669;
+  }
+  html.light .ce-pulse-dot {
+    background: #059669;
+  }
+  html.light .ce-readiness-card {
+    background: #F8F9FA;
+    border-top: 2px solid rgba(10, 13, 20, 0.12);
+  }
+  html.light .ce-progress-track {
+    background: rgba(10, 13, 20, 0.1);
+  }
+  html.light .ce-progress-fill {
+    background: #059669;
+  }
+  html.light .ce-sticky-bottom-bar {
+    background: rgba(255, 255, 255, 0.94);
+    border-top: 2px solid rgba(10, 13, 20, 0.15);
+  }
+  html.light .ce-btn-cancel {
+    color: #0A0D14;
+    border: 2px solid rgba(10, 13, 20, 0.3);
+  }
+  html.light .ce-btn-cancel:hover {
+    border-color: #0A0D14;
+    background: rgba(10, 13, 20, 0.05);
+  }
+  html.light .ce-btn-draft {
+    border-color: var(--electric-blue);
+    color: var(--electric-blue);
+  }
+  html.light .ce-btn-submit {
+    border: 2px solid #000000;
+    box-shadow: 4px 4px 0px #000000;
+  }
+  html.light .ce-btn-submit:hover:not(:disabled) {
+    box-shadow: 6px 6px 0px #000000;
+  }
 `;
 
 export default function CreateEventPage() {
@@ -1096,29 +1260,29 @@ export default function CreateEventPage() {
             <ArrowLeft size={13} /> BACK TO EVENTS
           </Link>
 
-          <div style={{ borderBottom: '3px solid #fff', paddingBottom: 24, marginBottom: 36, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
+          <div className="ce-header-border" style={{ paddingBottom: 24, marginBottom: 36, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 }}>
             <div>
               <div className="ce-micro ce-micro-blue" style={{ marginBottom: 8 }}>
                 EVENT CREATION STUDIO // {activeClub?.name || 'CLUB MANAGEMENT'}
               </div>
-              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(36px, 5.5vw, 64px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: -1, lineHeight: 0.92, color: '#fff', wordBreak: 'break-word' }}>
+              <h1 className="ce-header-title" style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(36px, 5.5vw, 64px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: -1, lineHeight: 0.92, wordBreak: 'break-word' }}>
                 {formData.title || 'NEW EVENT'}
               </h1>
             </div>
 
             {/* Mobile Tab Switcher */}
-            <div className="flex md:hidden border-2 border-white/20 bg-[#000] p-1 font-mono text-[10px] font-bold uppercase tracking-wider">
+            <div className="flex md:hidden border-2 border-black/20 dark:border-white/20 bg-[#F8F9FA] dark:bg-[#000] p-1 font-mono text-[10px] font-bold uppercase tracking-wider">
               <button
                 type="button"
                 onClick={() => setMobileTab('FORM')}
-                className={`px-3 py-1.5 transition-all ${mobileTab === 'FORM' ? 'bg-[#0057FF] text-white' : 'text-[#a0a4b8]'}`}
+                className={`px-3 py-1.5 transition-all ${mobileTab === 'FORM' ? 'bg-[#0057FF] text-white' : 'text-[#475467] dark:text-[#a0a4b8]'}`}
               >
                 <Sliders size={12} className="inline mr-1" /> BUILDER
               </button>
               <button
                 type="button"
                 onClick={() => setMobileTab('PREVIEW')}
-                className={`px-3 py-1.5 transition-all ${mobileTab === 'PREVIEW' ? 'bg-[#0057FF] text-white' : 'text-[#a0a4b8]'}`}
+                className={`px-3 py-1.5 transition-all ${mobileTab === 'PREVIEW' ? 'bg-[#0057FF] text-white' : 'text-[#475467] dark:text-[#a0a4b8]'}`}
               >
                 <Eye size={12} className="inline mr-1" /> PREVIEW ({readinessCheck.percentage}%)
               </button>
@@ -1319,7 +1483,7 @@ export default function CreateEventPage() {
                     <label className="ce-label">EVENT TYPE</label>
                     <div className="ce-choice-grid-3">
                       {EVENT_TYPES.map(t => {
-                        const Icon = t.icon;
+                        const Icon = EVENT_TYPE_ICONS[t.value] || Sparkles;
                         const isSelected = formData.event_type === t.value;
                         return (
                           <div
@@ -1424,7 +1588,7 @@ export default function CreateEventPage() {
 
                   {/* Team Size Rules (When Team selected) */}
                   {formData.registration_type === 'TEAM' && (
-                    <div style={{ padding: 18, background: 'rgba(0,0,0,0.6)', border: '2px dashed rgba(200, 255, 0, 0.35)', marginBottom: 20 }}>
+                    <div className="ce-team-rule-box">
                       <div className="ce-micro ce-micro-green" style={{ marginBottom: 12 }}>
                         SQUAD SIZE REQUIREMENTS
                       </div>

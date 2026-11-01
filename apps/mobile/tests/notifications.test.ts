@@ -44,7 +44,7 @@ describe('Phase 2 Notification System Tests', () => {
       expect(route).toBe('/(app)/events/evt-55555');
     });
 
-    it('Rule 3: routes to /(app)/profile when dispute_id and event_id are absent and type === ROLE_CHANGED', () => {
+    it('Rule 3: routes to /(app)/(tabs)/profile when dispute_id and event_id are absent and type === ROLE_CHANGED', () => {
       const notification = {
         type: 'ROLE_CHANGED',
         metadata: {
@@ -61,7 +61,7 @@ describe('Phase 2 Notification System Tests', () => {
       };
 
       const route = resolveNotificationRoute(notification);
-      expect(route).toBe('/(app)/profile');
+      expect(route).toBe('/(app)/(tabs)/profile');
     });
 
     it('Rule 4: returns null (do not navigate) if no matching entity ID or ROLE_CHANGED type', () => {

@@ -117,7 +117,7 @@ export default function ClubDetailPage({ params }: { params: Promise<{ clubId: s
 
   // ── Error states ──
   if (isError) {
-    if ((error as Error)?.message?.includes('404')) {
+    if ((error as unknown as { status?: number })?.status === 404 || (error as Error)?.message?.includes('404')) {
       notFound();
     }
     if ((error as Error)?.message?.includes('403')) {

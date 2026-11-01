@@ -13,6 +13,7 @@ import { useClubs } from '../../../../hooks/useClubs';
 import { useAcademicBatches } from '../../../../hooks/useAcademicBatches';
 import { useCreateEvent, useSubmitEventForApproval, CreateEventPayload } from '../../../../hooks/useCreateEvent';
 import { API_BASE_URL } from '../../../../lib/api';
+import { EVENT_TYPES } from '@nst/shared';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -337,7 +338,7 @@ export default function CreateEventPage() {
             >
               <Input
                 placeholder="e.g. ai-hackathon-2026"
-                addonBefore="/event/"
+                prefix={<span className="text-neutral-500 select-none font-mono">/event/</span>}
                 onChange={(e) => {
                   setHasManuallyEditedSlug(true);
                   validateSlugLive(e.target.value);
@@ -358,16 +359,7 @@ export default function CreateEventPage() {
               rules={[{ required: true, message: 'Please select an event type' }]}
             >
               <Select
-                options={[
-                  { label: 'Workshop', value: 'WORKSHOP' },
-                  { label: 'Seminar', value: 'SEMINAR' },
-                  { label: 'Competition', value: 'COMPETITION' },
-                  { label: 'Meetup', value: 'MEETUP' },
-                  { label: 'Hackathon', value: 'HACKATHON' },
-                  { label: 'Cultural', value: 'CULTURAL' },
-                  { label: 'Sports', value: 'SPORTS' },
-                  { label: 'Other', value: 'OTHER' },
-                ]}
+                options={EVENT_TYPES.map(t => ({ label: t.label, value: t.value }))}
               />
             </Form.Item>
             <Form.Item
@@ -382,7 +374,7 @@ export default function CreateEventPage() {
               <Input placeholder="https://images.unsplash.com/... or https://cdn.example.com/banner.jpg" allowClear />
             </Form.Item>
             {bannerUrl && (
-              <div style={{ marginBottom: 16, border: '1px solid #d9d9d9', borderRadius: 6, overflow: 'hidden', maxHeight: 200, backgroundColor: '#050505' }}>
+              <div style={{ marginBottom: 16, border: '1px solid var(--ant-color-border-secondary, #E5E7EB)', borderRadius: 6, overflow: 'hidden', maxHeight: 200, backgroundColor: 'var(--ant-color-bg-layout, #F8F9FA)' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                   src={bannerUrl} 
@@ -671,7 +663,7 @@ export default function CreateEventPage() {
                   noStyle
                   shouldUpdate={(prev, curr) => prev.visibility !== curr.visibility}
                 >
-                  {({ getFieldValue }) => {
+                  {() => {
                     return (
                       <Form.Item
                         name="visibility"
@@ -679,7 +671,7 @@ export default function CreateEventPage() {
                         extra="Select the discoverability tier. Explicit choice is mandatory before publication."
                       >
                         <Radio.Group style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                          <Radio value="PUBLIC" style={{ border: '1px solid var(--ant-color-border-secondary, #333)', padding: '10px 14px', borderRadius: 8, width: '100%' }}>
+                          <Radio value="PUBLIC" style={{ border: '1px solid var(--ant-color-border-secondary, #E5E7EB)', padding: '10px 14px', borderRadius: 8, width: '100%' }}>
                             <div style={{ display: 'inline-block', verticalAlign: 'top', marginLeft: 6 }}>
                               <div style={{ fontWeight: 600 }}>Public Discovery</div>
                               <div style={{ fontSize: 12, opacity: 0.75 }}>
@@ -687,7 +679,7 @@ export default function CreateEventPage() {
                               </div>
                             </div>
                           </Radio>
-                          <Radio value="UNLISTED" style={{ border: '1px solid var(--ant-color-border-secondary, #333)', padding: '10px 14px', borderRadius: 8, width: '100%' }}>
+                          <Radio value="UNLISTED" style={{ border: '1px solid var(--ant-color-border-secondary, #E5E7EB)', padding: '10px 14px', borderRadius: 8, width: '100%' }}>
                             <div style={{ display: 'inline-block', verticalAlign: 'top', marginLeft: 6 }}>
                               <div style={{ fontWeight: 600 }}>Unlisted Link</div>
                               <div style={{ fontSize: 12, opacity: 0.75 }}>
@@ -695,7 +687,7 @@ export default function CreateEventPage() {
                               </div>
                             </div>
                           </Radio>
-                          <Radio value="RESTRICTED" style={{ border: '1px solid var(--ant-color-border-secondary, #333)', padding: '10px 14px', borderRadius: 8, width: '100%' }}>
+                          <Radio value="RESTRICTED" style={{ border: '1px solid var(--ant-color-border-secondary, #E5E7EB)', padding: '10px 14px', borderRadius: 8, width: '100%' }}>
                             <div style={{ display: 'inline-block', verticalAlign: 'top', marginLeft: 6 }}>
                               <div style={{ fontWeight: 600 }}>Restricted Institutional</div>
                               <div style={{ fontSize: 12, opacity: 0.75 }}>

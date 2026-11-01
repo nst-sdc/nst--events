@@ -9,6 +9,9 @@ const apiInternalUrl =
 const nextConfig: NextConfig = {
   output: 'standalone',
   devIndicators: false,
+  images: {
+    dangerouslyAllowSVG: false,
+  },
   async rewrites() {
     return {
       beforeFiles: [

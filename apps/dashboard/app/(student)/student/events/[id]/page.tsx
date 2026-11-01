@@ -7,11 +7,13 @@ import { useRouter } from 'next/navigation';
 import { useEventDetail, useMyRegistration } from '../../../../../hooks/useEventDetail';
 import { useRegisterForEvent, useCancelRegistration } from '../../../../../hooks/useRegisterForEvent';
 import { useTeamLookup } from '../../../../../hooks/useTeams';
-import { ArrowLeft, Clock, MapPin, Users, Info, Calendar, Lock } from 'lucide-react';
+import { ArrowLeft, Clock, MapPin, Users, Info, Calendar, Lock, AlertCircle } from 'lucide-react';
 import { Modal } from '../../../../../components/ui/Modal';
 import { TeamGatewayModal } from './components/TeamGatewayModal';
 import { AttendanceDisputeModal } from './components/AttendanceDisputeModal';
 import { StudentEventFormModal } from '../../../../../components/student/StudentEventFormModal';
+import { DynamicFieldInput } from '../../../../../components/forms/DynamicFieldInput';
+import { validateFormResponses, isFieldValueEmpty } from '../../../../../lib/form-utils';
 import { useEventForms, EventForm } from '../../../../../hooks/useEventForms';
 import { useAttendanceDisputes, useMyAttendance } from '../../../../../hooks/useAttendance';
 import { useCurrentUser } from '../../../../../hooks/useCurrentUser';
@@ -409,6 +411,8 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
   const [formResponses, setFormResponses] = useState<Record<string, string>>({});
   const [preFilledFields, setPreFilledFields] = useState<Record<string, string>>({});
   const [editableFields, setEditableFields] = useState<string[]>([]);
+  const [registrationError, setRegistrationError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const { data: eventForms, refetch: refetchEventForms } = useEventForms(eventId);
   const [activeFormForModal, setActiveFormForModal] = useState<EventForm | null>(null);
@@ -506,27 +510,35 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
     setFormResponses(initial);
     setPreFilledFields(preFilled);
     setEditableFields([]);
+    setRegistrationError(null);
+    setFieldErrors({});
     setIsRegisterModalOpen(true);
   };
 
   const handleRegisterConfirm = () => {
-    // Validate required fields
-    if (eventFormFields) {
-      const missingRequired = eventFormFields.find(f => {
-        if (!f.isRequired) return false;
-        const val = formResponses[f.fieldDefinitionId];
-        if (!val || val.trim() === '' || val === '[]') return true;
-        return false;
-      });
-      if (missingRequired) {
-        alert(`Please fill in required field: ${missingRequired.fieldDefinition.label}`);
+    // Validate registration required fields
+    if (eventFormFields && eventFormFields.length > 0) {
+      const validation = validateFormResponses(eventFormFields, formResponses);
+      if (!validation.isValid) {
+        setFieldErrors(validation.errors);
+        const firstMissing = eventFormFields.find(
+          (f) => f.isRequired && isFieldValueEmpty(formResponses[f.fieldDefinitionId])
+        );
+        if (firstMissing) {
+          setRegistrationError(`Please fill in required field: ${firstMissing.fieldDefinition.label}`);
+        } else {
+          setRegistrationError(validation.firstError || 'Please fill in all required fields.');
+        }
         return;
       }
     }
 
+    setFieldErrors({});
+    setRegistrationError(null);
+
     const payload = {
       responses: Object.entries(formResponses)
-        .filter(([_, value]) => value !== undefined && value !== '')
+        .filter(([, value]) => value !== undefined && value !== '')
         .map(([fieldDefinitionId, value]) => ({
           fieldDefinitionId,
           value,
@@ -535,7 +547,12 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
 
     register(payload, {
       onSuccess: () => {
+        setRegistrationError(null);
+        setFieldErrors({});
         setIsRegisterModalOpen(false);
+      },
+      onError: (err: any) => {
+        setRegistrationError(err?.message || err?.data?.detail || 'Failed to complete registration. Please try again.');
       }
     });
   };
@@ -772,7 +789,13 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
       {/* REGISTRATION MODAL */}
       <Modal 
         isOpen={isRegisterModalOpen} 
-        onClose={() => !isRegistering && setIsRegisterModalOpen(false)} 
+        onClose={() => {
+          if (!isRegistering) {
+            setRegistrationError(null);
+            setFieldErrors({});
+            setIsRegisterModalOpen(false);
+          }
+        }} 
         title={isCapacityFull ? "JOIN WAITLIST QUEUE" : "CONFIRM EVENT PASS"}
       >
         <div style={{ padding: '24px', paddingTop: 0, fontFamily: 'var(--font-body)' }}>
@@ -801,183 +824,54 @@ export default function StudentEventDetailPage({ params }: { params: Promise<{ i
             </div>
           </div>
 
+          {/* IN-UI VALIDATION ALERT */}
+          {registrationError && (
+            <div
+              className="mb-6 p-4 bg-[#FF3B30]/10 border-2 border-[#FF3B30] shadow-[3px_3px_0px_#FF3B30] flex items-start gap-3"
+            >
+              <AlertCircle className="w-5 h-5 text-[#FF3B30] shrink-0 mt-0.5" />
+              <div>
+                <div className="font-mono text-[11px] font-bold text-[#FF3B30] uppercase tracking-wider mb-1">
+                  VALIDATION NOTICE
+                </div>
+                <div className="font-mono text-xs text-zinc-900 dark:text-white leading-relaxed">
+                  {registrationError}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* DYNAMIC FORM FIELDS */}
           {eventFormFields && eventFormFields.length > 0 && (
             <div style={{ marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div className="ed-micro" style={{ borderBottom: '1px dashed rgba(255,255,255,0.2)', paddingBottom: '8px' }}>
                 REQUIRED REGISTRATION DETAILS
               </div>
-              {eventFormFields.map((field) => {
-                const isPreFilled = !!preFilledFields[field.fieldDefinitionId];
-                const isEditable = !isPreFilled || editableFields.includes(field.fieldDefinitionId);
-
-                return (
-                <div key={field.fieldDefinitionId} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label 
-                    style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700, color: '#a0a4b8', textTransform: 'uppercase', letterSpacing: '1px' }}
-                  >
-                    {field.fieldDefinition.label} {field.isRequired && <span style={{ color: 'var(--electric-blue)' }}>*</span>}
-                  </label>
-                  
-                  {isEditable ? (
-                    <>
-                      {field.fieldDefinition.fieldType === 'RADIO' ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '4px' }}>
-                          {(field.fieldDefinition.options || []).map((opt: string, i: number) => {
-                            const isSelected = formResponses[field.fieldDefinitionId] === opt;
-                            return (
-                              <label
-                                key={i}
-                                onClick={() => setFormResponses(prev => ({ ...prev, [field.fieldDefinitionId]: opt }))}
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '10px',
-                                  padding: '8px 12px',
-                                  border: isSelected ? '1px solid var(--electric-blue)' : '1px solid rgba(255,255,255,0.1)',
-                                  background: isSelected ? 'rgba(0,229,255,0.1)' : '#0e1017',
-                                  cursor: 'pointer',
-                                  fontFamily: 'var(--font-mono)',
-                                  fontSize: '12px',
-                                  color: isSelected ? '#fff' : '#a0a4b8',
-                                  transition: 'all 0.15s ease',
-                                }}
-                              >
-                                <div
-                                  style={{
-                                    width: '14px',
-                                    height: '14px',
-                                    borderRadius: '50%',
-                                    border: isSelected ? '2px solid var(--electric-blue)' : '1px solid rgba(255,255,255,0.3)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                  }}
-                                >
-                                  {isSelected && (
-                                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--electric-blue)' }} />
-                                  )}
-                                </div>
-                                <span>{opt}</span>
-                              </label>
-                            );
-                          })}
-                        </div>
-                      ) : field.fieldDefinition.fieldType === 'MULTI_SELECT' ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '4px' }}>
-                          {(() => {
-                            let selectedList: string[] = [];
-                            try {
-                              const val = formResponses[field.fieldDefinitionId];
-                              if (val) selectedList = JSON.parse(val);
-                            } catch {
-                              selectedList = [];
-                            }
-                            return (field.fieldDefinition.options || []).map((opt: string, i: number) => {
-                              const isChecked = selectedList.includes(opt);
-                              return (
-                                <label
-                                  key={i}
-                                  onClick={() => {
-                                    const next = isChecked ? selectedList.filter(item => item !== opt) : [...selectedList, opt];
-                                    setFormResponses(prev => ({ ...prev, [field.fieldDefinitionId]: JSON.stringify(next) }));
-                                  }}
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '10px',
-                                    padding: '8px 12px',
-                                    border: isChecked ? '1px solid var(--electric-blue)' : '1px solid rgba(255,255,255,0.1)',
-                                    background: isChecked ? 'rgba(0,229,255,0.1)' : '#0e1017',
-                                    cursor: 'pointer',
-                                    fontFamily: 'var(--font-mono)',
-                                    fontSize: '12px',
-                                    color: isChecked ? '#fff' : '#a0a4b8',
-                                    transition: 'all 0.15s ease',
-                                  }}
-                                >
-                                  <div
-                                    style={{
-                                      width: '14px',
-                                      height: '14px',
-                                      border: isChecked ? '2px solid var(--electric-blue)' : '1px solid rgba(255,255,255,0.3)',
-                                      background: isChecked ? 'var(--electric-blue)' : 'transparent',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      color: '#000',
-                                      fontSize: '10px',
-                                      fontWeight: 900,
-                                    }}
-                                  >
-                                    {isChecked && '✓'}
-                                  </div>
-                                  <span>{opt}</span>
-                                </label>
-                              );
-                            });
-                          })()}
-                        </div>
-                      ) : field.fieldDefinition.fieldType === 'SELECT' ? (
-                        <select
-                          value={formResponses[field.fieldDefinitionId] || ''}
-                          onChange={(e) => setFormResponses(prev => ({ ...prev, [field.fieldDefinitionId]: e.target.value }))}
-                          className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
-                          required={field.isRequired}
-                          style={{ appearance: 'none' }}
-                        >
-                          <option value="">Select an option</option>
-                          {field.fieldDefinition.options?.map((opt: string) => (
-                            <option key={opt} value={opt}>{opt}</option>
-                          ))}
-                        </select>
-                      ) : (
-                        <input
-                          type={
-                            field.fieldDefinition.fieldType === 'NUMBER' ? 'number' 
-                            : field.fieldDefinition.fieldType === 'EMAIL' ? 'email' 
-                            : field.fieldDefinition.fieldType === 'PHONE' ? 'tel' 
-                            : 'text'
-                          }
-                          value={formResponses[field.fieldDefinitionId] || ''}
-                          onChange={(e) => setFormResponses(prev => ({ ...prev, [field.fieldDefinitionId]: e.target.value }))}
-                          className="w-full bg-[#0e1017] border-2 border-white/20 px-3.5 py-2.5 text-xs font-mono text-[#F5F5F2] focus:border-[#0057FF] focus:outline-none transition-colors"
-                          required={field.isRequired}
-                          placeholder={field.fieldDefinition.fieldType === 'URL' ? 'https://...' : field.fieldDefinition.fieldType === 'PHONE' ? '+1 (555) 000-0000' : ''}
-                        />
-                      )}
-                    </>
-                  ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.3)' }}>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: '#fff', wordBreak: 'break-all' }}>
-                        {(() => {
-                          const raw = formResponses[field.fieldDefinitionId];
-                          try {
-                            const parsed = JSON.parse(raw);
-                            if (Array.isArray(parsed)) return parsed.join(', ');
-                          } catch {}
-                          return raw || '-';
-                        })()}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setEditableFields(prev => [...prev, field.fieldDefinitionId])}
-                        style={{ background: 'none', border: 'none', color: '#00E5FF', fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700, cursor: 'pointer', letterSpacing: '1px' }}
-                      >
-                        EDIT
-                      </button>
-                    </div>
-                  )}
-
-                  {field.fieldDefinition.isReusable && (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: '9px', fontFamily: 'var(--font-mono)', color: '#00E5FF', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                        {isPreFilled && !isEditable ? '✓ Confirm this saved value is correct' : '(Saved to profile)'}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )})}
+              <div className="space-y-4">
+                {eventFormFields.map((field) => (
+                  <DynamicFieldInput
+                    key={field.fieldDefinitionId}
+                    field={field}
+                    value={formResponses[field.fieldDefinitionId] || ''}
+                    onChange={(val) => {
+                      setFormResponses(prev => ({ ...prev, [field.fieldDefinitionId]: val }));
+                      if (fieldErrors[field.fieldDefinitionId]) {
+                        setFieldErrors(prev => {
+                          const next = { ...prev };
+                          delete next[field.fieldDefinitionId];
+                          return next;
+                        });
+                      }
+                      if (registrationError) {
+                        setRegistrationError(null);
+                      }
+                    }}
+                    disabled={isRegistering}
+                    error={fieldErrors[field.fieldDefinitionId]}
+                    isPrefilled={!!preFilledFields[field.fieldDefinitionId] && formResponses[field.fieldDefinitionId] !== undefined}
+                  />
+                ))}
+              </div>
             </div>
           )}
 

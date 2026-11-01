@@ -53,7 +53,7 @@ export function TransferLeadershipModal({ eventId, team, isOpen, onClose }: Tran
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="TRANSFER SQUAD LEADERSHIP">
       <div className="p-6 pt-2 font-sans">
-        <div className="mb-6 p-4 bg-[#FF9500]/15 border-2 border-[#FF9500] text-[#FF9500] text-xs font-mono" role="alert">
+        <div className="mb-6 p-4 bg-[#FFF8E6] dark:bg-[#FF9500]/15 border-2 border-[#D97706] dark:border-[#FF9500] text-[#B45309] dark:text-[#FF9500] text-xs font-mono" role="alert">
           <div className="flex items-center gap-2 font-bold mb-1 uppercase tracking-widest text-xs">
             <AlertTriangle className="w-4 h-4" />
             Warning: Irreversible Action
@@ -62,18 +62,18 @@ export function TransferLeadershipModal({ eventId, team, isOpen, onClose }: Tran
         </div>
 
         {errorMsg && (
-          <div className="mb-6 p-4 bg-[#FF3B30]/15 border-2 border-[#FF3B30] text-[#FF3B30] text-xs font-mono font-bold uppercase" role="alert">
+          <div className="mb-6 p-4 bg-[#FF3B30]/15 border-2 border-[#FF3B30] text-[#D32F2F] dark:text-[#FF3B30] text-xs font-mono font-bold uppercase" role="alert">
             {errorMsg}
           </div>
         )}
 
         <div className="mb-8">
-          <h3 className="text-xs font-mono font-bold tracking-[0.2em] text-[#a0a4b8] uppercase mb-3">
+          <h3 className="text-xs font-mono font-bold tracking-[0.2em] text-[#475467] dark:text-[#a0a4b8] uppercase mb-3">
             Select Successor
           </h3>
           
           {eligibleMembers.length === 0 ? (
-            <p className="font-mono text-xs text-[#a0a4b8] border border-dashed border-white/15 p-4 text-center">
+            <p className="font-mono text-xs text-[#475467] dark:text-[#a0a4b8] border border-dashed border-black/15 dark:border-white/15 p-4 text-center">
               There are no other members currently in this squad.
             </p>
           ) : (
@@ -85,13 +85,13 @@ export function TransferLeadershipModal({ eventId, team, isOpen, onClose }: Tran
                   disabled={isPending}
                   className={`w-full flex items-center justify-between p-3.5 border-2 transition-all text-left disabled:opacity-50 ${
                     selectedMemberId === member.user_id 
-                      ? 'border-[#0057FF] bg-[#0057FF]/15 text-white shadow-[3px_3px_0px_#000]' 
-                      : 'border-white/15 bg-[#0e1017] text-[#F5F5F2] hover:border-white/40'
+                      ? 'border-[#0057FF] bg-[#0057FF]/15 text-[#0057FF] dark:text-white shadow-[3px_3px_0px_#000]' 
+                      : 'border-black/15 dark:border-white/15 bg-[#F8F9FA] dark:bg-[#0e1017] text-[#0A0D14] dark:text-[#F5F5F2] hover:border-black/40 dark:hover:border-white/40'
                   }`}
                 >
                   <div className="font-bold text-xs uppercase font-mono">{member.full_name}</div>
                   {selectedMemberId === member.user_id && (
-                    <div className="w-2.5 h-2.5 bg-[#0057FF] shadow-[1px_1px_0px_#fff]"></div>
+                    <div className="w-2.5 h-2.5 bg-[#0057FF] shadow-[1px_1px_0px_#000] dark:shadow-[1px_1px_0px_#fff]"></div>
                   )}
                 </button>
               ))}
@@ -103,7 +103,7 @@ export function TransferLeadershipModal({ eventId, team, isOpen, onClose }: Tran
           <button 
             onClick={handleClose}
             disabled={isPending}
-            className="w-full sm:w-auto px-5 py-3 border-2 border-white/20 text-[#a0a4b8] hover:text-white hover:border-white font-mono font-bold text-xs tracking-widest uppercase transition-all disabled:opacity-50"
+            className="w-full sm:w-auto px-5 py-3 border-2 border-black/20 dark:border-white/20 text-[#475467] dark:text-[#a0a4b8] hover:text-black dark:hover:text-white hover:border-black dark:hover:border-white font-mono font-bold text-xs tracking-widest uppercase transition-all disabled:opacity-50"
           >
             Cancel
           </button>

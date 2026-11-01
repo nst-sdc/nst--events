@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { DatePicker } from 'antd';
+import { DatePicker, theme } from 'antd';
 import dayjs from 'dayjs';
 
 import AttendanceAnalytics from '../../../../../components/analytics/AttendanceAnalytics';
@@ -13,8 +13,10 @@ import DisputeAnalytics from '../../../../../components/analytics/DisputeAnalyti
 import UserAnalytics from '../../../../../components/analytics/UserAnalytics';
 
 const { RangePicker } = DatePicker;
+const { useToken } = theme;
 
 export default function AnalyticsTabPage() {
+  const { token } = useToken();
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -58,7 +60,7 @@ export default function AnalyticsTabPage() {
         return <UserAnalytics />;
       default:
         return (
-          <div style={{ background: '#fff', borderRadius: 8, border: '1px solid #d9d9d9', padding: 32, textAlign: 'center', color: '#6b7280' }}>
+          <div style={{ background: token.colorBgContainer, borderRadius: 8, border: `1px solid ${token.colorBorderSecondary}`, padding: 32, textAlign: 'center', color: token.colorTextSecondary }}>
             Tab not found
           </div>
         );
@@ -68,7 +70,7 @@ export default function AnalyticsTabPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3 style={{ fontSize: 20, fontWeight: 600, textTransform: 'capitalize', margin: 0 }}>{tabStr} Analytics</h3>
+        <h3 style={{ fontSize: 20, fontWeight: 600, textTransform: 'capitalize', margin: 0, color: token.colorText }}>{tabStr} Analytics</h3>
         {showDateFilter && (
           <RangePicker 
             value={[dayjs(dateRange.start), dayjs(dateRange.end)]}

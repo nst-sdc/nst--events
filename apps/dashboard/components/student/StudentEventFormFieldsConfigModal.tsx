@@ -215,18 +215,18 @@ export function StudentEventFormFieldsConfigModal({
 
         {/* IMMUTABILITY BANNER */}
         <div className="mb-4 p-3 bg-[#0057FF]/10 border border-[#0057FF]/30 flex items-start gap-2.5">
-          <AlertCircle className="w-4 h-4 text-[#00E5FF] shrink-0 mt-0.5" />
-          <p className="font-mono text-[11px] text-[#a0a4b8] leading-relaxed">
-            <strong className="text-white">FIELD DEFINITIONS ARE IMMUTABLE:</strong> Field types, choice options, and machine keys cannot be altered once created to preserve historical responses. You can freely reorder questions, toggle required status, or remove/replace them.
+          <AlertCircle className="w-4 h-4 text-[#0057FF] dark:text-[#00E5FF] shrink-0 mt-0.5" />
+          <p className="font-mono text-[11px] text-zinc-600 dark:text-[#a0a4b8] leading-relaxed">
+            <strong className="text-zinc-900 dark:text-white">FIELD DEFINITIONS ARE IMMUTABLE:</strong> Field types, choice options, and machine keys cannot be altered once created to preserve historical responses. You can freely reorder questions, toggle required status, or remove/replace them.
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b-2 border-white/10 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b-2 border-zinc-200 dark:border-white/10 mb-6">
           <div>
-            <div className="font-mono text-xs uppercase tracking-widest text-[#a0a4b8]">
+            <div className="font-mono text-xs uppercase tracking-widest text-zinc-600 dark:text-[#a0a4b8]">
               {localFields.length} FIELD{localFields.length === 1 ? '' : 'S'} DEFINED
             </div>
-            <p className="text-xs text-[#a0a4b8] mt-0.5">
+            <p className="text-xs text-zinc-500 dark:text-[#a0a4b8] mt-0.5">
               Customize questions and inputs students will respond to.
             </p>
           </div>
@@ -234,14 +234,14 @@ export function StudentEventFormFieldsConfigModal({
             <button
               type="button"
               onClick={() => setIsCreateFieldOpen(true)}
-              className="px-3 py-1.5 border-2 border-white/20 text-[#a0a4b8] hover:text-white hover:border-white font-mono font-bold text-xs uppercase tracking-wider transition-all"
+              className="px-3 py-1.5 border-2 border-black/20 dark:border-white/20 text-zinc-700 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white hover:border-black dark:hover:border-white font-mono font-bold text-xs uppercase tracking-wider transition-all"
             >
               + Create Custom
             </button>
             <button
               type="button"
               onClick={() => setIsAddFieldOpen(true)}
-              className="px-4 py-1.5 bg-[#00E5FF] text-black border-2 border-[#00E5FF] hover:bg-[#00b8cc] font-mono font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-[2px_2px_0px_#000] transition-all"
+              className="px-4 py-1.5 bg-[#0057FF] dark:bg-[#00E5FF] text-white dark:text-black border-2 border-[#0057FF] dark:border-[#00E5FF] hover:bg-[#0047d4] dark:hover:bg-[#00b8cc] font-mono font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-[2px_2px_0px_#0A0D14] dark:shadow-[2px_2px_0px_#000] transition-all"
             >
               <Plus className="w-3.5 h-3.5" /> Add Field
             </button>
@@ -249,22 +249,22 @@ export function StudentEventFormFieldsConfigModal({
         </div>
 
         {isLoadingForm ? (
-          <div className="text-[#a0a4b8] font-mono text-xs uppercase tracking-widest text-center py-12">
+          <div className="text-zinc-500 dark:text-[#a0a4b8] font-mono text-xs uppercase tracking-widest text-center py-12">
             Loading form fields...
           </div>
         ) : localFields.length === 0 ? (
-          <div className="text-center py-12 border-2 border-dashed border-white/15 bg-[#141721] p-6">
-            <Sliders className="w-8 h-8 text-[#a0a4b8] mx-auto mb-2 opacity-50" />
-            <div className="font-mono text-sm text-[#F5F5F2] uppercase tracking-wider">
+          <div className="text-center py-12 border-2 border-dashed border-black/10 dark:border-white/15 bg-zinc-50 dark:bg-[#141721] p-6">
+            <Sliders className="w-8 h-8 text-zinc-400 dark:text-[#a0a4b8] mx-auto mb-2 opacity-50" />
+            <div className="font-mono text-sm text-zinc-900 dark:text-[#F5F5F2] uppercase tracking-wider">
               No fields configured yet
             </div>
-            <p className="text-xs text-[#a0a4b8] mt-1 mb-4">
+            <p className="text-xs text-zinc-500 dark:text-[#a0a4b8] mt-1 mb-4">
               Add fields from the library or create custom questions for this form.
             </p>
             <button
               type="button"
               onClick={() => setIsAddFieldOpen(true)}
-              className="px-4 py-2 bg-[#00E5FF] text-black font-mono font-bold text-xs uppercase tracking-wider shadow-[2px_2px_0px_#000]"
+              className="px-4 py-2 bg-[#0057FF] dark:bg-[#00E5FF] text-white dark:text-black font-mono font-bold text-xs uppercase tracking-wider shadow-[2px_2px_0px_#0A0D14] dark:shadow-[2px_2px_0px_#000]"
             >
               Add Your First Field
             </button>
@@ -274,7 +274,7 @@ export function StudentEventFormFieldsConfigModal({
             {localFields.map((field, idx) => (
               <div
                 key={field.fieldDefinitionId}
-                className="flex items-center justify-between p-3.5 bg-[#141721] border-2 border-white/10 hover:border-white/25 transition-all gap-4"
+                className="flex items-center justify-between p-3.5 bg-white dark:bg-[#141721] border-2 border-zinc-200 dark:border-white/10 hover:border-black/30 dark:hover:border-white/25 shadow-[2px_2px_0px_#0A0D14] dark:shadow-[2px_2px_0px_#000] transition-all gap-4"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="flex flex-col gap-0.5 shrink-0">
@@ -282,7 +282,7 @@ export function StudentEventFormFieldsConfigModal({
                       type="button"
                       disabled={idx === 0}
                       onClick={() => handleMove(idx, 'up')}
-                      className="p-1 border border-white/10 hover:border-white/30 text-[#a0a4b8] hover:text-white disabled:opacity-20 disabled:cursor-not-allowed"
+                      className="p-1 border border-zinc-200 dark:border-white/10 hover:border-zinc-400 dark:hover:border-white/30 text-zinc-500 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white disabled:opacity-20 disabled:cursor-not-allowed"
                     >
                       <ArrowUp className="w-3 h-3" />
                     </button>
@@ -290,20 +290,20 @@ export function StudentEventFormFieldsConfigModal({
                       type="button"
                       disabled={idx === localFields.length - 1}
                       onClick={() => handleMove(idx, 'down')}
-                      className="p-1 border border-white/10 hover:border-white/30 text-[#a0a4b8] hover:text-white disabled:opacity-20 disabled:cursor-not-allowed"
+                      className="p-1 border border-zinc-200 dark:border-white/10 hover:border-zinc-400 dark:hover:border-white/30 text-zinc-500 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white disabled:opacity-20 disabled:cursor-not-allowed"
                     >
                       <ArrowDown className="w-3 h-3" />
                     </button>
                   </div>
                   <div className="min-w-0">
-                    <div className="font-mono text-sm text-white font-bold truncate">
+                    <div className="font-mono text-sm text-zinc-900 dark:text-white font-bold truncate">
                       {field.fieldDefinition?.label || 'Untitled Field'}
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="font-mono text-[10px] uppercase text-[#00E5FF] tracking-wider px-1.5 py-0.5 bg-[#00E5FF]/10 border border-[#00E5FF]/30">
+                      <span className="font-mono text-[10px] uppercase text-[#0057FF] dark:text-[#00E5FF] tracking-wider px-1.5 py-0.5 bg-[#0057FF]/10 dark:bg-[#00E5FF]/10 border border-[#0057FF]/30 dark:border-[#00E5FF]/30">
                         {field.fieldDefinition?.fieldType || 'TEXT'}
                       </span>
-                      <span className="font-mono text-[10px] text-[#a0a4b8] truncate">
+                      <span className="font-mono text-[10px] text-zinc-500 dark:text-[#a0a4b8] truncate">
                         key: {field.fieldDefinition?.key}
                       </span>
                     </div>
@@ -316,8 +316,8 @@ export function StudentEventFormFieldsConfigModal({
                     onClick={() => handleToggleRequired(field.fieldDefinitionId)}
                     className={`px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider border-2 transition-all ${
                       field.isRequired
-                        ? 'bg-[#FFE600]/10 border-[#FFE600] text-[#FFE600]'
-                        : 'border-white/20 text-[#a0a4b8] hover:text-white'
+                        ? 'bg-[#D97706]/10 border-[#D97706] text-[#D97706] dark:bg-[#FFE600]/10 dark:border-[#FFE600] dark:text-[#FFE600]'
+                        : 'border-zinc-300 dark:border-white/20 text-zinc-600 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white'
                     }`}
                   >
                     {field.isRequired ? 'REQUIRED' : 'OPTIONAL'}
@@ -325,7 +325,7 @@ export function StudentEventFormFieldsConfigModal({
                   <button
                     type="button"
                     onClick={() => setFieldToRemove(field)}
-                    className="p-1.5 border border-white/10 hover:border-[#FF3B30] text-[#a0a4b8] hover:text-[#FF3B30] transition-colors"
+                    className="p-1.5 border border-zinc-200 dark:border-white/10 hover:border-[#FF3B30] text-zinc-500 dark:text-[#a0a4b8] hover:text-[#FF3B30] transition-colors"
                     title="Remove from form"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -337,11 +337,11 @@ export function StudentEventFormFieldsConfigModal({
         )}
 
         {/* Footer actions */}
-        <div className="mt-8 pt-4 border-t-2 border-white/10 flex items-center justify-between">
+        <div className="mt-8 pt-4 border-t-2 border-zinc-200 dark:border-white/10 flex items-center justify-between">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 border-2 border-white/20 text-[#a0a4b8] hover:text-white font-mono font-bold text-xs uppercase tracking-widest transition-all"
+            className="px-4 py-2 border-2 border-black/20 dark:border-white/20 text-zinc-700 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white font-mono font-bold text-xs uppercase tracking-widest transition-all"
           >
             Cancel
           </button>
@@ -349,10 +349,10 @@ export function StudentEventFormFieldsConfigModal({
             type="button"
             onClick={handleSave}
             disabled={isSaving}
-            className={`px-6 py-2 border-2 font-mono font-bold text-xs uppercase tracking-widest flex items-center gap-2 shadow-[2px_2px_0px_#000] transition-all ${
+            className={`px-6 py-2 border-2 font-mono font-bold text-xs uppercase tracking-widest flex items-center gap-2 shadow-[2px_2px_0px_#0A0D14] dark:shadow-[2px_2px_0px_#000] transition-all ${
               saveSuccess
-                ? 'bg-[#00E5FF] text-black border-[#00E5FF]'
-                : 'bg-white text-black border-white hover:bg-[#FFE600] hover:border-[#FFE600]'
+                ? 'bg-[#0057FF] dark:bg-[#00E5FF] text-white dark:text-black border-[#0057FF] dark:border-[#00E5FF]'
+                : 'bg-black dark:bg-white text-white dark:text-black border-black dark:border-white hover:bg-[#0057FF] dark:hover:bg-[#FFE600] hover:border-[#0057FF] dark:hover:border-[#FFE600]'
             }`}
           >
             {saveSuccess ? (
@@ -378,23 +378,23 @@ export function StudentEventFormFieldsConfigModal({
         >
           <div className="p-6 space-y-3">
             {availableFields.length === 0 ? (
-              <div className="text-center py-6 text-[#a0a4b8] font-mono text-xs uppercase tracking-wider">
+              <div className="text-center py-6 text-zinc-500 dark:text-[#a0a4b8] font-mono text-xs uppercase tracking-wider">
                 No more unassigned fields.
               </div>
             ) : (
               availableFields.map(field => (
                 <div
                   key={field.id}
-                  className="flex items-center justify-between p-3 bg-[#141721] border border-white/10"
+                  className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-[#141721] border border-zinc-200 dark:border-white/10"
                 >
                   <div>
-                    <div className="font-mono text-xs font-bold text-white">{field.label}</div>
-                    <div className="font-mono text-[10px] text-[#a0a4b8]">{field.fieldType}</div>
+                    <div className="font-mono text-xs font-bold text-zinc-900 dark:text-white">{field.label}</div>
+                    <div className="font-mono text-[10px] text-zinc-500 dark:text-[#a0a4b8]">{field.fieldType}</div>
                   </div>
                   <button
                     type="button"
                     onClick={() => handleAddField(field)}
-                    className="px-3 py-1 bg-[#00E5FF] text-black font-mono font-bold text-xs uppercase tracking-wider hover:bg-[#00b8cc]"
+                    className="px-3 py-1 bg-[#0057FF] dark:bg-[#00E5FF] text-white dark:text-black font-mono font-bold text-xs uppercase tracking-wider hover:bg-[#0047d4] dark:hover:bg-[#00b8cc]"
                   >
                     Add
                   </button>
@@ -405,7 +405,7 @@ export function StudentEventFormFieldsConfigModal({
               <button
                 type="button"
                 onClick={() => setIsAddFieldOpen(false)}
-                className="w-full py-2 border border-white/20 text-[#a0a4b8] hover:text-white font-mono text-xs uppercase"
+                className="w-full py-2 border border-zinc-300 dark:border-white/20 text-zinc-700 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white font-mono text-xs uppercase"
               >
                 Done
               </button>
@@ -424,7 +424,7 @@ export function StudentEventFormFieldsConfigModal({
         >
           <form onSubmit={handleCreateField} className="p-6 space-y-4">
             <div>
-              <label className="block font-mono text-xs uppercase tracking-wider text-[#a0a4b8] mb-1">
+              <label className="block font-mono text-xs uppercase tracking-wider text-zinc-700 dark:text-[#a0a4b8] mb-1">
                 Question / Label
               </label>
               <input
@@ -443,12 +443,12 @@ export function StudentEventFormFieldsConfigModal({
                   }
                 }}
                 placeholder="e.g. GitHub Repository, T-Shirt Size"
-                className="w-full bg-[#141721] border-2 border-white/15 px-3 py-2 text-white font-mono text-xs focus:border-[#00E5FF] focus:outline-none"
+                className="w-full bg-white dark:bg-[#141721] border-2 border-black/15 dark:border-white/15 px-3 py-2 text-zinc-900 dark:text-white font-mono text-xs focus:border-[#0057FF] dark:focus:border-[#00E5FF] focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block font-mono text-xs uppercase tracking-wider text-[#a0a4b8] mb-1">
+              <label className="block font-mono text-xs uppercase tracking-wider text-zinc-700 dark:text-[#a0a4b8] mb-1">
                 Field Key (Unique identifier)
               </label>
               <input
@@ -457,18 +457,18 @@ export function StudentEventFormFieldsConfigModal({
                 value={newFieldKey}
                 onChange={e => setNewFieldKey(e.target.value)}
                 placeholder="e.g. github_repo"
-                className="w-full bg-[#141721] border-2 border-white/15 px-3 py-2 text-white font-mono text-xs focus:border-[#00E5FF] focus:outline-none"
+                className="w-full bg-white dark:bg-[#141721] border-2 border-black/15 dark:border-white/15 px-3 py-2 text-zinc-900 dark:text-white font-mono text-xs focus:border-[#0057FF] dark:focus:border-[#00E5FF] focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block font-mono text-xs uppercase tracking-wider text-[#a0a4b8] mb-1">
+              <label className="block font-mono text-xs uppercase tracking-wider text-zinc-700 dark:text-[#a0a4b8] mb-1">
                 Field Type
               </label>
               <select
                 value={newFieldType}
                 onChange={e => setNewFieldType(e.target.value)}
-                className="w-full bg-[#141721] border-2 border-white/15 px-3 py-2 text-white font-mono text-xs focus:border-[#00E5FF] focus:outline-none"
+                className="w-full bg-white dark:bg-[#141721] border-2 border-black/15 dark:border-white/15 px-3 py-2 text-zinc-900 dark:text-white font-mono text-xs focus:border-[#0057FF] dark:focus:border-[#00E5FF] focus:outline-none"
               >
                 <option value="TEXT">Text (Single line)</option>
                 <option value="URL">URL / Link</option>
@@ -483,7 +483,7 @@ export function StudentEventFormFieldsConfigModal({
 
             {['SELECT', 'MULTI_SELECT', 'RADIO'].includes(newFieldType) && (
               <div>
-                <label className="block font-mono text-xs uppercase tracking-wider text-[#a0a4b8] mb-1">
+                <label className="block font-mono text-xs uppercase tracking-wider text-zinc-700 dark:text-[#a0a4b8] mb-1">
                   Options (Comma separated)
                 </label>
                 <input
@@ -492,7 +492,7 @@ export function StudentEventFormFieldsConfigModal({
                   value={newFieldOptions}
                   onChange={e => setNewFieldOptions(e.target.value)}
                   placeholder="Option 1, Option 2, Option 3"
-                  className="w-full bg-[#141721] border-2 border-white/15 px-3 py-2 text-white font-mono text-xs focus:border-[#00E5FF] focus:outline-none"
+                  className="w-full bg-white dark:bg-[#141721] border-2 border-black/15 dark:border-white/15 px-3 py-2 text-zinc-900 dark:text-white font-mono text-xs focus:border-[#0057FF] dark:focus:border-[#00E5FF] focus:outline-none"
                 />
               </div>
             )}
@@ -503,25 +503,25 @@ export function StudentEventFormFieldsConfigModal({
                 id="reusable"
                 checked={newFieldReusable}
                 onChange={e => setNewFieldReusable(e.target.checked)}
-                className="accent-[#00E5FF]"
+                className="accent-[#0057FF] dark:accent-[#00E5FF]"
               />
-              <label htmlFor="reusable" className="font-mono text-xs text-[#a0a4b8]">
+              <label htmlFor="reusable" className="font-mono text-xs text-zinc-700 dark:text-[#a0a4b8]">
                 Make reusable for future events
               </label>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+            <div className="flex justify-end gap-3 pt-4 border-t border-zinc-200 dark:border-white/10">
               <button
                 type="button"
                 onClick={() => setIsCreateFieldOpen(false)}
-                className="px-4 py-2 border border-white/20 text-[#a0a4b8] hover:text-white font-mono text-xs uppercase"
+                className="px-4 py-2 border border-zinc-300 dark:border-white/20 text-zinc-700 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white font-mono text-xs uppercase"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isCreatingField}
-                className="px-5 py-2 bg-[#00E5FF] text-black font-mono font-bold text-xs uppercase tracking-wider hover:bg-[#00b8cc] shadow-[2px_2px_0px_#000]"
+                className="px-5 py-2 bg-[#0057FF] dark:bg-[#00E5FF] text-white dark:text-black font-mono font-bold text-xs uppercase tracking-wider hover:bg-[#0047d4] dark:hover:bg-[#00b8cc] shadow-[2px_2px_0px_#0A0D14] dark:shadow-[2px_2px_0px_#000]"
               >
                 {isCreatingField ? 'Creating...' : 'Create & Add'}
               </button>
@@ -537,18 +537,18 @@ export function StudentEventFormFieldsConfigModal({
         title="REMOVE FIELD"
         maxWidth="max-w-md"
       >
-        <div className="p-6 bg-[#0d0e12] text-white space-y-4">
-          <p className="font-mono text-xs text-[#a0a4b8] leading-relaxed">
-            Are you sure you want to remove <span className="text-white font-bold">{fieldToRemove?.fieldDefinition?.label}</span> from this form?
+        <div className="p-6 bg-white dark:bg-[#0d0e12] text-zinc-900 dark:text-white space-y-4">
+          <p className="font-mono text-xs text-zinc-600 dark:text-[#a0a4b8] leading-relaxed">
+            Are you sure you want to remove <span className="text-zinc-900 dark:text-white font-bold">{fieldToRemove?.fieldDefinition?.label}</span> from this form?
           </p>
-          <p className="font-mono text-xs text-[#00E5FF] bg-[#00E5FF]/10 p-3 border border-[#00E5FF]/20 leading-relaxed">
+          <p className="font-mono text-xs text-[#0057FF] dark:text-[#00E5FF] bg-[#0057FF]/10 dark:bg-[#00E5FF]/10 p-3 border border-[#0057FF]/20 dark:border-[#00E5FF]/20 leading-relaxed">
             Any existing responses for this question already submitted by students remain safely preserved in the database.
           </p>
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
               onClick={() => setFieldToRemove(null)}
-              className="px-4 py-2 border border-white/20 text-[#a0a4b8] hover:text-white font-mono text-xs uppercase"
+              className="px-4 py-2 border border-zinc-300 dark:border-white/20 text-zinc-700 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white font-mono text-xs uppercase"
             >
               Cancel
             </button>

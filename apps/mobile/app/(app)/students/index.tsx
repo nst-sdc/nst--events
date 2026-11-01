@@ -16,6 +16,7 @@ import { Title, Body, MonoLabel, Mono, Display } from '../../../src/ui/core/Typo
 import { ActivityIndicator } from '../../../src/ui/core/ActivityIndicator';
 import { useStudentDirectory, PublicStudentCard } from '../../../src/hooks/use-student-profiles';
 import { MaterialIcons } from '@expo/vector-icons';
+import { FilterChip } from '../../../src/ui/FilterChip';
 
 export default function StudentDirectoryScreen() {
   const router = useRouter();
@@ -245,7 +246,12 @@ export default function StudentDirectoryScreen() {
               autoCorrect={false}
             />
             {search.length > 0 && (
-              <TouchableOpacity onPress={() => setSearch('')}>
+              <TouchableOpacity
+                onPress={() => setSearch('')}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                accessibilityRole="button"
+                accessibilityLabel="Clear search input"
+              >
                 <MaterialIcons name="close" size={16} color={theme.colors.onSurfaceVariant} />
               </TouchableOpacity>
             )}
@@ -254,29 +260,22 @@ export default function StudentDirectoryScreen() {
           {/* Program filter chips */}
           {facets.programs.length > 0 && (
             <View style={styles.filterRow}>
-              <TouchableOpacity
+              <FilterChip
+                label="ALL PROGRAMS"
+                selected={!selectedProgram}
                 onPress={() => setSelectedProgram(undefined)}
-                style={[styles.filterChip, !selectedProgram && styles.filterChipActive]}
-              >
-                <Text style={[styles.filterChipText, !selectedProgram && styles.filterChipTextActive]}>
-                  ALL PROGRAMS
-                </Text>
-              </TouchableOpacity>
+                accessibilityRole="button"
+                accessibilityLabel="Filter by all programs"
+              />
               {facets.programs.map((prog) => (
-                <TouchableOpacity
+                <FilterChip
                   key={prog}
+                  label={prog}
+                  selected={selectedProgram === prog}
                   onPress={() => setSelectedProgram(selectedProgram === prog ? undefined : prog)}
-                  style={[styles.filterChip, selectedProgram === prog && styles.filterChipActive]}
-                >
-                  <Text
-                    style={[
-                      styles.filterChipText,
-                      selectedProgram === prog && styles.filterChipTextActive,
-                    ]}
-                  >
-                    {prog}
-                  </Text>
-                </TouchableOpacity>
+                  accessibilityRole="button"
+                  accessibilityLabel={`Filter by program ${prog}`}
+                />
               ))}
             </View>
           )}

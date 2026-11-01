@@ -358,6 +358,72 @@ const directoryStyles = `
     .dir-inner { padding: 40px 16px 80px 16px; }
     .dir-grid { grid-template-columns: 1fr; }
   }
+
+  /* ==========================================================================
+     LIGHT THEME OVERRIDES (Scoped to html.light)
+     ========================================================================== */
+  html.light .dir-page {
+    background-color: #F8F9FA;
+    color: #0A0D14;
+  }
+
+  html.light .collage-noise-overlay {
+    opacity: 0.15;
+    background-image: radial-gradient(rgba(10, 13, 20, 0.12) 1px, transparent 1px);
+  }
+
+  html.light .dir-micro {
+    color: #475467;
+  }
+
+  html.light .dir-hero-title {
+    color: #0A0D14;
+  }
+
+  html.light .dir-header {
+    border-bottom: 3px solid #000000;
+  }
+
+  html.light .dir-watermark {
+    color: rgba(0, 0, 0, 0.03);
+  }
+
+  html.light .dir-filter-bar {
+    background: #FFFFFF;
+    border: 2px solid #000000;
+    box-shadow: 4px 4px 0px #000000;
+  }
+
+  html.light .dir-search-input {
+    background: #F8F9FA;
+    border: 2px solid rgba(0, 0, 0, 0.2);
+    color: #0A0D14;
+  }
+
+  html.light .dir-search-input:focus {
+    border-color: #000000;
+  }
+
+  html.light .dir-filter-select {
+    background: #F8F9FA;
+    border: 2px solid rgba(0, 0, 0, 0.2);
+    color: #0A0D14;
+  }
+
+  html.light .dir-filter-select:focus {
+    border-color: #000000;
+  }
+
+  html.light .dir-page-btn {
+    color: #0A0D14;
+    border: 2px solid #000000;
+  }
+
+  html.light .dir-page-btn:hover {
+    background: var(--electric-blue);
+    color: #ffffff;
+    border-color: #000000;
+  }
 `;
 
 export default async function StudentDirectoryPage({ searchParams }: PageProps) {

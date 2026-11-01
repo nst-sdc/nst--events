@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from './mocks/testing-library-react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -247,11 +248,11 @@ describe('Phase UI-27: Student Event Discovery & Registration UX', () => {
       expect(screen.queryByText('[ REGISTER FOR EVENT ]')).toBeNull();
     });
 
-    it('8. TeamsScreen renders desktop portal restriction notice', async () => {
+    it('8. TeamsScreen renders empty squad state and back button when not enrolled', async () => {
       render(withProviders(<TeamsScreen />));
-      expect(await screen.findByText('TEAM FORMATION & ROSTER')).toBeTruthy();
-      expect(screen.getByText(/restricted to the desktop web application/i)).toBeTruthy();
-      expect(screen.getByText('ACCESS VIA WEB DASHBOARD')).toBeTruthy();
+      expect(await screen.findByText('SQUAD HUB')).toBeTruthy();
+      expect(await screen.findByText('NO SQUAD ENROLLMENT')).toBeTruthy();
+      expect(await screen.findByText('[ RETURN TO EVENT ]')).toBeTruthy();
     });
   });
 

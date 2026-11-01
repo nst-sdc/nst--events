@@ -25,6 +25,101 @@ import {
   Sparkles,
 } from 'lucide-react';
 
+const portfolioSettingsStyles = `
+  .sps-container {
+    border: 3px solid #000000;
+    background: #FFFFFF;
+    color: #0A0D14;
+    padding: 32px;
+    box-shadow: 12px 12px 0px var(--electric-blue);
+  }
+  html.dark .sps-container, .dark .sps-container {
+    border: 2px solid rgba(245,245,242,0.2);
+    background: #0d0e12;
+    color: #F5F5F2;
+  }
+  .sps-panel {
+    background: #F8F9FA;
+    border: 2px solid #000000;
+    padding: 20px;
+    margin-bottom: 28px;
+  }
+  html.dark .sps-panel, .dark .sps-panel {
+    background: #000000;
+    border: 2px solid rgba(245,245,242,0.2);
+  }
+  .sps-input-wrap {
+    display: flex;
+    align-items: center;
+    background: #FFFFFF;
+    border: 1px solid #000000;
+  }
+  html.dark .sps-input-wrap, .dark .sps-input-wrap {
+    background: #050505;
+    border: 1px solid rgba(245,245,242,0.3);
+  }
+  .sps-input-field {
+    background: #FFFFFF;
+    border: 1px solid #D0D5DD;
+    color: #0A0D14;
+    font-family: var(--font-mono);
+    outline: none;
+  }
+  html.dark .sps-input-field, .dark .sps-input-field {
+    background: #050505;
+    border: 1px solid rgba(245,245,242,0.3);
+    color: #FFFFFF;
+  }
+  .sps-textarea-field {
+    background: #FFFFFF;
+    border: 1px solid #D0D5DD;
+    color: #0A0D14;
+    font-family: var(--font-body);
+    outline: none;
+  }
+  html.dark .sps-textarea-field, .dark .sps-textarea-field {
+    background: #050505;
+    border: 1px solid rgba(245,245,242,0.3);
+    color: #FFFFFF;
+  }
+  .sps-card-item {
+    background: #FFFFFF;
+    border: 1px solid #000000;
+    color: #0A0D14;
+  }
+  html.dark .sps-card-item, .dark .sps-card-item {
+    background: #000000;
+    border: 1px solid rgba(245,245,242,0.2);
+    color: #F5F5F2;
+  }
+  .sps-text-subtle {
+    color: #475467;
+  }
+  html.dark .sps-text-subtle, .dark .sps-text-subtle {
+    color: #a0a4b8;
+  }
+  .sps-btn-neutral {
+    background: #FFFFFF;
+    border: 2px solid #000000;
+    color: #0A0D14;
+  }
+  html.dark .sps-btn-neutral, .dark .sps-btn-neutral {
+    background: #050505;
+    border: 2px solid var(--electric-blue);
+    color: #FFFFFF;
+  }
+  .sps-skill-chip {
+    background: #F0F4FF;
+    border: 1px solid #0057FF;
+    color: #0057FF;
+  }
+  html.dark .sps-skill-chip, .dark .sps-skill-chip {
+    background: #050505;
+    border: 1px solid rgba(245,245,242,0.3);
+    color: var(--acid-green);
+  }
+`;
+
 export function StudentPortfolioSettings() {
   const queryClient = useQueryClient();
 
@@ -127,16 +222,16 @@ export function StudentPortfolioSettings() {
 
   if (isLoading) {
     return (
-      <div className="profile-section-card animate-pulse">
-        <div className="h-6 w-48 bg-neutral-900 mb-4" />
-        <div className="h-24 w-full bg-neutral-900" />
+      <div className="sps-container animate-pulse">
+        <div className="h-6 w-48 bg-neutral-200 dark:bg-neutral-900 mb-4" />
+        <div className="h-24 w-full bg-neutral-200 dark:bg-neutral-900" />
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="profile-section-card" style={{ borderColor: 'var(--warm-red)' }}>
+      <div className="sps-container" style={{ borderColor: 'var(--warm-red)' }}>
         <p className="micro-annotation" style={{ color: 'var(--warm-red)' }}>
           FAILED TO LOAD PORTFOLIO SETTINGS
         </p>
@@ -214,7 +309,11 @@ export function StudentPortfolioSettings() {
   };
 
   return (
-    <div className="profile-section-card" style={{ boxShadow: '12px 12px 0px var(--electric-blue)' }}>
+    <>
+      <style href="student-portfolio-settings-styles" precedence="high">
+        {portfolioSettingsStyles}
+      </style>
+      <div className="sps-container">
       {/* Header */}
       <div className="micro-annotation annotation-blue" style={{ marginBottom: '8px' }}>
         PUBLIC DOSSIER // PORTFOLIO & RECOGNITION
@@ -266,18 +365,18 @@ export function StudentPortfolioSettings() {
         </div>
       </div>
 
-      <p style={{ color: '#a0a4b8', fontSize: '14px', lineHeight: 1.6, marginBottom: '28px' }}>
+      <p className="sps-text-subtle" style={{ fontSize: '14px', lineHeight: 1.6, marginBottom: '28px' }}>
         Your public portfolio showcases your verified NST accomplishments, academic credentials, published software, and official event recognitions. You have full granular control over which sections and individual achievements appear on your public dossier.
       </p>
 
       {/* ── 1. Canonical Public Handle & Link Sharing ── */}
-      <div style={{ background: '#000', border: '2px solid rgba(245,245,242,0.2)', padding: '20px', marginBottom: '28px' }}>
+      <div className="sps-panel">
         <div className="micro-annotation" style={{ marginBottom: '8px' }}>
           CANONICAL PUBLIC URL & HANDLE
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', background: '#050505', border: '1px solid rgba(245,245,242,0.3)', padding: '8px 14px', flex: '1 1 280px' }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', color: '#a0a4b8', marginRight: '4px' }}>
+          <div className="sps-input-wrap" style={{ flex: '1 1 280px', padding: '8px 14px' }}>
+            <span className="sps-text-subtle" style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', marginRight: '4px' }}>
               /students/
             </span>
             <input
@@ -285,25 +384,20 @@ export function StudentPortfolioSettings() {
               value={handle}
               onChange={(e) => setHandle(e.target.value.toLowerCase())}
               placeholder="your-unique-handle"
+              className="sps-input-field"
               style={{
                 background: 'transparent',
                 border: 'none',
-                outline: 'none',
-                color: '#ffffff',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '13px',
-                fontWeight: 700,
                 width: '100%',
+                fontWeight: 700,
               }}
             />
           </div>
           <button
             onClick={() => changeHandleMutation.mutate(handle)}
             disabled={changeHandleMutation.isPending || handle === profile.slug}
+            className="sps-btn-neutral"
             style={{
-              background: '#050505',
-              border: '2px solid var(--electric-blue)',
-              color: '#ffffff',
               fontFamily: 'var(--font-mono)',
               fontSize: '11px',
               fontWeight: 700,
@@ -316,10 +410,11 @@ export function StudentPortfolioSettings() {
           </button>
           <button
             onClick={handleCopyLink}
+            className={copied ? '' : 'sps-btn-neutral'}
             style={{
-              background: copied ? 'var(--acid-green)' : '#050505',
-              border: `2px solid ${copied ? 'var(--acid-green)' : 'rgba(245,245,242,0.3)'}`,
-              color: copied ? '#000000' : '#ffffff',
+              background: copied ? 'var(--acid-green)' : undefined,
+              border: copied ? '2px solid var(--acid-green)' : undefined,
+              color: copied ? '#000000' : undefined,
               fontFamily: 'var(--font-mono)',
               fontSize: '11px',
               fontWeight: 700,
@@ -349,12 +444,12 @@ export function StudentPortfolioSettings() {
         )}
 
         {/* Directory Listing Switch */}
-        <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '14px' }}>
+        <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-subtle, rgba(0,0,0,0.1))', paddingTop: '14px' }}>
           <div>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 800 }}>
               Include in Public Student Directory
             </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#a0a4b8' }}>
+            <div className="sps-text-subtle" style={{ fontFamily: 'var(--font-mono)', fontSize: '11px' }}>
               Allows classmates and campus recruiters to find you in the <code>/students</code> directory search.
             </div>
           </div>
@@ -397,9 +492,9 @@ export function StudentPortfolioSettings() {
             return (
               <div
                 key={key}
+                className="sps-card-item"
                 style={{
-                  background: '#000',
-                  border: `2px solid ${isVisible ? 'var(--electric-blue)' : 'rgba(245,245,242,0.15)'}`,
+                  border: `2px solid ${isVisible ? 'var(--electric-blue)' : 'var(--border-subtle, rgba(0,0,0,0.15))'}`,
                   padding: '16px',
                   display: 'flex',
                   flexDirection: 'column',
@@ -417,12 +512,12 @@ export function StudentPortfolioSettings() {
                         <Eye size={12} /> VISIBLE
                       </span>
                     ) : (
-                      <span style={{ color: '#666', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontFamily: 'var(--font-mono)' }}>
+                      <span style={{ color: '#888', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontFamily: 'var(--font-mono)' }}>
                         <EyeOff size={12} /> HIDDEN
                       </span>
                     )}
                   </div>
-                  <p style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: '#a0a4b8', margin: '4px 0 0 0' }}>
+                  <p className="sps-text-subtle" style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', margin: '4px 0 0 0' }}>
                     {desc}
                   </p>
                 </div>
@@ -430,8 +525,8 @@ export function StudentPortfolioSettings() {
                   onClick={() => toggleSection(key as keyof SectionVisibility)}
                   style={{
                     background: isVisible ? 'var(--electric-blue)' : 'transparent',
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    color: '#ffffff',
+                    border: '1px solid var(--border-default, rgba(0,0,0,0.2))',
+                    color: isVisible ? '#ffffff' : 'inherit',
                     fontFamily: 'var(--font-mono)',
                     fontSize: '10px',
                     fontWeight: 700,
@@ -450,14 +545,14 @@ export function StudentPortfolioSettings() {
       </div>
 
       {/* ── 3. Content Editor (Headline, Bio, Skills, Links) ── */}
-      <div style={{ background: '#000', border: '2px solid rgba(245,245,242,0.2)', padding: '24px', marginBottom: '32px' }}>
+      <div className="sps-panel">
         <div className="micro-annotation annotation-green" style={{ marginBottom: '16px' }}>
           EDIT STUDENT PORTFOLIO CONTENT
         </div>
 
         {/* Headline */}
         <div style={{ marginBottom: '18px' }}>
-          <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#a0a4b8', marginBottom: '6px' }}>
+          <label className="sps-text-subtle" style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '11px', marginBottom: '6px' }}>
             HEADLINE (E.G. &ldquo;SYSTEMS & FULL-STACK ENGINEER | ML RESEARCHER&rdquo;)
           </label>
           <input
@@ -466,22 +561,18 @@ export function StudentPortfolioSettings() {
             onChange={(e) => setHeadline(e.target.value)}
             maxLength={120}
             placeholder="Write a punchy one-line technical headline..."
+            className="sps-input-field"
             style={{
-              background: '#050505',
-              border: '1px solid rgba(245,245,242,0.3)',
-              color: '#ffffff',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '13px',
               padding: '10px 14px',
               width: '100%',
-              outline: 'none',
+              fontSize: '13px',
             }}
           />
         </div>
 
         {/* Bio */}
         <div style={{ marginBottom: '18px' }}>
-          <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#a0a4b8', marginBottom: '6px' }}>
+          <label className="sps-text-subtle" style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '11px', marginBottom: '6px' }}>
             SHORT BIOGRAPHY / PORTFOLIO INTRO
           </label>
           <textarea
@@ -490,15 +581,11 @@ export function StudentPortfolioSettings() {
             maxLength={1000}
             rows={3}
             placeholder="Share your technical background, current projects, and focus areas..."
+            className="sps-textarea-field"
             style={{
-              background: '#050505',
-              border: '1px solid rgba(245,245,242,0.3)',
-              color: '#ffffff',
-              fontFamily: 'var(--font-body)',
-              fontSize: '13px',
               padding: '10px 14px',
               width: '100%',
-              outline: 'none',
+              fontSize: '13px',
               resize: 'vertical',
             }}
           />
@@ -506,7 +593,7 @@ export function StudentPortfolioSettings() {
 
         {/* Skills Tag Manager */}
         <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#a0a4b8', marginBottom: '6px' }}>
+          <label className="sps-text-subtle" style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '11px', marginBottom: '6px' }}>
             TECHNICAL SKILLS (MAX 20)
           </label>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
@@ -515,15 +602,11 @@ export function StudentPortfolioSettings() {
               value={newSkill}
               onChange={(e) => setNewSkill(e.target.value)}
               placeholder="Add skill (e.g. rust, react, pytorch)..."
+              className="sps-input-field"
               style={{
-                background: '#050505',
-                border: '1px solid rgba(245,245,242,0.3)',
-                color: '#ffffff',
-                fontFamily: 'var(--font-mono)',
                 fontSize: '12px',
                 padding: '8px 12px',
                 flex: '1 1 200px',
-                outline: 'none',
               }}
             />
             <button
@@ -546,13 +629,11 @@ export function StudentPortfolioSettings() {
             {skills.map((sk) => (
               <span
                 key={sk}
+                className="sps-skill-chip"
                 style={{
-                  background: '#050505',
-                  border: '1px solid rgba(245,245,242,0.3)',
                   fontFamily: 'var(--font-mono)',
                   fontSize: '11px',
                   padding: '3px 8px',
-                  color: 'var(--acid-green)',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px',
@@ -573,7 +654,7 @@ export function StudentPortfolioSettings() {
         {/* Links */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '12px', marginBottom: '20px' }}>
           <div>
-            <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '10px', color: '#a0a4b8', marginBottom: '4px' }}>
+            <label className="sps-text-subtle" style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '10px', marginBottom: '4px' }}>
               GITHUB PROFILE URL
             </label>
             <input
@@ -581,11 +662,12 @@ export function StudentPortfolioSettings() {
               value={links.github}
               onChange={(e) => setLinks({ ...links, github: e.target.value })}
               placeholder="https://github.com/..."
-              style={{ background: '#050505', border: '1px solid rgba(245,245,242,0.3)', color: '#fff', fontFamily: 'var(--font-mono)', fontSize: '12px', padding: '8px 12px', width: '100%', outline: 'none' }}
+              className="sps-input-field"
+              style={{ fontSize: '12px', padding: '8px 12px', width: '100%' }}
             />
           </div>
           <div>
-            <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '10px', color: '#a0a4b8', marginBottom: '4px' }}>
+            <label className="sps-text-subtle" style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '10px', marginBottom: '4px' }}>
               LINKEDIN PROFILE URL
             </label>
             <input
@@ -593,11 +675,12 @@ export function StudentPortfolioSettings() {
               value={links.linkedin}
               onChange={(e) => setLinks({ ...links, linkedin: e.target.value })}
               placeholder="https://linkedin.com/in/..."
-              style={{ background: '#050505', border: '1px solid rgba(245,245,242,0.3)', color: '#fff', fontFamily: 'var(--font-mono)', fontSize: '12px', padding: '8px 12px', width: '100%', outline: 'none' }}
+              className="sps-input-field"
+              style={{ fontSize: '12px', padding: '8px 12px', width: '100%' }}
             />
           </div>
           <div>
-            <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '10px', color: '#a0a4b8', marginBottom: '4px' }}>
+            <label className="sps-text-subtle" style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '10px', marginBottom: '4px' }}>
               PERSONAL PORTFOLIO URL
             </label>
             <input
@@ -605,11 +688,12 @@ export function StudentPortfolioSettings() {
               value={links.portfolio}
               onChange={(e) => setLinks({ ...links, portfolio: e.target.value })}
               placeholder="https://yourname.dev"
-              style={{ background: '#050505', border: '1px solid rgba(245,245,242,0.3)', color: '#fff', fontFamily: 'var(--font-mono)', fontSize: '12px', padding: '8px 12px', width: '100%', outline: 'none' }}
+              className="sps-input-field"
+              style={{ fontSize: '12px', padding: '8px 12px', width: '100%' }}
             />
           </div>
           <div>
-            <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '10px', color: '#a0a4b8', marginBottom: '4px' }}>
+            <label className="sps-text-subtle" style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '10px', marginBottom: '4px' }}>
               OTHER PROFILE / BLOG URL
             </label>
             <input
@@ -617,7 +701,8 @@ export function StudentPortfolioSettings() {
               value={links.other}
               onChange={(e) => setLinks({ ...links, other: e.target.value })}
               placeholder="https://..."
-              style={{ background: '#050505', border: '1px solid rgba(245,245,242,0.3)', color: '#fff', fontFamily: 'var(--font-mono)', fontSize: '12px', padding: '8px 12px', width: '100%', outline: 'none' }}
+              className="sps-input-field"
+              style={{ fontSize: '12px', padding: '8px 12px', width: '100%' }}
             />
           </div>
         </div>
@@ -638,13 +723,13 @@ export function StudentPortfolioSettings() {
         <div className="micro-annotation annotation-blue" style={{ marginBottom: '8px' }}>
           ITEM CURATION // SELECTED NST PROJECTS
         </div>
-        <p style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#a0a4b8', marginBottom: '14px' }}>
+        <p className="sps-text-subtle" style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', marginBottom: '14px' }}>
           Choose which published projects appear on your public dossier and designate featured work. Unpublishing a project at its source automatically hides it.
         </p>
 
         {availableProjects.length === 0 ? (
-          <div style={{ background: '#000', border: '1px dashed rgba(245,245,242,0.2)', padding: '20px', textAlign: 'center' }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: '#a0a4b8' }}>
+          <div className="sps-panel" style={{ border: '1px dashed var(--border-default, rgba(0,0,0,0.2))', padding: '20px', textAlign: 'center' }}>
+            <span className="sps-text-subtle" style={{ fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
               No published projects yet. Create or contribute to a project in{' '}
               <Link href="/my/projects" style={{ color: 'var(--electric-blue)' }}>
                 My Projects ↗
@@ -661,9 +746,8 @@ export function StudentPortfolioSettings() {
               return (
                 <div
                   key={p.id}
+                  className="sps-card-item"
                   style={{
-                    background: '#000',
-                    border: '1px solid rgba(245,245,242,0.2)',
                     padding: '14px 18px',
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -683,7 +767,7 @@ export function StudentPortfolioSettings() {
                         </span>
                       )}
                     </div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#a0a4b8', marginTop: '2px' }}>
+                    <div className="sps-text-subtle" style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', marginTop: '2px' }}>
                       {p.role} · {p.category}
                     </div>
                   </div>
@@ -736,13 +820,13 @@ export function StudentPortfolioSettings() {
         <div className="micro-annotation annotation-amber" style={{ marginBottom: '8px' }}>
           ITEM CURATION // OFFICIAL COMPETITION HONORS
         </div>
-        <p style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#a0a4b8', marginBottom: '14px' }}>
+        <p className="sps-text-subtle" style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', marginBottom: '14px' }}>
           Display selected competition placements. Hiding an award from your public dossier does NOT modify the authoritative event results ledger.
         </p>
 
         {availableAchievements.length === 0 ? (
-          <div style={{ background: '#000', border: '1px dashed rgba(245,245,242,0.2)', padding: '20px', textAlign: 'center' }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: '#a0a4b8' }}>
+          <div className="sps-panel" style={{ border: '1px dashed var(--border-default, rgba(0,0,0,0.2))', padding: '20px', textAlign: 'center' }}>
+            <span className="sps-text-subtle" style={{ fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
               No official event honors recorded yet.
             </span>
           </div>
@@ -755,9 +839,8 @@ export function StudentPortfolioSettings() {
               return (
                 <div
                   key={ach.id}
+                  className="sps-card-item"
                   style={{
-                    background: '#000',
-                    border: '1px solid rgba(245,245,242,0.2)',
                     padding: '14px 18px',
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -777,7 +860,7 @@ export function StudentPortfolioSettings() {
                         </span>
                       )}
                     </div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#a0a4b8', marginTop: '2px' }}>
+                    <div className="sps-text-subtle" style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', marginTop: '2px' }}>
                       {ach.event?.title || 'Event'} · {ach.awarded_at ? new Date(ach.awarded_at).getFullYear() : '—'}
                     </div>
                   </div>
@@ -812,15 +895,15 @@ export function StudentPortfolioSettings() {
           title="PUBLIC DOSSIER // LIVE PROJECTION PREVIEW"
           maxWidth="max-w-2xl"
         >
-          <div style={{ padding: '16px', background: '#050505', color: '#F5F5F2', maxHeight: '75vh', overflowY: 'auto' }}>
+          <div style={{ padding: '16px', background: 'var(--surface-canvas, #F8F9FA)', color: 'var(--text-primary, #0A0D14)', maxHeight: '75vh', overflowY: 'auto' }}>
             <div className="micro-annotation annotation-blue" style={{ marginBottom: '12px' }}>
               EXACT PROJECTION AS SEEN BY LOGGED-OUT VISITORS
             </div>
 
             {/* Dossier Mock */}
-            <div style={{ border: '2px solid #fff', padding: '24px', background: '#0d0e12', marginBottom: '20px' }}>
+            <div style={{ border: '2px solid var(--border-strong, #000)', padding: '24px', background: 'var(--surface-card, #FFFFFF)', marginBottom: '20px' }}>
               <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                <div style={{ width: '64px', height: '64px', background: 'var(--electric-blue)', border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 900 }}>
+                <div style={{ width: '64px', height: '64px', background: 'var(--electric-blue)', border: '2px solid #000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 900, color: '#fff' }}>
                   {visibility.avatar && data.user.avatarUrl ? (
                     <img src={data.user.avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
@@ -835,7 +918,7 @@ export function StudentPortfolioSettings() {
                     @{profile.slug}
                   </div>
                   {visibility.academic && (
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: '#a0a4b8', marginTop: '4px' }}>
+                    <div className="sps-text-subtle" style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', marginTop: '4px' }}>
                       🎓 {data.user.program || 'Student'} {data.user.batch ? `· Batch ${data.user.batch}` : ''}
                     </div>
                   )}
@@ -843,16 +926,16 @@ export function StudentPortfolioSettings() {
               </div>
 
               {visibility.bio && (
-                <div style={{ marginTop: '16px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '12px' }}>
-                  {headline && <div style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--acid-green)', fontWeight: 600 }}>{headline}</div>}
-                  {bio && <p style={{ fontSize: '13px', color: '#a0a4b8', marginTop: '6px' }}>{bio}</p>}
+                <div style={{ marginTop: '16px', borderTop: '1px solid var(--border-subtle, rgba(0,0,0,0.1))', paddingTop: '12px' }}>
+                  {headline && <div style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--electric-blue)', fontWeight: 600 }}>{headline}</div>}
+                  {bio && <p className="sps-text-subtle" style={{ fontSize: '13px', marginTop: '6px' }}>{bio}</p>}
                 </div>
               )}
 
               {visibility.skills && skills.length > 0 && (
                 <div style={{ marginTop: '14px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {skills.map((s) => (
-                    <span key={s} style={{ background: '#000', border: '1px solid rgba(255,255,255,0.2)', padding: '2px 8px', fontSize: '10px', fontFamily: 'var(--font-mono)', color: 'var(--acid-green)' }}>
+                    <span key={s} className="sps-skill-chip" style={{ padding: '2px 8px', fontSize: '10px', fontFamily: 'var(--font-mono)' }}>
                       #{s}
                     </span>
                   ))}
@@ -873,5 +956,6 @@ export function StudentPortfolioSettings() {
         </Modal>
       )}
     </div>
+    </>
   );
 }

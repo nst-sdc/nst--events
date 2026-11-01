@@ -77,3 +77,4 @@ export const Modal = ({ visible, onClose, title, children }: any) => (
 
 export const Dialog = Modal;
 
+export { FilterChip } from './FilterChip';
