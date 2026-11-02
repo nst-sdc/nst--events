@@ -191,3 +191,215 @@ kubectl rollout restart deployment/nst-api deployment/nst-worker deployment/nst-
 
 ### Never point a destructive Prisma command at production
 `prisma migrate deploy` (what CI runs) is additive and safe. **Never run `prisma migrate reset` or `prisma db push --accept-data-loss` against the production `DATABASE_URL`.** That is what emptied this database on 2026-09-23: a `prisma migrate reset` was executed from an out-of-date checkout, which dropped the schema and left the database five migrations behind the deployed code.
+
+---
+
+## 4. Kubernetes Probes & Service Health Architecture
+
+### Probe Specifications
+
+All services in namespace `nst-events` define explicit `readinessProbe` and `livenessProbe` definitions to ensure smooth rolling updates and zero downtime:
+
+| Workload | Container Port | Readiness Probe | Liveness Probe | Design Rationale |
+| :--- | :---: | :--- | :--- | :--- |
+| **`nst-api`** | `3001` | `GET /ready` (period: 10s, delay: 5s) | `GET /health` (period: 20s, delay: 15s) | Readiness validates database read/write connectivity before routing ingress traffic. Liveness checks event-loop responsiveness without pinging PostgreSQL. |
+| **`nst-worker`** | `3002` | `GET /ready` (period: 10s, delay: 5s) | `GET /health` (period: 20s, delay: 15s) | Readiness executes `SELECT 1` against PostgreSQL and asserts `isInitialized && !isShuttingDown`. Liveness confirms HTTP metrics/health daemon is responsive. |
+| **`nst-dashboard`** | `3000` | `GET /api/health` (period: 10s, delay: 5s) | `GET /api/health` (period: 20s, delay: 15s) | Replaces previous `/login` probe to eliminate unnecessary Next.js Server-Side Rendering (SSR) overhead and avoid unnecessary CPU spikes every 10 seconds. |
+
+### Verifying Pod Readiness
+```bash
+kubectl get pods -n nst-events -o wide
+kubectl describe pod -l app=nst-api -n nst-events | grep -E "Readiness|Liveness"
+kubectl describe pod -l app=nst-worker -n nst-events | grep -E "Readiness|Liveness"
+kubectl describe pod -l app=nst-dashboard -n nst-events | grep -E "Readiness|Liveness"
+```
+
+---
+
+## 5. Centralized Error-Tracking & Observability Wrapper
+
+### Architecture
+Centralized error tracking is implemented via the `@nst/shared` error tracker wrapper (`packages/shared/src/errors/tracker.ts`). It abstracts monitoring providers (such as Sentry or Datadog) while strictly guaranteeing data privacy and security.
+
+### Sensitive Data Scrubbing Rules
+All captured exceptions, tags, breadcrumbs, and metadata dictionaries are recursively scrubbed before ingestion. Any key matching or containing the following identifiers is automatically masked with `[REDACTED]`:
+- `authorization`, `cookie`, `set-cookie`
+- `qr_secret`, `qrSecret`, `totp`
+- `password`, `token`, `refreshtoken`, `refresh_token`, `secret`, `nonce`, `access_token`
+- `session_id`, `api_key`, `apikey`, `code`
+
+### Provisioning Sentry
+When ready to connect to Sentry:
+1. Export or configure `SENTRY_DSN` in Kubernetes secrets or environment variables (`infrastructure/kubernetes/secrets.yaml`).
+2. Initialize error tracking during bootstrap:
+   ```typescript
+   import { initErrorTracking } from '@nst/shared';
+
+   initErrorTracking({
+     serviceName: 'nst-api',
+     environment: process.env.NODE_ENV || 'production',
+     dsn: process.env.SENTRY_DSN,
+   });
+   ```
+3. In local development or automated CI tests where `SENTRY_DSN` is omitted, the wrapper functions in structured test mode, logging errors cleanly without leaking sensitive credentials.
+
+---
+
+## 6. Campus Wi-Fi NAT & Multi-Replica Rate Limiting Math
+
+### The Challenge
+Newton School of Technology (NST), Pune hosts 3,000+ active students sharing common campus NAT gateway IP addresses. With API services deployed across 2-3 replicas, standard per-IP rate limiting caused mass 429 lockouts.
+
+### Rate Limiting Architecture & Per-Replica Quotas
+To ensure rock-solid reliability during peak event registrations and morning login waves:
+
+1. **Authenticated Requests**: Keyed strictly by authenticated `user_id`. Campus NAT IP is not used for authenticated route accounting.
+2. **Token Refresh & Logout (`/auth/refresh`, `/auth/logout`)**:
+   - Keyed by `auth:token:${sha256(token)}`.
+   - Quota: `RATE_LIMIT_AUTH_TOKEN_MAX = 60` requests per 15-minute window (30 requests/replica across 2 replicas).
+   - Hammering a single token returns `429 Too Many Requests` with a `Retry-After` header.
+3. **Unauthenticated Token Fallback**:
+   - Fallback when no token is present: `RATE_LIMIT_AUTH_UNAUTH_MAX = 2000` per 15-minute window (1,000 requests/replica across 2 replicas) keyed by IP, preventing campus-wide lockouts.
+4. **Google OAuth Start & Callback (`/auth/google`, `/auth/google/callback`)**:
+   - Configured with `skipSuccessfulRequests: true`.
+   - Quota: `RATE_LIMIT_AUTH_FAILED_MAX = 600` failed attempts per 15-minute window (300 failures/replica).
+   - 3,000 legitimate students completing Google OAuth concurrently generate 0 failed request counts, completely preventing lockout waves.
+
+---
+
+## 7. Secrets Management, Git Audit & Rotation
+
+### Security Policy
+- `infrastructure/kubernetes/secrets.yaml` is strictly a TEMPLATE containing empty placeholder strings (`""`).
+- **No real passwords, tokens, or private keys must ever be committed to version control.**
+- Local secret files (`secrets.local.yaml`, `secrets.yaml.local`) are ignored via root `.gitignore`.
+
+### Historical Git Audit (October 2026)
+A complete git commit history audit of `infrastructure/kubernetes/secrets.yaml` confirmed that 0 real secrets have ever been committed since repository inception:
+```bash
+git log -p infrastructure/kubernetes/secrets.yaml
+```
+All commits used empty string placeholders (`""` and `''`).
+
+### Secret Rotation Runbook
+To rotate JWT secrets, cookie secrets, or database passwords:
+1. Generate new 32+ character secrets: `openssl rand -hex 32`.
+2. Apply updated secret manifest directly to the Kubernetes cluster:
+   ```bash
+   kubectl apply -f infrastructure/kubernetes/secrets.yaml.local -n nst-events
+   ```
+3. Perform a zero-downtime rolling restart:
+   ```bash
+   kubectl rollout restart deployment/nst-api deployment/nst-worker -n nst-events
+   kubectl rollout status deployment/nst-api -n nst-events
+   ```
+
+---
+
+## 8. HTTP Body Parser Limits & DoS Prevention
+
+To safeguard Node.js memory heaps against payload-based Denial of Service (DoS) attacks, strict body size constraints are enforced across Express middleware:
+
+1. **General JSON Limit (`express.json({ limit: '100kb' })`)**:
+   - Caps all incoming JSON payloads to $\le 100\text{ KiB}$.
+   - Protects attendance check-ins, registrations, and form submissions from oversized array bloat.
+2. **General URL-Encoded Limit (`express.urlencoded({ extended: true, limit: '100kb' })`)**:
+   - Caps form-encoded payloads to $\le 100\text{ KiB}$.
+3. **Route-Scoped Exceptions**:
+   - `/v1/admin/policies`: Explicitly mounted with `express.json({ limit: '256kb' })` to accommodate 100 KiB raw UTF-8 policy Markdown text plus JSON envelope overhead.
+4. **RFC 7807 Error Handling**:
+   - Payloads exceeding configured limits trigger `body-parser` `entity.too.large` (`status: 413`).
+   - The central error handler intercepts this and formats an RFC 7807 Problem Details response (`type: https://api.nstsdc.org/errors/payload-too-large`, `title: Payload Too Large`, `status: 413`) with correlation `request_id`.
+
+---
+
+## 9. Prometheus Metrics, Observability & Security Monitoring
+
+### Overview
+`apps/api` exports Prometheus metrics via `prom-client` on the non-public `/metrics` endpoint. This provides cluster operators and security teams real-time visibility into HTTP throughput, latency distributions, rate limit rejections, SSE connections, and PostgreSQL connection pool health without writing to the database on every request.
+
+### Scrape Configuration & Access Control
+- **Endpoint**: `GET /metrics`
+- **Access Control**:
+  - In production (`NODE_ENV=production`), `METRICS_TOKEN` is mandatory. Loopback (`127.0.0.1`) and `PLATFORM_ADMIN` bypasses are completely disabled. The API will refuse to start if `METRICS_TOKEN` is unset.
+  - Scrape requests must supply either:
+    - HTTP Header: `Authorization: Bearer <METRICS_TOKEN>`
+    - HTTP Header: `X-Metrics-Token: <METRICS_TOKEN>`
+  - Constant-time verification is enforced: tokens are hashed via SHA-256 before comparing via `crypto.timingSafeEqual` to eliminate timing side-channel attacks.
+  - If `METRICS_TOKEN` is unset in non-production (local dev/test), access is restricted to localhost loopback (`127.0.0.1`, `::1`) or authenticated `PLATFORM_ADMIN` sessions. External requests receive `403 Forbidden`.
+- **Recommended Scrape Interval**: 15s to 30s.
+
+#### Prometheus Scrape Job Configuration
+Add the following job to your Prometheus server `prometheus.yml`:
+```yaml
+scrape_configs:
+  - job_name: 'nst-api'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    metrics_path: '/metrics'
+    scheme: http
+    authorization:
+      type: Bearer
+      credentials: '<METRICS_TOKEN>'
+    static_configs:
+      - targets: ['nst-api-service.nst-events.svc.cluster.local:3001']
+        labels:
+          app: nst-api
+          env: production
+```
+
+Alternatively, if managing Prometheus via Prometheus Operator with Secret mounting:
+```yaml
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: nst-api-monitor
+  namespace: nst-events
+spec:
+  selector:
+    matchLabels:
+      app: nst-api
+  podMetricsEndpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      authorization:
+        type: Bearer
+        credentials:
+          name: prometheus-scraper-secrets
+          key: METRICS_TOKEN
+```
+
+### Metric Catalog
+| Metric Name | Type | Labels | Description |
+|---|---|---|---|
+| `nst_api_http_requests_total` | Counter | `method`, `route`, `status_code`, `status_class` | Total HTTP requests handled. Normalized route templates (e.g. `/v1/events/:id`) prevent label cardinality explosion. Unmatched 404 routes are collapsed strictly to `route="unmatched"`. |
+| `nst_api_http_request_duration_seconds` | Histogram | `method`, `route`, `status_class` | Request latency distribution across 9 standard histogram buckets (5ms to 10s). |
+| `nst_api_rate_limit_exceeded_total` | Counter | `bucket` | 429 rate limit rejections grouped by bucket (`auth_token`, `attendance`, `user`, `unauth`, `auth_oauth_failed`, `auth_ip_ceiling`). |
+| `nst_api_sse_active_connections` | Gauge | `stream_type` | Current persistent Server-Sent Events streams (`event_live`, `notifications_live`). |
+| `prisma_pool_connections_busy` / `idle` | Gauge | — | Database connection pool active vs idle connections exported by Prisma runtime. |
+| `nst_api_process_resident_memory_bytes` | Gauge | — | Node.js process RSS memory. |
+| `nst_api_nodejs_heap_size_used_bytes` | Gauge | — | V8 heap memory usage. |
+
+### Grafana Dashboard
+A ready-to-import Grafana dashboard JSON artifact is provided in:
+`infrastructure/grafana/dashboard-traffic-security.json`
+
+Importing this dashboard into Grafana provides 3 primary rows:
+1. **HTTP Traffic & Performance Overview**: Request rate by status class (2xx, 4xx, 5xx) and latency percentiles (p50, p95, p99).
+2. **Rate Limiting & Security Monitoring**: 429 rejections by bucket and top 10 routes by traffic.
+3. **Realtime Streams & Database Pool Health**: Active SSE connections, database pool utilization, and process memory.
+
+---
+
+## 10. Production Environment Variables Reference
+
+The following environment variables were introduced and hardened during Task H1/H2:
+
+| Variable | Required in Prod | Default | Purpose & Constraints |
+|---|---|---|---|
+| `AUTH_EVENTS_IP_PEPPER` | **YES** | *None* | Secret salt/pepper used for one-way HMAC-SHA256 IP address hashing (`hashIp(ip, pepper)`) before storing in `auth_events`. Must be at least 32 characters. In production (`NODE_ENV=production`), the API **fails to start** if unset or equal to the committed default. Generate with `openssl rand -hex 32`. |
+| `METRICS_TOKEN` | **YES** | *None* | Secret bearer token required to scrape `/metrics`. In production, the API **fails to start** if unset. Loopback bypasses are completely disabled in production. Compare using constant-time equality. Generate with `openssl rand -hex 32`. |
+| `CAMPUS_CIDR_BLOCKS` | No | `""` | Comma-separated list of IPv4/IPv6 CIDR blocks belonging to campus networks (e.g., `"10.0.0.0/8,172.16.0.0/12"`). No private ranges are included by default. When unset or empty, `classifyNetwork` assigns `network_class = 'unknown'`. When configured, requests from IPs within these blocks receive `network_class = 'campus'`, and all other valid IPs receive `'off_campus'`. |
+
+

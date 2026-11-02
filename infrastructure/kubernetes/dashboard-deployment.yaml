@@ -50,13 +50,13 @@ spec:
             - containerPort: 3000
           readinessProbe:
             httpGet:
-              path: /login
+              path: /api/health
               port: 3000
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /login
+              path: /api/health
               port: 3000
             initialDelaySeconds: 15
             periodSeconds: 20

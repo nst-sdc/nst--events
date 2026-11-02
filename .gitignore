@@ -67,3 +67,7 @@ test-*.js
 db-check*.ts
 .aider*
 .claude/
+
+# Kubernetes local secrets overlays
+infrastructure/kubernetes/*.local.yaml
+infrastructure/kubernetes/secrets.yaml.local

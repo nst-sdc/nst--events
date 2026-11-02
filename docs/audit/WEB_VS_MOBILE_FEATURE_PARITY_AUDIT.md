@@ -194,7 +194,7 @@ nst-events/
 | **ORG-05** | Organizer Team Oversight | `events/[id]/teams` | None | `GET /v1/events/:id/teams` | Working | N/A | **NOT APPLICABLE** | Organizer squad review. | — |
 | **ORG-06** | Club Profile & Directory Admin | `clubs/page.tsx`, `CreateClubModal.tsx` | None | `POST /v1/clubs` | Working | N/A | **NOT APPLICABLE** | Club governance workflow. | — |
 | **ORG-07** | Club Member Roster & Role Assign | `clubs/[clubId]`, `student/manage/club` | None | `POST /v1/clubs/:id/members` | Working | N/A | **NOT APPLICABLE** | Club governance workflow. | — |
-| **ORG-08** | Leadership Handover Requests | `clubs/[clubId]` handover modal | None | `POST /v1/clubs/:id/leadership-handover` | Working | N/A | **NOT APPLICABLE** | Club governance workflow. | — |
+| **ORG-08** | Leadership Handover Requests | None (Planned V1.1) | None | None (Planned V1.1) | Planned (V1.1) | N/A | **PLANNED (V1.1)** | Club governance workflow; deferred to V1.1. | — |
 | **ORG-09** | User Directory & Role Promotion | `admin/users` | None | `PATCH /v1/admin/users/:id/role` | Working | N/A | **NOT APPLICABLE** | Administrative directory. | — |
 | **ORG-10** | Student Directory CSV Import | `admin/users` Students tab | None | `POST /v1/admin/students/import` | Working | N/A | **NOT APPLICABLE** | Administrative batch import. | — |
 | **ORG-11** | Academic Programs & Batches | `admin/academic-programs`, `batches` | None | `POST /v1/admin/academic-programs` | Working | N/A | **NOT APPLICABLE** | University academic profile setup. | — |

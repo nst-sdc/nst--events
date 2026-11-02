@@ -16,17 +16,13 @@ metadata:
   name: nst-postgres-backup
   namespace: nst-events
 spec:
-  # Every 6 hours. A daily backup leaves up to 24 hours of registrations
-  # exposed to a bad migration or an accidental reset; 6 hours matches the
-  # Longhorn snapshot interval and keeps the worst-case loss small.
+  # Every 6 hours. Matches Longhorn snapshot interval and keeps worst-case data loss small.
   schedule: "0 */6 * * *"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
-      # Connections from pods to the postgres service ClusterIP are intermittently
-      # refused on this cluster, so retry the whole job a few times before giving up.
       backoffLimit: 6
       activeDeadlineSeconds: 3600
       template:
@@ -35,7 +31,6 @@ spec:
             app: nst-postgres-backup
         spec:
           restartPolicy: OnFailure
-          # The postgres StatefulSet pins itself to nst-n6, so the backup runs there too.
           affinity:
             nodeAffinity:
               requiredDuringSchedulingIgnoredDuringExecution:
@@ -45,9 +40,9 @@ spec:
                         operator: In
                         values:
                           - nst-n6
-          containers:
-            - name: backup
-              image: postgis/postgis:16-3.4
+          initContainers:
+            - name: db-dump-and-verify
+              image: postgres:16-bookworm
               envFrom:
                 - secretRef:
                     name: nst-db-admin-secrets
@@ -60,6 +55,24 @@ spec:
                     secretKeyRef:
                       name: nst-db-admin-secrets
                       key: POSTGRES_PASSWORD
+                - name: REQUIRE_OFFSITE_BACKUP
+                  valueFrom:
+                    secretKeyRef:
+                      name: nst-backup-secrets
+                      key: REQUIRE_OFFSITE_BACKUP
+                      optional: true
+                - name: BACKUP_PUBLIC_CERT
+                  valueFrom:
+                    secretKeyRef:
+                      name: nst-backup-secrets
+                      key: BACKUP_PUBLIC_CERT
+                      optional: true
+                - name: BACKUP_ENCRYPTION_PASSPHRASE
+                  valueFrom:
+                    secretKeyRef:
+                      name: nst-backup-secrets
+                      key: BACKUP_ENCRYPTION_PASSPHRASE
+                      optional: true
                 - name: BACKUP_DIR
                   value: /backups
                 - name: RETENTION_DAYS
@@ -79,34 +92,273 @@ spec:
                   set -euo pipefail
                   mkdir -p "$BACKUP_DIR"
 
-                  # Drop dumps left behind by failed runs.
-                  find "$BACKUP_DIR" -maxdepth 1 -name 'nst_events_*.dump' -type f -size 0 -print -delete
+                  # Drop zero-length dump fragments left behind by interrupted runs
+                  find "$BACKUP_DIR" -maxdepth 1 -name 'nst_events_*.dump*' -type f -size 0 -print -delete
 
                   TS=$(date -u +%Y%m%dT%H%M%SZ)
-                  FILE="$BACKUP_DIR/nst_events_${TS}.dump"
+                  RAW_FILE="$BACKUP_DIR/nst_events_${TS}.dump"
 
                   attempt=0
-                  until pg_dump -Fc -h "$PGHOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$FILE"; do
+                  until pg_dump -Fc -h "$PGHOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$RAW_FILE"; do
                     attempt=$((attempt + 1))
                     if [ "$attempt" -ge "$DUMP_ATTEMPTS" ]; then
-                      echo "pg_dump failed after ${DUMP_ATTEMPTS} attempts"
-                      rm -f "$FILE"
+                      echo "[FATAL] pg_dump failed after ${DUMP_ATTEMPTS} attempts" >&2
+                      rm -f "$RAW_FILE"
                       exit 1
                     fi
-                    echo "pg_dump attempt ${attempt} failed, retrying in 20s..."
+                    echo "[WARN] pg_dump attempt ${attempt} failed, retrying in 20s..."
                     sleep 20
                   done
 
-                  # Fail the job rather than keep an unreadable dump.
-                  pg_restore -l "$FILE" > /dev/null
-                  echo "Dump verified: ${FILE} ($(du -h "$FILE" | cut -f1))"
+                  # 1. Integrity check: verify custom-format header & table catalog
+                  pg_restore -l "$RAW_FILE" > /dev/null
+                  RAW_SIZE=$(wc -c < "$RAW_FILE")
+                  echo "[VERIFIED] Dump catalog valid: ${RAW_FILE} (${RAW_SIZE} bytes)"
 
-                  find "$BACKUP_DIR" -maxdepth 1 -name 'nst_events_*.dump' -type f \
+                  # 2. Generate raw dump SHA-256 checksum
+                  sha256sum "$RAW_FILE" > "${RAW_FILE}.sha256"
+                  RAW_SHA=$(awk '{print $1}' "${RAW_FILE}.sha256")
+
+                  REQUIRE_OFFSITE="${REQUIRE_OFFSITE_BACKUP:-true}"
+
+                  # 3. Authenticated Encryption Enforcement (RFC 5083/5084 CMS AES-256-GCM AEAD)
+                  # Standard Established Key-Management: X.509 Envelope Encryption (Zero Process-Argument Secret Exposure)
+                  if [ "$REQUIRE_OFFSITE" != "false" ]; then
+                    SECURE_TMP=$(mktemp -d /tmp/nst-backup-sec.XXXXXX)
+                    chmod 700 "$SECURE_TMP"
+                    trap 'rm -rf "$SECURE_TMP"' EXIT
+
+                    CERT_PATH=""
+                    if [ -f "/etc/backup-certs/backup-cert.pem" ]; then
+                      CERT_PATH="/etc/backup-certs/backup-cert.pem"
+                    elif [ -n "${BACKUP_PUBLIC_CERT:-}" ] && [ "$BACKUP_PUBLIC_CERT" != "example-public-cert" ]; then
+                      CERT_PATH="$SECURE_TMP/backup-cert.pem"
+                      printf '%s\n' "$BACKUP_PUBLIC_CERT" > "$CERT_PATH"
+                      chmod 400 "$CERT_PATH"
+                    fi
+
+                    if [ -z "$CERT_PATH" ]; then
+                      echo "[FATAL] Offsite backup is REQUIRED (REQUIRE_OFFSITE_BACKUP=${REQUIRE_OFFSITE}), but X.509 public encryption certificate is missing in Secret/nst-backup-secrets (BACKUP_PUBLIC_CERT or /etc/backup-certs/backup-cert.pem)." >&2
+                      echo "[FATAL] Process-argument-exposed passphrases are strictly disallowed in production. Failing closed." >&2
+                      exit 1
+                    fi
+
+                    echo "[SECURITY] Encrypting backup with RFC 5083/5084 CMS Authenticated-Enveloped-Data (AES-256-GCM AEAD) via public certificate envelope..."
+                    ENC_FILE="${RAW_FILE}.enc"
+
+                    # Zero Secret Exposure: AES-256 session key is generated internally in memory by OpenSSL
+                    # and encrypted with the recipient public key. Only file paths appear on argv.
+                    openssl cms -encrypt -binary \
+                      -aes-256-gcm \
+                      -outform DER \
+                      -in "$RAW_FILE" \
+                      -out "$ENC_FILE" \
+                      "$CERT_PATH"
+
+                    if [ ! -s "$ENC_FILE" ]; then
+                      echo "[FATAL] Generated ciphertext file is missing or empty!" >&2
+                      exit 1
+                    fi
+
+                    # Validate generated CMS container structure and AEAD cipher algorithm
+                    ASN1_HEADER=$(openssl asn1parse -inform DER -in "$ENC_FILE" | head -n 10)
+                    if ! echo "$ASN1_HEADER" | grep -q "id-smime-ct-authEnvelopedData"; then
+                      echo "[FATAL] Generated ciphertext is not an RFC 5083 AuthEnvelopedData container!" >&2
+                      exit 1
+                    fi
+
+                    sha256sum "$ENC_FILE" > "${ENC_FILE}.sha256"
+                    ENC_SHA=$(awk '{print $1}' "${ENC_FILE}.sha256")
+                    ENC_SIZE=$(wc -c < "$ENC_FILE" | tr -d ' ')
+
+                    # Manifest recording cryptographic metadata
+                    cat <<EOF > "${RAW_FILE}.meta.json"
+                  {
+                    "timestamp": "${TS}",
+                    "raw_file": "$(basename "$RAW_FILE")",
+                    "raw_size": ${RAW_SIZE},
+                    "raw_sha256": "${RAW_SHA}",
+                    "enc_file": "$(basename "$ENC_FILE")",
+                    "enc_size": ${ENC_SIZE},
+                    "enc_sha256": "${ENC_SHA}",
+                    "cipher": "AES-256-GCM",
+                    "format": "CMS-AuthEnvelopedData-RFC5084",
+                    "key_management": "X509-Envelope-Encryption",
+                    "auth": "AEAD-AES-GCM-128bit-tag"
+                  }
+                  EOF
+
+                    basename "$ENC_FILE" > "$BACKUP_DIR/latest_artifact.txt"
+                    echo "[SECURITY] Encrypted artifact prepared: ${ENC_FILE} (${ENC_SIZE} bytes)"
+                  else
+                    echo "[NOTICE] Local-only backup mode (REQUIRE_OFFSITE_BACKUP=false)."
+                    basename "$RAW_FILE" > "$BACKUP_DIR/latest_artifact.txt"
+                  fi
+
+                  # 4. Enforce local retention policy on Longhorn PVC
+                  find "$BACKUP_DIR" -maxdepth 1 -name 'nst_events_*.dump*' -type f \
+                    -mtime "+${RETENTION_DAYS}" -print -delete
+                  find "$BACKUP_DIR" -maxdepth 1 -name 'nst_events_*.meta.json' -type f \
                     -mtime "+${RETENTION_DAYS}" -print -delete
 
-                  echo "Retained backups:"
-                  ls -lh "$BACKUP_DIR"
-                  echo "Backup complete."
+                  echo "[COMPLETE] Local backup generation and verification complete."
+              volumeMounts:
+                - name: backups
+                  mountPath: /backups
+          containers:
+            - name: offsite-sync
+              image: amazon/aws-cli:2.15.30
+              envFrom:
+                - secretRef:
+                    name: nst-backup-secrets
+              env:
+                - name: BACKUP_DIR
+                  value: /backups
+                - name: RETENTION_DAYS
+                  value: "14"
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  cpu: 250m
+                  memory: 256Mi
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  set -euo pipefail
+
+                  REQUIRE_OFFSITE="${REQUIRE_OFFSITE_BACKUP:-true}"
+
+                  if [ "$REQUIRE_OFFSITE" = "false" ]; then
+                    echo "[NOTICE] Local-only backup mode explicitly enabled (REQUIRE_OFFSITE_BACKUP=false)."
+                    echo "[NOTICE] Skipping offsite replication. Local backup preserved on Longhorn PVC."
+                    exit 0
+                  fi
+
+                  ACCESS_KEY="${R2_ACCESS_KEY_ID:-${AWS_ACCESS_KEY_ID:-}}"
+                  SECRET_KEY="${R2_SECRET_ACCESS_KEY:-${AWS_SECRET_ACCESS_KEY:-}}"
+                  BUCKET="${R2_BUCKET_NAME:-${S3_BUCKET_NAME:-}}"
+                  ACCOUNT_ID="${R2_ACCOUNT_ID:-}"
+                  PROVIDER="${STORAGE_PROVIDER:-r2}"
+
+                  # Fail closed: In production, missing credentials MUST fail the Job
+                  if [ -z "$ACCESS_KEY" ] || [ "$ACCESS_KEY" = "example-r2-access-key-id" ] || [ -z "$SECRET_KEY" ] || [ -z "$BUCKET" ]; then
+                    echo "[FATAL] Offsite backup is REQUIRED (REQUIRE_OFFSITE_BACKUP=${REQUIRE_OFFSITE}), but destination credentials or bucket are missing in Secret/nst-backup-secrets." >&2
+                    echo "[FATAL] Failing closed with non-zero exit status to prevent silent unbacked production operation." >&2
+                    exit 1
+                  fi
+
+                  # Determine S3-compatible API endpoint and provider-specific upload arguments
+                  SSE_ARGS=""
+                  if [ "$PROVIDER" = "r2" ]; then
+                    if [ -n "${S3_ENDPOINT:-}" ]; then
+                      ENDPOINT="${S3_ENDPOINT}"
+                    elif [ -n "$ACCOUNT_ID" ] && [ "$ACCOUNT_ID" != "example-r2-account-id" ]; then
+                      ENDPOINT="https://${ACCOUNT_ID}.r2.cloudflarestorage.com"
+                    else
+                      echo "[FATAL] R2_ACCOUNT_ID or S3_ENDPOINT required when STORAGE_PROVIDER=r2" >&2
+                      exit 1
+                    fi
+                    # Cloudflare R2 does NOT support x-amz-server-side-encryption headers on PutObject.
+                    # Confidentiality is strictly guaranteed by client-side authenticated CMS AES-256-GCM encryption.
+                    SSE_ARGS=""
+                  else
+                    ENDPOINT="${S3_ENDPOINT:-https://s3.amazonaws.com}"
+                    # AWS S3 supports server-side encryption headers
+                    SSE_ARGS="--sse AES256"
+                  fi
+
+                  export AWS_ACCESS_KEY_ID="$ACCESS_KEY"
+                  export AWS_SECRET_ACCESS_KEY="$SECRET_KEY"
+                  export AWS_DEFAULT_REGION="${AWS_REGION:-auto}"
+
+                  if [ ! -f "$BACKUP_DIR/latest_artifact.txt" ]; then
+                    echo "[FATAL] No latest artifact recorded by db-dump-and-verify init container." >&2
+                    exit 1
+                  fi
+
+                  ARTIFACT_NAME=$(cat "$BACKUP_DIR/latest_artifact.txt")
+                  ARTIFACT_PATH="$BACKUP_DIR/$ARTIFACT_NAME"
+                  CHECKSUM_PATH="${ARTIFACT_PATH}.sha256"
+                  BASE_NAME="${ARTIFACT_NAME%.enc}"
+                  BASE_NAME="${BASE_NAME%.gpg}"
+                  META_PATH="$BACKUP_DIR/${BASE_NAME}.meta.json"
+
+                  if [ ! -s "$ARTIFACT_PATH" ]; then
+                    echo "[FATAL] Backup artifact not found or empty: $ARTIFACT_PATH" >&2
+                    exit 1
+                  fi
+
+                  # Safety check: NEVER upload unencrypted dump if offsite backup is required
+                  if [ "${ARTIFACT_NAME##*.}" = "dump" ]; then
+                    echo "[FATAL] Detected unencrypted dump scheduled for offsite upload. Failing closed!" >&2
+                    exit 1
+                  fi
+
+                  LOCAL_SIZE=$(wc -c < "$ARTIFACT_PATH" | tr -d ' ')
+
+                  echo "[UPLOAD] Uploading ${ARTIFACT_NAME} to s3://${BUCKET}/backups/${ARTIFACT_NAME} (Provider: ${PROVIDER})..."
+                  aws s3 cp "$ARTIFACT_PATH" "s3://${BUCKET}/backups/${ARTIFACT_NAME}" \
+                    --endpoint-url "$ENDPOINT" $SSE_ARGS
+
+                  if [ -f "$CHECKSUM_PATH" ]; then
+                    aws s3 cp "$CHECKSUM_PATH" "s3://${BUCKET}/backups/${ARTIFACT_NAME}.sha256" \
+                      --endpoint-url "$ENDPOINT" $SSE_ARGS
+                  fi
+
+                  if [ -f "$META_PATH" ]; then
+                    aws s3 cp "$META_PATH" "s3://${BUCKET}/backups/${BASE_NAME}.meta.json" \
+                      --endpoint-url "$ENDPOINT" $SSE_ARGS
+                  fi
+
+                  # 1. Preliminary remote existence and size check
+                  REMOTE_SIZE=$(aws s3api head-object --bucket "$BUCKET" --key "backups/${ARTIFACT_NAME}" --endpoint-url "$ENDPOINT" --query "ContentLength" --output text 2>/dev/null || echo "")
+
+                  if [ -z "$REMOTE_SIZE" ] || [ "$REMOTE_SIZE" = "None" ]; then
+                    echo "[FATAL] Remote verification failed: object s3://${BUCKET}/backups/${ARTIFACT_NAME} does not exist!" >&2
+                    exit 1
+                  fi
+
+                  if [ "$REMOTE_SIZE" -ne "$LOCAL_SIZE" ]; then
+                    echo "[FATAL] Remote size mismatch! Local: ${LOCAL_SIZE} bytes, Remote: ${REMOTE_SIZE} bytes." >&2
+                    exit 1
+                  fi
+
+                  echo "[VERIFIED] Remote head-object verified: s3://${BUCKET}/backups/${ARTIFACT_NAME} (${REMOTE_SIZE} bytes)."
+
+                  # 2. Remote read-back verification: download encrypted archive and verify SHA-256 against local checksum
+                  echo "[VERIFY] Performing remote read-back verification..."
+                  VERIFY_DIR=$(mktemp -d /tmp/remote-verify.XXXXXX)
+                  aws s3 cp "s3://${BUCKET}/backups/${ARTIFACT_NAME}" "$VERIFY_DIR/${ARTIFACT_NAME}" \
+                    --endpoint-url "$ENDPOINT" > /dev/null
+
+                  REMOTE_SHA=$(sha256sum "$VERIFY_DIR/${ARTIFACT_NAME}" | awk '{print $1}')
+                  LOCAL_SHA=$(awk '{print $1}' "$CHECKSUM_PATH")
+
+                  if [ "$REMOTE_SHA" != "$LOCAL_SHA" ]; then
+                    echo "[FATAL] Remote read-back checksum mismatch! Local: ${LOCAL_SHA}, Remote: ${REMOTE_SHA}" >&2
+                    rm -rf "$VERIFY_DIR"
+                    exit 1
+                  fi
+
+                  rm -rf "$VERIFY_DIR"
+                  echo "[VERIFIED] Remote read-back checksum verified successfully (${REMOTE_SHA})."
+
+                  # Enforce remote retention
+                  echo "[OFFSITE_RETENTION] Cleaning up offsite backups older than ${RETENTION_DAYS} days..."
+                  CUTOFF_DATE=$(date -u -d "${RETENTION_DAYS} days ago" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-${RETENTION_DAYS}d +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || "")
+                  if [ -n "$CUTOFF_DATE" ]; then
+                    aws s3api list-objects-v2 --bucket "$BUCKET" --prefix "backups/" --endpoint-url "$ENDPOINT" \
+                      --query "Contents[?LastModified<='${CUTOFF_DATE}'].Key" --output text | tr '\t' '\n' | while read -r KEY; do
+                        if [ -n "$KEY" ] && [ "$KEY" != "None" ]; then
+                          echo "[PRUNE] Deleting expired offsite backup: s3://${BUCKET}/${KEY}"
+                          aws s3 rm "s3://${BUCKET}/${KEY}" --endpoint-url "$ENDPOINT"
+                        fi
+                      done
+                  fi
+
+                  echo "[SUCCESS] Offsite backup cycle completed cleanly."
               volumeMounts:
                 - name: backups
                   mountPath: /backups
