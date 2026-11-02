@@ -1516,7 +1516,7 @@ model RateLimitSetting {
 }
 
 model RateLimitOverride {
-  id          String   @id @default(uuid()) @db.Uuid
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   subjectType String   @map("subject_type")
   subject     String
   mode        String
@@ -1528,13 +1528,13 @@ model RateLimitOverride {
 
   creator     User?    @relation("RateLimitOverrideCreator", fields: [createdBy], references: [id], onDelete: SetNull)
 
-  @@index([subjectType, subject, expiresAt])
+  @@index([subjectType, subject, expiresAt], map: "rate_limit_overrides_subject_idx")
   @@index([expiresAt])
   @@map("rate_limit_overrides")
 }
 
 model AuthEvent {
-  id              String   @id @default(uuid()) @db.Uuid
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId          String?  @map("user_id") @db.Uuid
   eventType       String   @map("event_type")
   platform        String
