@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // @vitest-environment jsdom
-import { expect, describe, it, vi, beforeEach, afterEach } from 'vitest';
+import { expect, describe, it, vi, beforeEach, afterEach, afterAll } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import React from 'react';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
@@ -91,8 +91,15 @@ describe('Club Editing Workflow (WEB-39B)', () => {
     } as any);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     cleanup();
+    // Flush any pending React/Antd modal animation timers before jsdom environment unloads
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  });
+
+  afterAll(async () => {
+    // Ensure all trailing timers finish before jsdom environment teardown
+    await new Promise((resolve) => setTimeout(resolve, 50));
   });
 
   const setPlatformAdmin = () => {
