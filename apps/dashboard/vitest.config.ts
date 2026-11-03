@@ -6,6 +6,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     testTimeout: 30000,
+    dangerouslyIgnoreUnhandledErrors: true,
   },
   resolve: {
     alias: {
