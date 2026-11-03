@@ -37,7 +37,7 @@ The goal is a centralized event ecosystem where every club and campus activity r
 - View participant lists and attendance analytics
 - Manage club roster and membership roles
 - Handle attendance disputes
-- Leadership handover workflow
+- Leadership handover workflow (Planned V1.1)
 
 ### Faculty & Platform Admin Features
 - Faculty oversight and approval authority over academic/faculty-led events
@@ -79,14 +79,14 @@ Login is restricted to institutional email domains only:
 NST-Events uses **dynamic, cryptographically rotating QR codes** not static QR codes specifically to defeat screenshot sharing and proxy attendance.
 
 **Flow:**
-1. Organizer projects a TOTP-seeded QR code that rotates every 15 seconds
+1. Organizer projects a TOTP-seeded QR code that rotates every 30 seconds
 2. Student scans the code within the mobile app
 3. Backend validates the TOTP window (HMAC), enforces PostGIS geofencing, and checks for mock-location spoofing
 4. Attendance is marked instantly on success
 
 **Why dynamic QR:**
 - Removes manual attendance tracking
-- Makes screenshot/proxy attendance sharing ineffective (code expires in 15s)
+- Makes screenshot/proxy attendance sharing ineffective (code expires in 30s)
 - Geofencing ensures physical presence, not just possession of the code
 
 Organizer devices support offline attendance caching in Operations Mode (trusted, audited); student devices always validate synchronously against the live TOTP window and geofence.
@@ -121,6 +121,9 @@ NST-Events follows a clean, high-density institutional design system, built for 
 
 The following are explicitly deferred. File uploads have partial schema groundwork already in place (see below); the others have no architecture or schema work done yet.
 
+- **Leadership handover workflow (Planned V1.1)**: The database model `LeadershipHandoverRequest` is defined in PostgreSQL schema, but API routes and UI workflows are deferred to Planned V1.1.
+- **Campus announcements feed (Planned V1.1)**: Standalone broadcast endpoints (`/v1/announcements`, `/v1/home/feed`) are deferred to Planned V1.1.
+- **Automated waitlist promotion pipeline (Planned V1.1)**: Atomic event waitlisting is active; automatic background promotion claim windows are planned for V1.1.
 - **File uploads (avatars, media)**: V1 uses default/generated fallback assets. However, **Club Branding (Banners)** is the approved pilot for the future upload architecture and is planned for V1.
 - Certificate generation and verification
 - Club recruitment workflows
