@@ -242,6 +242,8 @@ export default function ActivityScreen() {
         passActionBtn: {
           flex: 1,
           paddingVertical: 8,
+          minHeight: 44,
+          justifyContent: 'center',
           alignItems: 'center',
           borderWidth: 1,
           borderColor: theme.colors.primary,
@@ -273,6 +275,8 @@ export default function ActivityScreen() {
           flex: 1,
           backgroundColor: theme.colors.primary,
           paddingVertical: 8,
+          minHeight: 44,
+          justifyContent: 'center',
           alignItems: 'center',
         },
         inviteBtnDecline: {
@@ -281,6 +285,8 @@ export default function ActivityScreen() {
           borderWidth: 1,
           borderColor: theme.colors.outlineVariant,
           paddingVertical: 8,
+          minHeight: 44,
+          justifyContent: 'center',
           alignItems: 'center',
         },
         summaryBar: {
@@ -491,6 +497,8 @@ export default function ActivityScreen() {
                       style={styles.passActionBtn}
                       onPress={() => router.push(`/(app)/events/${registration.eventId}`)}
                       activeOpacity={0.8}
+                      accessibilityRole="button"
+                      accessibilityLabel="View event details"
                     >
                       <Mono style={styles.passActionText}>[ EVENT DETAILS ]</Mono>
                     </TouchableOpacity>
@@ -500,6 +508,8 @@ export default function ActivityScreen() {
                         style={styles.passActionBtn}
                         onPress={() => router.push(`/(app)/events/${registration.eventId}/teams`)}
                         activeOpacity={0.8}
+                        accessibilityRole="button"
+                        accessibilityLabel="View squad hub"
                       >
                         <Mono style={styles.passActionText}>[ SQUAD HUB ]</Mono>
                       </TouchableOpacity>
@@ -509,6 +519,8 @@ export default function ActivityScreen() {
                       style={[styles.passActionBtn, { backgroundColor: theme.colors.primary }]}
                       onPress={() => router.push(`/(app)/events/${registration.eventId}/scan`)}
                       activeOpacity={0.8}
+                      accessibilityRole="button"
+                      accessibilityLabel="Scan attendance QR code"
                     >
                       <Mono style={[styles.passActionText, { color: theme.colors.onPrimary }]}>
                         [ SCAN QR ]
@@ -579,6 +591,8 @@ export default function ActivityScreen() {
                     style={styles.inviteBtnAccept}
                     onPress={() => setSelectedInvite({ invite: inv, action: 'ACCEPT' })}
                     activeOpacity={0.8}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Accept squad invitation from ${inv.inviter.full_name}`}
                   >
                     <Mono style={{ color: theme.colors.onPrimary, fontFamily: theme.typography.monoBold, fontSize: 11 }}>
                       [ ACCEPT SQUAD ]
@@ -589,6 +603,8 @@ export default function ActivityScreen() {
                     style={styles.inviteBtnDecline}
                     onPress={() => setSelectedInvite({ invite: inv, action: 'DECLINE' })}
                     activeOpacity={0.8}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Decline squad invitation from ${inv.inviter.full_name}`}
                   >
                     <Mono style={{ color: theme.colors.onSurface, fontFamily: theme.typography.monoBold, fontSize: 11 }}>
                       [ DECLINE ]
@@ -617,6 +633,8 @@ export default function ActivityScreen() {
             }}
             onPress={() => router.push('/(app)/disputes')}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="View attendance disputes and claims"
           >
             <MonoLabel style={{ color: theme.colors.primary }}>ATTENDANCE DISPUTES & CLAIMS</MonoLabel>
             <MonoLabel style={{ color: theme.colors.primary }}>→</MonoLabel>
@@ -669,10 +687,16 @@ export default function ActivityScreen() {
               onPress={() => router.push('/(app)/disputes/new')}
               style={{
                 backgroundColor: theme.colors.primary,
-                paddingHorizontal: 10,
-                paddingVertical: 5,
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                minHeight: 44,
+                justifyContent: 'center',
+                alignItems: 'center',
               }}
               activeOpacity={0.8}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityRole="button"
+              accessibilityLabel="File attendance dispute claim"
             >
               <Mono style={{ fontSize: 10, fontFamily: theme.typography.monoBold, color: theme.colors.onPrimary }}>
                 + FILE CLAIM
@@ -786,6 +810,9 @@ export default function ActivityScreen() {
                   >
                     <TouchableOpacity
                       onPress={() => router.push(`/(app)/events/${ach.event.id}/results`)}
+                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                      accessibilityRole="button"
+                      accessibilityLabel="View event results"
                     >
                       <Mono style={{ fontSize: 10, color: theme.colors.primary, fontFamily: theme.typography.monoBold }}>
                         [ VIEW RESULTS ]
@@ -797,6 +824,9 @@ export default function ActivityScreen() {
                         onPress={() =>
                           openProjectShowcase(ach.linked_project?.slug)
                         }
+                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                        accessibilityRole="button"
+                        accessibilityLabel="Showcase project"
                       >
                         <Mono style={{ fontSize: 10, color: theme.colors.secondary, fontFamily: theme.typography.monoBold }}>
                           [ SHOWCASE PROJECT ↗ ]

@@ -25,86 +25,27 @@ export function StudentDossierOwnerBanner({ slug }: StudentDossierOwnerBannerPro
   };
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '12px',
-        background: '#0a0b0e',
-        border: '1px solid rgba(0, 87, 255, 0.3)',
-        boxShadow: '0 0 15px rgba(0, 87, 255, 0.08)',
-        padding: '12px 20px',
-        marginBottom: '28px',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <span
-          style={{
-            width: '8px',
-            height: '8px',
-            borderRadius: '50%',
-            background: 'var(--acid-green, #C8FF00)',
-            boxShadow: '0 0 8px var(--acid-green, #C8FF00)',
-            display: 'inline-block',
-          }}
-        />
-        <span
-          style={{
-            fontFamily: 'var(--font-mono, monospace)',
-            fontSize: '11px',
-            fontWeight: 700,
-            letterSpacing: '1px',
-            textTransform: 'uppercase',
-            color: '#F5F5F2',
-          }}
-        >
+    <div className="flex justify-between items-center flex-wrap gap-3 bg-white dark:bg-[#0a0b0e] border border-[#0057FF]/30 shadow-[0_0_15px_rgba(0,87,255,0.08)] px-5 py-3 mb-7">
+      <div className="flex items-center gap-2.5">
+        <span className="w-2 h-2 rounded-full bg-emerald-600 dark:bg-[#C8FF00] shadow-[0_0_8px_rgba(5,150,105,0.5)] dark:shadow-[0_0_8px_#C8FF00] inline-block" />
+        <span className="font-mono text-[11px] font-bold tracking-wider uppercase text-zinc-900 dark:text-[#F5F5F2]">
           NST VERIFIED PORTFOLIO // @{slug}
         </span>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div className="flex items-center gap-2.5">
         <button
           onClick={handleCopyLink}
-          style={{
-            background: 'transparent',
-            border: '1px solid rgba(245, 245, 242, 0.25)',
-            color: '#F5F5F2',
-            fontFamily: 'var(--font-mono, monospace)',
-            fontSize: '11px',
-            fontWeight: 700,
-            padding: '6px 12px',
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            textTransform: 'uppercase',
-            transition: 'all 0.15s ease',
-          }}
+          className="bg-transparent border border-black/20 dark:border-white/25 text-zinc-800 dark:text-[#F5F5F2] font-mono text-[11px] font-bold px-3 py-1.5 cursor-pointer inline-flex items-center gap-1.5 uppercase hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
         >
-          {copied ? <Check size={12} color="var(--acid-green, #C8FF00)" /> : <Share2 size={12} />}
+          {copied ? <Check size={12} className="text-emerald-600 dark:text-[#C8FF00]" /> : <Share2 size={12} />}
           <span>{copied ? 'LINK COPIED' : 'SHARE DOSSIER'}</span>
         </button>
 
         {isOwner && (
           <Link
             href="/my/profile"
-            style={{
-              background: 'var(--electric-blue, #0057FF)',
-              border: '1px solid var(--electric-blue, #0057FF)',
-              color: '#ffffff',
-              fontFamily: 'var(--font-mono, monospace)',
-              fontSize: '11px',
-              fontWeight: 700,
-              padding: '6px 14px',
-              textDecoration: 'none',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              textTransform: 'uppercase',
-              transition: 'all 0.15s ease',
-            }}
+            className="bg-[#0057FF] border border-[#0057FF] text-white font-mono text-[11px] font-bold px-3.5 py-1.5 no-underline inline-flex items-center gap-1.5 uppercase hover:bg-[#0047d4] transition-colors"
           >
             <Settings size={12} />
             <span>PORTFOLIO SETTINGS ↗</span>

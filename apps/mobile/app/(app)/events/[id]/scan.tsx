@@ -16,6 +16,7 @@ import { ScannerOverlay } from '../../../../src/ui/ScannerOverlay';
 import { AttendanceVerificationView } from '../../../../src/ui/AttendanceVerificationView';
 import { AttendanceSuccessView } from '../../../../src/ui/AttendanceSuccessView';
 import { AttendanceFailureView } from '../../../../src/ui/AttendanceFailureView';
+import { logger } from '../../../../src/lib/logger';
 
 type ScanFlowState =
   | 'CHECKING'
@@ -95,9 +96,7 @@ export default function ScanAttendanceScreen() {
       }
       
       setFlowState('SCANNING');
-      if (typeof __DEV__ !== 'undefined' && __DEV__) {
-        console.log(`\n[Attendance][Timing] Scanner opened timestamp: ${Date.now()}`);
-      }
+      logger.info('Scanner opened', { timestamp: Date.now() });
       prefetchLocation();
     })();
   }, [cameraPermission]);
@@ -111,10 +110,7 @@ export default function ScanAttendanceScreen() {
     isProcessingRef.current = true;
     pendingQrDataRef.current = data;
 
-    if (typeof __DEV__ !== 'undefined' && __DEV__) {
-      console.log(`\n[Attendance] =======================================`);
-      console.log(`[Attendance][QR] Raw payload scanned (redacted):`, data ? `${data.slice(0, 8)}...[REDACTED]` : 'empty');
-    }
+    logger.info('QR barcode scanned');
 
     processAttendanceSubmission(data);
   };
@@ -126,43 +122,30 @@ export default function ScanAttendanceScreen() {
       // 1. Verify QR Format
       const trimmedQrData = qrData.trim();
       if (!trimmedQrData.startsWith('v1:')) {
-        if (typeof __DEV__ !== 'undefined' && __DEV__) {
-          console.log(`[Attendance][Error] Invalid QR Format: missing v1 prefix`);
-        }
+        logger.warn('Invalid QR format: missing v1 prefix');
         throw new Error('INVALID_QR_FORMAT');
       }
       const parts = trimmedQrData.split(':');
       if (parts.length !== 3) {
-        if (typeof __DEV__ !== 'undefined' && __DEV__) {
-          console.log(`[Attendance][Error] Malformed QR: Expected 3 parts, got ${parts.length}`);
-        }
+        logger.warn('Malformed QR: expected 3 parts', { partCount: parts.length });
         throw new Error('MALFORMED_QR');
       }
       const sessionId = parts[1];
-      if (typeof __DEV__ !== 'undefined' && __DEV__) {
-        console.log(`[Attendance][QR] Parsed session_id: ${sessionId}`);
-        console.log(`[Attendance][QR] Parsed totp_token (redacted): ${trimmedQrData.slice(0, 6)}...[REDACTED]`);
-      }
+      logger.info('Parsed session ID from QR', { sessionId });
 
       // 2. Request Location Permission & High-Accuracy Position
       setVerificationStatus('ACQUIRING LOCATION...');
       const { status: locationStatus } = await Location.getForegroundPermissionsAsync();
-      if (typeof __DEV__ !== 'undefined' && __DEV__) {
-        console.log(`[Attendance][Location] Permission status:`, locationStatus);
-      }
+      logger.info('Location permission status', { status: locationStatus });
       if (locationStatus !== 'granted') {
-        if (typeof __DEV__ !== 'undefined' && __DEV__) {
-          console.log(`[Attendance][Location] Permission denied, redirecting to permission screen.`);
-        }
+        logger.warn('Location permission denied, redirecting to permission screen');
         setFlowState('LOCATION_PERMISSION');
         isProcessingRef.current = false;
         return;
       }
 
       const locationReqStart = Date.now();
-      if (typeof __DEV__ !== 'undefined' && __DEV__) {
-        console.log(`[Attendance][Timing] Location request started timestamp: ${locationReqStart}`);
-      }
+      logger.debug('Location request started', { startTimestamp: locationReqStart });
 
       let location: Location.LocationObject | null = null;
 
@@ -174,23 +157,17 @@ export default function ScanAttendanceScreen() {
         
         // Only use cache if it's less than 100m accuracy and relatively fresh (e.g., < 60s)
         if (accuracy <= 100 && age < 60000) {
-          if (typeof __DEV__ !== 'undefined' && __DEV__) {
-            console.log(`[Attendance][Location] Using acceptable pre-fetched location (Accuracy: ${accuracy}m, Age: ${age}ms)`);
-          }
+          logger.debug('Using acceptable pre-fetched location', { accuracy, age });
           location = cached;
         } else {
-          if (typeof __DEV__ !== 'undefined' && __DEV__) {
-            console.log(`[Attendance][Location] Discarding pre-fetched location (Accuracy: ${accuracy}m, Age: ${age}ms)`);
-          }
+          logger.debug('Discarding pre-fetched location', { accuracy, age });
           locationCacheRef.current = null;
         }
       }
 
       // 2. Fetch Fresh if Cache was missing or discarded
       if (!location) {
-        if (typeof __DEV__ !== 'undefined' && __DEV__) {
-          console.log(`[Attendance][Location] Fetching fresh high-accuracy location with 8s timeout...`);
-        }
+        logger.info('Fetching fresh high-accuracy location with 8s timeout');
         const locPromise = locationPromiseRef.current || Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
         const timeoutPromise = new Promise<never>((_, reject) => 
           setTimeout(() => reject(new Error('LOCATION_TIMEOUT')), 8000)
@@ -198,31 +175,23 @@ export default function ScanAttendanceScreen() {
         location = await Promise.race([locPromise, timeoutPromise]);
       }
 
-      if (typeof __DEV__ !== 'undefined' && __DEV__) {
-        console.log(`[Attendance][Location] Coordinates captured. gps_accuracy=${location.coords.accuracy}m, mock_location_detected=[REDACTED]`);
-      }
+      logger.info(`Coordinates captured. gps_accuracy=${location.coords.accuracy}m, mock_location_detected=[REDACTED]`);
 
       // 3. Client-side accuracy enforcement (must be <= 100m)
       const finalAccuracy = location.coords.accuracy ?? 9999;
       setGpsAccuracy(Math.round(finalAccuracy));
       setGpsState(finalAccuracy <= 100 ? 'READY' : 'WEAK');
       if (finalAccuracy > 100) {
-        if (typeof __DEV__ !== 'undefined' && __DEV__) {
-          console.log(`[Attendance][Location] Client-side rejection: Accuracy (${finalAccuracy}m) is worse than 100m threshold.`);
-        }
+        logger.warn('Client-side rejection: Accuracy is worse than 100m threshold', { finalAccuracy });
         throw new Error('LOCATION_UNRELIABLE');
       }
       
-      if (typeof __DEV__ !== 'undefined' && __DEV__) {
-        console.log(`[Attendance][Location] Client-side assessment: Location accepted.`);
-      }
+      logger.info('Client-side assessment: Location accepted');
 
       // 3. Fetch Persistent Device ID
       setVerificationStatus('VERIFYING WITH SERVER...');
       const deviceId = await getPersistentDeviceId();
-      if (typeof __DEV__ !== 'undefined' && __DEV__) {
-        console.log(`[Attendance] Device ID (truncated):`, deviceId ? `${deviceId.slice(0, 8)}...` : 'none');
-      }
+      logger.debug('Device ID acquired');
 
       // 4. Submit payload to backend (POST /v1/attendance/mark)
       const payload = {
@@ -237,28 +206,14 @@ export default function ScanAttendanceScreen() {
         app_version: '1.0.0',
       };
 
-      if (typeof __DEV__ !== 'undefined' && __DEV__) {
-        console.log(`[Attendance][API] Request starting: POST /v1/attendance/mark`);
-        console.log(`[Attendance][Timing] exact backend request timestamp: ${Date.now()}`);
-        console.log(`[Attendance][API] Payload (redacted):`, JSON.stringify({
-          ...payload,
-          totp_token: `${payload.totp_token.slice(0, 6)}...[REDACTED]`,
-          device_id: `${payload.device_id.slice(0, 8)}...[REDACTED]`,
-          latitude: '[REDACTED]',
-          longitude: '[REDACTED]',
-          mock_location_detected: '[REDACTED]',
-        }));
-      }
+      logger.info('Submitting attendance marking request: POST /v1/attendance/mark');
 
       const response: any = await apiClient('/v1/attendance/mark', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
       
-      if (typeof __DEV__ !== 'undefined' && __DEV__) {
-        console.log(`[Attendance][API] Attendance marked successfully`);
-        console.log(`[Attendance][API] Response body received (status verified)`);
-      }
+      logger.info('Attendance marked successfully');
 
       // Resolve venue name from existing React Query event data as primary source
       const cachedEvent = queryClient.getQueryData<any>(['events', eventId]);
@@ -267,15 +222,11 @@ export default function ScanAttendanceScreen() {
       // Fallback: If not in cache, fetch event details directly
       if (!locationName) {
         try {
-          if (typeof __DEV__ !== 'undefined' && __DEV__) {
-            console.log(`[Attendance][API] Cached event unavailable, fetching: GET /v1/events/${eventId}`);
-          }
+          logger.debug('Cached event unavailable, fetching event details', { eventId });
           const eventResponse: any = await apiClient(`/v1/events/${eventId}`);
           locationName = eventResponse?.locationName || eventResponse?.location_name;
         } catch (fetchErr) {
-          if (typeof __DEV__ !== 'undefined' && __DEV__) {
-            console.warn(`[Attendance][API] Failed to fetch fallback event details:`, fetchErr);
-          }
+          logger.warn('Failed to fetch fallback event details');
         }
       }
 
@@ -291,10 +242,7 @@ export default function ScanAttendanceScreen() {
         timeLogged: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
       });
 
-      if (typeof __DEV__ !== 'undefined' && __DEV__) {
-        console.log(`[Attendance][Result] Mark attendance completed successfully`);
-        console.log(`[Attendance][Result] UI State: SUCCESS`);
-      }
+      logger.info('Mark attendance completed successfully: SUCCESS');
       setFlowState('SUCCESS');
     } catch (err: any) {
       let rawMsg = err.message || 'ATTENDANCE_FAILED';
@@ -306,12 +254,10 @@ export default function ScanAttendanceScreen() {
         parsedCode = err.body.error;
       }
 
-      if (typeof __DEV__ !== 'undefined' && __DEV__) {
-        console.log(`[Attendance][API] Raw error caught:`, err);
-        console.log(`[Attendance][API] HTTP Status:`, err.status || 'unknown');
-        console.log(`[Attendance][API] Error body:`, err.body ? JSON.stringify(err.body) : 'none');
-        console.log(`[Attendance][Error] full parsed backend error body/code/message:`, err.message);
-      }
+      logger.error('Attendance marking failed', err, {
+        status: err.status || 'unknown',
+        code: parsedCode,
+      });
 
       if (
         rawMsg.toLowerCase().includes('network') ||
@@ -344,9 +290,7 @@ export default function ScanAttendanceScreen() {
       } else if (rawMsg.includes('EVENT_LOCKED') || parsedCode === 'EVENT_LOCKED') {
         parsedCode = 'EVENT_LOCKED';
       } else if (rawMsg.includes('ALREADY_RECORDED') || parsedCode === 'ALREADY_RECORDED') {
-        if (typeof __DEV__ !== 'undefined' && __DEV__) {
-          console.log(`[Attendance][Error] Handling ALREADY_RECORDED special case`);
-        }
+        logger.info('Handling ALREADY_RECORDED special case');
         parsedCode = 'ALREADY_RECORDED';
       } else if (rawMsg.includes('NOT_REGISTERED') || parsedCode === 'NOT_REGISTERED') {
         parsedCode = 'NOT_REGISTERED';
@@ -360,16 +304,11 @@ export default function ScanAttendanceScreen() {
         parsedCode = 'ACADEMIC_PROFILE_MISSING';
       }
 
-      if (typeof __DEV__ !== 'undefined' && __DEV__) {
-        console.log(`[Attendance][Error] Parsed code: ${parsedCode}, Final message: ${rawMsg}`);
-      }
+      logger.info('Parsed error details', { code: parsedCode, message: rawMsg });
       
       setErrorCode(parsedCode);
       setErrorMessage(rawMsg);
-      
-      if (typeof __DEV__ !== 'undefined' && __DEV__) {
-        console.log(`[Attendance][Result] UI State: FAILURE`);
-      }
+      logger.info('Attendance final UI state: FAILURE');
       setFlowState('FAILURE');
     } finally {
       isProcessingRef.current = false;

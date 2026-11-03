@@ -228,7 +228,15 @@ export function StudentCalendarView({
     <View style={styles.container}>
       {/* Month Navigation */}
       <View style={styles.headerNav}>
-        <TouchableOpacity onPress={prevMonth} style={styles.navButton} activeOpacity={0.7} testID="btn-prev-month">
+        <TouchableOpacity
+          onPress={prevMonth}
+          style={styles.navButton}
+          activeOpacity={0.7}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          accessibilityRole="button"
+          accessibilityLabel="Previous month"
+          testID="btn-prev-month"
+        >
           <MonoLabel style={{ color: theme.colors.primary }}>&lt; PREV</MonoLabel>
         </TouchableOpacity>
 
@@ -236,7 +244,15 @@ export function StudentCalendarView({
           {MONTH_NAMES[currentMonth]} {currentYear}
         </Mono>
 
-        <TouchableOpacity onPress={nextMonth} style={styles.navButton} activeOpacity={0.7} testID="btn-next-month">
+        <TouchableOpacity
+          onPress={nextMonth}
+          style={styles.navButton}
+          activeOpacity={0.7}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          accessibilityRole="button"
+          accessibilityLabel="Next month"
+          testID="btn-next-month"
+        >
           <MonoLabel style={{ color: theme.colors.primary }}>NEXT &gt;</MonoLabel>
         </TouchableOpacity>
       </View>
@@ -267,6 +283,9 @@ export function StudentCalendarView({
                 item.isToday && styles.dayCellToday,
               ]}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`${item.dayNumber} ${MONTH_NAMES[currentMonth]} ${currentYear}`}
+              accessibilityState={{ selected: !!item.isSelected }}
               testID={`calendar-day-${item.dateStr}`}
             >
               <Mono

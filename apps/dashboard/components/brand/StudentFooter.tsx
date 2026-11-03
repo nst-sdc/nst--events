@@ -45,11 +45,13 @@ const footerStyles = `
   .sf-brand-logo {
     width: 36px;
     height: 36px;
-    background: #0057FF;
+    background: linear-gradient(135deg, #0066FF, #0047FF);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 14px rgba(0, 87, 255, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 3px 3px 0px #ffffff;
     flex-shrink: 0;
   }
   .sf-brand-name {
@@ -208,7 +210,9 @@ export function StudentFooter() {
               <NstLogoMark size={20} color="#ffffff" />
             </div>
             <div>
-              <div className="sf-brand-name">NST EVENTS</div>
+              <div className="sf-brand-name">
+                NST <span style={{ color: '#0057FF' }}>EVENTS</span>
+              </div>
               <div className="sf-brand-sub">Newton School of Technology</div>
             </div>
           </div>

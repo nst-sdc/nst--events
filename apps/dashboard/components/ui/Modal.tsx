@@ -41,27 +41,27 @@ export function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-lg' 
       aria-modal="true"
     >
       <div 
-        className={`bg-[#090a0f] w-full ${maxWidth} border-2 sm:border-3 border-[#F5F5F2] flex flex-col max-h-[90vh] shadow-[10px_10px_0px_#0057FF] animate-in slide-in-from-bottom-4 md:slide-in-from-bottom-0 md:zoom-in-95 duration-200 relative overflow-hidden text-[#F5F5F2]`}
+        className={`bg-white dark:bg-[#090a0f] w-full ${maxWidth} border-2 sm:border-3 border-black dark:border-[#F5F5F2] flex flex-col max-h-[90vh] shadow-[10px_10px_0px_#0057FF] animate-in slide-in-from-bottom-4 md:slide-in-from-bottom-0 md:zoom-in-95 duration-200 relative overflow-hidden text-zinc-950 dark:text-[#F5F5F2]`}
       >
         {/* Top accent gradient bar */}
         <div className="h-1.5 w-full bg-gradient-to-r from-[#0057FF] via-[#C8FF00] to-[#0057FF] shrink-0" />
 
-        <div className="flex items-center justify-between p-6 border-b-2 border-white/15 bg-[#0e1017] shrink-0">
+        <div className="flex items-center justify-between p-6 border-b-2 border-black/10 dark:border-white/15 bg-zinc-50 dark:bg-[#0e1017] shrink-0">
           <h2 
-            className="text-2xl font-black text-[#F5F5F2] tracking-tight uppercase" 
+            className="text-2xl font-black text-zinc-950 dark:text-[#F5F5F2] tracking-tight uppercase" 
             style={{ fontFamily: "'Syne', 'Outfit', sans-serif" }}
           >
             {title}
           </h2>
           <button 
             onClick={onClose}
-            className="border-2 border-white/20 bg-white/5 hover:bg-[#FF3B30] hover:border-[#FF3B30] text-[#a0a4b8] hover:text-white p-1.5 transition-colors shadow-[2px_2px_0px_#000]"
+            className="border-2 border-black/20 dark:border-white/20 bg-black/5 dark:bg-white/5 hover:bg-[#FF3B30] hover:border-[#FF3B30] text-zinc-600 dark:text-[#a0a4b8] hover:text-white p-1.5 transition-colors shadow-[2px_2px_0px_#000]"
             aria-label="Close modal"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className="overflow-y-auto bg-[#07080b]">
+        <div className="overflow-y-auto bg-white dark:bg-[#07080b] text-zinc-900 dark:text-zinc-100">
           {children}
         </div>
       </div>

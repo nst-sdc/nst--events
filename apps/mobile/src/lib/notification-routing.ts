@@ -3,9 +3,10 @@
  *
  * Strict Resolution Hierarchy:
  * 1. entity_ids.dispute_id exists → /(app)/disputes/[id]
- * 2. Otherwise, entity_ids.event_id exists → /(app)/events/[id]
- * 3. Otherwise, notification type === 'ROLE_CHANGED' → /(app)/profile
- * 4. Otherwise → do not navigate (returns null)
+ * 2. Event Results notification → /(app)/events/[id]/results
+ * 3. Otherwise, entity_ids.event_id exists → /(app)/events/[id]
+ * 4. Otherwise, notification type === 'ROLE_CHANGED' → /(app)/(tabs)/profile
+ * 5. Otherwise → do not navigate (returns null)
  *
  * Non-negotiable Constraints:
  * - Do NOT route using routing.target alone.
@@ -53,9 +54,9 @@ export function resolveNotificationRoute(notification: any): string | null {
     return `/(app)/events/${eventId}`;
   }
 
-  // 4. Otherwise, notification type === 'ROLE_CHANGED' → /(app)/profile
+  // 4. Otherwise, notification type === 'ROLE_CHANGED' → /(app)/(tabs)/profile
   if (notification.type === 'ROLE_CHANGED') {
-    return '/(app)/profile';
+    return '/(app)/(tabs)/profile';
   }
 
   // 5. Otherwise → do not navigate

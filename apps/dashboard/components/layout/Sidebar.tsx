@@ -50,6 +50,8 @@ export function Sidebar() {
   }
 
   if (platformAdmin) {
+    links.push({ href: '/admin/rate-limits', label: 'Rate Limits' });
+    links.push({ href: '/admin/traffic-security', label: 'Traffic & Security' });
     links.push({ href: '/admin/audit-logs', label: 'Audit Logs' });
     links.push({ href: '/admin/queues', label: 'Queue Monitoring' });
   }

@@ -87,7 +87,7 @@ export default function EditProjectPage() {
 
   if (isCheckingAuth || isLoadingProject) {
     return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center font-mono text-xs text-zinc-400">
+      <div className="min-h-screen bg-[#F8F9FA] dark:bg-[#050505] flex items-center justify-center font-mono text-xs text-zinc-600 dark:text-zinc-400">
         <div className="animate-pulse flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-[#0057FF]" />
           <span>{isCheckingAuth ? 'Verifying student authentication...' : 'Loading project details...'}</span>
@@ -101,13 +101,13 @@ export default function EditProjectPage() {
     return (
       <ClubAdminProvider>
         <StudentAppShell>
-          <div className="min-h-screen bg-[#050505] text-[#F5F5F2] flex items-center justify-center px-6">
-            <div className="max-w-md w-full p-8 rounded-xl bg-zinc-950 border border-zinc-800 text-center space-y-4">
-              <div className="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto text-zinc-400">
+          <div className="min-h-screen bg-[#F8F9FA] dark:bg-[#050505] text-zinc-950 dark:text-[#F5F5F2] flex items-center justify-center px-6">
+            <div className="max-w-md w-full p-8 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-center space-y-4 shadow-sm">
+              <div className="w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center mx-auto text-zinc-500 dark:text-zinc-400">
                 <FileQuestion className="w-6 h-6" />
               </div>
-              <h2 className="text-xl font-bold text-white font-mono uppercase">Project Not Found</h2>
-              <p className="text-xs text-zinc-400 font-sans leading-relaxed">
+              <h2 className="text-xl font-bold text-zinc-950 dark:text-white font-mono uppercase">Project Not Found</h2>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 font-sans leading-relaxed">
                 {fetchError || 'The project you are trying to edit does not exist, or has been permanently removed.'}
               </p>
               <div className="pt-2 flex justify-center gap-3">
@@ -130,19 +130,19 @@ export default function EditProjectPage() {
     return (
       <ClubAdminProvider>
         <StudentAppShell>
-          <div className="min-h-screen bg-[#050505] text-[#F5F5F2] flex items-center justify-center px-6">
-            <div className="max-w-md w-full p-8 rounded-xl bg-zinc-950 border border-rose-900/50 text-center space-y-4">
-              <div className="w-12 h-12 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mx-auto text-rose-400">
+          <div className="min-h-screen bg-[#F8F9FA] dark:bg-[#050505] text-zinc-950 dark:text-[#F5F5F2] flex items-center justify-center px-6">
+            <div className="max-w-md w-full p-8 rounded-xl bg-white dark:bg-zinc-950 border border-rose-300 dark:border-rose-900/50 text-center space-y-4 shadow-sm">
+              <div className="w-12 h-12 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mx-auto text-rose-500 dark:text-rose-400">
                 <ShieldAlert className="w-6 h-6" />
               </div>
-              <h2 className="text-xl font-bold text-white font-mono uppercase">Access Denied</h2>
-              <p className="text-xs text-zinc-400 font-sans leading-relaxed">
+              <h2 className="text-xl font-bold text-zinc-950 dark:text-white font-mono uppercase">Access Denied</h2>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 font-sans leading-relaxed">
                 You do not have permission to edit this project. Only the project owner can make modifications.
               </p>
               <div className="pt-2 flex justify-center gap-3">
                 <Link
                   href={`/projects/${encodeURIComponent(slug)}`}
-                  className="px-4 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-700 font-mono text-xs uppercase font-bold transition-colors"
+                  className="px-4 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 font-mono text-xs uppercase font-bold transition-colors"
                 >
                   View Project
                 </Link>
@@ -163,12 +163,12 @@ export default function EditProjectPage() {
   return (
     <ClubAdminProvider>
       <StudentAppShell>
-        <div className="min-h-screen bg-[#050505] text-[#F5F5F2] font-sans relative selection:bg-[#0057FF] selection:text-white scroll-smooth">
+        <div className="min-h-screen bg-[#F8F9FA] dark:bg-[#050505] text-zinc-950 dark:text-[#F5F5F2] font-sans relative selection:bg-[#0057FF] selection:text-white scroll-smooth">
           {/* Background Dot Texture */}
           <div
-            className="fixed inset-0 pointer-events-none z-0 opacity-20"
+            className="fixed inset-0 pointer-events-none z-0 opacity-[0.03] text-zinc-950 dark:text-white"
             style={{
-              backgroundImage: 'radial-gradient(rgba(245, 245, 242, 0.15) 1px, transparent 1px)',
+              backgroundImage: 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)',
               backgroundSize: '24px 24px',
             }}
           />
@@ -176,10 +176,10 @@ export default function EditProjectPage() {
           {/* Form Container */}
           <main className="relative z-10 max-w-4xl mx-auto px-6 py-10">
             {/* Sub-Navigation Breadcrumb */}
-            <div className="flex items-center justify-between border-b border-[#F5F5F2]/20 pb-4 mb-8">
+            <div className="flex items-center justify-between border-b border-zinc-200 dark:border-[#F5F5F2]/20 pb-4 mb-8">
               <Link
                 href={`/projects/${project.slug}`}
-                className="flex items-center space-x-2 text-[#a0a4b8] hover:text-[#0057FF] font-['JetBrains_Mono',monospace] text-xs uppercase tracking-wider transition-colors"
+                className="flex items-center space-x-2 text-zinc-600 dark:text-[#a0a4b8] hover:text-[#0057FF] font-['JetBrains_Mono',monospace] text-xs uppercase tracking-wider transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>BACK TO PROJECT</span>
@@ -188,25 +188,25 @@ export default function EditProjectPage() {
                 <span className="font-['JetBrains_Mono',monospace] text-xs font-bold text-[#0057FF] uppercase tracking-wider">
                   EDIT PROJECT
                 </span>
-                <span className="text-zinc-600">/</span>
+                <span className="text-zinc-300 dark:text-zinc-600">/</span>
                 <Link
                   href="/my/projects"
-                  className="font-['JetBrains_Mono',monospace] text-xs font-bold text-[#a0a4b8] hover:text-white uppercase tracking-wider transition-colors"
+                  className="font-['JetBrains_Mono',monospace] text-xs font-bold text-zinc-600 dark:text-[#a0a4b8] hover:text-zinc-950 dark:hover:text-white uppercase tracking-wider transition-colors"
                 >
                   MY PROJECTS
                 </Link>
               </div>
             </div>
 
-            <div className="mb-8 border-b border-zinc-800/80 pb-6">
+            <div className="mb-8 border-b border-zinc-200 dark:border-zinc-800/80 pb-6">
               <div className="flex items-center space-x-2 text-xs font-mono text-[#0057FF] tracking-widest uppercase mb-3">
                 <Sparkles className="w-4 h-4" />
                 <span>PROJECT MANAGEMENT</span>
               </div>
-              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-zinc-950 dark:text-white">
                 Edit {project.title}
               </h1>
-              <p className="mt-2 text-sm text-zinc-400 leading-relaxed">
+              <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
                 Update project details, showcase links, tech stack, and documentation. Changes to published projects are reflected immediately.
               </p>
             </div>

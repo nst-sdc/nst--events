@@ -23,6 +23,8 @@ import {
   BarChartOutlined,
   ControlOutlined,
   FileProtectOutlined,
+  SlidersOutlined,
+  SecurityScanOutlined,
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
@@ -56,6 +58,8 @@ function getPageTitle(pathname: string): string {
     '/admin/audit-logs': 'Audit Logs',
     '/admin/queues': 'Queues',
     '/admin/analytics': 'Analytics',
+    '/admin/rate-limits': 'Rate Limits',
+    '/admin/traffic-security': 'Traffic & Security',
   };
 
   // Exact match
@@ -93,11 +97,11 @@ function formatRoleDisplay(role?: string | null): string {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { data: currentUser } = useCurrentUser();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const { token } = useToken();
   const [mounted, setMounted] = useState(false);
   const [isCreditsOpen, setIsCreditsOpen] = useState(false);
+  const { data: currentUser } = useCurrentUser();
 
   // Initialize global real-time notifications
   useRealtimeNotifications();
@@ -106,9 +110,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     setMounted(true);
   }, []);
 
+  const isDark = mounted && (resolvedTheme === 'dark' || (!resolvedTheme && theme === 'dark'));
+
   const isPlatformAdmin = currentUser?.global_role === 'PLATFORM_ADMIN';
   const isFacultyAdmin = currentUser?.global_role === 'FACULTY_ADMIN';
-  const isFacultyMentor = currentUser?.global_role === 'FACULTY_MENTOR' || (currentUser?.club_memberships?.some(m => m.role === 'FACULTY_MENTOR') ?? false);
+  const isFacultyMentor = currentUser?.global_role === 'FACULTY_MENTOR' || (currentUser?.club_memberships?.some((m: any) => m.role === 'FACULTY_MENTOR') ?? false);
   const isAdmin = isPlatformAdmin || isFacultyAdmin;
   const canApprove = isAdmin || isFacultyMentor;
 
@@ -159,6 +165,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
 
     if (isPlatformAdmin) {
+      adminChildren.push({ key: '/admin/rate-limits', icon: <SlidersOutlined />, label: 'Rate Limits' });
+      adminChildren.push({ key: '/admin/traffic-security', icon: <SecurityScanOutlined />, label: 'Traffic & Security' });
       adminChildren.push({ key: '/admin/privacy-policy', icon: <FileProtectOutlined />, label: 'Privacy Policy' });
       adminChildren.push({ key: '/admin/audit-logs', icon: <FileTextOutlined />, label: 'Audit Logs' });
       adminChildren.push({ key: '/admin/queues', icon: <MonitorOutlined />, label: 'Queues' });
@@ -185,6 +193,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (pathname.startsWith('/admin/audit-logs/')) selectedKeys = ['/admin/audit-logs'];
   if (pathname.startsWith('/admin/queues/')) selectedKeys = ['/admin/queues'];
   if (pathname.startsWith('/admin/analytics/')) selectedKeys = ['/admin/analytics'];
+  if (pathname.startsWith('/admin/rate-limits')) selectedKeys = ['/admin/rate-limits'];
+  if (pathname.startsWith('/admin/traffic-security')) selectedKeys = ['/admin/traffic-security'];
 
   const themeMenu = mounted ? [
     {
@@ -223,17 +233,37 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Sider 
         breakpoint="lg" 
         collapsedWidth="0"
-        theme="dark"
+        theme={isDark ? 'dark' : 'light'}
         width={220}
-        style={{ borderRight: `1px solid ${token.colorBorderSecondary}`, height: '100vh', display: 'flex', flexDirection: 'column' }}
+        style={{ 
+          borderRight: `1px solid ${token.colorBorderSecondary}`, 
+          height: '100vh', 
+          display: 'flex', 
+          flexDirection: 'column',
+          backgroundColor: token.colorBgContainer
+        }}
       >
-        <div style={{ height: 48, display: 'flex', alignItems: 'center', gap: 10, padding: '0 16px', borderBottom: `1px solid ${token.colorBorderSecondary}`, flexShrink: 0 }}>
-          <NstLogoMark size={22} className="w-[22px] h-[22px]" />
-          <Text style={{ color: '#FFFFFF', fontWeight: 600, fontSize: 14, letterSpacing: -0.2 }}>NST Events</Text>
+        <div style={{ 
+          height: 52, 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 10, 
+          padding: '0 16px', 
+          borderBottom: `1px solid ${token.colorBorderSecondary}`, 
+          flexShrink: 0,
+          backgroundColor: token.colorBgContainer
+        }}>
+          <div style={{ width: 28, height: 28, borderRadius: 6, background: 'linear-gradient(135deg, #0066FF, #0047FF)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255, 255, 255, 0.2)', boxShadow: '0 0 10px rgba(0, 87, 255, 0.35)', flexShrink: 0 }}>
+            <NstLogoMark size={16} color="#FFFFFF" />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, userSelect: 'none' }}>
+            <span style={{ color: token.colorText, fontWeight: 800, fontSize: 14, letterSpacing: '-0.02em', fontFamily: 'var(--font-syne), sans-serif' }}>NST</span>
+            <span style={{ color: '#0057FF', fontWeight: 800, fontSize: 14, letterSpacing: '-0.02em', fontFamily: 'var(--font-syne), sans-serif' }}>EVENTS</span>
+          </div>
         </div>
         <div style={{ flex: 1, overflowY: 'auto' }}>
           <Menu 
-            theme="dark" 
+            theme={isDark ? 'dark' : 'light'} 
             mode="inline" 
             selectedKeys={selectedKeys}
             onClick={({ key }) => router.push(key)}
@@ -241,20 +271,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             style={{ padding: '8px 4px', borderRight: 0, background: 'transparent' }}
           />
         </div>
-        <div style={{ padding: '12px 14px', borderTop: `1px solid ${token.colorBorderSecondary}`, flexShrink: 0, backgroundColor: 'rgba(12, 13, 18, 0.7)' }}>
+        <div style={{ 
+          padding: '12px 14px', 
+          borderTop: `1px solid ${token.colorBorderSecondary}`, 
+          flexShrink: 0, 
+          backgroundColor: isDark ? 'rgba(12, 13, 18, 0.7)' : 'rgba(248, 249, 250, 0.95)' 
+        }}>
           <DevClubBadge
-            variant="terminal"
+            variant={isDark ? "terminal" : "compact"}
             size="sm"
             onClick={() => setIsCreditsOpen(true)}
             className="w-full justify-center"
           />
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6, fontSize: 10, color: '#717487', fontFamily: 'monospace' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6, fontSize: 10, color: token.colorTextSecondary, fontFamily: 'monospace' }}>
             <span>v{DASHBOARD_APP_VERSION}</span>
             <button 
               type="button" 
               onClick={() => setIsCreditsOpen(true)}
-              style={{ color: '#9a9db0', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-              className="hover:text-white"
+              style={{ color: token.colorTextSecondary, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              className="hover:text-[#0057FF]"
             >
               Credits
             </button>

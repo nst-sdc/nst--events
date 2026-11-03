@@ -333,27 +333,27 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
     <div className="space-y-8">
       {/* Current Visibility Badge if in Edit mode */}
       {isEdit && initialData && (
-        <div className="flex items-center justify-between p-4 rounded-xl border border-zinc-800 bg-zinc-950/70">
+        <div className="flex items-center justify-between p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950/70 shadow-sm">
           <div className="flex items-center gap-3">
             <span
               className={`px-2.5 py-1 rounded text-xs font-mono font-bold uppercase tracking-wider border ${
                 initialData.visibility === 'PUBLISHED'
-                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
                   : initialData.visibility === 'DRAFT'
-                  ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                  : 'bg-zinc-800 text-zinc-400 border-zinc-700'
+                  ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20'
+                  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-400 border-zinc-300 dark:border-zinc-700'
               }`}
             >
               STATUS: {initialData.visibility}
             </span>
-            <span className="text-xs font-mono text-zinc-400">
+            <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400">
               /projects/{initialData.slug}
             </span>
           </div>
           <Link
             href={`/projects/${initialData.slug}`}
             target="_blank"
-            className="text-xs font-mono text-blue-400 hover:text-blue-300 flex items-center gap-1"
+            className="text-xs font-mono text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 flex items-center gap-1"
           >
             <Eye className="w-3.5 h-3.5" />
             <span>VIEW LIVE</span>
@@ -363,7 +363,7 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
 
       {/* Error Message */}
       {error && (
-        <div className="p-4 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-300 flex items-start gap-3">
+        <div className="p-4 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-300 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
           <div className="text-xs font-mono leading-relaxed">
             <span className="font-bold">Validation Error:</span> {error}
@@ -373,7 +373,7 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
 
       {/* Success Message */}
       {successMsg && (
-        <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 flex items-start gap-3">
+        <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 flex items-start gap-3">
           <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
           <div className="text-xs font-mono leading-relaxed font-bold">
             {successMsg}
@@ -384,51 +384,51 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
       {/* Sticky Section Quick Navigation Bar */}
       <nav
         aria-label="Form section navigation"
-        className="sticky top-16 z-20 -mx-2 px-2 sm:mx-0 sm:px-0 py-2.5 bg-zinc-950/95 backdrop-blur-md border border-zinc-800/80 rounded-xl mb-6 shadow-xl shadow-black/60"
+        className="sticky top-16 z-20 -mx-2 px-2 sm:mx-0 sm:px-0 py-2.5 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border border-zinc-200 dark:border-zinc-800/80 rounded-xl mb-6 shadow-md shadow-zinc-200/50 dark:shadow-black/60"
       >
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs font-mono py-0.5">
-          <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider pl-1.5 pr-1 shrink-0">
+          <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-bold uppercase tracking-wider pl-1.5 pr-1 shrink-0">
             JUMP TO:
           </span>
           <button
             type="button"
             onClick={() => scrollToSection('section-essentials')}
-            className="px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white shrink-0 transition-all border border-zinc-800 hover:border-zinc-700"
+            className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white shrink-0 transition-all border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
           >
             1. Essentials
           </button>
           <button
             type="button"
             onClick={() => scrollToSection('section-breakdown')}
-            className="px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white shrink-0 transition-all border border-zinc-800 hover:border-zinc-700"
+            className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white shrink-0 transition-all border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
           >
             2. Tech Depth
           </button>
           <button
             type="button"
             onClick={() => scrollToSection('section-tech-stack')}
-            className="px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white shrink-0 transition-all border border-zinc-800 hover:border-zinc-700"
+            className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white shrink-0 transition-all border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
           >
             3. Tech Stack
           </button>
           <button
             type="button"
             onClick={() => scrollToSection('section-showcase')}
-            className="px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white shrink-0 transition-all border border-zinc-800 hover:border-zinc-700"
+            className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white shrink-0 transition-all border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
           >
             4. Artifacts
           </button>
           <button
             type="button"
             onClick={() => scrollToSection('section-slug')}
-            className="px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white shrink-0 transition-all border border-zinc-800 hover:border-zinc-700"
+            className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white shrink-0 transition-all border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
           >
             5. Slug
           </button>
           <button
             type="button"
             onClick={() => scrollToSection('section-publish')}
-            className="px-2.5 py-1 rounded-md bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 hover:text-blue-300 shrink-0 transition-all border border-blue-500/30 font-bold"
+            className="px-2.5 py-1 rounded-md bg-blue-50 dark:bg-blue-600/20 hover:bg-blue-100 dark:hover:bg-blue-600/30 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 shrink-0 transition-all border border-blue-200 dark:border-blue-500/30 font-bold"
           >
             6. Publish
           </button>
@@ -438,20 +438,20 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
       {/* Step 1: Core Essentials */}
       <section
         id="section-essentials"
-        className="scroll-mt-28 p-6 sm:p-8 rounded-2xl border border-zinc-800/80 bg-zinc-950/60 backdrop-blur-sm space-y-6"
+        className="scroll-mt-28 p-6 sm:p-8 rounded-2xl border border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-950/60 shadow-sm backdrop-blur-sm space-y-6"
       >
-        <div className="border-b border-zinc-900 pb-4">
+        <div className="border-b border-zinc-100 dark:border-zinc-900 pb-4">
           <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-[#0057FF]">
             <Sparkles className="w-3.5 h-3.5" />
             <span>1. CORE ESSENTIALS</span>
           </div>
-          <h2 className="text-lg font-black uppercase text-white mt-1">Project Identity & Basics</h2>
-          <p className="text-xs text-zinc-400 mt-0.5">High-impact summary visible in exploration cards and search listings.</p>
+          <h2 className="text-lg font-black uppercase text-zinc-950 dark:text-white mt-1">Project Identity & Basics</h2>
+          <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">High-impact summary visible in exploration cards and search listings.</p>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-mono uppercase text-zinc-300 mb-1.5 font-bold">
+            <label className="block text-xs font-mono uppercase text-zinc-700 dark:text-zinc-300 mb-1.5 font-bold">
               Project Title *
             </label>
             <input
@@ -459,13 +459,13 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g., Campus Transit Tracker"
-              className="w-full px-4 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 focus:border-[#0057FF] text-white text-sm outline-none transition-all placeholder:text-zinc-600 font-sans"
+              className="w-full px-4 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 focus:border-[#0057FF] focus:bg-white dark:focus:bg-zinc-900 text-zinc-950 dark:text-white text-sm outline-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600 font-sans"
               maxLength={120}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-mono uppercase text-zinc-300 mb-1.5 font-bold">
+            <label className="block text-xs font-mono uppercase text-zinc-700 dark:text-zinc-300 mb-1.5 font-bold">
               One-Sentence Elevator Pitch / Tagline *
             </label>
             <input
@@ -473,23 +473,23 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
               value={tagline}
               onChange={(e) => setTagline(e.target.value)}
               placeholder="e.g., Real-time GPS transit tracking and occupancy forecasting for campus shuttles."
-              className="w-full px-4 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 focus:border-[#0057FF] text-white text-sm outline-none transition-all placeholder:text-zinc-600 font-sans"
+              className="w-full px-4 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 focus:border-[#0057FF] focus:bg-white dark:focus:bg-zinc-900 text-zinc-950 dark:text-white text-sm outline-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600 font-sans"
               maxLength={160}
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-mono uppercase text-zinc-300 mb-1.5 font-bold">
+              <label className="block text-xs font-mono uppercase text-zinc-700 dark:text-zinc-300 mb-1.5 font-bold">
                 Category *
               </label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 focus:border-[#0057FF] text-white text-sm outline-none transition-all font-sans cursor-pointer"
+                className="w-full px-4 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 focus:border-[#0057FF] focus:bg-white dark:focus:bg-zinc-900 text-zinc-950 dark:text-white text-sm outline-none transition-all font-sans cursor-pointer"
               >
                 {CONTROLLED_CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat} className="bg-zinc-950 text-white">
+                  <option key={cat} value={cat} className="bg-white dark:bg-zinc-950 text-zinc-950 dark:text-white">
                     {cat}
                   </option>
                 ))}
@@ -497,16 +497,16 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
             </div>
 
             <div>
-              <label className="block text-xs font-mono uppercase text-zinc-300 mb-1.5 font-bold">
+              <label className="block text-xs font-mono uppercase text-zinc-700 dark:text-zinc-300 mb-1.5 font-bold">
                 Project Type *
               </label>
               <select
                 value={projectType}
                 onChange={(e) => setProjectType(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 focus:border-[#0057FF] text-white text-sm outline-none transition-all font-sans cursor-pointer"
+                className="w-full px-4 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 focus:border-[#0057FF] focus:bg-white dark:focus:bg-zinc-900 text-zinc-950 dark:text-white text-sm outline-none transition-all font-sans cursor-pointer"
               >
                 {PROJECT_TYPES.map((t) => (
-                  <option key={t.value} value={t.value} className="bg-zinc-950 text-white">
+                  <option key={t.value} value={t.value} className="bg-white dark:bg-zinc-950 text-zinc-950 dark:text-white">
                     {t.label}
                   </option>
                 ))}
@@ -516,16 +516,16 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-mono uppercase text-zinc-300 mb-1.5 font-bold">
+              <label className="block text-xs font-mono uppercase text-zinc-700 dark:text-zinc-300 mb-1.5 font-bold">
                 Development Status *
               </label>
               <select
                 value={developmentStatus}
                 onChange={(e) => setDevelopmentStatus(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 focus:border-[#0057FF] text-white text-sm outline-none transition-all font-sans cursor-pointer"
+                className="w-full px-4 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 focus:border-[#0057FF] focus:bg-white dark:focus:bg-zinc-900 text-zinc-950 dark:text-white text-sm outline-none transition-all font-sans cursor-pointer"
               >
                 {STATUSES.map((s) => (
-                  <option key={s.value} value={s.value} className="bg-zinc-950 text-white">
+                  <option key={s.value} value={s.value} className="bg-white dark:bg-zinc-950 text-zinc-950 dark:text-white">
                     {s.label}
                   </option>
                 ))}
@@ -533,7 +533,7 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
             </div>
 
             <div>
-              <label className="block text-xs font-mono uppercase text-zinc-300 mb-1.5 font-bold">
+              <label className="block text-xs font-mono uppercase text-zinc-700 dark:text-zinc-300 mb-1.5 font-bold">
                 Cover Image URL *
               </label>
               <input
@@ -541,22 +541,22 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
                 value={coverImageUrl}
                 onChange={(e) => setCoverImageUrl(e.target.value)}
                 placeholder="https://images.unsplash.com/..."
-                className="w-full px-4 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 focus:border-[#0057FF] text-white text-sm outline-none transition-all placeholder:text-zinc-600 font-sans"
+                className="w-full px-4 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 focus:border-[#0057FF] focus:bg-white dark:focus:bg-zinc-900 text-zinc-950 dark:text-white text-sm outline-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600 font-sans"
               />
             </div>
           </div>
 
           {/* Gallery / Product Screenshots */}
-          <div className="pt-2 pb-1 border-t border-zinc-900/80">
+          <div className="pt-2 pb-1 border-t border-zinc-100 dark:border-zinc-900/80">
             <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-mono uppercase text-zinc-300 font-bold">
+              <label className="block text-xs font-mono uppercase text-zinc-700 dark:text-zinc-300 font-bold">
                 Product Screenshots & Visual Demos (Optional, Up to 6)
               </label>
-              <span className="text-[10px] font-mono text-zinc-500">
+              <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500">
                 {galleryImageUrls.length}/6 added
               </span>
             </div>
-            <p className="text-xs text-zinc-400 mb-3">
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-3">
               Add direct image URLs to showcase UI flows, architecture diagrams, or live app screens. Displayed in an interactive carousel and lightbox on your project case study.
             </p>
 
@@ -574,13 +574,13 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
                 placeholder="https://cdn.mysite.com/ui-preview.png or cloud storage URL"
                 disabled={galleryImageUrls.length >= 6}
                 aria-label="Screenshot URL input"
-                className="flex-1 px-4 py-2 rounded-lg bg-zinc-900 border border-zinc-800 focus:border-[#0057FF] text-white text-xs outline-none transition-all placeholder:text-zinc-600 font-mono disabled:opacity-50"
+                className="flex-1 px-4 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 focus:border-[#0057FF] text-zinc-950 dark:text-white text-xs outline-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600 font-mono disabled:opacity-50"
               />
               <button
                 type="button"
                 onClick={handleAddScreenshot}
                 disabled={galleryImageUrls.length >= 6 || !screenshotInput.trim()}
-                className="px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 disabled:hover:bg-zinc-800 text-xs font-mono font-bold text-white transition-colors flex items-center gap-1.5 shrink-0"
+                className="px-4 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-40 disabled:hover:bg-zinc-100 dark:disabled:hover:bg-zinc-800 text-xs font-mono font-bold text-zinc-800 dark:text-white border border-zinc-300 dark:border-transparent transition-colors flex items-center gap-1.5 shrink-0"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add Image</span>
@@ -592,16 +592,16 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
                 {galleryImageUrls.map((url, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-zinc-900/80 border border-zinc-800/80 text-xs text-zinc-300 font-mono"
+                    className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800/80 text-xs text-zinc-700 dark:text-zinc-300 font-mono"
                   >
                     <div className="flex items-center gap-2 truncate">
-                      <ImageIcon className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                      <ImageIcon className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 shrink-0" />
                       <span className="truncate">{url}</span>
                     </div>
                     <button
                       type="button"
                       onClick={() => handleRemoveScreenshot(idx)}
-                      className="p-1 hover:text-rose-400 text-zinc-500 transition-colors shrink-0"
+                      className="p-1 hover:text-rose-500 dark:hover:text-rose-400 text-zinc-400 dark:text-zinc-500 transition-colors shrink-0"
                       aria-label={`Remove screenshot ${idx + 1}`}
                     >
                       <X className="w-3.5 h-3.5" />
@@ -629,20 +629,20 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
       {/* Step 2: Deep Technical Breakdown */}
       <section
         id="section-breakdown"
-        className="scroll-mt-28 p-6 sm:p-8 rounded-2xl border border-zinc-800/80 bg-zinc-950/60 backdrop-blur-sm space-y-6"
+        className="scroll-mt-28 p-6 sm:p-8 rounded-2xl border border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-950/60 shadow-sm backdrop-blur-sm space-y-6"
       >
-        <div className="border-b border-zinc-900 pb-4">
-          <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-cyan-400">
+        <div className="border-b border-zinc-100 dark:border-zinc-900 pb-4">
+          <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">
             <Layers className="w-3.5 h-3.5" />
             <span>2. DEEP TECHNICAL BREAKDOWN</span>
           </div>
-          <h2 className="text-lg font-black uppercase text-white mt-1">Engineering Depth & Impact</h2>
-          <p className="text-xs text-zinc-400 mt-0.5">Structured details highlighted on your project dossier for recruiters and mentors.</p>
+          <h2 className="text-lg font-black uppercase text-zinc-950 dark:text-white mt-1">Engineering Depth & Impact</h2>
+          <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">Structured details highlighted on your project dossier for recruiters and mentors.</p>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-mono uppercase text-zinc-300 mb-1 font-bold">
+            <label className="block text-xs font-mono uppercase text-zinc-700 dark:text-zinc-300 mb-1 font-bold">
               Problem Statement
             </label>
             <textarea
@@ -650,12 +650,12 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
               value={problemStatement}
               onChange={(e) => setProblemStatement(e.target.value)}
               placeholder="What friction, constraint, or inefficiency does this project address?"
-              className="w-full px-4 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 focus:border-[#0057FF] text-white text-sm outline-none transition-all placeholder:text-zinc-600 font-sans resize-y"
+              className="w-full px-4 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 focus:border-[#0057FF] focus:bg-white dark:focus:bg-zinc-900 text-zinc-950 dark:text-white text-sm outline-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600 font-sans resize-y"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-mono uppercase text-zinc-300 mb-1 font-bold">
+            <label className="block text-xs font-mono uppercase text-zinc-700 dark:text-zinc-300 mb-1 font-bold">
               Proposed Solution & System Architecture
             </label>
             <textarea
@@ -663,12 +663,12 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
               value={solution}
               onChange={(e) => setSolution(e.target.value)}
               placeholder="How does your design and software model solve the stated problem?"
-              className="w-full px-4 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 focus:border-[#0057FF] text-white text-sm outline-none transition-all placeholder:text-zinc-600 font-sans resize-y"
+              className="w-full px-4 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 focus:border-[#0057FF] focus:bg-white dark:focus:bg-zinc-900 text-zinc-950 dark:text-white text-sm outline-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600 font-sans resize-y"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-mono uppercase text-zinc-300 mb-1 font-bold">
+            <label className="block text-xs font-mono uppercase text-zinc-700 dark:text-zinc-300 mb-1 font-bold">
               Implementation Details & Algorithms
             </label>
             <textarea
@@ -676,13 +676,13 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
               value={implementationDetails}
               onChange={(e) => setImplementationDetails(e.target.value)}
               placeholder="Key design choices, database schema models, concurrency mechanisms, or API protocols..."
-              className="w-full px-4 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 focus:border-[#0057FF] text-white text-sm outline-none transition-all placeholder:text-zinc-600 font-sans resize-y"
+              className="w-full px-4 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 focus:border-[#0057FF] focus:bg-white dark:focus:bg-zinc-900 text-zinc-950 dark:text-white text-sm outline-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600 font-sans resize-y"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-mono uppercase text-zinc-300 mb-1 font-bold">
+              <label className="block text-xs font-mono uppercase text-zinc-700 dark:text-zinc-300 mb-1 font-bold">
                 Personal Contribution
               </label>
               <textarea
@@ -690,12 +690,12 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
                 value={personalContribution}
                 onChange={(e) => setPersonalContribution(e.target.value)}
                 placeholder="What specific modules did you lead or author?"
-                className="w-full px-4 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 focus:border-[#0057FF] text-white text-sm outline-none transition-all placeholder:text-zinc-600 font-sans resize-y"
+                className="w-full px-4 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 focus:border-[#0057FF] focus:bg-white dark:focus:bg-zinc-900 text-zinc-950 dark:text-white text-sm outline-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600 font-sans resize-y"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-mono uppercase text-zinc-300 mb-1 font-bold">
+              <label className="block text-xs font-mono uppercase text-zinc-700 dark:text-zinc-300 mb-1 font-bold">
                 What&apos;s Next / Roadmap
               </label>
               <textarea
@@ -703,7 +703,7 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
                 value={whatsNext}
                 onChange={(e) => setWhatsNext(e.target.value)}
                 placeholder="Future optimizations, planned features, scaling targets..."
-                className="w-full px-4 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 focus:border-[#0057FF] text-white text-sm outline-none transition-all placeholder:text-zinc-600 font-sans resize-y"
+                className="w-full px-4 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 focus:border-[#0057FF] focus:bg-white dark:focus:bg-zinc-900 text-zinc-950 dark:text-white text-sm outline-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600 font-sans resize-y"
               />
             </div>
           </div>
@@ -713,15 +713,15 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
       {/* Step 3: Technologies & Tags */}
       <section
         id="section-tech-stack"
-        className="scroll-mt-28 p-6 sm:p-8 rounded-2xl border border-zinc-800/80 bg-zinc-950/60 backdrop-blur-sm space-y-6"
+        className="scroll-mt-28 p-6 sm:p-8 rounded-2xl border border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-950/60 shadow-sm backdrop-blur-sm space-y-6"
       >
-        <div className="border-b border-zinc-900 pb-4">
-          <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-emerald-400">
+        <div className="border-b border-zinc-100 dark:border-zinc-900 pb-4">
+          <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
             <Code2 className="w-3.5 h-3.5" />
             <span>3. TECH STACK & TAGS</span>
           </div>
-          <h2 className="text-lg font-black uppercase text-white mt-1">Skills & Keywords</h2>
-          <p className="text-xs text-zinc-400 mt-0.5">Add technologies used (e.g. Next.js, PyTorch, Rust). Press Enter or Comma to add.</p>
+          <h2 className="text-lg font-black uppercase text-zinc-950 dark:text-white mt-1">Skills & Keywords</h2>
+          <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">Add technologies used (e.g. Next.js, PyTorch, Rust). Press Enter or Comma to add.</p>
         </div>
 
         <div className="space-y-3">
@@ -731,20 +731,20 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
             onChange={(e) => setTagInput(e.target.value)}
             onKeyDown={handleAddTag}
             placeholder="Type technology and press Enter (e.g. WebSockets, Redis)"
-            className="w-full px-4 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 focus:border-[#0057FF] text-white text-sm outline-none transition-all placeholder:text-zinc-600 font-sans"
+            className="w-full px-4 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 focus:border-[#0057FF] focus:bg-white dark:focus:bg-zinc-900 text-zinc-950 dark:text-white text-sm outline-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600 font-sans"
           />
 
           <div className="flex flex-wrap gap-2 pt-2">
             {tags.map((tag) => (
               <span
                 key={tag}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono font-semibold bg-zinc-900 border border-zinc-800 text-zinc-200"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono font-semibold bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200"
               >
                 <span>#{tag}</span>
                 <button
                   type="button"
                   onClick={() => handleRemoveTag(tag)}
-                  className="text-zinc-500 hover:text-rose-400 ml-1 font-bold"
+                  className="text-zinc-400 dark:text-zinc-500 hover:text-rose-500 dark:hover:text-rose-400 ml-1 font-bold"
                 >
                   ×
                 </button>
@@ -757,21 +757,21 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
       {/* Step 4: Showcase Links & Proof of Work */}
       <section
         id="section-showcase"
-        className="scroll-mt-28 p-6 sm:p-8 rounded-2xl border border-zinc-800/80 bg-zinc-950/60 backdrop-blur-sm space-y-6"
+        className="scroll-mt-28 p-6 sm:p-8 rounded-2xl border border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-950/60 shadow-sm backdrop-blur-sm space-y-6"
       >
-        <div className="border-b border-zinc-900 pb-4">
-          <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-amber-400">
+        <div className="border-b border-zinc-100 dark:border-zinc-900 pb-4">
+          <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
             <LinkIcon className="w-3.5 h-3.5" />
             <span>4. SHOWCASE ARTIFACTS</span>
           </div>
-          <h2 className="text-lg font-black uppercase text-white mt-1">Proof of Work & Demonstration</h2>
-          <p className="text-xs text-zinc-400 mt-0.5">At least one public link is required to publish this project.</p>
+          <h2 className="text-lg font-black uppercase text-zinc-950 dark:text-white mt-1">Proof of Work & Demonstration</h2>
+          <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">At least one public link is required to publish this project.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="flex items-center gap-1.5 text-xs font-mono uppercase text-zinc-300 mb-1.5 font-bold">
-              <ExternalLink className="w-3.5 h-3.5 text-blue-400" />
+            <label className="flex items-center gap-1.5 text-xs font-mono uppercase text-zinc-700 dark:text-zinc-300 mb-1.5 font-bold">
+              <ExternalLink className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               <span>Live Interactive Demo</span>
             </label>
             <input
@@ -779,13 +779,13 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
               value={demoUrl}
               onChange={(e) => setDemoUrl(e.target.value)}
               placeholder="https://myproject.live"
-              className="w-full px-4 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 focus:border-[#0057FF] text-white text-sm outline-none transition-all placeholder:text-zinc-600 font-sans"
+              className="w-full px-4 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 focus:border-[#0057FF] focus:bg-white dark:focus:bg-zinc-900 text-zinc-950 dark:text-white text-sm outline-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600 font-sans"
             />
           </div>
 
           <div>
-            <label className="flex items-center gap-1.5 text-xs font-mono uppercase text-zinc-300 mb-1.5 font-bold">
-              <GitBranch className="w-3.5 h-3.5 text-emerald-400" />
+            <label className="flex items-center gap-1.5 text-xs font-mono uppercase text-zinc-700 dark:text-zinc-300 mb-1.5 font-bold">
+              <GitBranch className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>Source Code (GitHub / GitLab)</span>
             </label>
             <input
@@ -793,13 +793,13 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
               value={repoUrl}
               onChange={(e) => setRepoUrl(e.target.value)}
               placeholder="https://github.com/username/project"
-              className="w-full px-4 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 focus:border-[#0057FF] text-white text-sm outline-none transition-all placeholder:text-zinc-600 font-sans"
+              className="w-full px-4 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 focus:border-[#0057FF] focus:bg-white dark:focus:bg-zinc-900 text-zinc-950 dark:text-white text-sm outline-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600 font-sans"
             />
           </div>
 
           <div>
-            <label className="flex items-center gap-1.5 text-xs font-mono uppercase text-zinc-300 mb-1.5 font-bold">
-              <Video className="w-3.5 h-3.5 text-rose-400" />
+            <label className="flex items-center gap-1.5 text-xs font-mono uppercase text-zinc-700 dark:text-zinc-300 mb-1.5 font-bold">
+              <Video className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
               <span>Video Demonstration (YouTube / Loom)</span>
             </label>
             <input
@@ -807,13 +807,13 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
               value={videoUrl}
               onChange={(e) => setVideoUrl(e.target.value)}
               placeholder="https://youtube.com/watch?v=..."
-              className="w-full px-4 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 focus:border-[#0057FF] text-white text-sm outline-none transition-all placeholder:text-zinc-600 font-sans"
+              className="w-full px-4 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 focus:border-[#0057FF] focus:bg-white dark:focus:bg-zinc-900 text-zinc-950 dark:text-white text-sm outline-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600 font-sans"
             />
           </div>
 
           <div>
-            <label className="flex items-center gap-1.5 text-xs font-mono uppercase text-zinc-300 mb-1.5 font-bold">
-              <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+            <label className="flex items-center gap-1.5 text-xs font-mono uppercase text-zinc-700 dark:text-zinc-300 mb-1.5 font-bold">
+              <BookOpen className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
               <span>Documentation / Paper</span>
             </label>
             <input
@@ -821,7 +821,7 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
               value={docUrl}
               onChange={(e) => setDocUrl(e.target.value)}
               placeholder="https://docs.myproject.io"
-              className="w-full px-4 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 focus:border-[#0057FF] text-white text-sm outline-none transition-all placeholder:text-zinc-600 font-sans"
+              className="w-full px-4 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 focus:border-[#0057FF] focus:bg-white dark:focus:bg-zinc-900 text-zinc-950 dark:text-white text-sm outline-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600 font-sans"
             />
           </div>
         </div>
@@ -830,28 +830,28 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
       {/* Step 5: Custom URL Slug */}
       <section
         id="section-slug"
-        className="scroll-mt-28 p-6 sm:p-8 rounded-2xl border border-zinc-800/80 bg-zinc-950/60 backdrop-blur-sm space-y-4"
+        className="scroll-mt-28 p-6 sm:p-8 rounded-2xl border border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-950/60 shadow-sm backdrop-blur-sm space-y-4"
       >
-        <div className="border-b border-zinc-900 pb-4">
-          <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-purple-400">
+        <div className="border-b border-zinc-100 dark:border-zinc-900 pb-4">
+          <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">
             <LinkIcon className="w-3.5 h-3.5" />
             <span>5. PERMANENT CANONICAL URL</span>
           </div>
-          <h2 className="text-lg font-black uppercase text-white mt-1">Project Slug</h2>
-          <p className="text-xs text-zinc-400 mt-0.5">
+          <h2 className="text-lg font-black uppercase text-zinc-950 dark:text-white mt-1">Project Slug</h2>
+          <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
             Custom URL identifier. {isEdit ? 'Changing the slug automatically establishes permanent 301 redirects from your prior handle.' : 'Leave blank to generate automatically from title.'}
           </p>
         </div>
 
         <div>
-          <div className="flex items-center rounded-lg bg-zinc-900 border border-zinc-800 focus-within:border-[#0057FF] overflow-hidden px-3">
+          <div className="flex items-center rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 focus-within:border-[#0057FF] overflow-hidden px-3">
             <span className="text-xs font-mono text-zinc-500 select-none">/projects/</span>
             <input
               type="text"
               value={customSlug}
               onChange={(e) => setCustomSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
               placeholder="campus-transit-tracker"
-              className="w-full py-2.5 px-1 bg-transparent text-white text-sm outline-none font-mono placeholder:text-zinc-600"
+              className="w-full py-2.5 px-1 bg-transparent text-zinc-950 dark:text-white text-sm outline-none font-mono placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
             />
           </div>
         </div>
@@ -860,24 +860,24 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
       {/* Step 6: Confirmation & Actions */}
       <section
         id="section-publish"
-        className="scroll-mt-28 p-6 sm:p-8 rounded-2xl border border-zinc-800/80 bg-zinc-950/60 backdrop-blur-sm space-y-6"
+        className="scroll-mt-28 p-6 sm:p-8 rounded-2xl border border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-950/60 shadow-sm backdrop-blur-sm space-y-6"
       >
         <label className="flex items-start gap-3 cursor-pointer select-none">
           <input
             type="checkbox"
             checked={rightsConfirmed}
             onChange={(e) => setRightsConfirmed(e.target.checked)}
-            className="mt-1 w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-[#0057FF] focus:ring-0 focus:ring-offset-0 cursor-pointer"
+            className="mt-1 w-4 h-4 rounded border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 text-[#0057FF] focus:ring-0 focus:ring-offset-0 cursor-pointer"
           />
-          <span className="text-xs text-zinc-300 leading-relaxed font-sans">
+          <span className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed font-sans">
             I confirm that I am the author or an authorized contributor to this project, and that this submission contains no academic dishonesty or unauthorized intellectual property.
           </span>
         </label>
 
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-zinc-900">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-zinc-100 dark:border-zinc-900">
           <Link
             href={isEdit && initialData ? `/projects/${initialData.slug}` : '/my/projects'}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-lg text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 hover:text-white border border-zinc-800 hover:border-zinc-700 transition-colors text-center"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-lg text-xs font-mono font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white border border-zinc-300 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors text-center"
           >
             Cancel
           </Link>
@@ -890,7 +890,7 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
                   type="button"
                   disabled={isSubmitting}
                   onClick={() => handleSubmit(false)}
-                  className="w-full sm:w-auto px-5 py-2.5 rounded-lg text-xs font-mono font-bold uppercase tracking-wider bg-zinc-800 hover:bg-zinc-700 text-white transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-lg text-xs font-mono font-bold uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-white border border-zinc-300 dark:border-transparent transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span>{isSubmitting ? 'Saving...' : 'Save Changes'}</span>
@@ -915,7 +915,7 @@ export function ProjectForm({ mode, initialData, onSuccess }: ProjectFormProps) 
                   type="button"
                   disabled={isSubmitting}
                   onClick={() => handleSubmit(false)}
-                  className="w-full sm:w-auto px-5 py-2.5 rounded-lg text-xs font-mono font-bold uppercase tracking-wider bg-zinc-800 hover:bg-zinc-700 text-white transition-all disabled:opacity-50"
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-lg text-xs font-mono font-bold uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-white border border-zinc-300 dark:border-transparent transition-all disabled:opacity-50"
                 >
                   {isSubmitting ? 'Saving...' : 'Save Draft'}
                 </button>

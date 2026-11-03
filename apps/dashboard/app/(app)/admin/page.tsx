@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCurrentUser } from '../../../hooks/useCurrentUser';
 import { useAuditLogs } from '../../../hooks/useAuditLogs';
-import { Card, Button, Skeleton, Alert, Typography, Row, Col, Table, theme, App } from 'antd';
+import { Card, Button, Skeleton, Alert, Typography, Row, Col, Table, theme } from 'antd';
 
 const { Title, Text } = Typography;
 
@@ -26,7 +26,6 @@ function formatRelativeTime(dateString: string) {
 }
 
 export default function AdminHubPage() {
-  const { message, modal } = App.useApp();
   const router = useRouter();
   const { token } = theme.useToken();
   const { data: currentUser, isLoading: isUserLoading } = useCurrentUser();
@@ -111,9 +110,29 @@ export default function AdminHubPage() {
           </Card>
         </Col>
 
-
-
-        {/* Audit Logs */}
+        {/* Traffic & Security Control */}
+        {isPlatformAdmin && (
+          <Col xs={24} lg={12}>
+            <Card title="Traffic & Security" style={{ height: '100%' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 16, backgroundColor: token.colorBgLayout, borderRadius: 8 }}>
+                  <div>
+                    <Text strong style={{ display: 'block' }}>Rate Limits Control</Text>
+                    <Text type="secondary">Manage dynamic rate limit ceilings and temporary overrides.</Text>
+                  </div>
+                  <Button type="primary" onClick={() => router.push('/admin/rate-limits')}>Manage Limits</Button>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 16, backgroundColor: token.colorBgLayout, borderRadius: 8 }}>
+                  <div>
+                    <Text strong style={{ display: 'block' }}>Traffic & Security Analytics</Text>
+                    <Text type="secondary">Monitor auth attempts, failure breakdown, and active sessions.</Text>
+                  </div>
+                  <Button type="primary" onClick={() => router.push('/admin/traffic-security')}>View Analytics</Button>
+                </div>
+              </div>
+            </Card>
+          </Col>
+        )}
         {isPlatformAdmin && (
           <Col xs={24} lg={12}>
           <Card title="Recent Audit Logs" style={{ height: '100%' }} styles={{ body: { padding: 0 } }}>

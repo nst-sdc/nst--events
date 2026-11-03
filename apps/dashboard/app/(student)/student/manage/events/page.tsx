@@ -238,6 +238,99 @@ const manageEventsStyles = `
     margin-right: auto;
   }
 
+  .me-header-title {
+    color: #fff;
+  }
+  .me-loading-screen {
+    background: #050505;
+  }
+
+  /* ── LIGHT THEME OVERRIDES (Scoped to html.light) ── */
+  html.light .me-page {
+    background: #F8F9FA;
+    color: #0A0D14;
+  }
+  html.light .me-loading-screen {
+    background: #F8F9FA;
+  }
+  html.light .me-micro {
+    color: #475467;
+  }
+  html.light .me-header {
+    border-bottom: 3px solid #0A0D14;
+  }
+  html.light .me-header-title {
+    color: #0A0D14;
+  }
+  html.light .me-create-btn {
+    border-color: #0A0D14;
+    box-shadow: 4px 4px 0px #000000;
+  }
+  html.light .me-create-btn:hover {
+    box-shadow: 6px 6px 0px #000000;
+  }
+  html.light .me-event-card {
+    background: #FFFFFF;
+    border: 3px solid #0A0D14;
+    box-shadow: 6px 6px 0px #000000;
+  }
+  html.light .me-event-card:hover {
+    border-color: var(--electric-blue);
+    box-shadow: 6px 6px 0px var(--electric-blue);
+  }
+  html.light .me-status-published {
+    color: #059669;
+    font-weight: 800;
+  }
+  html.light .me-status-draft {
+    color: #D97706;
+  }
+  html.light .me-status-other {
+    color: #475467;
+  }
+  html.light .me-team-badge {
+    border: 1px solid rgba(10, 13, 20, 0.2);
+    color: #475467;
+  }
+  html.light .me-event-title {
+    color: #0A0D14;
+  }
+  html.light .me-event-meta-row {
+    color: #475467;
+  }
+  html.light .me-event-card-footer {
+    border-top: 2px solid rgba(10, 13, 20, 0.1);
+  }
+  html.light .me-card-action-view {
+    color: #475467;
+    border-right: 1px solid rgba(10, 13, 20, 0.1);
+  }
+  html.light .me-card-action-view:hover {
+    background: rgba(10, 13, 20, 0.05);
+    color: #0A0D14;
+  }
+  html.light .me-card-action-manage {
+    color: var(--electric-blue);
+  }
+  html.light .me-card-action-manage:hover {
+    background: rgba(0, 87, 255, 0.1);
+    color: var(--electric-blue);
+  }
+  html.light .me-empty-state {
+    border: 3px solid #0A0D14;
+    background: #FFFFFF;
+    box-shadow: 10px 10px 0px var(--electric-blue);
+  }
+  html.light .me-empty-watermark {
+    color: rgba(10, 13, 20, 0.04);
+  }
+  html.light .me-empty-title {
+    color: #0A0D14;
+  }
+  html.light .me-empty-sub {
+    color: #475467;
+  }
+
   @media (max-width: 768px) {
     .me-inner { padding: 40px 16px 80px 16px; }
     .me-events-grid { grid-template-columns: 1fr; }
@@ -261,7 +354,7 @@ export default function ClubEventsPage() {
 
   if (!isHydrated || isLoading) {
     return (
-      <div style={{ minHeight: '100vh', background: '#050505', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="me-loading-screen" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{
             width: 32, height: 32, border: '3px solid #0057FF',
@@ -297,7 +390,7 @@ export default function ClubEventsPage() {
           <div className="me-header">
             <div>
               <div className="me-micro me-micro-blue" style={{ marginBottom: 8 }}>CLUB MANAGEMENT // EVENTS</div>
-              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(40px, 6vw, 72px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: -1, lineHeight: 0.92, color: '#fff' }}>
+              <h1 className="me-header-title" style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(40px, 6vw, 72px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: -1, lineHeight: 0.92 }}>
                 EVENTS
               </h1>
             </div>

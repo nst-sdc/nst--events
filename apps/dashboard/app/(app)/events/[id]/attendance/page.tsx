@@ -874,11 +874,13 @@ export default function AttendancePage({ params }: { params: Promise<{ id: strin
         </Form>
       </Modal>
 
-      {/* Fullscreen QR Presentation Overlay */}
+      {/* Fullscreen QR Presentation Overlay - Isolated Dark Theme Kiosk */}
       {isFullscreen && qrData && (
         <div 
           role="dialog" 
           aria-modal="true"
+          data-theme="dark"
+          className="dark select-none"
           onClick={() => setIsFullscreen(false)}
           style={{
             position: 'fixed',

@@ -260,7 +260,7 @@ export function TeamGatewayModal({
                   <div className="font-mono text-[11px] font-bold text-[#FF3B30] uppercase tracking-wider mb-1">
                     PARTICIPANT CAPACITY REACHED
                   </div>
-                  <div className="font-mono text-xs text-white leading-relaxed">
+                  <div className="font-mono text-xs text-zinc-900 dark:text-white leading-relaxed">
                     This event has reached its maximum participant limit. Squad creation and joining are currently disabled.
                   </div>
                 </div>
@@ -273,13 +273,13 @@ export function TeamGatewayModal({
                   <div className="font-mono text-[11px] font-bold text-[#0057FF] uppercase tracking-wider mb-1">
                     TEAM CAPACITY REACHED
                   </div>
-                  <div className="font-mono text-xs text-white leading-relaxed">
+                  <div className="font-mono text-xs text-zinc-900 dark:text-white leading-relaxed">
                     Maximum registered teams reached. New squads will enter the waitlist queue, but you can still join existing squads with open spots.
                   </div>
                 </div>
               </div>
             )}
-            <p className="font-mono text-xs text-[#a0a4b8] mb-6 leading-relaxed">
+            <p className="font-mono text-xs text-zinc-600 dark:text-[#a0a4b8] mb-6 leading-relaxed">
               This event operates under squad registration. Form a new team as leader or enlist in an existing roster.
             </p>
             
@@ -294,24 +294,24 @@ export function TeamGatewayModal({
                 setFieldErrors({});
                 setView('CREATE');
               }}
-              className={`w-full flex items-center justify-between p-5 bg-[#0e1017] border-2 ${
-                isParticipantCapacityFull ? 'border-white/10 opacity-50 cursor-not-allowed' : 'border-white/15 hover:border-[#0057FF] cursor-pointer'
-              } transition-all shadow-[4px_4px_0px_#000000] group text-left`}
+              className={`w-full flex items-center justify-between p-5 bg-white dark:bg-[#0e1017] border-2 ${
+                isParticipantCapacityFull ? 'border-zinc-200 dark:border-white/10 opacity-50 cursor-not-allowed' : 'border-black/15 dark:border-white/15 hover:border-[#0057FF] cursor-pointer'
+              } transition-all shadow-[4px_4px_0px_#0A0D14] dark:shadow-[4px_4px_0px_#000000] group text-left`}
             >
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-[#0057FF] text-white flex items-center justify-center border-2 border-black">
                   <UserPlus className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="font-black text-sm uppercase text-[#F5F5F2] group-hover:text-[#0057FF] transition-colors" style={{ fontFamily: "'Syne', sans-serif" }}>
+                  <div className="font-black text-sm uppercase text-zinc-900 dark:text-[#F5F5F2] group-hover:text-[#0057FF] transition-colors" style={{ fontFamily: "'Syne', sans-serif" }}>
                     Create a Squad
                   </div>
-                  <div className="font-mono text-[11px] text-[#a0a4b8] uppercase tracking-wider mt-0.5">
+                  <div className="font-mono text-[11px] text-zinc-500 dark:text-[#a0a4b8] uppercase tracking-wider mt-0.5">
                     {isTeamCapacityFull ? 'Waitlist only (Team capacity reached)' : 'You will be appointed team leader'}
                   </div>
                 </div>
               </div>
-              <ArrowRight className="w-4 h-4 text-[#a0a4b8] group-hover:text-white group-hover:translate-x-1 transition-all" />
+              <ArrowRight className="w-4 h-4 text-zinc-400 dark:text-[#a0a4b8] group-hover:text-black dark:group-hover:text-white group-hover:translate-x-1 transition-all" />
             </button>
 
             <button
@@ -325,24 +325,24 @@ export function TeamGatewayModal({
                 setFieldErrors({});
                 setView('JOIN');
               }}
-              className={`w-full flex items-center justify-between p-5 bg-[#0e1017] border-2 ${
-                isParticipantCapacityFull ? 'border-white/10 opacity-50 cursor-not-allowed' : 'border-white/15 hover:border-[#0057FF] cursor-pointer'
-              } transition-all shadow-[4px_4px_0px_#000000] group text-left`}
+              className={`w-full flex items-center justify-between p-5 bg-white dark:bg-[#0e1017] border-2 ${
+                isParticipantCapacityFull ? 'border-zinc-200 dark:border-white/10 opacity-50 cursor-not-allowed' : 'border-black/15 dark:border-white/15 hover:border-[#0057FF] cursor-pointer'
+              } transition-all shadow-[4px_4px_0px_#0A0D14] dark:shadow-[4px_4px_0px_#000000] group text-left`}
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/10 text-white flex items-center justify-center border-2 border-white/20">
+                <div className="w-12 h-12 bg-zinc-100 dark:bg-white/10 text-zinc-900 dark:text-white flex items-center justify-center border-2 border-zinc-300 dark:border-white/20">
                   <Users className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="font-black text-sm uppercase text-[#F5F5F2] group-hover:text-[#0057FF] transition-colors" style={{ fontFamily: "'Syne', sans-serif" }}>
+                  <div className="font-black text-sm uppercase text-zinc-900 dark:text-[#F5F5F2] group-hover:text-[#0057FF] transition-colors" style={{ fontFamily: "'Syne', sans-serif" }}>
                     Join Existing Squad
                   </div>
-                  <div className="font-mono text-[11px] text-[#a0a4b8] uppercase tracking-wider mt-0.5">
+                  <div className="font-mono text-[11px] text-zinc-500 dark:text-[#a0a4b8] uppercase tracking-wider mt-0.5">
                     {isTeamCapacityFull ? 'Open roster spots available to join' : 'Browse and join an open roster'}
                   </div>
                 </div>
               </div>
-              <ArrowRight className="w-4 h-4 text-[#a0a4b8] group-hover:text-white group-hover:translate-x-1 transition-all" />
+              <ArrowRight className="w-4 h-4 text-zinc-400 dark:text-[#a0a4b8] group-hover:text-black dark:group-hover:text-white group-hover:translate-x-1 transition-all" />
             </button>
           </div>
         )}
@@ -359,7 +359,7 @@ export function TeamGatewayModal({
                   <div className="font-mono text-[11px] font-bold text-[#FF3B30] uppercase tracking-wider mb-1">
                     VALIDATION NOTICE
                   </div>
-                  <div className="font-mono text-xs text-white leading-relaxed">
+                  <div className="font-mono text-xs text-zinc-900 dark:text-white leading-relaxed">
                     {registrationError}
                   </div>
                 </div>
@@ -367,7 +367,7 @@ export function TeamGatewayModal({
             )}
 
             <div className="mb-6">
-              <label className="block text-xs font-mono font-bold tracking-widest uppercase text-[#F5F5F2] mb-2">
+              <label className="block text-xs font-mono font-bold tracking-widest uppercase text-zinc-900 dark:text-[#F5F5F2] mb-2">
                 Squad Name *
               </label>
               <input
@@ -378,8 +378,8 @@ export function TeamGatewayModal({
                   setTeamNameError(null);
                 }}
                 placeholder="Enter squad identifier..."
-                className={`w-full p-3.5 border-2 text-sm font-mono bg-[#0e1017] text-[#F5F5F2] focus:outline-none transition-colors ${
-                  teamNameError ? 'border-[#FF3B30] bg-[#FF3B30]/10' : 'border-white/20 focus:border-[#0057FF]'
+                className={`w-full p-3.5 border-2 text-sm font-mono bg-white dark:bg-[#0e1017] text-zinc-900 dark:text-[#F5F5F2] focus:outline-none transition-colors ${
+                  teamNameError ? 'border-[#FF3B30] bg-[#FF3B30]/10' : 'border-black/20 dark:border-white/20 focus:border-[#0057FF]'
                 }`}
                 autoFocus
               />
@@ -392,7 +392,7 @@ export function TeamGatewayModal({
 
             {/* QUESTIONNAIRE SECTION (if configured) */}
             {isLoadingFields && (
-              <div className="mb-6 p-4 border border-dashed border-white/20 flex items-center justify-center gap-3 text-xs font-mono text-[#a0a4b8]">
+              <div className="mb-6 p-4 border border-dashed border-zinc-300 dark:border-white/20 flex items-center justify-center gap-3 text-xs font-mono text-zinc-600 dark:text-[#a0a4b8]">
                 <div className="w-4 h-4 border-2 border-[#0057FF] border-t-transparent rounded-full animate-spin" />
                 <span>Loading registration questionnaire...</span>
               </div>
@@ -406,11 +406,11 @@ export function TeamGatewayModal({
 
             {hasQuestions && (
               <div className="mb-6 space-y-4">
-                <div className="border-b-2 border-white/20 pb-2">
-                  <div className="font-mono text-xs font-bold text-[#00E5FF] tracking-wider uppercase">
+                <div className="border-b-2 border-zinc-200 dark:border-white/20 pb-2">
+                  <div className="font-mono text-xs font-bold text-[#0057FF] dark:text-[#00E5FF] tracking-wider uppercase">
                     REQUIRED REGISTRATION DETAILS
                   </div>
-                  <div className="font-mono text-[11px] text-[#a0a4b8] mt-0.5">
+                  <div className="font-mono text-[11px] text-zinc-600 dark:text-[#a0a4b8] mt-0.5">
                     Please provide these details for your team leader registration pass.
                   </div>
                 </div>
@@ -438,14 +438,14 @@ export function TeamGatewayModal({
                   setView('GATEWAY');
                 }}
                 disabled={isCreating}
-                className="w-full sm:w-auto px-5 py-3 border-2 border-white/20 text-[#a0a4b8] hover:text-white hover:border-white font-mono font-bold text-xs tracking-widest uppercase transition-all"
+                className="w-full sm:w-auto px-5 py-3 border-2 border-black/20 dark:border-white/20 text-zinc-700 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white hover:border-black dark:hover:border-white font-mono font-bold text-xs tracking-widest uppercase transition-all"
               >
                 Back
               </button>
               <button 
                 onClick={handleCreate}
                 disabled={!teamName.trim() || isCreating}
-                className="w-full sm:flex-1 px-6 py-3 bg-[#0057FF] text-white font-mono font-bold text-xs tracking-widest hover:bg-[#0042c7] border-2 border-[#0057FF] shadow-[4px_4px_0px_#000] uppercase disabled:opacity-50 transition-all"
+                className="w-full sm:flex-1 px-6 py-3 bg-[#0057FF] text-white font-mono font-bold text-xs tracking-widest hover:bg-[#0042c7] border-2 border-[#0057FF] shadow-[4px_4px_0px_#0A0D14] dark:shadow-[4px_4px_0px_#000] uppercase disabled:opacity-50 transition-all"
               >
                 {isCreating ? 'Creating Squad...' : 'Confirm & Create Squad ↗'}
               </button>
@@ -461,7 +461,7 @@ export function TeamGatewayModal({
                   <div className="w-6 h-6 border-2 border-[#0057FF] border-t-transparent rounded-full animate-spin"></div>
                 </div>
               ) : teamsData?.pages[0]?.data.length === 0 ? (
-                <div className="text-center font-mono text-xs text-[#a0a4b8] py-10 uppercase tracking-widest border border-dashed border-white/15 p-6">
+                <div className="text-center font-mono text-xs text-zinc-500 dark:text-[#a0a4b8] py-10 uppercase tracking-widest border border-dashed border-zinc-300 dark:border-white/15 p-6">
                   No open squads found. Be the first to create one!
                 </div>
               ) : (
@@ -478,17 +478,17 @@ export function TeamGatewayModal({
                         setView('CONFIRM_JOIN');
                       }}
                       disabled={isCancelled}
-                      className="w-full flex items-center justify-between p-4 bg-[#0e1017] border-2 border-white/15 hover:border-[#0057FF] transition-all disabled:opacity-40 text-left shadow-[2px_2px_0px_#000] group"
+                      className="w-full flex items-center justify-between p-4 bg-white dark:bg-[#0e1017] border-2 border-black/15 dark:border-white/15 hover:border-[#0057FF] transition-all disabled:opacity-40 text-left shadow-[2px_2px_0px_#0A0D14] dark:shadow-[2px_2px_0px_#000] group"
                     >
                       <div>
-                        <div className="font-bold text-sm text-[#F5F5F2] group-hover:text-[#0057FF] transition-colors" style={{ fontFamily: "'Syne', sans-serif" }}>
+                        <div className="font-bold text-sm text-zinc-900 dark:text-[#F5F5F2] group-hover:text-[#0057FF] transition-colors" style={{ fontFamily: "'Syne', sans-serif" }}>
                           {team.name}
                         </div>
-                        <div className="font-mono text-[11px] text-[#a0a4b8] uppercase tracking-wider mt-1">
+                        <div className="font-mono text-[11px] text-zinc-500 dark:text-[#a0a4b8] uppercase tracking-wider mt-1">
                           Leader: {team.leader_name} • {team.member_count} members
                         </div>
                       </div>
-                      <ArrowRight className="w-4 h-4 text-[#a0a4b8] group-hover:text-white group-hover:translate-x-1 transition-all" />
+                      <ArrowRight className="w-4 h-4 text-zinc-400 dark:text-[#a0a4b8] group-hover:text-black dark:group-hover:text-white group-hover:translate-x-1 transition-all" />
                     </button>
                   );
                 })
@@ -501,7 +501,7 @@ export function TeamGatewayModal({
                 setFieldErrors({});
                 setView('GATEWAY');
               }}
-              className="w-full px-5 py-3 border-2 border-white/20 text-[#a0a4b8] hover:text-white hover:border-white font-mono font-bold text-xs tracking-widest uppercase transition-all"
+              className="w-full px-5 py-3 border-2 border-black/20 dark:border-white/20 text-zinc-700 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white hover:border-black dark:hover:border-white font-mono font-bold text-xs tracking-widest uppercase transition-all"
             >
               Back
             </button>
@@ -520,16 +520,16 @@ export function TeamGatewayModal({
                   <div className="font-mono text-[11px] font-bold text-[#FF3B30] uppercase tracking-wider mb-1">
                     VALIDATION NOTICE
                   </div>
-                  <div className="font-mono text-xs text-white leading-relaxed">
+                  <div className="font-mono text-xs text-zinc-900 dark:text-white leading-relaxed">
                     {registrationError}
                   </div>
                 </div>
               </div>
             )}
 
-            <div className="p-4 bg-[#0e1017] border-2 border-white/15 mb-6 shadow-[3px_3px_0px_#000]">
-              <div className="font-mono text-[10px] text-[#a0a4b8] uppercase tracking-widest mb-1">SELECTED SQUAD</div>
-              <div className="text-xl font-black text-[#F5F5F2] uppercase" style={{ fontFamily: "'Syne', sans-serif" }}>
+            <div className="p-4 bg-zinc-50 dark:bg-[#0e1017] border-2 border-black/15 dark:border-white/15 mb-6 shadow-[3px_3px_0px_#0A0D14] dark:shadow-[3px_3px_0px_#000]">
+              <div className="font-mono text-[10px] text-zinc-500 dark:text-[#a0a4b8] uppercase tracking-widest mb-1">SELECTED SQUAD</div>
+              <div className="text-xl font-black text-zinc-900 dark:text-[#F5F5F2] uppercase" style={{ fontFamily: "'Syne', sans-serif" }}>
                 {selectedTeam.name}
               </div>
               <div className="font-mono text-xs text-[#0057FF] uppercase tracking-wider mt-1">
@@ -539,7 +539,7 @@ export function TeamGatewayModal({
 
             {/* QUESTIONNAIRE SECTION (if configured) */}
             {isLoadingFields && (
-              <div className="mb-6 p-4 border border-dashed border-white/20 flex items-center justify-center gap-3 text-xs font-mono text-[#a0a4b8]">
+              <div className="mb-6 p-4 border border-dashed border-zinc-300 dark:border-white/20 flex items-center justify-center gap-3 text-xs font-mono text-zinc-600 dark:text-[#a0a4b8]">
                 <div className="w-4 h-4 border-2 border-[#0057FF] border-t-transparent rounded-full animate-spin" />
                 <span>Loading registration questionnaire...</span>
               </div>
@@ -553,11 +553,11 @@ export function TeamGatewayModal({
 
             {hasQuestions && (
               <div className="mb-6 space-y-4">
-                <div className="border-b-2 border-white/20 pb-2">
-                  <div className="font-mono text-xs font-bold text-[#00E5FF] tracking-wider uppercase">
+                <div className="border-b-2 border-zinc-200 dark:border-white/20 pb-2">
+                  <div className="font-mono text-xs font-bold text-[#0057FF] dark:text-[#00E5FF] tracking-wider uppercase">
                     YOUR REGISTRATION DETAILS
                   </div>
-                  <div className="font-mono text-[11px] text-[#a0a4b8] mt-0.5">
+                  <div className="font-mono text-[11px] text-zinc-600 dark:text-[#a0a4b8] mt-0.5">
                     Please complete your questionnaire responses to join this squad.
                   </div>
                 </div>
@@ -585,14 +585,14 @@ export function TeamGatewayModal({
                   setView('JOIN');
                 }}
                 disabled={isJoining}
-                className="w-full sm:w-auto px-5 py-3 border-2 border-white/20 text-[#a0a4b8] hover:text-white hover:border-white font-mono font-bold text-xs tracking-widest uppercase transition-all"
+                className="w-full sm:w-auto px-5 py-3 border-2 border-black/20 dark:border-white/20 text-zinc-700 dark:text-[#a0a4b8] hover:text-black dark:hover:text-white hover:border-black dark:hover:border-white font-mono font-bold text-xs tracking-widest uppercase transition-all"
               >
                 Back
               </button>
               <button 
                 onClick={handleJoin}
                 disabled={isJoining}
-                className="w-full sm:flex-1 px-6 py-3 bg-[#0057FF] text-white font-mono font-bold text-xs tracking-widest hover:bg-[#0042c7] border-2 border-[#0057FF] shadow-[4px_4px_0px_#000] uppercase disabled:opacity-50 transition-all"
+                className="w-full sm:flex-1 px-6 py-3 bg-[#0057FF] text-white font-mono font-bold text-xs tracking-widest hover:bg-[#0042c7] border-2 border-[#0057FF] shadow-[4px_4px_0px_#0A0D14] dark:shadow-[4px_4px_0px_#000] uppercase disabled:opacity-50 transition-all"
               >
                 {isJoining ? 'Joining Squad...' : 'Confirm Squad Enlistment ↗'}
               </button>

@@ -151,7 +151,7 @@ describe('Phase 7 — Android Regression & Parity Tests', () => {
     expect(resolveNotificationRoute({
       type: 'ROLE_CHANGED',
       metadata: { entity_ids: {} },
-    })).toBe('/(app)/profile');
+    })).toBe('/(app)/(tabs)/profile');
 
     // 4. Otherwise null
     expect(resolveNotificationRoute({

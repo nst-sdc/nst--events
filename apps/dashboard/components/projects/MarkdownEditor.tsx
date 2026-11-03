@@ -24,6 +24,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import { MarkdownRenderer } from './MarkdownRenderer';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 
 interface MarkdownEditorProps {
   value: string;
@@ -95,6 +96,7 @@ export function MarkdownEditor({
   variant = 'default',
 }: MarkdownEditorProps) {
   const [viewMode, setViewMode] = useState<'write' | 'split' | 'preview'>('write');
+  const [isTemplateConfirmOpen, setIsTemplateConfirmOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isDoc = variant === 'document';
 
@@ -165,12 +167,7 @@ export function MarkdownEditor({
 
   const handleInsertTemplate = () => {
     if (value && value.trim().length > 10) {
-      const confirmReplace = window.confirm(
-        'Append the starter project documentation template to your current content?'
-      );
-      if (confirmReplace) {
-        onChange(`${value}\n\n${STARTER_PROJECT_TEMPLATE}`);
-      }
+      setIsTemplateConfirmOpen(true);
     } else {
       onChange(STARTER_PROJECT_TEMPLATE);
     }
@@ -647,6 +644,19 @@ export function MarkdownEditor({
       {error && (
         <p className={`text-xs ${isDoc ? 'text-rose-500 font-medium' : 'text-rose-400 font-mono'} mt-1`}>{error}</p>
       )}
+
+      <ConfirmDialog
+        isOpen={isTemplateConfirmOpen}
+        onClose={() => setIsTemplateConfirmOpen(false)}
+        onConfirm={() => {
+          onChange(`${value}\n\n${STARTER_PROJECT_TEMPLATE}`);
+          setIsTemplateConfirmOpen(false);
+        }}
+        title="Append Starter Template"
+        message="Append the starter project documentation template to your current content?"
+        confirmText="APPEND TEMPLATE"
+        isDestructive={false}
+      />
     </div>
   );
 }

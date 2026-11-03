@@ -40,12 +40,18 @@ export function proxy(request: NextRequest) {
     pathname === '/events' ||
     pathname.startsWith('/events/') ||
     pathname === '/clubs' ||
-    pathname.startsWith('/clubs/');
+    pathname.startsWith('/clubs/') ||
+    pathname === '/notifications' ||
+    pathname.startsWith('/notifications/');
 
   if (isAdminRoute) {
     // 1. If explicit STUDENT role hint is present, redirect to student portal
     if (userRole === 'STUDENT') {
-      const studentUrl = new URL('/student/home', request.url);
+      const destination =
+        pathname === '/notifications' || pathname.startsWith('/notifications/')
+          ? '/student/notifications'
+          : '/student/home';
+      const studentUrl = new URL(destination, request.url);
       return NextResponse.redirect(studentUrl);
     }
 
@@ -88,6 +94,8 @@ export const config = {
     '/events/:path*',
     '/clubs',
     '/clubs/:path*',
+    '/notifications',
+    '/notifications/:path*',
     '/student',
     '/student/:path*',
   ],

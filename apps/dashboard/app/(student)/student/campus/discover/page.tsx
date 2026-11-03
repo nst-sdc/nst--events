@@ -6,19 +6,18 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import { useEvents } from '../../../../../hooks/useEvents';
+import { EVENT_TYPES as SHARED_EVENT_TYPES } from '@nst/shared';
 
 dayjs.extend(isBetween);
 
 const EVENT_TYPES = [
   { label: 'ALL', value: '' },
-  { label: 'WORKSHOPS', value: 'WORKSHOP' },
-  { label: 'SEMINARS', value: 'SEMINAR' },
-  { label: 'COMPETITIONS', value: 'COMPETITION' },
-  { label: 'MEETUPS', value: 'MEETUP' },
-  { label: 'HACKATHONS', value: 'HACKATHON' },
-  { label: 'CULTURAL', value: 'CULTURAL' },
-  { label: 'SPORTS', value: 'SPORTS' },
-  { label: 'OTHER', value: 'OTHER' },
+  ...SHARED_EVENT_TYPES.map(t => ({
+    label: t.value === 'SPORTS' || t.value === 'CULTURAL' || t.value === 'OTHER'
+      ? t.label.toUpperCase()
+      : `${t.label.toUpperCase()}S`,
+    value: t.value,
+  })),
 ];
 
 const discoverStyles = `

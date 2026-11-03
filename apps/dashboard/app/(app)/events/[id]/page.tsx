@@ -117,14 +117,15 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   }
 
   if (isErrorEvent) {
-    if ((errorEvent as Error)?.message?.includes('404')) {
+    const is404 = (errorEvent as unknown as { status?: number })?.status === 404 || (errorEvent as Error)?.message?.includes('404');
+    if (is404) {
       notFound();
     }
     return (
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <Alert
           title="Failed to load event"
-          description="We couldn't retrieve the event details at this time."
+          description={(errorEvent as Error)?.message || "We couldn't retrieve the event details at this time."}
           type="error"
           showIcon
           action={<Button size="small" danger onClick={() => refetchEvent()}>Retry</Button>}

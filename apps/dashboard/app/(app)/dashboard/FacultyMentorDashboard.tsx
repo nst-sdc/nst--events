@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Typography, Select, Card, Row, Col, Statistic, Table, Tag, Empty, Button, Tabs, Badge } from 'antd';
+import { Typography, Select, Card, Row, Col, Statistic, Table, Empty, Button, Tabs, Badge } from 'antd';
 import { CalendarOutlined, CheckCircleOutlined, UserOutlined, FileTextOutlined } from '@ant-design/icons';
 import { CurrentUser, ClubMembership } from '../../../hooks/useCurrentUser';
 import { useClubAnalytics } from '../../../hooks/useClubAnalytics';

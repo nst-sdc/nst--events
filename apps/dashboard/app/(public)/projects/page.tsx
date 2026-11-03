@@ -410,6 +410,82 @@ const projectsStyles = `
     .me-tabs-group { width: 100%; }
     .me-tab-btn { flex: 1; text-align: center; }
   }
+
+  /* ==========================================================================
+     LIGHT THEME OVERRIDES (Scoped to html.light)
+     ========================================================================== */
+  html.light .me-page {
+    background-color: #F8F9FA;
+    color: #0A0D14;
+  }
+
+  html.light .collage-noise-overlay {
+    opacity: 0.15;
+    background-image: radial-gradient(rgba(10, 13, 20, 0.12) 1px, transparent 1px);
+  }
+
+  html.light .me-micro {
+    color: #475467;
+  }
+
+  html.light .me-hero-title {
+    color: #0A0D14;
+  }
+
+  html.light .me-header {
+    border-bottom: 3px solid #000000;
+  }
+
+  html.light .me-watermark {
+    color: rgba(0, 0, 0, 0.03);
+  }
+
+  html.light .me-controls-row {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  }
+
+  html.light .me-tab-btn {
+    color: #475467;
+    border-color: rgba(0, 0, 0, 0.2);
+  }
+
+  html.light .me-tab-btn:hover {
+    border-color: #000000;
+    color: #000000;
+  }
+
+  html.light .me-tab-btn.active {
+    background: var(--electric-blue);
+    color: #ffffff;
+    border-color: #000000;
+    box-shadow: 4px 4px 0px #000000;
+  }
+
+  html.light .me-empty-poster {
+    border: 3px solid #000000;
+    background: #FFFFFF;
+    color: #0A0D14;
+    box-shadow: 12px 12px 0px var(--electric-blue);
+  }
+
+  html.light .me-empty-poster h2,
+  html.light .me-empty-poster h3,
+  html.light .me-empty-poster p {
+    color: #0A0D14;
+  }
+
+  html.light .me-empty-watermark {
+    color: rgba(0, 0, 0, 0.03);
+  }
+
+  html.light .me-empty-btn {
+    border: 2px solid #000000;
+    box-shadow: 4px 4px 0px #000000;
+  }
+
+  html.light .me-empty-btn:hover {
+    box-shadow: 6px 6px 0px #000000;
+  }
 `;
 
 export default async function ProjectsDirectoryPage({ searchParams }: PageProps) {

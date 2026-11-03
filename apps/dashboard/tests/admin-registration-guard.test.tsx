@@ -15,6 +15,7 @@ import * as useTeamsHook from '../hooks/useTeams';
 import * as useClubAdminHook from '../components/layout/ClubAdminProvider';
 import * as useClubsHook from '../hooks/useClubs';
 import * as useAcademicBatchesHook from '../hooks/useAcademicBatches';
+import * as useEventFormFieldsHook from '../hooks/useEventFormFields';
 import { useRouter } from 'next/navigation';
 
 vi.mock('next/navigation', () => ({
@@ -379,5 +380,65 @@ describe('Admin Registration Guarding & Validation UI Tests', () => {
 
     // Inputs are preserved
     expect(screen.getByDisplayValue('Reverse Window Event')).toBeInTheDocument();
+  });
+
+  it('displays in-UI validation banner and inline field errors instead of window.alert when required custom field is empty', async () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    vi.spyOn(useCurrentUserHook, 'useCurrentUser').mockReturnValue({
+      data: { id: 'u-eligible-student', global_role: 'STUDENT', club_memberships: [] },
+      isLoading: false,
+    } as any);
+
+    vi.spyOn(useEventFormFieldsHook, 'useEventFormFields').mockReturnValue({
+      data: [
+        {
+          id: 'field-1',
+          eventId: 'evt-test-1',
+          fieldDefinitionId: 'def-1',
+          isRequired: true,
+          fieldDefinition: {
+            id: 'def-1',
+            label: 'What interests you here',
+            fieldType: 'TEXT',
+            options: null,
+          },
+        },
+      ],
+      isLoading: false,
+    } as any);
+
+    renderWithProviders(<StudentEventDetailPage params={{ id: 'evt-test-1' }} />);
+
+    // Click register button to open registration modal
+    const registerBtn = screen.getByRole('button', { name: /CONFIRM REGISTRATION PASS ↗/i });
+    fireEvent.click(registerBtn);
+
+    // Modal opens with form field
+    expect(screen.getByText(/CONFIRM EVENT PASS/i)).toBeInTheDocument();
+    expect(screen.getByText('What interests you here')).toBeInTheDocument();
+
+    // Click confirm without filling the field
+    const authorizeBtn = screen.getByRole('button', { name: /AUTHORIZE PASS ↗/i });
+    fireEvent.click(authorizeBtn);
+
+    // Verify window.alert was NOT called
+    expect(alertSpy).not.toHaveBeenCalled();
+
+    // In-UI validation banner is shown
+    expect(screen.getByText(/VALIDATION NOTICE/i)).toBeInTheDocument();
+    expect(screen.getByText(/Please fill in required field: What interests you here/i)).toBeInTheDocument();
+
+    // Inline field error is also visible under the input
+    expect(screen.getByText(/"What interests you here" is required\./i)).toBeInTheDocument();
+
+    // Fill in field
+    const input = screen.getByPlaceholderText(/Type your response\.\.\./i);
+    fireEvent.change(input, { target: { value: 'Learning about Web3 and Rust' } });
+
+    // Validation banner clears
+    expect(screen.queryByText(/Please fill in required field: What interests you here/i)).not.toBeInTheDocument();
+
+    alertSpy.mockRestore();
   });
 });

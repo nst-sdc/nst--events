@@ -53,6 +53,23 @@ const cleanProps = (props: any) => {
   if (onPress) {
     cleaned.onClick = onPress;
   }
+  if (props.accessibilityRole) {
+    cleaned.role = props.accessibilityRole;
+  }
+  if (props.accessibilityLabel) {
+    cleaned['aria-label'] = props.accessibilityLabel;
+  }
+  if (props.accessibilityState) {
+    if (props.accessibilityState.selected !== undefined) {
+      cleaned['aria-selected'] = String(props.accessibilityState.selected);
+    }
+    if (props.accessibilityState.disabled !== undefined) {
+      cleaned['aria-disabled'] = String(props.accessibilityState.disabled);
+    }
+  }
+  if (props.hitSlop) {
+    cleaned['data-hitslop'] = JSON.stringify(props.hitSlop);
+  }
   return cleaned;
 };
 
