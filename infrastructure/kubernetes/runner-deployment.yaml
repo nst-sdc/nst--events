@@ -59,6 +59,15 @@ spec:
                 secretKeyRef:
                   name: runner-token
                   key: RUNNER_TOKEN
+                  optional: true
+            - name: ACCESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: runner-token
+                  key: ACCESS_TOKEN
+                  optional: true
+            - name: DISABLE_AUTO_UPDATE
+              value: "true"
             - name: RUNNER_NAME
               value: "nst-n6-runner"
             - name: RUNNER_LABELS
