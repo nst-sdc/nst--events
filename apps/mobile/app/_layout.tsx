@@ -7,6 +7,7 @@ import { useThemeStore } from '../src/store/theme-store';
 import { useAppVersionStore } from '../src/store/app-version-store';
 import { useAuthStore } from '../src/store/auth';
 import { UpdateRequiredPrompt } from '../src/ui/UpdateRequiredPrompt';
+import { GlobalToastModal } from '../src/ui/GlobalToastModal';
 import Constants from 'expo-constants';
 import { useFonts } from 'expo-font';
 import {
@@ -110,6 +111,7 @@ export default function RootLayout() {
     <AppQueryProvider>
       <RootLayoutInner />
       <GlobalUpdateRequiredModal />
+      <GlobalToastModal />
     </AppQueryProvider>
   );
 }
