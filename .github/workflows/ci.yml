@@ -22,6 +22,8 @@ jobs:
       GOOGLE_CLIENT_SECRET: "ci-dummy-google-client-secret"
       GOOGLE_CALLBACK_URL: "http://localhost:3001/auth/google/callback"
       EXPO_ACCESS_TOKEN: "mock_token_for_tests"
+      AUTH_EVENTS_IP_PEPPER: "ci_test_ip_pepper_minimum_32_characters_long_xxxx"
+      METRICS_TOKEN: "ci_test_metrics_token_minimum_32_characters_long_xxxx"
 
     services:
       postgres:
@@ -99,6 +101,8 @@ jobs:
             -e GOOGLE_CLIENT_ID="ci-dummy" \
             -e GOOGLE_CLIENT_SECRET="ci-dummy" \
             -e GOOGLE_CALLBACK_URL="http://localhost:3001/auth/google/callback" \
+            -e AUTH_EVENTS_IP_PEPPER="${{ env.AUTH_EVENTS_IP_PEPPER }}" \
+            -e METRICS_TOKEN="${{ env.METRICS_TOKEN }}" \
             -e PORT=3001 \
             nst-api:ci
 
