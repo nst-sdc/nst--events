@@ -48,6 +48,9 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
+          env:
+            - name: INTERNAL_API_URL
+              value: "http://nst-api-service.nst-events.svc.cluster.local"
           readinessProbe:
             httpGet:
               path: /api/health
