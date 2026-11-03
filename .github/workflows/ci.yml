@@ -10,6 +10,7 @@ jobs:
   validate:
     name: Continuous Integration (Lint, Typecheck, Test, Validate, Build)
     runs-on: ubuntu-latest
+    timeout-minutes: 25
 
     env:
       DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/nst_events_test"

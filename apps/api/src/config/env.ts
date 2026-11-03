@@ -33,8 +33,8 @@ const envSchema = z.object({
   CAMPUS_CIDR_BLOCKS: z.string().default(''),
   CAMPUS_EGRESS_CIDRS: z.string().default(''),
   AUTH_EVENTS_IP_PEPPER: z
-    .string()
-    .default('nst-events-auth-ip-pepper-default-salt'),
+    .string({ required_error: 'AUTH_EVENTS_IP_PEPPER is required via environment variable' })
+    .min(1, 'AUTH_EVENTS_IP_PEPPER is required via environment variable'),
 
   AUTH_EVENTS_STORE_RAW_IP: z.coerce.boolean().default(false),
   AUTH_EVENTS_RETENTION_DAYS: z.coerce.number().min(1).default(90),
