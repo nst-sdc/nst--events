@@ -2,6 +2,8 @@ import { prisma } from '../../lib/prisma';
 import { ListAdminUsersQuery, UpdateAdminUserRoleBody, UpdateAcademicBatchBody } from './users.schema';
 import { ForbiddenError, NotFoundError, ValidationError } from '../../lib/errors';
 import { withUserContext, AssignmentSource } from '@nst/database';
+import { authEventsService, parseUserAgent } from '../auth/auth-events.service';
+import { env } from '../../config/env';
 
 export const adminUsersService = {
   async listUsers(adminUserId: string, query: ListAdminUsersQuery) {
@@ -413,6 +415,71 @@ export const adminUsersService = {
       });
     });
 
+    await authEventsService.logSynchronousEvent({
+      eventType: 'SESSION_REVOKED',
+      userId: targetUserId,
+      failureReason: `Admin ${adminUserId} revoked ${result.count} sessions`,
+    });
+
+
     return { revoked_count: result.count };
+  },
+
+  async listUserSessions(adminUserId: string, targetUserId: string) {
+    // 1. Verify user exists and caller has PLATFORM_ADMIN
+    await withUserContext(adminUserId, async (tx) => {
+      const user = await tx.user.findUnique({
+        where: { id: targetUserId },
+        select: { id: true, deletedAt: true },
+      });
+      if (!user || user.deletedAt) {
+        throw new NotFoundError('User not found');
+      }
+
+      // Record audit log for accessing auth data
+      await tx.auditLog.create({
+        data: {
+          actorId: adminUserId,
+          action: 'AUTH_DATA_VIEWED',
+          entityType: 'User',
+          entityId: targetUserId,
+          newState: { scope: 'user_sessions' },
+        },
+      });
+    });
+
+    // 2. Query active refresh tokens under target user context for RLS
+    const activeTokens = await withUserContext(targetUserId, async (tx) => {
+      return tx.refreshToken.findMany({
+        where: {
+          userId: targetUserId,
+          revokedAt: null,
+          expiresAt: { gt: new Date() },
+        },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          familyId: true,
+          userAgent: true,
+          ipAddress: true,
+          createdAt: true,
+          expiresAt: true,
+        },
+      });
+    });
+
+    return activeTokens.map((t) => {
+      const { userAgentFamily, deviceClass } = parseUserAgent(t.userAgent);
+      return {
+        id: t.id,
+        family_id: t.familyId,
+        user_agent: t.userAgent,
+        user_agent_family: userAgentFamily,
+        device_class: deviceClass,
+        ip_address: t.ipAddress ? (env.AUTH_EVENTS_STORE_RAW_IP ? t.ipAddress : '[REDACTED]') : null,
+        created_at: t.createdAt,
+        expires_at: t.expiresAt,
+      };
+    });
   },
 };

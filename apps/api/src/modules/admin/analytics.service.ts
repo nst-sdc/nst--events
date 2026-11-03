@@ -103,12 +103,6 @@ export class AdminAnalyticsService {
         };
       }
 
-      const attempts = await tx.attendanceAttempt.findMany({
-        where: attemptFilter,
-        select: { attemptedAt: true, isSuccess: true },
-        orderBy: { attemptedAt: 'asc' }
-      });
-
       const failureBreakdownRaw = await tx.attendanceAttempt.groupBy({
         by: ['failureReason'],
         where: { ...attemptFilter, isSuccess: false },
@@ -168,15 +162,25 @@ export class AdminAnalyticsService {
       const isGlobal = access.scope === 'GLOBAL';
       const clubIds = access.scope === 'CLUB' && access.clubIds ? access.clubIds : [];
 
-      const filter = isGlobal
+      const filter: any = isGlobal
         ? { deletedAt: null }
         : { deletedAt: null, eventClubs: { some: { clubId: { in: clubIds } } } };
 
-      const eventsRaw = await tx.event.findMany({
-        where: filter,
-        select: { id: true, title: true, state: true, createdAt: true },
-        orderBy: { createdAt: 'desc' },
-      });
+      const [stateGroups, recentEvents] = await Promise.all([
+        tx.event.groupBy({
+          by: ['state'],
+          where: filter,
+          _count: {
+            id: true,
+          },
+        }),
+        tx.event.findMany({
+          where: filter,
+          select: { id: true, title: true, state: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+          take: 50,
+        }),
+      ]);
 
       const pipeline_counts: Record<string, number> = {
         DRAFT: 0,
@@ -186,17 +190,13 @@ export class AdminAnalyticsService {
         ARCHIVED: 0,
       };
 
-      for (const e of eventsRaw) {
-        if (pipeline_counts[e.state] !== undefined) {
-          pipeline_counts[e.state]++;
-        } else {
-          pipeline_counts[e.state] = 1;
-        }
+      for (const group of stateGroups) {
+        pipeline_counts[group.state] = group._count.id;
       }
 
       return {
         pipeline_counts,
-        recent_events: eventsRaw.slice(0, 50),
+        recent_events: recentEvents,
       };
     });
   }

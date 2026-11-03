@@ -3,7 +3,11 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { env } from './config/env';
-import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
+import {
+  generalRateLimiter,
+  authRateLimiter,
+  attendanceRateLimiter,
+} from './middleware/rate-limit';
 import { prisma } from './lib/prisma';
 import { authRouter } from './modules/auth/auth.router';
 import { usersRouter } from './modules/users/users.router';
@@ -37,8 +41,24 @@ import { adminProjectsRouter } from './modules/projects/admin-projects.router';
 import { eventResultsRouter } from './modules/event-results/event-results.router';
 import { studentsRouter } from './modules/students/students.router';
 import { policiesRouter, adminPoliciesRouter } from './modules/policies/policies.router';
+import { adminRateLimitsRouter } from './modules/admin/rate-limits.router';
+import { adminAuthAnalyticsRouter } from './modules/admin/auth-analytics.router';
+import { metricsMiddleware, getMergedMetrics } from './lib/metrics';
+import { verifyJwt } from './lib/jwt';
+import crypto from 'crypto';
+
+export function timingSafeTokenCompare(
+  provided?: string | null,
+  expected?: string | null
+): boolean {
+  if (!provided || !expected) return false;
+  const hashProvided = crypto.createHash('sha256').update(provided).digest();
+  const hashExpected = crypto.createHash('sha256').update(expected).digest();
+  return crypto.timingSafeEqual(hashProvided, hashExpected);
+}
 
 export function createApp(): Express {
+
   const app = express();
 
   // SECURITY [TRUST PROXY]: Trust internal K3s cluster overlay networks (cloudflared tunnels, NGINX ingress).
@@ -64,36 +84,124 @@ export function createApp(): Express {
       ],
     })
   );
+  app.use(requestIdMiddleware);
+  app.use(requestLogger);
+  app.use(metricsMiddleware);
   // Route-scoped JSON parser for policy write endpoints (256 KiB limit to accommodate 102,400 bytes UTF-8 Markdown + JSON envelope)
   // Registered before general parser so /v1/admin/policies requests are parsed once with 256kb limit,
   // setting req._body = true so the general parser skips it without double-parsing.
   app.use('/v1/admin/policies', express.json({ limit: '256kb' }));
-  // General JSON parser retaining strict default 100kb limit for all unrelated endpoints
+  // Explicit body parsers with strict 100kb limit (DoS prevention against oversized payload attacks)
+  // Oversized requests trigger body-parser 'entity.too.large' returning HTTP 413 RFC 7807 problem details
   app.use(express.json({ limit: '100kb' }));
+  app.use(express.urlencoded({ extended: true, limit: '100kb' }));
   app.use(cookieParser(env.COOKIE_SECRET));
-  app.use(requestIdMiddleware);
-  app.use(requestLogger);
 
-
-  const globalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 1000, // Limit each IP to 1000 requests per `window` (here, per 15 minutes)
-    message: { error: 'Too many requests, please try again later.' },
-    standardHeaders: true,
-    legacyHeaders: false,
-    skip: (req) => {
-      // Disable global rate limiting in development
-      if (process.env.NODE_ENV === 'development') return true;
-      // Exclude SSE, health, and ready endpoints
-      if (req.path === '/health' || req.path === '/ready') return true;
-      if (req.path.match(/^\/v1\/events\/[^\/]+\/live$/)) return true;
-      return false;
-    },
+  // Exempt cluster health & readiness checks from all rate limiters
+  app.get('/health', (_req, res) => {
+    res.json({ status: 'ok' });
   });
 
+  app.get('/ready', async (_req, res) => {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      res.json({ status: 'ready' });
+    } catch (err) {
+      res.status(503).json({ status: 'error', message: 'Database connection failed' });
+    }
+  });
 
+  // Non-public Prometheus metrics endpoint (accessible internally or with token)
+  app.get('/metrics', async (req, res) => {
+    const isProduction = env.NODE_ENV === 'production';
+    const expectedToken = env.METRICS_TOKEN;
 
-  app.use(globalLimiter);
+    const authHeader = req.headers.authorization;
+    let providedToken: string | undefined;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      providedToken = authHeader.slice(7).trim();
+    } else if (typeof req.headers['x-metrics-token'] === 'string') {
+      providedToken = req.headers['x-metrics-token'].trim();
+    } else if (typeof req.headers['x-internal-token'] === 'string') {
+      providedToken = req.headers['x-internal-token'].trim();
+    }
+
+    const isTokenValid = timingSafeTokenCompare(providedToken, expectedToken);
+
+    if (isProduction || expectedToken) {
+      // In production, or whenever METRICS_TOKEN is configured:
+      // - METRICS_TOKEN is strictly required.
+      // - Loopback IP bypass and PLATFORM_ADMIN bypass are completely removed.
+      // - Missing or invalid token returns 401 Unauthorized even if X-Forwarded-For is 127.0.0.1.
+      if (!isTokenValid) {
+        res.status(401).json({
+          type: 'https://api.nstsdc.org/errors/unauthorized',
+          title: 'Unauthorized',
+          status: 401,
+          detail: 'Valid metrics authorization token required',
+        });
+        return;
+      }
+    } else {
+      // Non-production without configured METRICS_TOKEN:
+      const clientIp = req.ip || req.socket.remoteAddress || '';
+      const isLoopback = clientIp === '127.0.0.1' || clientIp === '::1' || clientIp === '::ffff:127.0.0.1';
+      if (!isLoopback) {
+
+          const authHeader = req.headers.authorization;
+          let isPlatformAdmin = false;
+          if (authHeader && authHeader.startsWith('Bearer ')) {
+            try {
+              const token = authHeader.slice(7).trim();
+              const payload = verifyJwt(token);
+              if (payload?.sub) {
+                const user = await prisma.user.findUnique({
+                  where: { id: payload.sub },
+                  select: { globalRole: true, deletedAt: true },
+                });
+                if (user && !user.deletedAt && user.globalRole === 'PLATFORM_ADMIN') {
+                  isPlatformAdmin = true;
+                }
+              }
+            } catch {
+              // Unauthenticated
+            }
+          }
+          if (!isPlatformAdmin) {
+            res.status(403).json({
+              type: 'https://api.nstsdc.org/errors/forbidden',
+              title: 'Forbidden',
+              status: 403,
+              detail: 'External access to metrics is prohibited',
+            });
+            return;
+        }
+      }
+    }
+
+    try {
+
+      const metrics = await getMergedMetrics();
+      res.setHeader('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
+      res.send(metrics);
+    } catch (err: any) {
+      res.status(500).send(`Error collecting metrics: ${err.message}`);
+    }
+  });
+
+  // Dedicated stricter rate limiter for authentication routes against brute-force
+  app.use('/auth', authRateLimiter);
+
+  // Dedicated rate limiter bucket for attendance check-in and offline sync
+  app.use('/v1/attendance/mark', attendanceRateLimiter);
+  app.use('/v1/attendance/sync-offline', attendanceRateLimiter);
+  app.use('/v1/attendance/generate-qr', attendanceRateLimiter);
+  app.use('/attendance/mark', attendanceRateLimiter);
+  app.use('/attendance/sync-offline', attendanceRateLimiter);
+  app.use('/attendance/generate-qr', attendanceRateLimiter);
+
+  // General application limiter (keyed by JWT userId for authenticated users, IP for unauthenticated)
+  app.use(generalRateLimiter);
   app.use(appVersionMiddleware);
 
   app.use('/auth', authRouter);
@@ -125,19 +233,8 @@ export function createApp(): Express {
   app.use('/v1/students', studentsRouter);
   app.use('/v1/policies', policiesRouter);
   app.use('/v1/admin/policies', adminPoliciesRouter);
-
-  app.get('/health', (_req, res) => {
-    res.json({ status: 'ok' });
-  });
-
-  app.get('/ready', async (_req, res) => {
-    try {
-      await prisma.$queryRaw`SELECT 1`;
-      res.json({ status: 'ready' });
-    } catch (err) {
-      res.status(503).json({ status: 'error', message: 'Database connection failed' });
-    }
-  });
+  app.use('/v1/admin/rate-limits', adminRateLimitsRouter);
+  app.use('/v1/admin', adminAuthAnalyticsRouter);
 
   app.use(errorHandler);
 

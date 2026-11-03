@@ -55,10 +55,15 @@ export async function exchangeCodeForTokens(code: string): Promise<{ id_token: s
 
 export async function verifyIdToken(idToken: string, expectedNonce?: string): Promise<VerifiedGoogleUser> {
   const oauth2Client = getOAuth2Client();
-  const ticket = await oauth2Client.verifyIdToken({
-    idToken,
-    audience: env.GOOGLE_CLIENT_ID,
-  });
+  let ticket;
+  try {
+    ticket = await oauth2Client.verifyIdToken({
+      idToken,
+      audience: env.GOOGLE_CLIENT_ID,
+    });
+  } catch (err: any) {
+    throw new UnauthorizedError(err?.message || 'Invalid Google ID token');
+  }
   const payload = ticket.getPayload();
   if (!payload || !payload.sub || !payload.email) {
     throw new UnauthorizedError('Invalid Google id_token payload');

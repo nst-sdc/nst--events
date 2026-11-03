@@ -14,34 +14,9 @@ import { BadRequestError, UnauthorizedError } from '../../lib/errors';
 import { googleCallbackQuerySchema } from './auth.schema';
 import { authService } from './auth.service';
 import { googleOAuth } from './google.oauth';
-import { prisma } from '../../lib/prisma';
-import { rateLimit } from 'express-rate-limit';
 import { env } from '../../config/env';
 import { createMobileAuthCode, redeemMobileAuthCode } from './mobile-auth-codes';
-
-const callbackLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: { error: 'Too many authentication attempts, please try again later.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-const refreshLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 60, // Much higher frequency for legitimate token refresh
-  message: { error: 'Too many refresh attempts, please try again later.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-const exchangeLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: { error: 'Too many exchange attempts, please try again later.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+import { authEventsService } from './auth-events.service';
 
 export const authRouter: Router = Router();
 export const OAUTH_NONCE_COOKIE_NAME = 'oauth_nonce';
@@ -66,7 +41,6 @@ authRouter.get(
 
 authRouter.get(
   '/google/callback',
-  callbackLimiter,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     let platform = 'web';
     try {
@@ -98,6 +72,13 @@ authRouter.get(
         req.headers['user-agent']
       );
 
+      authEventsService.log({
+        eventType: 'LOGIN_SUCCESS',
+        userId: result.user?.id,
+        platform: platform === 'mobile' ? 'mobile' : 'web',
+        req,
+      });
+
       res.clearCookie(OAUTH_STATE_COOKIE_NAME, { path: '/auth' });
       res.clearCookie(OAUTH_NONCE_COOKIE_NAME, { path: '/auth' });
 
@@ -127,6 +108,13 @@ authRouter.get(
       }
     } catch (err: any) {
       console.error('Login Error:', err);
+      authEventsService.log({
+        eventType: 'LOGIN_FAILED',
+        platform: platform === 'mobile' ? 'mobile' : 'web',
+        req,
+        failureReason: err?.message || 'authentication_failed',
+      });
+
       res.clearCookie(OAUTH_STATE_COOKIE_NAME, { path: '/auth' });
       res.clearCookie(OAUTH_NONCE_COOKIE_NAME, { path: '/auth' });
 
@@ -154,7 +142,6 @@ authRouter.get(
 
 authRouter.post(
   '/mobile/login-id-token',
-  exchangeLimiter,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id_token } = req.body;
@@ -168,12 +155,25 @@ authRouter.post(
         req.headers['user-agent']
       );
 
+      authEventsService.log({
+        eventType: 'LOGIN_SUCCESS',
+        userId: result.user?.id,
+        platform: 'mobile',
+        req,
+      });
+
       res.status(200).json({
         access_token: result.access_token,
         refresh_token: result.refreshToken,
         expires_in: result.expires_in,
       });
-    } catch (err) {
+    } catch (err: any) {
+      authEventsService.log({
+        eventType: 'LOGIN_FAILED',
+        platform: 'mobile',
+        req,
+        failureReason: err?.message || 'Login failed',
+      });
       next(err);
     }
   }
@@ -181,7 +181,6 @@ authRouter.post(
 
 authRouter.post(
   '/mobile/exchange',
-  exchangeLimiter,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { code } = req.body;
@@ -194,12 +193,25 @@ authRouter.post(
         throw new UnauthorizedError('Invalid, expired, or already-used authorization code');
       }
 
+      authEventsService.log({
+        eventType: 'LOGIN_SUCCESS',
+        userId: result.user?.id,
+        platform: 'mobile',
+        req,
+      });
+
       res.status(200).json({
         access_token: result.access_token,
         refresh_token: result.refreshToken,
         expires_in: result.expires_in,
       });
-    } catch (err) {
+    } catch (err: any) {
+      authEventsService.log({
+        eventType: 'LOGIN_FAILED',
+        platform: 'mobile',
+        req,
+        failureReason: err?.message || 'Exchange failed',
+      });
       next(err);
     }
   }
@@ -221,7 +233,6 @@ export function validateClientPlatform(req: Request, _res: Response, next: NextF
 authRouter.post(
   '/refresh',
   validateClientPlatform,
-  refreshLimiter,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const rawRefreshToken =
@@ -258,7 +269,14 @@ authRouter.post(
         refresh_token: result.refreshToken,
         user: result.user,
       });
-    } catch (err) {
+    } catch (err: any) {
+      if (!err?.message?.includes('reuse detected')) {
+        authEventsService.log({
+          eventType: 'REFRESH_FAILED',
+          req,
+          failureReason: err?.message || 'Refresh failed',
+        });
+      }
       next(err);
     }
   }
@@ -276,13 +294,21 @@ authRouter.post(
         req.signedCookies?.refresh_token ||
         req.body?.refresh_token;
 
+      let userId: string | null = null;
       if (rawRefreshToken) {
         try {
-          await authService.logout(rawRefreshToken);
+          const logoutResult = await authService.logout(rawRefreshToken);
+          userId = logoutResult?.userId ?? null;
         } catch {
           // Idempotent: don't fail logout even if DB error or race
         }
       }
+
+      authEventsService.log({
+        eventType: 'LOGOUT',
+        userId,
+        req,
+      });
 
       res.clearCookie(
         REFRESH_TOKEN_COOKIE_NAME,

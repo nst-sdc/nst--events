@@ -77,6 +77,23 @@ adminUsersRouter.post(
   }
 );
 
+// GET /v1/admin/users/:userId/sessions
+adminUsersRouter.get(
+  '/:userId/sessions',
+  authenticate,
+  requireRole(['PLATFORM_ADMIN']),
+  async (req, res, next) => {
+    try {
+      const adminId = req.user!.id;
+      const { userId } = req.params;
+      const result = await adminUsersService.listUserSessions(adminId, userId);
+      res.status(200).json({ data: result });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 // POST /v1/admin/users/:userId/revoke-sessions
 adminUsersRouter.post(
   '/:userId/revoke-sessions',

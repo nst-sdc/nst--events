@@ -1,6 +1,6 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["views"]
+  previewFeatures = ["views", "metrics"]
 }
 
 datasource db {
@@ -69,6 +69,9 @@ model User {
   studentCuratedItems       StudentProfileCuratedItem[]
   studentSlugHistory        StudentSlugHistory[]
   publishedPolicies         SystemPolicy[]              @relation("PolicyPublisher")
+  rateLimitSettingsUpdated  RateLimitSetting[]          @relation("RateLimitSettingUpdater")
+  rateLimitOverridesCreated RateLimitOverride[]         @relation("RateLimitOverrideCreator")
+  authEvents                AuthEvent[]
 
   @@index([email])
   @@index([googleSub])
@@ -1499,3 +1502,59 @@ model SystemPolicy {
   @@index([publishedAt])
   @@map("system_policies")
 }
+
+model RateLimitSetting {
+  bucket    String   @id
+  maxTotal  Int      @map("max_total")
+  enabled   Boolean  @default(true)
+  updatedBy String?  @map("updated_by") @db.Uuid
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  updater   User?    @relation("RateLimitSettingUpdater", fields: [updatedBy], references: [id], onDelete: SetNull)
+
+  @@map("rate_limit_settings")
+}
+
+model RateLimitOverride {
+  id          String   @id @default(uuid()) @db.Uuid
+  subjectType String   @map("subject_type")
+  subject     String
+  mode        String
+  customMax   Int?     @map("custom_max")
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz(6)
+  reason      String
+  createdBy   String?  @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  creator     User?    @relation("RateLimitOverrideCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([subjectType, subject, expiresAt])
+  @@index([expiresAt])
+  @@map("rate_limit_overrides")
+}
+
+model AuthEvent {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String?  @map("user_id") @db.Uuid
+  eventType       String   @map("event_type")
+  platform        String
+  appVersion      String?  @map("app_version")
+  userAgentFamily String?  @map("user_agent_family")
+  deviceClass     String?  @map("device_class")
+  ipHash          String   @map("ip_hash")
+  rawIp           String?  @map("raw_ip")
+  networkClass    String   @map("network_class")
+  failureReason   String?  @map("failure_reason")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt(sort: Desc)])
+  @@index([eventType, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([platform, createdAt(sort: Desc)])
+  @@index([networkClass, createdAt(sort: Desc)])
+  @@map("auth_events")
+}
+
+

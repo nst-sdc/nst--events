@@ -38,6 +38,8 @@ describe('Public Event RLS & Anonymous Isolation Integration', () => {
   let regStudentId: string;
   let waitlistedStudentId: string;
   let adminUserId: string;
+  let otherClubId: string;
+  let otherClubStudentId: string;
 
   before(async () => {
     // 1. Connect application client using nst_app (which is subject to RLS)
@@ -105,6 +107,25 @@ describe('Public Event RLS & Anonymous Isolation Integration', () => {
 
     await adminPrisma.clubMembership.create({
       data: { userId: organizerId, clubId, role: 'CLUB_ADMIN' },
+    });
+
+    const otherClub = await adminPrisma.club.create({
+      data: { name: `RLS Other Club ${timestamp}` },
+    });
+    otherClubId = otherClub.id;
+
+    const otherClubStudent = await adminPrisma.user.create({
+      data: {
+        email: `other_student_rls_${timestamp}@adypu.edu.in`,
+        googleSub: `sub_other_student_rls_${timestamp}`,
+        fullName: 'RLS Other Club Student',
+        globalRole: 'STUDENT',
+      },
+    });
+    otherClubStudentId = otherClubStudent.id;
+
+    await adminPrisma.clubMembership.create({
+      data: { userId: otherClubStudentId, clubId: otherClubId, role: 'MEMBER' },
     });
 
     // 3. Seed Published PUBLIC Event with attendance session, form fields, registration & response
@@ -475,14 +496,16 @@ describe('Public Event RLS & Anonymous Isolation Integration', () => {
     assert.strictEqual(returnedIds.includes(draftSessionId), false);
   });
 
-  it('allows registered attendees to read restricted event attendance sessions while blocking waitlisted users', async () => {
-    // 1. Registered attendee can see the restricted session
+  it('allows registered attendees to read restricted event attendance sessions while blocking waitlisted users and students of other clubs', async () => {
+    // 1. Registered attendee can see the restricted session window (open_at, close_at)
     await appClient.query("SELECT set_config('app.user_id', $1, false);", [regStudentId]);
     const registeredRes = await appClient.query(
-      'SELECT id FROM attendance_sessions WHERE id = $1::uuid;',
+      'SELECT id, title, open_at, close_at FROM attendance_sessions WHERE id = $1::uuid;',
       [restrictedSessionId]
     );
     assert.strictEqual(registeredRes.rows.length, 1, 'Explicitly registered attendee must read restricted session');
+    assert.ok(registeredRes.rows[0].open_at, 'Registered attendee receives session open_at window');
+    assert.ok(registeredRes.rows[0].close_at, 'Registered attendee receives session close_at window');
 
     // 2. Waitlisted attendee is NOT registered, so receives 0 rows
     await appClient.query("SELECT set_config('app.user_id', $1, false);", [waitlistedStudentId]);
@@ -491,6 +514,22 @@ describe('Public Event RLS & Anonymous Isolation Integration', () => {
       [restrictedSessionId]
     );
     assert.strictEqual(waitlistedRes.rows.length, 0, 'Waitlisted user must NOT read restricted session');
+
+    // 3. Student of another club is NOT registered and not in host club, so receives 0 rows
+    await appClient.query("SELECT set_config('app.user_id', $1, false);", [otherClubStudentId]);
+    const otherClubRes = await appClient.query(
+      'SELECT id FROM attendance_sessions WHERE id = $1::uuid;',
+      [restrictedSessionId]
+    );
+    assert.strictEqual(otherClubRes.rows.length, 0, 'Student of another club must NOT read restricted session');
+
+    // 4. Unregistered student is NOT registered, so receives 0 rows
+    await appClient.query("SELECT set_config('app.user_id', $1, false);", [studentId]);
+    const unregisteredRes = await appClient.query(
+      'SELECT id FROM attendance_sessions WHERE id = $1::uuid;',
+      [restrictedSessionId]
+    );
+    assert.strictEqual(unregisteredRes.rows.length, 0, 'Unregistered student must NOT read restricted session');
   });
 
   it('allows active club organizer to read all sessions for their club events including restricted and draft', async () => {

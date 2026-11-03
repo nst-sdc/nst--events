@@ -9,6 +9,7 @@ import { signJwt } from '../../lib/jwt';
 import { googleOAuth } from './google.oauth';
 import { parseAdypuEmail } from './academic-parser';
 import { projectsService } from '../projects/projects.service';
+import { authEventsService } from './auth-events.service';
 
 export interface AuthTokenResponse {
   access_token: string;
@@ -239,7 +240,7 @@ export async function refreshTokens(
 
   type RefreshTxResult =
     | { kind: 'success'; data: AuthTokenResponse }
-    | { kind: 'reuse_detected' };
+    | { kind: 'reuse_detected'; userId: string };
 
   const result = await prisma.$transaction<RefreshTxResult>(async (tx) => {
     // 1. Lookup refresh token using the SECURITY DEFINER RPC
@@ -281,7 +282,7 @@ export async function refreshTokens(
             revokedAt: now,
           },
         });
-        return { kind: 'reuse_detected' };
+        return { kind: 'reuse_detected', userId: existingToken.user_id };
       }
     }
 
@@ -338,27 +339,38 @@ export async function refreshTokens(
   });
 
   if (result.kind === 'reuse_detected') {
+    await authEventsService.logSynchronousEvent({
+      eventType: 'REUSE_DETECTED',
+      userId: result.userId,
+      ip: ipAddress,
+      userAgent,
+      failureReason: 'Refresh token reuse detected; all sessions revoked',
+    });
     throw new UnauthorizedError('Refresh token reuse detected; all sessions revoked');
   }
+
 
   return result.data;
 }
 
-export async function logout(rawRefreshToken?: string): Promise<void> {
+export async function logout(rawRefreshToken?: string): Promise<{ userId: string | null }> {
   if (!rawRefreshToken) {
-    return;
+    return { userId: null };
   }
   const tokenHash = hashToken(rawRefreshToken);
+  let resolvedUserId: string | null = null;
   await prisma.$transaction(async (tx) => {
-    const rows = await tx.$queryRaw<Array<{ family_id: string }>>`
-      SELECT family_id FROM lookup_refresh_token(${tokenHash})
+    const rows = await tx.$queryRaw<Array<{ family_id: string; user_id: string }>>`
+      SELECT family_id, user_id FROM lookup_refresh_token(${tokenHash})
     `;
     const token = rows[0];
     if (!token?.family_id) {
       return;
     }
+    resolvedUserId = token.user_id;
     await tx.$executeRaw`SELECT revoke_refresh_token_family(${token.family_id}::uuid)`;
   });
+  return { userId: resolvedUserId };
 }
 
 export const authService = {

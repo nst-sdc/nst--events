@@ -261,7 +261,11 @@ describe('Phase 3C.1: Event Lifecycle Concurrency, Authorization, and Side-Effec
     );
 
     // PATH 2: Online TOTP scan must fail with EVENT_LOCKED
-    const qrPayload = generateQrPayload(session.id, session.qrSecret);
+    const dbSession = await adminPrisma.attendanceSession.findUnique({
+      where: { id: session.id },
+      select: { qrSecret: true },
+    });
+    const qrPayload = generateQrPayload(session.id, dbSession!.qrSecret);
     await assert.rejects(
       async () => {
         await attendanceService.markAttendance(student1Id, {

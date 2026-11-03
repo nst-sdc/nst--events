@@ -5,9 +5,65 @@
  * - docs/frontend/shared/DATA_CONTRACT.md
  */
 
+import { z } from 'zod';
+
 export type EventLockState = 'UNLOCKED' | 'MANUALLY_LOCKED' | 'PERMANENTLY_LOCKED';
 export type CanonicalRegistrationStatus = 'UPCOMING' | 'OPEN' | 'CLOSING_SOON' | 'CLOSED';
-export type EventType = 'HACKATHON' | 'WORKSHOP' | 'SEMINAR' | 'SOCIAL' | 'COMPETITION' | 'OTHER';
+
+export const EVENT_TYPE_VALUES = [
+  'WORKSHOP',
+  'SEMINAR',
+  'COMPETITION',
+  'MEETUP',
+  'HACKATHON',
+  'OTHER',
+  'CULTURAL',
+  'SPORTS',
+] as const;
+
+export const EventTypeEnum = z.enum(EVENT_TYPE_VALUES);
+export type EventType = z.infer<typeof EventTypeEnum>;
+
+export const EVENT_TYPE_LABELS: Record<EventType, string> = {
+  WORKSHOP: 'Workshop',
+  SEMINAR: 'Seminar',
+  COMPETITION: 'Competition',
+  MEETUP: 'Meetup',
+  HACKATHON: 'Hackathon',
+  OTHER: 'Other',
+  CULTURAL: 'Cultural',
+  SPORTS: 'Sports',
+} as const;
+
+export const EVENT_TYPE_DESCRIPTIONS: Record<EventType, string> = {
+  HACKATHON: 'Build & sprint',
+  WORKSHOP: 'Hands-on learning',
+  SEMINAR: 'Talks & keynotes',
+  COMPETITION: 'Tournaments & awards',
+  MEETUP: 'Community & networking',
+  CULTURAL: 'Arts, music & performance',
+  SPORTS: 'Athletics & fitness',
+  OTHER: 'Community meetup',
+} as const;
+
+export interface EventTypeOption {
+  value: EventType;
+  label: string;
+  description: string;
+  desc: string;
+}
+
+export const EVENT_TYPES: readonly EventTypeOption[] = [
+  { value: 'HACKATHON', label: 'Hackathon', description: 'Build & sprint', desc: 'Build & sprint' },
+  { value: 'WORKSHOP', label: 'Workshop', description: 'Hands-on learning', desc: 'Hands-on learning' },
+  { value: 'SEMINAR', label: 'Seminar', description: 'Talks & keynotes', desc: 'Talks & keynotes' },
+  { value: 'COMPETITION', label: 'Competition', description: 'Tournaments & awards', desc: 'Tournaments & awards' },
+  { value: 'MEETUP', label: 'Meetup', description: 'Community & networking', desc: 'Community & networking' },
+  { value: 'CULTURAL', label: 'Cultural', description: 'Arts, music & performance', desc: 'Arts, music & performance' },
+  { value: 'SPORTS', label: 'Sports', description: 'Athletics & fitness', desc: 'Athletics & fitness' },
+  { value: 'OTHER', label: 'Other', description: 'Community meetup', desc: 'Community meetup' },
+] as const;
+
 export type EventVisibility = 'PUBLIC' | 'PRIVATE' | 'UNLISTED';
 export type EventRegistrationType = 'INDIVIDUAL' | 'TEAM';
 export type EventRegistrationMode = 'REQUIRED' | 'NOT_REQUIRED';
