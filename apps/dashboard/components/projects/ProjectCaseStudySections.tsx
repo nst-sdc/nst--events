@@ -22,23 +22,23 @@ function CaseStudySection({ id, title, tag, content, isTimeline = false }: CaseS
     <section
       id={id}
       aria-label={title}
-      className="rounded-2xl border border-zinc-800/80 bg-zinc-950/70 p-6 sm:p-8 backdrop-blur-sm"
+      className="rounded-none border-2 border-zinc-800 bg-zinc-950 p-6 sm:p-8 shadow-[6px_6px_0px_#000000] dark:shadow-[6px_6px_0px_rgba(0,0,0,0.8)] transition-all hover:border-[#0057FF]"
     >
-      <div className="flex items-center justify-between border-b border-zinc-800/80 pb-4 mb-6">
+      <div className="flex items-center justify-between border-b-2 border-zinc-800/80 pb-4 mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-1.5 h-4 sm:h-5 bg-[#0057FF] rounded-full shrink-0" />
-          <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
+          <div className="w-2 h-5 bg-[#0057FF] shrink-0" />
+          <h2 className="text-base sm:text-lg font-black text-[#F5F5F2] uppercase tracking-tight font-['Syne',sans-serif]">
             {title}
           </h2>
         </div>
-        <span className="text-[11px] font-mono text-zinc-500 uppercase tracking-wider hidden sm:inline-block">
-          {tag}
+        <span className="text-[11px] font-mono text-zinc-400 font-bold uppercase tracking-wider hidden sm:inline-block px-2.5 py-1 bg-white/5 border border-zinc-800">
+          [{tag}]
         </span>
       </div>
 
       {isTimeline ? (
         <div className="relative pl-6 sm:pl-8 border-l border-zinc-800 ml-1.5 sm:ml-2 my-2">
-          <div className="absolute -left-[5px] top-2 w-2.5 h-2.5 rounded-full bg-zinc-950 border-2 border-[#0057FF]" />
+          <div className="absolute -left-[5px] top-2 w-2 h-2 rounded-none bg-[#0057FF]" />
           <div className="text-zinc-300">
             <MarkdownRenderer content={content} />
           </div>
