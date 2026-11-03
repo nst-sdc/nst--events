@@ -127,13 +127,13 @@ export default async function PublicEventPage({ params }: PageProps) {
         </header>
 
         <div className="max-w-md mx-auto my-auto px-6 py-16 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center mx-auto mb-6 text-[#FF9500]">
+          <div className="w-16 h-16 rounded-none bg-zinc-100 dark:bg-zinc-900 border-2 border-amber-500/50 flex items-center justify-center mx-auto mb-6 text-[#FF9500] shadow-[4px_4px_0px_#FF9500]">
             <Lock className="w-8 h-8" />
           </div>
-          <span className="px-2.5 py-1 text-[11px] font-mono font-bold tracking-widest uppercase bg-[#FF9500]/10 text-amber-700 dark:text-[#FF9500] border border-[#FF9500]/30 rounded">
-            RESTRICTED EVENT
+          <span className="px-3 py-1 text-[11px] font-mono font-bold tracking-widest uppercase bg-[#FF9500]/10 text-amber-700 dark:text-[#FF9500] border-2 border-[#FF9500]/40 rounded-none">
+            [RESTRICTED EVENT]
           </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight mt-4 text-zinc-950 dark:text-[#F5F5F2]">
+          <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tight mt-5 text-zinc-950 dark:text-[#F5F5F2] font-['Syne',sans-serif]">
             INSTITUTIONAL ACCESS REQUIRED
           </h1>
           <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-3 leading-relaxed">
@@ -142,13 +142,13 @@ export default async function PublicEventPage({ params }: PageProps) {
           <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               href={`/login?redirect=/event/${encodeURIComponent(slug)}`}
-              className="px-6 py-3 bg-[#0057FF] dark:bg-[#C8FF00] text-white dark:text-black font-mono font-bold text-xs uppercase tracking-wider rounded-xl hover:opacity-90 transition-opacity"
+              className="px-6 py-3 bg-[#0057FF] dark:bg-[#C8FF00] text-white dark:text-black font-mono font-bold text-xs uppercase tracking-wider rounded-none hover:opacity-90 transition-opacity shadow-[4px_4px_0px_#000]"
             >
               Sign In With Google
             </Link>
             <Link
               href="/student/campus/discover"
-              className="px-6 py-3 bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 font-mono font-bold text-xs uppercase tracking-wider rounded-xl hover:text-zinc-950 dark:hover:text-white transition-colors"
+              className="px-6 py-3 bg-zinc-100 dark:bg-zinc-900 border-2 border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 font-mono font-bold text-xs uppercase tracking-wider rounded-none hover:text-zinc-950 dark:hover:text-white transition-colors shadow-[4px_4px_0px_rgba(0,0,0,0.3)]"
             >
               Back to Events
             </Link>
@@ -256,7 +256,7 @@ export default async function PublicEventPage({ params }: PageProps) {
       <main className="relative z-10 max-w-6xl mx-auto px-6 py-10">
         {/* Banner Section */}
         {event.banner_url && (
-          <div className="w-full h-64 sm:h-96 rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 mb-8 relative">
+          <div className="w-full h-64 sm:h-96 rounded-none overflow-hidden border-2 border-black/20 dark:border-white/20 mb-8 relative shadow-[8px_8px_0px_#0057FF]">
             <img
               src={event.banner_url}
               alt={event.title}
@@ -267,33 +267,33 @@ export default async function PublicEventPage({ params }: PageProps) {
         )}
 
         {/* Header Details */}
-        <div className="border-b border-zinc-200 dark:border-zinc-800/80 pb-8 mb-8">
+        <div className="border-b-2 border-black/15 dark:border-white/15 pb-8 mb-8">
           <div className="flex flex-wrap items-center gap-2 mb-4">
-            <span className="px-3 py-1 text-xs font-mono font-bold tracking-wider uppercase bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700 rounded-md">
+            <span className="px-3 py-1 text-xs font-mono font-bold tracking-wider uppercase bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 border-2 border-black/15 dark:border-white/15 rounded-none shadow-[2px_2px_0px_rgba(0,0,0,0.3)]">
               {event.event_type}
             </span>
-            <span className="px-3 py-1 text-xs font-mono font-bold tracking-wider uppercase bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800 rounded-md">
+            <span className="px-3 py-1 text-xs font-mono font-bold tracking-wider uppercase bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-2 border-black/10 dark:border-white/10 rounded-none">
               {event.registration_type} ENTRY
             </span>
             {event.primary_club && (
-              <span className="px-3 py-1 text-xs font-mono text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 rounded-md flex items-center space-x-1.5 shadow-sm">
-                <Building2 className="w-3.5 h-3.5 text-zinc-500" />
+              <span className="px-3 py-1 text-xs font-mono font-bold text-zinc-800 dark:text-zinc-200 border-2 border-black/15 dark:border-white/15 bg-white dark:bg-zinc-950 rounded-none flex items-center space-x-1.5 shadow-[2px_2px_0px_rgba(0,0,0,0.2)]">
+                <Building2 className="w-3.5 h-3.5 text-[#0057FF]" />
                 <span>{event.primary_club.name}</span>
               </span>
             )}
             {event.state === 'CANCELLED' && (
-              <span className="px-3 py-1 text-xs font-mono font-bold tracking-wider uppercase bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-500/30 rounded-md">
+              <span className="px-3 py-1 text-xs font-mono font-bold tracking-wider uppercase bg-rose-500/20 text-rose-700 dark:text-rose-400 border-2 border-rose-500/30 rounded-none">
                 CANCELLED
               </span>
             )}
             {event.state === 'ARCHIVED' && (
-              <span className="px-3 py-1 text-xs font-mono font-bold tracking-wider uppercase bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-300 dark:border-zinc-700 rounded-md">
+              <span className="px-3 py-1 text-xs font-mono font-bold tracking-wider uppercase bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-2 border-zinc-300 dark:border-zinc-700 rounded-none">
                 ARCHIVED
               </span>
             )}
             <Link
               href={`/event/${event.slug || slug}/results`}
-              className="ml-auto px-3.5 py-1 text-xs font-mono font-black tracking-wider uppercase bg-[#C8FF00] text-black hover:bg-[#b8eb00] rounded-md flex items-center gap-1.5 shadow-[2px_2px_0px_#000] transition-all"
+              className="ml-auto px-3.5 py-1.5 text-xs font-mono font-black tracking-wider uppercase bg-[#C8FF00] text-black hover:bg-[#b8eb00] rounded-none flex items-center gap-1.5 border-2 border-black shadow-[3px_3px_0px_#000] transition-all hover:translate-x-[-1px] hover:translate-y-[-1px]"
             >
               <Trophy className="w-3.5 h-3.5" />
               <span>Official Results</span>
@@ -301,7 +301,7 @@ export default async function PublicEventPage({ params }: PageProps) {
           </div>
 
           {event.state === 'CANCELLED' && (
-            <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-start space-x-3">
+            <div className="mb-6 p-4 rounded-none bg-rose-500/10 border-2 border-rose-500/40 flex items-start space-x-3 shadow-[4px_4px_0px_#FF3B30]">
               <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
               <div>
                 <h3 className="text-sm font-mono font-bold uppercase tracking-wider text-rose-700 dark:text-rose-400">
@@ -315,7 +315,7 @@ export default async function PublicEventPage({ params }: PageProps) {
           )}
 
           {event.state === 'ARCHIVED' && (
-            <div className="mb-6 p-4 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-start space-x-3">
+            <div className="mb-6 p-4 rounded-none bg-zinc-100 dark:bg-zinc-900 border-2 border-zinc-300 dark:border-zinc-800 flex items-start space-x-3 shadow-[4px_4px_0px_rgba(0,0,0,0.3)]">
               <Clock className="w-5 h-5 text-zinc-500 dark:text-zinc-400 shrink-0 mt-0.5" />
               <div>
                 <h3 className="text-sm font-mono font-bold uppercase tracking-wider text-zinc-800 dark:text-zinc-300">
@@ -328,12 +328,12 @@ export default async function PublicEventPage({ params }: PageProps) {
             </div>
           )}
 
-          <h1 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-zinc-950 dark:text-[#F5F5F2] leading-tight">
+          <h1 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-zinc-950 dark:text-[#F5F5F2] leading-tight font-['Syne',sans-serif]">
             {event.title}
           </h1>
 
           {/* Quick Info Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-900">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 pt-6 border-t-2 border-black/10 dark:border-white/10">
             <div className="flex items-start space-x-3">
               <Calendar className="w-5 h-5 text-[#0057FF] dark:text-[#C8FF00] shrink-0 mt-0.5" />
               <div>

@@ -135,9 +135,9 @@ export function ProjectMediaGallery({
   const videoEmbed = activeMedia?.type === 'video' ? getEmbedUrl(activeMedia.url) : null;
 
   return (
-    <div className={`space-y-3 ${className}`}>
+    <div className={`space-y-4 ${className}`}>
       {/* Main Viewport */}
-      <div className="relative w-full rounded-2xl overflow-hidden border border-zinc-800/90 bg-zinc-950 shadow-2xl">
+      <div className="relative w-full rounded-none overflow-hidden border-2 border-black/15 dark:border-white/15 bg-zinc-950 shadow-[8px_8px_0px_#0057FF]">
         {activeMedia.type === 'cover' ? (
           <div className="relative">
             <ProjectCoverBanner
@@ -156,7 +156,7 @@ export function ProjectMediaGallery({
                 type="button"
                 onClick={() => setLightboxOpen(true)}
                 aria-label="View full size image"
-                className="absolute top-4 right-4 z-20 p-2 rounded-lg bg-black/60 hover:bg-black/90 text-white border border-zinc-700/60 backdrop-blur-sm transition-all"
+                className="absolute top-4 right-4 z-20 p-2.5 rounded-none bg-black/80 hover:bg-[#0057FF] text-white border-2 border-white/20 transition-all shadow-[2px_2px_0px_#000]"
                 title="Expand image"
               >
                 <Maximize2 className="w-4 h-4" />
@@ -174,13 +174,13 @@ export function ProjectMediaGallery({
 
             {/* Caption & Controls */}
             <div className="absolute bottom-4 left-4 right-4 z-10 flex items-center justify-between text-xs font-mono text-zinc-300">
-              <span className="px-3 py-1 rounded bg-black/70 border border-zinc-800 backdrop-blur-sm">
+              <span className="px-3 py-1.5 rounded-none bg-black/90 border border-zinc-700 text-xs font-bold uppercase tracking-wider">
                 {activeMedia.caption}
               </span>
               <button
                 type="button"
                 onClick={() => setLightboxOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-black/70 hover:bg-black/90 border border-zinc-800 text-white backdrop-blur-sm transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-none bg-black/90 hover:bg-[#0057FF] border border-zinc-700 text-white transition-colors uppercase font-bold tracking-wider"
               >
                 <Maximize2 className="w-3.5 h-3.5" />
                 <span>Expand</span>
@@ -200,18 +200,18 @@ export function ProjectMediaGallery({
               />
             ) : (
               <div className="text-center p-8 max-w-md">
-                <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 mx-auto mb-4">
+                <div className="w-16 h-16 rounded-none bg-rose-500/10 border-2 border-rose-500 flex items-center justify-center text-rose-400 mx-auto mb-4">
                   <VideoIcon className="w-8 h-8" />
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2">Video Demonstration</h3>
-                <p className="text-xs text-zinc-400 mb-6 leading-relaxed">
+                <h3 className="text-lg font-black text-white uppercase mb-2 font-['Syne',sans-serif]">Video Demonstration</h3>
+                <p className="text-xs font-mono text-zinc-400 mb-6 leading-relaxed">
                   The creator provided an external video demonstration artifact.
                 </p>
                 <a
                   href={activeMedia.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-mono font-bold uppercase tracking-wider transition-colors shadow-lg"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-none bg-rose-600 hover:bg-rose-500 text-white text-xs font-mono font-bold uppercase tracking-wider transition-all shadow-[4px_4px_0px_#000]"
                 >
                   <ExternalLink className="w-4 h-4" />
                   <span>Watch Video on External Player</span>
@@ -228,7 +228,7 @@ export function ProjectMediaGallery({
               type="button"
               onClick={handlePrev}
               aria-label="Previous artifact"
-              className="absolute left-3 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-black/60 hover:bg-black/90 text-white border border-zinc-800 backdrop-blur-sm transition-all"
+              className="absolute left-3 top-1/2 -translate-y-1/2 z-20 p-2.5 rounded-none bg-black/80 hover:bg-[#0057FF] text-white border border-white/20 transition-all shadow-[2px_2px_0px_#000]"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -236,7 +236,7 @@ export function ProjectMediaGallery({
               type="button"
               onClick={handleNext}
               aria-label="Next artifact"
-              className="absolute right-3 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-black/60 hover:bg-black/90 text-white border border-zinc-800 backdrop-blur-sm transition-all"
+              className="absolute right-3 top-1/2 -translate-y-1/2 z-20 p-2.5 rounded-none bg-black/80 hover:bg-[#0057FF] text-white border border-white/20 transition-all shadow-[2px_2px_0px_#000]"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -254,16 +254,16 @@ export function ProjectMediaGallery({
                 key={item.id}
                 type="button"
                 onClick={() => setActiveIndex(idx)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all shrink-0 border ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-none text-xs font-mono font-bold uppercase tracking-wider transition-all shrink-0 border-2 ${
                   isActive
-                    ? 'bg-zinc-800 text-white border-blue-500 shadow-sm'
-                    : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:border-zinc-700'
+                    ? 'bg-[#0057FF] text-white border-[#0057FF] shadow-[2px_2px_0px_#000]'
+                    : 'bg-black/40 text-zinc-400 border-black/20 dark:border-white/10 hover:text-white hover:border-[#0057FF]'
                 }`}
               >
                 {item.type === 'video' ? (
-                  <VideoIcon className={`w-3.5 h-3.5 ${isActive ? 'text-rose-400' : 'text-zinc-500'}`} />
+                  <VideoIcon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-rose-400'}`} />
                 ) : (
-                  <ImageIcon className={`w-3.5 h-3.5 ${isActive ? 'text-blue-400' : 'text-zinc-500'}`} />
+                  <ImageIcon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-blue-400'}`} />
                 )}
                 <span>{item.title}</span>
               </button>
@@ -284,7 +284,7 @@ export function ProjectMediaGallery({
             type="button"
             onClick={() => setLightboxOpen(false)}
             aria-label="Close modal"
-            className="absolute top-6 right-6 p-2 rounded-full bg-zinc-900/80 hover:bg-zinc-800 text-white border border-zinc-700 transition-colors z-50"
+            className="absolute top-6 right-6 p-2.5 rounded-none bg-black hover:bg-[#0057FF] text-white border-2 border-white/20 transition-colors z-50 shadow-[2px_2px_0px_#000]"
           >
             <X className="w-6 h-6" />
           </button>
@@ -295,10 +295,10 @@ export function ProjectMediaGallery({
             <img
               src={activeMedia.url}
               alt={title}
-              className="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl border border-zinc-800"
+              className="max-w-full max-h-[80vh] object-contain rounded-none border-2 border-white/20 shadow-[10px_10px_0px_#0057FF]"
             />
             {activeMedia.caption && (
-              <p className="text-center text-xs font-mono text-zinc-400 mt-3">
+              <p className="text-center text-xs font-mono font-bold uppercase tracking-wider text-zinc-300 mt-4 px-3 py-1 bg-black/80 border border-zinc-700 inline-block">
                 {activeMedia.caption}
               </p>
             )}
