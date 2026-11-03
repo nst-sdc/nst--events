@@ -8,7 +8,9 @@ export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL !== undefined && process.env.NEXT_PUBLIC_API_URL !== ''
     ? process.env.NEXT_PUBLIC_API_URL
     : process.env.NODE_ENV === 'production'
-      ? ''
+      ? typeof window === 'undefined'
+        ? (process.env.INTERNAL_API_URL || process.env.INTERNAL_SERVICE_URL || 'http://nst-api-service.nst-events.svc.cluster.local')
+        : ''
       : 'http://localhost:3001';
 import { getWebAuthStore } from './auth-store';
 import { formatErrorMessage } from './error-utils';
