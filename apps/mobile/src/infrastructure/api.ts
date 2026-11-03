@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 import { useAuthStore, type RefreshResult } from '../store/auth';
 import { useAppVersionStore } from '../store/app-version-store';
 import { API_BASE_URL } from './config';
@@ -10,6 +11,28 @@ export const APP_VERSION = Constants.expoConfig?.version || '1.0.0';
 
 let isRefreshing = false;
 let refreshPromise: Promise<RefreshResult> | null = null;
+
+const executeFetch = async (url: string, init: RequestInit): Promise<Response> => {
+  try {
+    return await fetch(url, init);
+  } catch (err: any) {
+    if (
+      Platform.OS === 'android' &&
+      (url.includes('localhost') || url.includes('127.0.0.1'))
+    ) {
+      const fallbackUrl = url
+        .replace('localhost', '10.0.2.2')
+        .replace('127.0.0.1', '10.0.2.2');
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.warn(
+          `[API] Direct connection to localhost failed on Android. Retrying with emulator alias: ${fallbackUrl}`
+        );
+      }
+      return await fetch(fallbackUrl, init);
+    }
+    throw err;
+  }
+};
 
 export const apiClient = async (endpoint: string, options: RequestInit = {}) => {
   const token = useAuthStore.getState().accessToken;
@@ -30,7 +53,7 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
     console.log('[API FETCH] URL:', sanitizedUrl, '| Method:', options.method || 'GET');
   }
 
-  const response = await fetch(fullUrl, {
+  const response = await executeFetch(fullUrl, {
     ...options,
     headers,
   });
@@ -56,7 +79,7 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
       const newToken = refreshResult.token;
       // Retry the original request with the new token
       headers['Authorization'] = `Bearer ${newToken}`;
-      const retryResponse = await fetch(`${API_BASE_URL}${endpoint}`, {
+      const retryResponse = await executeFetch(`${API_BASE_URL}${endpoint}`, {
         ...options,
         headers,
       });
