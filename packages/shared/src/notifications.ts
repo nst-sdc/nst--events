@@ -1,6 +1,89 @@
-import { Prisma } from '@nst/database';
-import { createHash } from 'crypto';
+import type { Prisma } from '@nst/database';
 import { z } from 'zod';
+
+/**
+ * Computes SHA-256 hex digest using standard JavaScript bitwise operations.
+ * Pure-JS implementation avoids importing Node.js 'crypto' so @nst/shared can safely
+ * be bundled in React Native / Expo without Node runtime errors.
+ */
+function sha256Hex(str: string): string {
+  function rightRotate(value: number, amount: number) {
+    return (value >>> amount) | (value << (32 - amount));
+  }
+  const mathPow = Math.pow;
+  const maxWord = mathPow(2, 32);
+  let i: number, j: number;
+  let result = '';
+
+  const utf8 = new TextEncoder().encode(str);
+  const bitLength = utf8.length * 8;
+
+  const hash: number[] = [];
+  const k: number[] = [];
+  let primeCounter = 0;
+  const isComposite: Record<number, boolean> = {};
+  for (let candidate = 2; primeCounter < 64; candidate++) {
+    if (!isComposite[candidate]) {
+      for (i = 0; i < 313; i += candidate) {
+        isComposite[i] = true;
+      }
+      hash[primeCounter] = (mathPow(candidate, 0.5) * maxWord) | 0;
+      k[primeCounter++] = (mathPow(candidate, 1 / 3) * maxWord) | 0;
+    }
+  }
+
+  // Create padded array
+  const totalLength = (((utf8.length + 8) >> 6) + 1) << 4;
+  const words = new Uint32Array(totalLength);
+  for (i = 0; i < utf8.length; i++) {
+    words[i >> 2] |= utf8[i] << (((3 - i) % 4) * 8);
+  }
+  words[utf8.length >> 2] |= 0x80 << (((3 - utf8.length) % 4) * 8);
+  words[totalLength - 2] = (bitLength / maxWord) | 0;
+  words[totalLength - 1] = bitLength | 0;
+
+  for (j = 0; j < words.length; j += 16) {
+    const w = new Uint32Array(64);
+    for (i = 0; i < 16; i++) w[i] = words[j + i];
+    const oldHash = hash.slice(0);
+
+    for (i = 0; i < 64; i++) {
+      if (i >= 16) {
+        const w15 = w[i - 15], w2 = w[i - 2];
+        const s0 = rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3);
+        const s1 = rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10);
+        w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
+      }
+
+      const s1_h = rightRotate(hash[4], 6) ^ rightRotate(hash[4], 11) ^ rightRotate(hash[4], 25);
+      const ch = (hash[4] & hash[5]) ^ (~hash[4] & hash[6]);
+      const temp1 = (hash[7] + s1_h + ch + k[i] + w[i]) | 0;
+      const s0_h = rightRotate(hash[0], 2) ^ rightRotate(hash[0], 13) ^ rightRotate(hash[0], 22);
+      const maj = (hash[0] & hash[1]) ^ (hash[0] & hash[2]) ^ (hash[1] & hash[2]);
+      const temp2 = (s0_h + maj) | 0;
+
+      hash[7] = hash[6];
+      hash[6] = hash[5];
+      hash[5] = hash[4];
+      hash[4] = (hash[3] + temp1) | 0;
+      hash[3] = hash[2];
+      hash[2] = hash[1];
+      hash[1] = hash[0];
+      hash[0] = (temp1 + temp2) | 0;
+    }
+    for (i = 0; i < 8; i++) {
+      hash[i] = (hash[i] + oldHash[i]) | 0;
+    }
+  }
+
+  for (i = 0; i < 8; i++) {
+    for (j = 3; j >= 0; j--) {
+      const b = (hash[i] >> (8 * j)) & 255;
+      result += (b < 16 ? '0' : '') + b.toString(16);
+    }
+  }
+  return result;
+}
 
 const uuidSchema = z.string().regex(
   /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
@@ -141,7 +224,7 @@ export const enqueueNotification = async ({
 
     // 2. Compute Idempotency Key (scoped to userId so identical logical announcements reach all recipients)
     const scopedKey = idempotencyString.includes(userId) ? idempotencyString : `${userId}:${idempotencyString}`;
-    const idempotencyKey = createHash('sha256').update(scopedKey).digest('hex');
+    const idempotencyKey = sha256Hex(scopedKey);
 
     // 3. Atomically Create or Retrieve Inbox Notification
     const insertedRows = await tx.$queryRaw<any[]>`
