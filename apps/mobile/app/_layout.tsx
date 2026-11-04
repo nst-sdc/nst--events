@@ -8,6 +8,7 @@ import { useAppVersionStore } from '../src/store/app-version-store';
 import { useAuthStore } from '../src/store/auth';
 import { UpdateRequiredPrompt } from '../src/ui/UpdateRequiredPrompt';
 import { GlobalToastModal } from '../src/ui/GlobalToastModal';
+import { AppUpdateNotifier } from '../src/ui/AppUpdateNotifier';
 import Constants from 'expo-constants';
 import { useFonts } from 'expo-font';
 import {
@@ -112,6 +113,7 @@ export default function RootLayout() {
       <RootLayoutInner />
       <GlobalUpdateRequiredModal />
       <GlobalToastModal />
+      <AppUpdateNotifier />
     </AppQueryProvider>
   );
 }

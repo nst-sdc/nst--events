@@ -7,10 +7,14 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#09090b"
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/af8da666-3f92-46c0-aebb-d51d25a5e461",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
     },
     "ios": {
       "supportsTablet": false,
@@ -39,6 +43,9 @@
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
       ],
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ],
       "package": "org.nstsdc.events",
       "versionCode": 1
     },
@@ -46,6 +53,14 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#09090b"
+        }
+      ],
       [
         "expo-camera",
         {
@@ -70,7 +85,7 @@
       "expo-secure-store",
       "expo-dev-client",
       "expo-router",
-      "./plugins/withInstallReferrer.js"
+      "expo-updates"
     ],
     "extra": {
       "eas": {

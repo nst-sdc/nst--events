@@ -201,7 +201,17 @@ export async function getNativeInstallReferrer(timeoutMs = 3500): Promise<Instal
     return null;
   }
 
-  const nativeModule = NativeModules.InstallReferrerModule;
+  let nativeModule = NativeModules.InstallReferrerModule;
+  if (!nativeModule || typeof nativeModule.getInstallReferrer !== 'function') {
+    try {
+      // Fallback to Expo Modules Core registration
+      const { requireOptionalNativeModule } = require('expo-modules-core');
+      nativeModule = requireOptionalNativeModule('InstallReferrerModule');
+    } catch {
+      nativeModule = null;
+    }
+  }
+
   if (!nativeModule || typeof nativeModule.getInstallReferrer !== 'function') {
     return null;
   }

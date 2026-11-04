@@ -1,0 +1,7 @@
+{
+  "name": "play-in-app-updates",
+  "version": "1.0.0",
+  "description": "Local Expo module providing Google Play Core In-App Updates (Flexible & Immediate)",
+  "main": "index.ts",
+  "types": "index.ts"
+}

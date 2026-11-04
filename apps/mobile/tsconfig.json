@@ -2,6 +2,11 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
-    "types": ["node"]
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "install-referrer": ["./modules/install-referrer"],
+      "play-in-app-updates": ["./modules/play-in-app-updates"]
+    }
   }
 }
