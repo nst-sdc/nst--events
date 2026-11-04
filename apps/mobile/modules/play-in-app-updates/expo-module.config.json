@@ -1,0 +1,10 @@
+{
+  "name": "play-in-app-updates",
+  "platforms": ["android"],
+  "android": {
+    "modules": [
+      "expo.modules.inappupdates.PlayInAppUpdatesModule"
+    ]
+  }
+}
+

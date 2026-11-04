@@ -1,4 +1,8 @@
 {
+  "cli": {
+    "version": ">= 14.0.0",
+    "appVersionSource": "remote"
+  },
   "build": {
     "development": {
       "developmentClient": true,
@@ -9,6 +13,10 @@
     },
     "preview": {
       "distribution": "internal",
+      "channel": "preview",
+      "android": {
+        "buildType": "apk"
+      },
       "ios": {
         "simulator": false
       },
@@ -18,8 +26,20 @@
     },
     "production": {
       "distribution": "store",
+      "channel": "production",
+      "android": {
+        "buildType": "app-bundle"
+      },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://events.nstsdc.org"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "$GOOGLE_SERVICE_ACCOUNT_KEY_PATH",
+        "track": "internal"
       }
     }
   }

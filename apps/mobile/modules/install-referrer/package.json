@@ -1,0 +1,7 @@
+{
+  "name": "install-referrer",
+  "version": "1.0.0",
+  "description": "Local Expo module providing Google Play Install Referrer attribution",
+  "main": "index.ts",
+  "types": "index.ts"
+}

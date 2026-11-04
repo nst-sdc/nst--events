@@ -37,11 +37,33 @@ export async function openAppStore(): Promise<void> {
   }
 }
 
+export async function triggerMandatoryUpdate(): Promise<void> {
+  if (Platform.OS === "android") {
+    try {
+      const { startImmediatePlayUpdate } = require("play-in-app-updates");
+      const started = await startImmediatePlayUpdate();
+      if (started) {
+        return;
+      }
+    } catch {
+      // Fallback to Play Store URL
+    }
+  }
+  await openAppStore();
+}
+
 export const UpdateRequiredPrompt: React.FC<UpdateRequiredPromptProps> = ({
   minVersion,
   onRetry,
 }) => {
   const theme = useAppTheme();
+
+  React.useEffect(() => {
+    // Attempt official Play Core immediate update flow on Android
+    if (Platform.OS === "android") {
+      triggerMandatoryUpdate().catch(() => {});
+    }
+  }, []);
 
   const styles = useMemo(
     () =>
@@ -138,7 +160,7 @@ export const UpdateRequiredPrompt: React.FC<UpdateRequiredPromptProps> = ({
       <View style={styles.buttonContainer}>
         <Button
           title="UPDATE IN STORE"
-          onPress={openAppStore}
+          onPress={triggerMandatoryUpdate}
           variant="primary"
           accessibilityLabel="Open app store to update NST Events"
         />

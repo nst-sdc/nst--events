@@ -1,0 +1,10 @@
+{
+  "name": "install-referrer",
+  "platforms": ["android"],
+  "android": {
+    "modules": [
+      "expo.modules.installreferrer.InstallReferrerModule"
+    ]
+  }
+}
+
