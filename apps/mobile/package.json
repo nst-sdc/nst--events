@@ -55,7 +55,7 @@
     "build:android:prod": "eas build --platform android --profile production",
     "update:preview": "eas update --channel preview",
     "update:prod": "eas update --channel production",
-    "eas-build-post-install": "pnpm --filter @nst/shared build",
+    "eas-build-post-install": "pnpm --filter @nst/database build && pnpm --filter @nst/shared build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run tests/"
   },
