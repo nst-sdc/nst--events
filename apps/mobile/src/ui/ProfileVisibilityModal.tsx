@@ -37,8 +37,42 @@ export function ProfileVisibilityModal({ visible, onClose }: ProfileVisibilityMo
   const [newHandle, setNewHandle] = useState('');
   const [handleMsg, setHandleMsg] = useState<{ text: string; error?: boolean } | null>(null);
 
+  // Local state for instantaneous switch feedback
+  const [localVisibility, setLocalVisibility] = useState<SectionVisibility | null>(null);
+  const [localDirectoryListed, setLocalDirectoryListed] = useState<boolean | null>(null);
+
   const profile = data?.profile;
-  const visibility = profile?.sectionVisibility || ({} as SectionVisibility);
+  const serverVisibility: SectionVisibility = useMemo(() => {
+    const raw =
+      profile?.sectionVisibility ||
+      (profile as any)?.section_visibility ||
+      ({} as SectionVisibility);
+    return {
+      identity: raw.identity ?? (raw as any).name ?? true,
+      avatar: (raw.avatar ?? (raw as any).avatar_url) ?? true,
+      academic: raw.academic ?? true,
+      bio: raw.bio ?? false,
+      skills: raw.skills ?? false,
+      links: (raw.links ?? (raw as any).external_links) ?? false,
+      projects: raw.projects ?? false,
+      achievements: raw.achievements ?? false,
+      clubs: raw.clubs ?? false,
+    };
+  }, [profile]);
+
+  const serverDirectoryListed =
+    profile?.directoryListed ?? (profile as any)?.directory_listed ?? true;
+
+  React.useEffect(() => {
+    if (data?.profile) {
+      setLocalVisibility(null);
+      setLocalDirectoryListed(null);
+    }
+  }, [data]);
+
+  const visibility = localVisibility || serverVisibility;
+  const directoryListed = localDirectoryListed !== null ? localDirectoryListed : serverDirectoryListed;
+
   const curatedItems = data?.curatedItems || [];
   const projects = data?.availableProjects || [];
   const achievements = data?.availableAchievements || [];
@@ -137,18 +171,38 @@ export function ProfileVisibilityModal({ visible, onClose }: ProfileVisibilityMo
   );
 
   const toggleSection = (key: keyof SectionVisibility) => {
-    updateVisibilityMutation.mutate({
-      section_visibility: {
-        [key]: !visibility[key],
-      },
+    const nextVal = !visibility[key];
+    setLocalVisibility({
+      ...visibility,
+      [key]: nextVal,
     });
+    updateVisibilityMutation.mutate(
+      {
+        section_visibility: {
+          [key]: nextVal,
+        },
+      },
+      {
+        onError: () => {
+          setLocalVisibility(null);
+        },
+      }
+    );
   };
 
   const toggleDirectoryListed = () => {
-    if (!profile) return;
-    updateVisibilityMutation.mutate({
-      directory_listed: !profile.directoryListed,
-    });
+    const nextVal = !directoryListed;
+    setLocalDirectoryListed(nextVal);
+    updateVisibilityMutation.mutate(
+      {
+        directory_listed: nextVal,
+      },
+      {
+        onError: () => {
+          setLocalDirectoryListed(null);
+        },
+      }
+    );
   };
 
   const getCuration = (type: string, id: string) => {
@@ -157,19 +211,25 @@ export function ProfileVisibilityModal({ visible, onClose }: ProfileVisibilityMo
 
   const toggleItemHidden = (type: 'PROJECT' | 'ACHIEVEMENT', id: string) => {
     const cur = getCuration(type, id);
+    const willBeHidden = !cur?.hidden;
     curateMutation.mutate({
       item_type: type,
+      source_id: id,
       source_record_id: id,
-      hidden: !cur?.hidden,
+      is_visible: !willBeHidden,
+      hidden: willBeHidden,
     });
   };
 
   const toggleItemFeatured = (id: string) => {
     const cur = getCuration('PROJECT', id);
+    const willBeFeatured = !cur?.featured;
     curateMutation.mutate({
       item_type: 'PROJECT',
+      source_id: id,
       source_record_id: id,
-      featured: !cur?.featured,
+      is_featured: willBeFeatured,
+      featured: willBeFeatured,
     });
   };
 
@@ -255,9 +315,10 @@ export function ProfileVisibilityModal({ visible, onClose }: ProfileVisibilityMo
                     <Text style={styles.toggleSub}>Allow profile to appear in /students search</Text>
                   </View>
                   <Switch
-                    value={profile.directoryListed}
+                    value={directoryListed}
                     onValueChange={toggleDirectoryListed}
                     trackColor={{ true: theme.colors.primary, false: theme.colors.borderHairline }}
+                    thumbColor={directoryListed ? theme.colors.onPrimary : theme.colors.outlineVariant}
                   />
                 </View>
               </View>
@@ -285,6 +346,7 @@ export function ProfileVisibilityModal({ visible, onClose }: ProfileVisibilityMo
                       value={!!visibility[key as keyof SectionVisibility]}
                       onValueChange={() => toggleSection(key as keyof SectionVisibility)}
                       trackColor={{ true: theme.colors.primary, false: theme.colors.borderHairline }}
+                      thumbColor={!!visibility[key as keyof SectionVisibility] ? theme.colors.onPrimary : theme.colors.outlineVariant}
                     />
                   </View>
                 ))}

@@ -96,7 +96,9 @@ export interface EditableProfileData {
     id: string;
     slug: string;
     directoryListed: boolean;
+    directory_listed?: boolean;
     sectionVisibility: SectionVisibility;
+    section_visibility?: SectionVisibility;
   };
   curatedItems: CuratedItem[];
   availableProjects: Array<{
@@ -172,12 +174,62 @@ export function usePublicStudentProfile(slug: string, enabled = true) {
   });
 }
 
+export function normalizeMyStudentProfile(raw: any): EditableProfileData {
+  if (!raw) return raw;
+  const p = raw.profile || {};
+  const secVis = p.section_visibility || p.sectionVisibility || {};
+  const rawCurated = raw.curated_items || raw.curatedItems || [];
+  const rawSourceOptions = raw.source_options || {};
+
+  const normalizedSecVis: SectionVisibility = {
+    identity: secVis.identity ?? secVis.name ?? true,
+    avatar: (secVis.avatar ?? secVis.avatar_url) ?? true,
+    academic: secVis.academic ?? true,
+    bio: secVis.bio ?? false,
+    skills: secVis.skills ?? false,
+    links: (secVis.links ?? secVis.external_links) ?? false,
+    projects: secVis.projects ?? false,
+    achievements: secVis.achievements ?? false,
+    clubs: secVis.clubs ?? false,
+  };
+
+  const isDirectoryListed =
+    p.directory_listed !== undefined
+      ? Boolean(p.directory_listed)
+      : p.directoryListed !== undefined
+      ? Boolean(p.directoryListed)
+      : true;
+
+  return {
+    user: raw.user,
+    profile: {
+      id: p.id,
+      slug: p.slug,
+      directoryListed: isDirectoryListed,
+      directory_listed: isDirectoryListed,
+      sectionVisibility: normalizedSecVis,
+      section_visibility: normalizedSecVis,
+    },
+    curatedItems: rawCurated.map((ci: any) => ({
+      id: ci.id,
+      itemType: ci.item_type || ci.itemType,
+      sourceRecordId: ci.source_id || ci.sourceRecordId,
+      displayOrder: ci.display_order ?? ci.displayOrder ?? 0,
+      featured: ci.is_featured ?? ci.featured ?? false,
+      hidden: ci.is_visible !== undefined ? !ci.is_visible : (ci.hidden ?? false),
+    })),
+    availableProjects: rawSourceOptions.projects || raw.availableProjects || [],
+    availableAchievements: rawSourceOptions.achievements || raw.availableAchievements || [],
+    availableClubs: rawSourceOptions.clubs || raw.availableClubs || [],
+  };
+}
+
 export function useMyStudentProfile() {
   return useQuery<EditableProfileData, Error>({
     queryKey: ['my-student-profile'],
     queryFn: async () => {
       const res = await apiClient('/v1/students/me/profile');
-      return res as EditableProfileData;
+      return normalizeMyStudentProfile(res);
     },
   });
 }
@@ -207,14 +259,33 @@ export function useCurateItem() {
   return useMutation({
     mutationFn: async (payload: {
       item_type: 'PROJECT' | 'ACHIEVEMENT' | 'CLUB' | 'LINK';
-      source_record_id: string;
+      source_id?: string;
+      source_record_id?: string;
+      is_visible?: boolean;
       hidden?: boolean;
+      is_featured?: boolean;
       featured?: boolean;
       display_order?: number;
     }) => {
+      const sourceId = payload.source_id || payload.source_record_id || '';
+      const isVisible =
+        payload.is_visible !== undefined
+          ? payload.is_visible
+          : payload.hidden !== undefined
+          ? !payload.hidden
+          : true;
+      const isFeatured =
+        payload.is_featured !== undefined ? payload.is_featured : (payload.featured ?? false);
+
       const res = await apiClient('/v1/students/me/curation', {
         method: 'POST',
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          item_type: payload.item_type,
+          source_id: sourceId,
+          is_visible: isVisible,
+          is_featured: isFeatured,
+          display_order: payload.display_order ?? 0,
+        }),
       });
       return res;
     },
@@ -230,7 +301,7 @@ export function useChangeHandle() {
     mutationFn: async (handle: string) => {
       const res = await apiClient('/v1/students/me/handle', {
         method: 'POST',
-        body: JSON.stringify({ handle }),
+        body: JSON.stringify({ slug: handle }),
       });
       return res;
     },

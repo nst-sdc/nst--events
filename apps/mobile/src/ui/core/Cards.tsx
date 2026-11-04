@@ -49,17 +49,23 @@ export function EventCard({
     statusLabel: {
       color: statusColor || theme.colors.primary,
     },
-    detailsRow: {
+    locationRow: {
+      width: '100%',
+    },
+    location: {
+      color: theme.colors.onSurfaceVariant,
+      fontSize: 13,
+      lineHeight: 18,
+    },
+    metaFooterRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      gap: theme.spacing.sm,
-    },
-    location: {
-      flex: 1,
+      marginTop: 2,
     },
     dateTime: {
-      flexShrink: 0,
+      fontSize: 11,
+      color: theme.colors.onSurface,
     },
     banner: {
       width: '100%',
@@ -77,11 +83,13 @@ export function EventCard({
       <View style={styles.header}>
         <Title style={styles.title}>{title}</Title>
       </View>
-      <View style={styles.detailsRow}>
-        <Body style={styles.location} numberOfLines={1} ellipsizeMode="tail">{location}</Body>
-        <Mono style={styles.dateTime}>{date} · {time}</Mono>
+      <View style={styles.locationRow}>
+        <Body style={styles.location} numberOfLines={2}>{location}</Body>
       </View>
-      {statusText && <MonoLabel style={styles.statusLabel}>[{statusText}]</MonoLabel>}
+      <View style={styles.metaFooterRow}>
+        <Mono style={styles.dateTime}>{date} · {time}</Mono>
+        {statusText && <MonoLabel style={styles.statusLabel}>[{statusText}]</MonoLabel>}
+      </View>
     </TouchableOpacity>
   );
 }
@@ -142,17 +150,22 @@ export function ActiveAttendanceCard({
     actionText: {
       color: status === 'ATTENDANCE_MARKED' ? theme.colors.primary : theme.colors.onPrimary,
     },
-    detailsRow: {
+    locationRow: {
+      width: '100%',
+    },
+    location: {
+      color: theme.colors.onSurfaceVariant,
+      fontSize: 13,
+      lineHeight: 18,
+    },
+    metaFooterRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      gap: theme.spacing.sm,
-    },
-    location: {
-      flex: 1,
     },
     dateTime: {
-      flexShrink: 0,
+      fontSize: 11,
+      color: theme.colors.onSurface,
     },
     banner: {
       width: '100%',
@@ -171,8 +184,10 @@ export function ActiveAttendanceCard({
         <Title style={styles.title}>{title}</Title>
         <MonoLabel style={styles.liveBadge}>[ LIVE NOW ]</MonoLabel>
       </View>
-      <View style={styles.detailsRow}>
-        <Body style={styles.location} numberOfLines={1} ellipsizeMode="tail">{location}</Body>
+      <View style={styles.locationRow}>
+        <Body style={styles.location} numberOfLines={2}>{location}</Body>
+      </View>
+      <View style={styles.metaFooterRow}>
         <Mono style={styles.dateTime}>{date} · {time}</Mono>
       </View>
       <TouchableOpacity 

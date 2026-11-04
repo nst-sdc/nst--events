@@ -924,7 +924,7 @@ export default function EventScreen() {
               </View>
               <View style={styles.modalMetaRow}>
                 <MonoLabel>VENUE</MonoLabel>
-                <Mono numberOfLines={1} style={{ maxWidth: '65%' }}>{event?.locationName || 'CAMPUS VENUE'}</Mono>
+                <Mono numberOfLines={2} style={{ maxWidth: '65%', textAlign: 'right' }}>{event?.locationName || 'CAMPUS VENUE'}</Mono>
               </View>
               <View style={styles.modalMetaRow}>
                 <MonoLabel>CAPACITY</MonoLabel>

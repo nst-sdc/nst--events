@@ -16,6 +16,7 @@ on:
 permissions:
   contents: read
   packages: write
+  actions: read
 
 concurrency:
   group: nst-events-deploy
@@ -59,6 +60,11 @@ jobs:
 
           echo "Querying GitHub Actions API for last successful deploy run on main..."
           PREV_DEPLOY_SHA=$(gh api "repos/${{ github.repository }}/actions/workflows/deploy.yml/runs?status=success&branch=main&per_page=1" --jq '.workflow_runs[0].head_sha // empty' 2>/dev/null || true)
+
+          # Validate that PREV_DEPLOY_SHA is a clean hex git SHA; ignore API error payloads
+          if [[ ! "$PREV_DEPLOY_SHA" =~ ^[a-f0-9]{7,40}$ ]]; then
+            PREV_DEPLOY_SHA=""
+          fi
 
           if [ -z "$PREV_DEPLOY_SHA" ]; then
             echo "No successful deploy.yml run found in GitHub Actions history. Checking live K8s cluster..."
@@ -127,6 +133,7 @@ jobs:
         run: |
           TAG="ghcr.io/nst-sdc/nst-api:${{ steps.vars.outputs.target_sha }}"
           echo "Building API image: ${TAG}"
+          docker builder prune -f --filter "until=1h" || true
           docker build -f docker/Dockerfile.api -t "${TAG}" .
           docker push "${TAG}"
 
@@ -135,6 +142,7 @@ jobs:
         run: |
           TAG="ghcr.io/nst-sdc/nst-worker:${{ steps.vars.outputs.target_sha }}"
           echo "Building Worker image: ${TAG}"
+          docker builder prune -f --filter "until=1h" || true
           docker build -f docker/Dockerfile.worker -t "${TAG}" .
           docker push "${TAG}"
 
@@ -143,6 +151,7 @@ jobs:
         run: |
           TAG="ghcr.io/nst-sdc/nst-dashboard:${{ steps.vars.outputs.target_sha }}"
           echo "Building Dashboard image: ${TAG}"
+          docker builder prune -f --filter "until=1h" || true
           docker build -f docker/Dockerfile.dashboard -t "${TAG}" .
           docker push "${TAG}"
 

@@ -116,6 +116,24 @@ export const Linking = {
   openURL: async () => {},
   canOpenURL: async () => true,
 };
+export const Animated = {
+  Value: class {
+    _value: number;
+    constructor(val: number) { this._value = val; }
+    setValue(val: number) { this._value = val; }
+  },
+  timing: () => ({ start: (cb?: () => void) => cb && cb() }),
+  spring: () => ({ start: (cb?: () => void) => cb && cb() }),
+  View: ({ children, ...props }: any) => React.createElement('div', cleanProps(props), children),
+};
+
+export const PanResponder = {
+  create: (config: any) => ({
+    panHandlers: {},
+    config,
+  }),
+};
+
 export const NativeModules: Record<string, any> = {};
 
 export default {
@@ -143,4 +161,6 @@ export default {
   Keyboard,
   Share,
   Linking,
+  Animated,
+  PanResponder,
 };

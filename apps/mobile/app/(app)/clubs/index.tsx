@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   TextInput,
   Image,
   Modal,
+  Animated,
+  PanResponder,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -19,12 +21,79 @@ import { Button } from '../../../src/ui/Button';
 import { ActivityIndicator } from '../../../src/ui/core/ActivityIndicator';
 import { useClubs, useClub, ClubListItem, ClubMember } from '../../../src/hooks/use-clubs';
 
+const ROLE_WEIGHT: Record<string, number> = {
+  CLUB_ADMIN: 1,
+  FACULTY_MENTOR: 2,
+  CORE_MEMBER: 3,
+  LEAD: 4,
+  TECH_HEAD: 5,
+  MEMBER: 10,
+};
+
 export default function CampusClubsScreen() {
   const router = useRouter();
   const theme = useAppTheme();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClubId, setSelectedClubId] = useState<string | null>(null);
+  const [isRosterExpanded, setIsRosterExpanded] = useState(false);
+  const [rosterSearch, setRosterSearch] = useState('');
+
+  const translateY = useRef(new Animated.Value(0)).current;
+
+  // Animate sheet sliding in from bottom when a club is selected
+  useEffect(() => {
+    if (selectedClubId) {
+      setIsRosterExpanded(false);
+      setRosterSearch('');
+      translateY.setValue(600);
+      Animated.spring(translateY, {
+        toValue: 0,
+        bounciness: 2,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [selectedClubId, translateY]);
+
+  const closeModal = React.useCallback(() => {
+    Animated.timing(translateY, {
+      toValue: 600,
+      duration: 180,
+      useNativeDriver: true,
+    }).start(() => {
+      setSelectedClubId(null);
+    });
+  }, [translateY]);
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => false,
+        onMoveShouldSetPanResponder: (_, gestureState) => {
+          // Detect intentional downward drag
+          return gestureState.dy > 6 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
+        },
+        onPanResponderMove: (_, gestureState) => {
+          if (gestureState.dy > 0) {
+            translateY.setValue(gestureState.dy);
+          }
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          // Close if dragged down past threshold or swiped downwards with velocity
+          if (gestureState.dy > 100 || gestureState.vy > 0.6) {
+            closeModal();
+          } else {
+            // Snap back up
+            Animated.spring(translateY, {
+              toValue: 0,
+              bounciness: 4,
+              useNativeDriver: true,
+            }).start();
+          }
+        },
+      }),
+    [closeModal, translateY]
+  );
 
   const {
     data: clubsData,
@@ -42,6 +111,33 @@ export default function CampusClubsScreen() {
   const clubsList = useMemo(() => {
     return clubsData?.data || [];
   }, [clubsData]);
+
+  const sortedMembers = useMemo(() => {
+    const list = [...(clubDetail?.members || [])];
+    return list.sort((a, b) => {
+      const weightA = ROLE_WEIGHT[a.role] ?? 8;
+      const weightB = ROLE_WEIGHT[b.role] ?? 8;
+      if (weightA !== weightB) return weightA - weightB;
+      return (a.full_name || '').localeCompare(b.full_name || '');
+    });
+  }, [clubDetail?.members]);
+
+  const filteredMembers = useMemo(() => {
+    if (!rosterSearch.trim()) return sortedMembers;
+    const q = rosterSearch.toLowerCase();
+    return sortedMembers.filter(
+      (m) =>
+        m.full_name?.toLowerCase().includes(q) ||
+        m.role?.toLowerCase().includes(q)
+    );
+  }, [sortedMembers, rosterSearch]);
+
+  const displayedMembers = useMemo(() => {
+    if (rosterSearch.trim() || isRosterExpanded || filteredMembers.length <= 4) {
+      return filteredMembers;
+    }
+    return filteredMembers.slice(0, 4);
+  }, [filteredMembers, isRosterExpanded, rosterSearch]);
 
   const styles = useMemo(() => StyleSheet.create({
     container: {
@@ -198,6 +294,19 @@ export default function CampusClubsScreen() {
       maxHeight: '85%',
       paddingBottom: 24,
     },
+    dragHandleContainer: {
+      width: '100%',
+      paddingTop: 10,
+      paddingBottom: 4,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    dragHandleBar: {
+      width: 40,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: theme.colors.outlineVariant,
+    },
     modalHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -278,10 +387,19 @@ export default function CampusClubsScreen() {
       backgroundColor: theme.colors.primary,
       alignItems: 'center',
       justifyContent: 'center',
+      overflow: 'hidden',
+    },
+    memberAvatarImage: {
+      width: '100%',
+      height: '100%',
     },
     memberAvatarText: {
       color: theme.colors.onPrimary,
+      fontFamily: theme.typography.syneBold,
       fontSize: 12,
+      lineHeight: 14,
+      textAlign: 'center',
+      includeFontPadding: false,
     },
     memberName: {
       fontSize: 12,
@@ -296,6 +414,37 @@ export default function CampusClubsScreen() {
     memberRoleText: {
       fontSize: 9,
       color: theme.colors.onSurfaceVariant,
+    },
+    rosterSearchBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surfaceContainerLow,
+      borderWidth: 1,
+      borderColor: theme.colors.borderHairline,
+      paddingHorizontal: 10,
+      paddingVertical: 2,
+      marginBottom: 6,
+    },
+    rosterSearchInput: {
+      flex: 1,
+      color: theme.colors.onSurface,
+      fontSize: 11,
+      fontFamily: theme.typography.monoMedium,
+      paddingVertical: 4,
+    },
+    rosterExpandBtn: {
+      backgroundColor: theme.colors.surfaceContainerLow,
+      borderWidth: 1,
+      borderColor: theme.colors.borderHairline,
+      paddingVertical: 10,
+      alignItems: 'center',
+      marginTop: 4,
+    },
+    rosterExpandText: {
+      fontSize: 10,
+      fontFamily: theme.typography.monoBold,
+      color: theme.colors.primary,
+      letterSpacing: 0.5,
     },
     modalActions: {
       marginTop: 12,
@@ -490,17 +639,37 @@ export default function CampusClubsScreen() {
       <Modal
         visible={!!selectedClubId}
         transparent
-        animationType="slide"
-        onRequestClose={() => setSelectedClubId(null)}
+        animationType="fade"
+        onRequestClose={closeModal}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHeader}>
+          {/* Tap backdrop to dismiss */}
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={closeModal}
+            accessibilityLabel="Dismiss club profile sheet"
+          />
+
+          <Animated.View
+            style={[
+              styles.modalSheet,
+              {
+                transform: [{ translateY }],
+              },
+            ]}
+          >
+            {/* Slide Down Drag Handle */}
+            <View {...panResponder.panHandlers} style={styles.dragHandleContainer}>
+              <View style={styles.dragHandleBar} />
+            </View>
+
+            <View {...panResponder.panHandlers} style={styles.modalHeader}>
               <Title style={styles.modalHeaderTitle} numberOfLines={1}>
                 {selectedClub?.name?.toUpperCase() || 'CLUB PROFILE'}
               </Title>
               <TouchableOpacity
-                onPress={() => setSelectedClubId(null)}
+                onPress={closeModal}
                 style={styles.modalCloseBtn}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 accessibilityLabel="Close club profile"
@@ -560,44 +729,97 @@ export default function CampusClubsScreen() {
 
               {/* Core Team Roster */}
               <View style={styles.modalSection}>
-                <MonoLabel style={styles.modalSectionTitle}>LEADERSHIP & CORE TEAM</MonoLabel>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <MonoLabel style={styles.modalSectionTitle}>LEADERSHIP & CORE TEAM</MonoLabel>
+                  {sortedMembers.length > 0 && (
+                    <MonoLabel style={{ color: theme.colors.outline, fontSize: 9 }}>
+                      [{sortedMembers.length} {sortedMembers.length === 1 ? 'MEMBER' : 'MEMBERS'}]
+                    </MonoLabel>
+                  )}
+                </View>
+
+                {sortedMembers.length > 4 && (
+                  <View style={styles.rosterSearchBox}>
+                    <TextInput
+                      placeholder={`Search ${sortedMembers.length} members by name or role...`}
+                      placeholderTextColor={theme.colors.onSurfaceVariant}
+                      value={rosterSearch}
+                      onChangeText={setRosterSearch}
+                      style={styles.rosterSearchInput}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                    {rosterSearch.length > 0 && (
+                      <TouchableOpacity
+                        onPress={() => setRosterSearch('')}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Text style={{ color: theme.colors.primary, fontSize: 10, fontFamily: theme.typography.monoBold }}>
+                          [✕]
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+
                 {isDetailLoading ? (
                   <View style={{ paddingVertical: 16, alignItems: 'center' }}>
                     <ActivityIndicator size="small" color={theme.colors.primary} />
                   </View>
-                ) : clubDetail?.members && clubDetail.members.length > 0 ? (
-                  clubDetail.members.map((member: ClubMember) => (
-                    <View key={member.user_id} style={styles.memberRow}>
-                      <View style={styles.memberIdentity}>
-                        <View style={styles.memberAvatar}>
-                          <Display style={styles.memberAvatarText}>
-                            {member.full_name?.charAt(0)?.toUpperCase() || 'M'}
-                          </Display>
+                ) : displayedMembers.length > 0 ? (
+                  <>
+                    {displayedMembers.map((member: ClubMember) => (
+                      <View key={member.user_id} style={styles.memberRow}>
+                        <View style={styles.memberIdentity}>
+                          <View style={styles.memberAvatar}>
+                            {member.avatar_url ? (
+                              <Image
+                                source={{ uri: member.avatar_url }}
+                                style={styles.memberAvatarImage}
+                                resizeMode="cover"
+                              />
+                            ) : (
+                              <Text style={styles.memberAvatarText}>
+                                {member.full_name?.charAt(0)?.toUpperCase() || 'M'}
+                              </Text>
+                            )}
+                          </View>
+                          <Title style={styles.memberName}>{member.full_name}</Title>
                         </View>
-                        <Title style={styles.memberName}>{member.full_name}</Title>
+                        <View style={styles.memberRoleBadge}>
+                          <Mono style={styles.memberRoleText}>[{member.role}]</Mono>
+                        </View>
                       </View>
-                      <View style={styles.memberRoleBadge}>
-                        <Mono style={styles.memberRoleText}>[{member.role}]</Mono>
-                      </View>
-                    </View>
-                  ))
+                    ))}
+
+                    {filteredMembers.length > 4 && !rosterSearch.trim() && (
+                      <TouchableOpacity
+                        style={styles.rosterExpandBtn}
+                        onPress={() => setIsRosterExpanded(!isRosterExpanded)}
+                        activeOpacity={0.8}
+                      >
+                        <Mono style={styles.rosterExpandText}>
+                          {isRosterExpanded
+                            ? '▲ SHOW LESS'
+                            : `▼ SHOW ALL ${filteredMembers.length} MEMBERS (${filteredMembers.length - 4} MORE)`}
+                        </Mono>
+                      </TouchableOpacity>
+                    )}
+                  </>
+                ) : rosterSearch.trim().length > 0 ? (
+                  <View style={{ paddingVertical: 12, alignItems: 'center' }}>
+                    <MonoLabel style={{ color: theme.colors.onSurfaceVariant, fontSize: 10 }}>
+                      NO MEMBERS MATCHING "{rosterSearch.toUpperCase()}"
+                    </MonoLabel>
+                  </View>
                 ) : (
                   <MonoLabel style={{ color: theme.colors.onSurfaceVariant, fontSize: 11 }}>
                     NO PUBLIC CORE TEAM MEMBERS LISTED
                   </MonoLabel>
                 )}
               </View>
-
-              {/* Action Buttons */}
-              <View style={styles.modalActions}>
-                <Button
-                  title="CLOSE MODAL"
-                  variant="secondary"
-                  onPress={() => setSelectedClubId(null)}
-                />
-              </View>
             </ScrollView>
-          </View>
+          </Animated.View>
         </View>
       </Modal>
     </MobileShell>
