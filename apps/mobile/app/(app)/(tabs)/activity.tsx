@@ -166,13 +166,14 @@ export default function ActivityScreen() {
         },
         segmentTab: {
           paddingVertical: 12,
-          paddingHorizontal: 16,
+          paddingHorizontal: 8,
           minWidth: 92,
           minHeight: 48,
           alignItems: 'center',
           justifyContent: 'center',
           borderRightWidth: 1,
           borderRightColor: theme.colors.borderHairline,
+          flex: 1,
         },
         segmentTabLast: {
           borderRightWidth: 0,
@@ -377,26 +378,6 @@ export default function ActivityScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.segmentTab, activeSection === 'INVITES' && styles.segmentTabActive]}
-          onPress={() => setActiveSection('INVITES')}
-          activeOpacity={0.8}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: activeSection === 'INVITES' }}
-          accessibilityLabel="Squad invitations"
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Mono style={[styles.segmentLabel, activeSection === 'INVITES' && styles.segmentLabelActive]}>
-              INVITES
-            </Mono>
-            {invitations.length > 0 && (
-              <View style={styles.badgeBubble}>
-                <Mono style={styles.badgeText}>{invitations.length}</Mono>
-              </View>
-            )}
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity
           style={[styles.segmentTab, activeSection === 'ATTENDANCE' && styles.segmentTabActive]}
           onPress={() => setActiveSection('ATTENDANCE')}
           activeOpacity={0.8}
@@ -483,10 +464,13 @@ export default function ActivityScreen() {
                     />
                   </View>
 
-                  <View style={styles.passDetailsRow}>
-                    <Body style={{ color: theme.colors.onSurfaceVariant, fontSize: 12, flex: 1 }} numberOfLines={1}>
+                  <View style={{ width: '100%', marginTop: 4 }}>
+                    <Body style={{ color: theme.colors.onSurfaceVariant, fontSize: 12, lineHeight: 16 }} numberOfLines={2}>
                       {location}
                     </Body>
+                  </View>
+
+                  <View style={styles.passDetailsRow}>
                     <Mono style={{ fontSize: 11, color: theme.colors.onSurface }}>
                       {dateStr} · {timeStr}
                     </Mono>
@@ -713,7 +697,7 @@ export default function ActivityScreen() {
             <View style={styles.emptyBox}>
               <Display style={styles.emptyTitle}>NO ACTIVE CLAIMS</Display>
               <Body style={styles.emptySub}>
-                If you were present at an event but missed check-in due to technical reasons, file a claim within the dispute window.
+                Attendance disputes can only be filed for event sessions you were registered for where check-in failed or was marked absent within the last 24 hours.
               </Body>
               <Button
                 title="[ FILE DISPUTE CLAIM ]"

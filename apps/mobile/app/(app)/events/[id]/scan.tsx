@@ -42,6 +42,7 @@ export default function ScanAttendanceScreen() {
 
   const [errorCode, setErrorCode] = useState<string>('ATTENDANCE_FAILED');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [scannedSessionId, setScannedSessionId] = useState<string | null>(null);
   const [sessionDetails, setSessionDetails] = useState<{
     locationName?: string;
     timeLogged?: string;
@@ -131,6 +132,7 @@ export default function ScanAttendanceScreen() {
         throw new Error('MALFORMED_QR');
       }
       const sessionId = parts[1];
+      setScannedSessionId(sessionId);
       logger.info('Parsed session ID from QR', { sessionId });
 
       // 2. Request Location Permission & High-Accuracy Position
@@ -388,8 +390,20 @@ export default function ScanAttendanceScreen() {
       <AttendanceFailureView
         errorCode={errorCode}
         errorMessage={errorMessage}
+        sessionId={scannedSessionId || undefined}
+        eventTitle={eventTitle || undefined}
         onRetryScan={handleResetScan}
         onReturnHome={handleReturnHome}
+        onFileDispute={scannedSessionId ? () => {
+          router.push({
+            pathname: '/(app)/disputes/new',
+            params: {
+              sessionId: scannedSessionId,
+              eventId,
+              title: eventTitle,
+            },
+          });
+        } : undefined}
       />
     );
   }

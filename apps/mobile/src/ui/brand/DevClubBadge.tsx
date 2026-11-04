@@ -25,7 +25,7 @@ export function DevClubBadge({
 
   if (variant === 'signature') {
     const content = (
-      <View style={[styles.signatureContainer, style]}>
+      <View style={[styles.signatureContainer, !onPress && style]}>
         <Text
           style={[
             styles.signatureText,
@@ -51,7 +51,7 @@ export function DevClubBadge({
 
     if (onPress) {
       return (
-        <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+        <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={[{ flexShrink: 1 }, style]}>
           {content}
         </TouchableOpacity>
       );
@@ -104,9 +104,11 @@ const styles = StyleSheet.create({
   signatureContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
   },
   signatureText: {
     letterSpacing: 0.8,
+    flexShrink: 1,
   },
   terminalBadge: {
     borderWidth: 1,

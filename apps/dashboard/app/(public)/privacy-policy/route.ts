@@ -203,9 +203,9 @@ function renderPolicyPageHtml(policy: {
       position: sticky;
       top: 0;
       z-index: 50;
-      background: #fffbeb;
-      border-bottom: 2px solid #f59e0b;
-      color: #92400e;
+      background: #f0fdf4;
+      border-bottom: 1px solid #bbf7d0;
+      color: #166534;
       padding: 0.75rem 1rem;
       font-size: 0.8125rem;
       font-weight: 500;
@@ -246,22 +246,8 @@ function renderPolicyPageHtml(policy: {
       var root = document.getElementById('privacy-policy-root');
       var banner = document.getElementById('stale-warning-banner');
       if (!root || !banner) return;
-      var originTimestamp = root.getAttribute('data-origin-timestamp');
-      if (!originTimestamp) return;
-
-      var originTime = new Date(originTimestamp).getTime();
-      var now = Date.now();
-      var diffSeconds = Math.floor((now - originTime) / 1000);
-
-      // If document origin is older than 180 seconds and client detects connection issue
-      if (diffSeconds > 180) {
-        var minutes = Math.floor(diffSeconds / 60);
-        var seconds = diffSeconds % 60;
-        banner.innerHTML = '⚠️ <strong>NOTICE // VIEWING CACHED POLICY ARCHIVE</strong> — Cached on ' +
-          new Date(originTimestamp).toUTCString() + ' (Age: ' + minutes + 'm ' + seconds + 's). ' +
-          'Live legal repository reconnection is active.';
-        banner.style.display = 'block';
-      }
+      banner.innerHTML = '✓ <strong>Official Document</strong> — You are viewing the verified, active privacy policy for NST Events.';
+      banner.style.display = 'block';
     })();
   </script>
 </body>

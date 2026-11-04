@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import {
   View,
+  Text,
+  Image,
   StyleSheet,
   TouchableOpacity,
   Modal,
@@ -105,10 +107,19 @@ export default function ProfileScreen() {
       backgroundColor: theme.colors.primary,
       alignItems: 'center',
       justifyContent: 'center',
+      overflow: 'hidden',
+    },
+    avatarImage: {
+      width: '100%',
+      height: '100%',
     },
     avatarInitial: {
       color: theme.colors.onPrimary,
+      fontFamily: theme.typography.syneBold,
       fontSize: 20,
+      lineHeight: 24,
+      textAlign: 'center',
+      includeFontPadding: false,
     },
     identityInfo: {
       flex: 1,
@@ -116,6 +127,7 @@ export default function ProfileScreen() {
     },
     studentName: {
       fontSize: 16,
+      lineHeight: 20,
       textTransform: 'uppercase',
     },
     emailText: {
@@ -232,10 +244,20 @@ export default function ProfileScreen() {
             <View style={styles.identitySection}>
               <View style={styles.identityHeader}>
                 <View style={styles.avatarBox}>
-                  <Display style={styles.avatarInitial}>{fullName.charAt(0).toUpperCase()}</Display>
+                  {profile?.avatar_url ? (
+                    <Image
+                      source={{ uri: profile.avatar_url }}
+                      style={styles.avatarImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Text style={styles.avatarInitial}>
+                      {fullName.charAt(0).toUpperCase() || 'S'}
+                    </Text>
+                  )}
                 </View>
                 <View style={styles.identityInfo}>
-                  <Title style={styles.studentName} numberOfLines={1}>{fullName.toUpperCase()}</Title>
+                  <Title style={styles.studentName} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.85}>{fullName.toUpperCase()}</Title>
                   <Body style={styles.emailText} numberOfLines={1}>{email}</Body>
                   <MonoLabel style={styles.roleText} numberOfLines={1}>
                     {academicRoleLabel}
@@ -252,10 +274,10 @@ export default function ProfileScreen() {
               padding: theme.spacing.base,
               gap: theme.spacing.sm,
             }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <MonoLabel style={{ color: theme.colors.primary }}>PUBLIC STUDENT PORTFOLIO</MonoLabel>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
+                <MonoLabel style={{ color: theme.colors.primary, flexShrink: 1 }}>PUBLIC STUDENT PORTFOLIO</MonoLabel>
                 {mySlug && (
-                  <Mono style={{ fontSize: 10, color: theme.colors.primary }}>@{mySlug}</Mono>
+                  <Mono style={{ fontSize: 10, color: theme.colors.primary, flexShrink: 0 }}>@{mySlug}</Mono>
                 )}
               </View>
 
@@ -312,9 +334,9 @@ export default function ProfileScreen() {
 
             {/* OFFICIAL HONORS & ACHIEVEMENTS */}
             <View style={styles.achievementsSection} testID="profile-achievements-section">
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <MonoLabel style={styles.sectionTitle}>OFFICIAL HONORS & ACHIEVEMENTS</MonoLabel>
-                <MonoLabel style={{ color: theme.colors.success, fontSize: 9 }}>[VERIFIED RECORD]</MonoLabel>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6 }}>
+                <MonoLabel style={[styles.sectionTitle, { flexShrink: 1 }]}>OFFICIAL HONORS & ACHIEVEMENTS</MonoLabel>
+                <MonoLabel style={{ color: theme.colors.success, fontSize: 9, flexShrink: 0 }}>[VERIFIED RECORD]</MonoLabel>
               </View>
 
               {isAchievementsLoading ? (
@@ -497,13 +519,14 @@ export default function ProfileScreen() {
             </View>
 
             <View style={{ marginTop: 12, padding: 14, backgroundColor: theme.colors.surfaceContainerLow, borderWidth: 1, borderColor: theme.colors.borderHairline, gap: 10 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                 <DevClubBadge
                   variant="signature"
                   size="sm"
+                  style={{ flexShrink: 1 }}
                   onPress={() => setShowCreditsModal(true)}
                 />
-                <MonoLabel>v{MOBILE_APP_VERSION}</MonoLabel>
+                <MonoLabel style={{ fontSize: 10, color: theme.colors.onSurfaceVariant, flexShrink: 0 }}>v{MOBILE_APP_VERSION}</MonoLabel>
               </View>
               <TouchableOpacity
                 style={{ borderWidth: 1, borderColor: theme.colors.borderHairline, paddingVertical: 8, alignItems: 'center', backgroundColor: theme.colors.surface }}

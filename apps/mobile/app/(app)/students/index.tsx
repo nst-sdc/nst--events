@@ -60,10 +60,13 @@ export default function StudentDirectoryScreen() {
         },
         searchInput: {
           flex: 1,
-          height: 42,
+          height: 44,
           fontFamily: theme.typography.monoRegular,
           fontSize: 13,
           color: theme.colors.onSurface,
+          paddingVertical: 0,
+          textAlignVertical: 'center',
+          includeFontPadding: false,
         },
         filterRow: {
           flexDirection: 'row',
@@ -185,6 +188,8 @@ export default function StudentDirectoryScreen() {
           borderTopColor: theme.colors.borderHairline,
           paddingTop: theme.spacing.sm,
           marginTop: 4,
+          flexWrap: 'wrap',
+          gap: 6,
         },
         statsRow: {
           flexDirection: 'row',
@@ -238,12 +243,14 @@ export default function StudentDirectoryScreen() {
             <MaterialIcons name="search" size={18} color={theme.colors.onSurfaceVariant} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search by name, handle (@slug), headline..."
+              placeholder="Search by name, handle (@slug)..."
               placeholderTextColor={theme.colors.onSurfaceVariant}
               value={search}
               onChangeText={setSearch}
               autoCapitalize="none"
               autoCorrect={false}
+              multiline={false}
+              numberOfLines={1}
             />
             {search.length > 0 && (
               <TouchableOpacity

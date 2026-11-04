@@ -262,13 +262,17 @@ export default function HomeAttendanceScreen() {
           backgroundColor: theme.colors.surfaceContainerLow,
           borderWidth: 1,
           borderColor: theme.colors.borderHairline,
+          gap: 6,
+          marginBottom: theme.spacing.md,
+        },
+        dashboardTopRow: {
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: theme.spacing.md,
         },
         studentGreeting: {
-          fontSize: 16,
+          fontSize: 18,
+          lineHeight: 22,
           color: theme.colors.onSurface,
         },
         roleBadgeContainer: {
@@ -494,20 +498,25 @@ export default function HomeAttendanceScreen() {
     >
       {/* Personalized Welcome Header */}
       <View style={styles.dashboardHeader}>
-        <View style={{ flex: 1, gap: 2 }}>
+        <View style={styles.dashboardTopRow}>
           <MonoLabel style={{ color: theme.colors.primary, fontSize: 9 }}>STUDENT DASHBOARD</MonoLabel>
-          <Display style={styles.studentGreeting} numberOfLines={1}>
-            {fullName.toUpperCase()}
-          </Display>
-          {programCode && (
-            <Mono style={{ fontSize: 10, color: theme.colors.onSurfaceVariant }}>
-              {programCode} · BATCH {batchYear || '2026'}
-            </Mono>
-          )}
+          <View style={styles.roleBadgeContainer}>
+            <Mono style={styles.roleBadgeText}>[STUDENT]</Mono>
+          </View>
         </View>
-        <View style={styles.roleBadgeContainer}>
-          <Mono style={styles.roleBadgeText}>[STUDENT]</Mono>
-        </View>
+        <Display 
+          style={styles.studentGreeting} 
+          numberOfLines={2}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}
+        >
+          {fullName.toUpperCase()}
+        </Display>
+        {programCode && (
+          <Mono style={{ fontSize: 10, color: theme.colors.onSurfaceVariant }}>
+            {programCode} · BATCH {batchYear || '2026'}
+          </Mono>
+        )}
       </View>
 
       {/* Quick Actions Tray */}

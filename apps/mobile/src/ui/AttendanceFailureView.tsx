@@ -7,7 +7,10 @@ import { Title, Body, MonoLabel } from './core/Typography';
 export interface AttendanceFailureProps {
   errorCode?: string;
   errorMessage?: string;
+  sessionId?: string;
+  eventTitle?: string;
   onRetryScan?: () => void;
+  onFileDispute?: () => void;
   onReturnHome: () => void;
 }
 
@@ -100,7 +103,10 @@ export function getAttendanceErrorDetails(errorCode: string = 'ATTENDANCE_FAILED
 export const AttendanceFailureView: React.FC<AttendanceFailureProps> = ({
   errorCode = 'ATTENDANCE_FAILED',
   errorMessage,
+  sessionId,
+  eventTitle,
   onRetryScan,
+  onFileDispute,
   onReturnHome,
 }) => {
   const theme = useAppTheme();
@@ -191,6 +197,14 @@ export const AttendanceFailureView: React.FC<AttendanceFailureProps> = ({
               title="RETRY SCAN"
               onPress={onRetryScan}
               variant="primary"
+              style={styles.retryBtn}
+            />
+          )}
+          {onFileDispute && errorCode !== 'ALREADY_RECORDED' && errorCode !== 'NOT_REGISTERED' && errorCode !== 'WAITLISTED' && (
+            <Button
+              title="REPORT ATTENDANCE ISSUE"
+              onPress={onFileDispute}
+              variant="secondary"
               style={styles.retryBtn}
             />
           )}

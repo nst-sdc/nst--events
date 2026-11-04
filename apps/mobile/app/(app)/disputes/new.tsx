@@ -8,14 +8,17 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  ScrollView,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAppTheme } from '../../../src/store/theme-store';
 import { StatusBadge } from '../../../src/ui/core/StatusBadge';
 import { Button } from '../../../src/ui/Button';
 import { useSubmitDispute } from '../../../src/hooks/use-disputes';
+import { useAttendanceHistory } from '../../../src/hooks/use-attendance-history';
 import { MobileShell } from '../../../src/ui/core/MobileShell';
 import { Title, Body, MonoLabel, Mono, Display } from '../../../src/ui/core/Typography';
+import { ActivityIndicator } from '../../../src/ui/core/ActivityIndicator';
 
 export default function SubmitDisputeScreen() {
   const router = useRouter();
@@ -27,18 +30,40 @@ export default function SubmitDisputeScreen() {
     title?: string;
   }>();
 
-  const sessionId = params.sessionId || '';
-  const eventTitle = params.title || 'CLASSROOM SESSION';
+  const [selectedSessionId, setSelectedSessionId] = useState<string>(params.sessionId || '');
+  const [selectedTitle, setSelectedTitle] = useState<string>(params.title || '');
+
+  const sessionId = selectedSessionId;
+  const eventTitle = selectedTitle || params.title || 'EVENT ATTENDANCE';
+
+  // If no session ID was provided via params, check attendance records for eligible absent sessions
+  const { data: attendanceData, isLoading: isLoadingAttendance } = useAttendanceHistory(undefined, {
+    enabled: !selectedSessionId,
+  });
+
+  const allRecords = attendanceData?.pages.flatMap((page) => page.data) || [];
+
+  // Eligible absent sessions: where attendance wasn't marked or is ABSENT, and within 24h
+  const eligibleRecords = useMemo(() => {
+    const now = Date.now();
+    return allRecords.filter((r) => {
+      if (r.status === 'PRESENT' || r.status === 'EXCUSED') return false;
+      const endTime = r.session?.endTime || r.session?.closeAt;
+      if (!endTime) return true;
+      const expireTime = new Date(endTime).getTime() + 24 * 60 * 60 * 1000;
+      return now <= expireTime;
+    });
+  }, [allRecords]);
 
   const [reason, setReason] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const { mutate: submitDispute, isPending } = useSubmitDispute();
 
-  const isValid = reason.trim().length >= 10;
+  const isValid = sessionId.length > 0 && reason.trim().length >= 10;
 
   const handleSubmit = () => {
-    if (!isValid || isPending) return;
+    if (!isValid || isPending || !sessionId) return;
     setErrorMessage(null);
 
     submitDispute(
@@ -110,6 +135,14 @@ export default function SubmitDisputeScreen() {
       color: theme.colors.onSurface,
       lineHeight: 20,
     },
+    changeSessionBtn: {
+      marginTop: 8,
+    },
+    changeSessionText: {
+      color: theme.colors.primary,
+      fontSize: 11,
+      fontFamily: theme.typography.monoBold,
+    },
     formContainer: {
       flex: 1,
       marginTop: 16,
@@ -162,7 +195,178 @@ export default function SubmitDisputeScreen() {
       color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
     },
+    emptyGuardBox: {
+      padding: 24,
+      alignItems: 'center',
+      gap: 16,
+      marginTop: 40,
+    },
+    emptyGuardTitle: {
+      fontSize: 18,
+      textAlign: 'center',
+      color: theme.colors.onSurface,
+    },
+    emptyGuardSub: {
+      fontSize: 13,
+      color: theme.colors.onSurfaceVariant,
+      textAlign: 'center',
+      lineHeight: 18,
+    },
+    pickerContainer: {
+      padding: theme.spacing.base,
+      gap: 12,
+      paddingBottom: 40,
+    },
+    pickerHeader: {
+      gap: 8,
+      marginBottom: 8,
+    },
+    pickerTitle: {
+      fontSize: 18,
+      color: theme.colors.onSurface,
+    },
+    pickerSub: {
+      fontSize: 12,
+      color: theme.colors.onSurfaceVariant,
+      lineHeight: 16,
+    },
+    eligibleCard: {
+      backgroundColor: theme.colors.surfaceContainerLow,
+      borderWidth: 1,
+      borderColor: theme.colors.borderHairline,
+      padding: 14,
+      gap: 8,
+    },
+    eligibleCardTop: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    eligibleCardId: {
+      fontSize: 10,
+      color: theme.colors.onSurfaceVariant,
+    },
+    eligibleCardTitle: {
+      fontSize: 15,
+      color: theme.colors.onSurface,
+    },
+    eligibleCardDate: {
+      fontSize: 11,
+      color: theme.colors.outline,
+    },
+    selectBtnText: {
+      color: theme.colors.primary,
+      fontSize: 11,
+      fontFamily: theme.typography.monoBold,
+      marginTop: 4,
+    },
+    loadingBox: {
+      paddingVertical: 60,
+      alignItems: 'center',
+      gap: 12,
+    },
   }), [theme]);
+
+  // If no session ID is active, render the session selection or ineligible notice
+  if (!sessionId) {
+    return (
+      <MobileShell
+        title="SUBMIT DISPUTE"
+        showBackButton
+        onBackPress={() => {
+          if (router.canGoBack()) {
+            router.back();
+          } else {
+            router.replace('/(app)/(tabs)/activity?tab=attendance');
+          }
+        }}
+        scrollable={false}
+      >
+        {isLoadingAttendance ? (
+          <View style={styles.loadingBox}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <MonoLabel>FETCHING ATTENDANCE SESSIONS...</MonoLabel>
+          </View>
+        ) : eligibleRecords.length > 0 ? (
+          <ScrollView contentContainerStyle={styles.pickerContainer}>
+            <View style={styles.pickerHeader}>
+              <StatusBadge status="[ACTION REQUIRED]" type="warning" />
+              <Title style={styles.pickerTitle}>SELECT SESSION TO DISPUTE</Title>
+              <Body style={styles.pickerSub}>
+                Select an attendance session from the last 24 hours where your check-in was not recorded.
+              </Body>
+            </View>
+
+            {eligibleRecords.map((item) => (
+              <TouchableOpacity
+                key={item.id || item.sessionId}
+                style={styles.eligibleCard}
+                onPress={() => {
+                  setSelectedSessionId(item.sessionId);
+                  setSelectedTitle(item.session?.event?.title || item.session?.title || 'EVENT ATTENDANCE');
+                }}
+                activeOpacity={0.8}
+              >
+                <View style={styles.eligibleCardTop}>
+                  <MonoLabel style={styles.eligibleCardId}>
+                    SESSION #{item.sessionId.slice(0, 8).toUpperCase()}
+                  </MonoLabel>
+                  <StatusBadge status={item.status || 'ABSENT'} type="warning" />
+                </View>
+                <Title style={styles.eligibleCardTitle}>
+                  {item.session?.event?.title || item.session?.title || 'EVENT SESSION'}
+                </Title>
+                {item.session?.startTime && (
+                  <Mono style={styles.eligibleCardDate}>
+                    {new Date(item.session.startTime).toLocaleString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </Mono>
+                )}
+                <MonoLabel style={styles.selectBtnText}>[ SELECT THIS SESSION → ]</MonoLabel>
+              </TouchableOpacity>
+            ))}
+
+            <Button
+              title="RETURN TO ATTENDANCE HISTORY"
+              variant="secondary"
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace('/(app)/(tabs)/activity?tab=attendance');
+                }
+              }}
+              style={{ marginTop: 12 }}
+            />
+          </ScrollView>
+        ) : (
+          <View style={styles.emptyGuardBox}>
+            <StatusBadge status="[TARGET SESSION REQUIRED]" type="warning" />
+            <Display style={styles.emptyGuardTitle}>NO ELIGIBLE SESSIONS</Display>
+            <Body style={styles.emptyGuardSub}>
+              Attendance disputes can only be filed for specific event sessions you were registered for where check-in failed or was marked absent within the last 24 hours.
+            </Body>
+            <Button
+              title="GO TO ATTENDANCE HISTORY"
+              variant="secondary"
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace('/(app)/(tabs)/activity?tab=attendance');
+                }
+              }}
+              style={{ marginTop: 12, width: '100%' }}
+            />
+          </View>
+        )}
+      </MobileShell>
+    );
+  }
 
   return (
     <MobileShell 
@@ -187,9 +391,14 @@ export default function SubmitDisputeScreen() {
             <View style={styles.contextCard}>
               <View style={styles.contextCardHeader}>
                 <MonoLabel style={styles.contextLabel}>TARGET SESSION</MonoLabel>
-                <StatusBadge status={`#${sessionId.slice(0, 8).toUpperCase() || 'UNKNOWN'}`} type="default" />
+                <StatusBadge status={`#${sessionId.slice(0, 8).toUpperCase()}`} type="default" />
               </View>
               <Title style={styles.eventTitle}>{eventTitle}</Title>
+              {!params.sessionId && (
+                <TouchableOpacity onPress={() => setSelectedSessionId('')} style={styles.changeSessionBtn}>
+                  <MonoLabel style={styles.changeSessionText}>← SELECT DIFFERENT SESSION</MonoLabel>
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* Form Area */}
@@ -243,3 +452,4 @@ export default function SubmitDisputeScreen() {
     </MobileShell>
   );
 }
+

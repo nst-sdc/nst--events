@@ -111,6 +111,8 @@ export default function PublicStudentProfileScreen() {
           borderTopWidth: 1,
           borderTopColor: theme.colors.borderHairline,
           paddingTop: theme.spacing.sm,
+          flexWrap: 'wrap',
+          gap: 8,
         },
         shareBtn: {
           flexDirection: 'row',
@@ -328,7 +330,7 @@ export default function PublicStudentProfileScreen() {
 
           {/* Links & Share Tray */}
           <View style={styles.shareRow}>
-            <View style={{ flexDirection: 'row', gap: 6 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, flex: 1 }}>
               {student.externalLinks?.github && (
                 <TouchableOpacity
                   onPress={() => openUrl(student.externalLinks.github)}

@@ -142,6 +142,10 @@ describe('Phase 5 — Attendance History & Disputes Contract Tests', () => {
       expect(disputesNewContent).toContain('NOT_REGISTERED');
     });
 
+    it('eliminates unanchored fake fallback (CLASSROOM SESSION)', () => {
+      expect(disputesNewContent).not.toContain("'CLASSROOM SESSION'");
+    });
+
     it('submits mutation with exact POST /v1/attendance/disputes contract and payload', () => {
       expect(useDisputesContent).toContain("apiClient('/v1/attendance/disputes'");
       expect(useDisputesContent).toContain("method: 'POST'");
