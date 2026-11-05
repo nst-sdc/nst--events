@@ -28,13 +28,16 @@ const getApiBaseUrl = () => {
 export const API_BASE_URL = getApiBaseUrl();
 
 export const GOOGLE_WEB_CLIENT_ID =
-  process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '';
+  process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
+  '319324933029-4pnrpvheq5iglvtru53o10sduhovpfav.apps.googleusercontent.com';
 
 export const GOOGLE_IOS_CLIENT_ID =
-  process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || '';
+  process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ||
+  '319324933029-85akm9aa4vt8vnscj69sdlt1lbv5rr0f.apps.googleusercontent.com';
 
 export const GOOGLE_ANDROID_CLIENT_ID =
-  process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '';
+  process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ||
+  '319324933029-901cuprefv2br5qtdradc7e8t5vij3or.apps.googleusercontent.com';
 
 export const SUPPORT_EMAIL =
   process.env.EXPO_PUBLIC_SUPPORT_EMAIL || 'support@nstsdc.com';
