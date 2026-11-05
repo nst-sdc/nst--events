@@ -25,6 +25,10 @@ concurrency:
 jobs:
   deploy:
     name: Build, Deploy & Rollout Gate
+    outputs:
+      build_mobile: ${{ steps.filter.outputs.build_mobile }}
+      target_sha: ${{ steps.vars.outputs.target_sha }}
+      short_sha: ${{ steps.vars.outputs.short_sha }}
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: [self-hosted, linux, x64, n6]
     environment:
@@ -82,6 +86,7 @@ jobs:
             BUILD_API=true
             BUILD_WORKER=true
             BUILD_DASHBOARD=true
+            BUILD_MOBILE=true
           else
             echo "Fetching git history for previous deploy commit ${PREV_DEPLOY_SHA}..."
             git fetch origin "${PREV_DEPLOY_SHA}" --depth=50 2>/dev/null || git fetch origin main --depth=100 2>/dev/null || true
@@ -91,6 +96,7 @@ jobs:
               BUILD_API=true
               BUILD_WORKER=true
               BUILD_DASHBOARD=true
+              BUILD_MOBILE=true
             else
               echo "Comparing diff between last successful deploy (${PREV_DEPLOY_SHA}) and target (${TARGET_SHA}):"
               DIFF=$(git diff --name-only "${PREV_DEPLOY_SHA}" "${TARGET_SHA}")
@@ -99,13 +105,15 @@ jobs:
               BUILD_API=false
               BUILD_WORKER=false
               BUILD_DASHBOARD=false
+              BUILD_MOBILE=false
 
               # Shared packages, lockfile, or root configs affect all services
               if echo "$DIFF" | grep -qE '^(packages/|pnpm-lock\.yaml|pnpm-workspace\.yaml|package\.json)'; then
-                echo "Shared package, workspace config, or lockfile changed. Rebuilding API, worker, and dashboard."
+                echo "Shared package, workspace config, or lockfile changed. Rebuilding API, worker, dashboard, and mobile."
                 BUILD_API=true
                 BUILD_WORKER=true
                 BUILD_DASHBOARD=true
+                BUILD_MOBILE=true
               fi
 
               # The API image is also the migration runner. Rebuild it whenever
@@ -121,12 +129,17 @@ jobs:
               if echo "$DIFF" | grep -qE '^(apps/dashboard/|docker/Dockerfile\.dashboard)'; then
                 BUILD_DASHBOARD=true
               fi
+
+              if echo "$DIFF" | grep -qE '^(apps/mobile/)'; then
+                BUILD_MOBILE=true
+              fi
             fi
           fi
 
           echo "build_api=${BUILD_API}" >> "$GITHUB_OUTPUT"
           echo "build_worker=${BUILD_WORKER}" >> "$GITHUB_OUTPUT"
           echo "build_dashboard=${BUILD_DASHBOARD}" >> "$GITHUB_OUTPUT"
+          echo "build_mobile=${BUILD_MOBILE}" >> "$GITHUB_OUTPUT"
 
       - name: Build & Push API Image
         if: steps.filter.outputs.build_api == 'true'
@@ -215,6 +228,7 @@ jobs:
           echo "| **API Rebuilt** | \`${{ steps.filter.outputs.build_api }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| **Worker Rebuilt** | \`${{ steps.filter.outputs.build_worker }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| **Dashboard Rebuilt** | \`${{ steps.filter.outputs.build_dashboard }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Mobile OTA Queued** | \`${{ steps.filter.outputs.build_mobile }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
 
           if [ "$STATUS" = "success" ]; then
@@ -223,4 +237,66 @@ jobs:
             echo "> All selected components successfully deployed and passed rollout health gating on \`nst-events\`." >> "$GITHUB_STEP_SUMMARY"
           else
             echo "::error title=CD Deployment Failed::One or more deployment steps failed or timed out. Review annotations and step summary for component-level details."
+          fi
+
+  update-mobile:
+    name: Mobile Over-The-Air (OTA) Production Update
+    needs: deploy
+    if: ${{ always() && needs.deploy.result == 'success' && needs.deploy.outputs.build_mobile == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.deploy.outputs.target_sha }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6.0.9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Workspace Packages
+        run: |
+          pnpm --filter @nst/database build
+          pnpm --filter @nst/shared build
+
+      - name: Setup EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Publish Production EAS Update
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          cd apps/mobile
+          npx --yes eas-cli update --channel production --environment production --message "Deploy ${{ needs.deploy.outputs.short_sha }}: auto-update" --non-interactive
+
+      - name: Mobile OTA Summary
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "## 📱 Mobile OTA Update Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Status** | **${STATUS}** |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Channel** | \`production\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Environment** | \`production\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Target Commit** | \`${{ needs.deploy.outputs.target_sha }}\` (\`${{ needs.deploy.outputs.short_sha }}\`) |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$STATUS" = "success" ]; then
+            echo "::notice title=Mobile OTA Succeeded::Production EAS update published to channel production."
+            echo "> [!NOTE]" >> "$GITHUB_STEP_SUMMARY"
+            echo "> Mobile update successfully published to EAS \`production\` channel. Connected devices on version 1.0.0 will fetch it on load." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::error title=Mobile OTA Failed::EAS update publishing failed. Verify EXPO_TOKEN secret in GitHub settings."
           fi
