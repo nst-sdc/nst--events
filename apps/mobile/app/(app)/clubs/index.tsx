@@ -113,7 +113,40 @@ export default function CampusClubsScreen() {
   }, [clubsData]);
 
   const sortedMembers = useMemo(() => {
-    const list = [...(clubDetail?.members || [])];
+    const rawList = clubDetail?.members || [];
+    // Deduplicate by user_id first, keeping the highest role
+    const userMap = new Map<string, ClubMember>();
+    for (const m of rawList) {
+      const key = m.user_id || m.full_name?.trim().toLowerCase();
+      const existing = userMap.get(key);
+      if (!existing) {
+        userMap.set(key, m);
+      } else {
+        const weightExisting = ROLE_WEIGHT[existing.role] ?? 8;
+        const weightCurrent = ROLE_WEIGHT[m.role] ?? 8;
+        if (weightCurrent < weightExisting) {
+          userMap.set(key, m);
+        }
+      }
+    }
+
+    // Also deduplicate by normalized name in case the same person has multiple registered accounts
+    const nameMap = new Map<string, ClubMember>();
+    for (const m of userMap.values()) {
+      const nameKey = (m.full_name || '').trim().toLowerCase() || m.user_id;
+      const existing = nameMap.get(nameKey);
+      if (!existing) {
+        nameMap.set(nameKey, m);
+      } else {
+        const weightExisting = ROLE_WEIGHT[existing.role] ?? 8;
+        const weightCurrent = ROLE_WEIGHT[m.role] ?? 8;
+        if (weightCurrent < weightExisting) {
+          nameMap.set(nameKey, m);
+        }
+      }
+    }
+
+    const list = Array.from(nameMap.values());
     return list.sort((a, b) => {
       const weightA = ROLE_WEIGHT[a.role] ?? 8;
       const weightB = ROLE_WEIGHT[b.role] ?? 8;
@@ -311,19 +344,24 @@ export default function CampusClubsScreen() {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      padding: theme.spacing.base,
+      paddingHorizontal: theme.spacing.base,
+      paddingVertical: 12,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.borderHairline,
+      gap: 12,
     },
     modalHeaderTitle: {
-      fontSize: 16,
+      fontSize: 15,
+      lineHeight: 19,
       flex: 1,
+      minWidth: 0,
     },
     modalCloseBtn: {
       padding: 6,
       minHeight: 44,
       justifyContent: 'center',
       alignItems: 'center',
+      flexShrink: 0,
     },
     modalContentScroll: {
       padding: theme.spacing.base,
@@ -375,11 +413,14 @@ export default function CampusClubsScreen() {
       borderColor: theme.colors.borderHairline,
       padding: 10,
       marginBottom: 6,
+      gap: 10,
     },
     memberIdentity: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 10,
+      flex: 1,
+      minWidth: 0,
     },
     memberAvatar: {
       width: 28,
@@ -388,6 +429,7 @@ export default function CampusClubsScreen() {
       alignItems: 'center',
       justifyContent: 'center',
       overflow: 'hidden',
+      flexShrink: 0,
     },
     memberAvatarImage: {
       width: '100%',
@@ -403,6 +445,8 @@ export default function CampusClubsScreen() {
     },
     memberName: {
       fontSize: 12,
+      flex: 1,
+      minWidth: 0,
     },
     memberRoleBadge: {
       backgroundColor: theme.colors.surface,
@@ -410,6 +454,7 @@ export default function CampusClubsScreen() {
       borderColor: theme.colors.borderHairline,
       paddingHorizontal: 6,
       paddingVertical: 2,
+      flexShrink: 0,
     },
     memberRoleText: {
       fontSize: 9,
@@ -665,7 +710,7 @@ export default function CampusClubsScreen() {
             </View>
 
             <View {...panResponder.panHandlers} style={styles.modalHeader}>
-              <Title style={styles.modalHeaderTitle} numberOfLines={1}>
+              <Title style={styles.modalHeaderTitle} numberOfLines={2}>
                 {selectedClub?.name?.toUpperCase() || 'CLUB PROFILE'}
               </Title>
               <TouchableOpacity
@@ -769,7 +814,7 @@ export default function CampusClubsScreen() {
                 ) : displayedMembers.length > 0 ? (
                   <>
                     {displayedMembers.map((member: ClubMember) => (
-                      <View key={member.user_id} style={styles.memberRow}>
+                      <View key={`${member.user_id}-${member.role}`} style={styles.memberRow}>
                         <View style={styles.memberIdentity}>
                           <View style={styles.memberAvatar}>
                             {member.avatar_url ? (
@@ -784,7 +829,9 @@ export default function CampusClubsScreen() {
                               </Text>
                             )}
                           </View>
-                          <Title style={styles.memberName}>{member.full_name}</Title>
+                          <Title style={styles.memberName} numberOfLines={1} ellipsizeMode="tail">
+                            {member.full_name}
+                          </Title>
                         </View>
                         <View style={styles.memberRoleBadge}>
                           <Mono style={styles.memberRoleText}>[{member.role}]</Mono>

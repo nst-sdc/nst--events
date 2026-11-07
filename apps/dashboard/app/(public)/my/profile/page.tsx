@@ -145,6 +145,10 @@ const myProfileStyles = `
     background: #050505;
     border: 2px solid rgba(245, 245, 242, 0.15);
     padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 62px;
   }
 
   html.light .neo-meta-box, .light .neo-meta-box {
@@ -417,7 +421,7 @@ export default function MyProfilePage() {
                 NST_CAMPUS // PORTFOLIO_CORE
               </div>
 
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mt-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2">
                 <div className="flex items-center gap-4">
                   <div className="relative shrink-0">
                     <div className="w-16 h-16 sm:w-20 sm:h-20 border-2 border-black dark:border-white/30 bg-[#0057FF] flex items-center justify-center text-white font-['Syne',sans-serif] font-black text-2xl sm:text-3xl shadow-[4px_4px_0px_#000000] dark:shadow-[4px_4px_0px_rgba(0,87,255,0.4)] overflow-hidden">
@@ -451,49 +455,49 @@ export default function MyProfilePage() {
                     </p>
                   </div>
                 </div>
+              </div>
 
-                {/* Academic Metadata Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 w-full lg:w-auto">
-                  <div className="neo-meta-box">
-                    <p className="text-[10px] font-['JetBrains_Mono',monospace] font-bold text-zinc-500 uppercase tracking-wider">
-                      STUDENT ID
-                    </p>
-                    <p className="text-xs font-['JetBrains_Mono',monospace] font-bold text-black dark:text-[#F5F5F2] mt-0.5 truncate">
-                      {studentId}
-                    </p>
-                  </div>
-                  <div className="neo-meta-box">
-                    <p className="text-[10px] font-['JetBrains_Mono',monospace] font-bold text-zinc-500 uppercase tracking-wider">
-                      PROGRAM
-                    </p>
-                    <p className="text-xs font-['JetBrains_Mono',monospace] font-bold text-black dark:text-[#F5F5F2] mt-0.5 truncate">
-                      {program}
-                    </p>
-                  </div>
-                  <div className="neo-meta-box">
-                    <p className="text-[10px] font-['JetBrains_Mono',monospace] font-bold text-zinc-500 uppercase tracking-wider">
-                      BATCH
-                    </p>
-                    <p className="text-xs font-['JetBrains_Mono',monospace] font-bold text-black dark:text-[#F5F5F2] mt-0.5 truncate">
-                      {batchName}
-                    </p>
-                  </div>
-                  <div className="neo-meta-box">
-                    <p className="text-[10px] font-['JetBrains_Mono',monospace] font-bold text-zinc-500 uppercase tracking-wider">
-                      CAMPUS
-                    </p>
-                    <p className="text-xs font-['JetBrains_Mono',monospace] font-bold text-[#0057FF] dark:text-[#7bd0ff] mt-0.5 truncate">
-                      {campusName}
-                    </p>
-                  </div>
-                  <div className="neo-meta-box border-l-2 border-l-[#0057FF]">
-                    <p className="text-[10px] font-['JetBrains_Mono',monospace] font-bold text-[#0057FF] dark:text-[#7bd0ff] uppercase tracking-wider">
-                      EVENTS ATTENDED
-                    </p>
-                    <p className="text-xs font-['JetBrains_Mono',monospace] font-black text-black dark:text-[#F5F5F2] mt-0.5 truncate">
-                      {String(attendedCount).padStart(2, '0')} VERIFIED
-                    </p>
-                  </div>
+              {/* Academic Metadata Grid (Full Width) */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-6 pt-5 border-t border-black/10 dark:border-white/10 w-full">
+                <div className="neo-meta-box">
+                  <p className="text-[10px] font-['JetBrains_Mono',monospace] font-bold text-zinc-500 uppercase tracking-wider">
+                    STUDENT ID
+                  </p>
+                  <p className="text-xs font-['JetBrains_Mono',monospace] font-bold text-black dark:text-[#F5F5F2] mt-0.5 truncate" title={studentId}>
+                    {studentId}
+                  </p>
+                </div>
+                <div className="neo-meta-box">
+                  <p className="text-[10px] font-['JetBrains_Mono',monospace] font-bold text-zinc-500 uppercase tracking-wider">
+                    PROGRAM
+                  </p>
+                  <p className="text-xs font-['JetBrains_Mono',monospace] font-bold text-black dark:text-[#F5F5F2] mt-0.5 line-clamp-2 leading-tight" title={program}>
+                    {program}
+                  </p>
+                </div>
+                <div className="neo-meta-box">
+                  <p className="text-[10px] font-['JetBrains_Mono',monospace] font-bold text-zinc-500 uppercase tracking-wider">
+                    BATCH
+                  </p>
+                  <p className="text-xs font-['JetBrains_Mono',monospace] font-bold text-black dark:text-[#F5F5F2] mt-0.5 truncate" title={batchName}>
+                    {batchName}
+                  </p>
+                </div>
+                <div className="neo-meta-box">
+                  <p className="text-[10px] font-['JetBrains_Mono',monospace] font-bold text-zinc-500 uppercase tracking-wider">
+                    CAMPUS
+                  </p>
+                  <p className="text-xs font-['JetBrains_Mono',monospace] font-bold text-[#0057FF] dark:text-[#7bd0ff] mt-0.5 line-clamp-2 leading-tight" title={campusName}>
+                    {campusName}
+                  </p>
+                </div>
+                <div className="neo-meta-box border-l-2 border-l-[#0057FF]">
+                  <p className="text-[10px] font-['JetBrains_Mono',monospace] font-bold text-[#0057FF] dark:text-[#7bd0ff] uppercase tracking-wider">
+                    EVENTS ATTENDED
+                  </p>
+                  <p className="text-xs font-['JetBrains_Mono',monospace] font-black text-black dark:text-[#F5F5F2] mt-0.5 truncate">
+                    {String(attendedCount).padStart(2, '0')} VERIFIED
+                  </p>
                 </div>
               </div>
             </section>
