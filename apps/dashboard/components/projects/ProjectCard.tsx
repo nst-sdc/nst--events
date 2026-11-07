@@ -70,12 +70,12 @@ export function ProjectCard({ project }: { project: ProjectCardItem }) {
     >
       <div>
         {/* Card Header: Category Badge & Status Pill */}
-        <div className="me-card-header">
-          <span className="me-date-badge">
+        <div className="me-card-header flex-wrap gap-2">
+          <span className="me-date-badge truncate max-w-[200px]">
             {project.category}
           </span>
           <span
-            className="me-status-pill"
+            className="me-status-pill shrink-0"
             style={{ background: status.bg, color: status.color }}
           >
             {status.label}
@@ -153,49 +153,35 @@ export function ProjectCard({ project }: { project: ProjectCardItem }) {
         </div>
 
         {/* Tagline / Excerpt */}
-        <p style={{ fontFamily: 'var(--font-body, Inter, sans-serif)', fontSize: '13px', color: '#333333', lineHeight: 1.5, marginBottom: '14px' }}>
+        <p className="me-card-tagline">
           {project.tagline}
         </p>
 
         {/* Technology Tags */}
-        {project.tags && project.tags.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px' }}>
-            {project.tags.slice(0, 3).map((tag) => (
-              <span
-                key={tag}
-                style={{
-                  background: '#000000',
-                  color: '#ffffff',
-                  fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-                  fontSize: '10px',
-                  fontWeight: 700,
-                  padding: '2px 6px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                }}
-              >
-                #{tag}
-              </span>
-            ))}
-            {project.tags.length > 3 && (
-              <span
-                style={{
-                  fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-                  fontSize: '10px',
-                  fontWeight: 700,
-                  color: '#666666',
-                  alignSelf: 'center',
-                }}
-              >
-                +{project.tags.length - 3}
-              </span>
-            )}
-          </div>
-        )}
+        <div className="me-card-tags">
+          {project.tags && project.tags.length > 0 ? (
+            <>
+              {project.tags.slice(0, 3).map((tag) => (
+                <span key={tag} className="me-tag-pill">
+                  #{tag}
+                </span>
+              ))}
+              {project.tags.length > 3 && (
+                <span className="me-tag-more">
+                  +{project.tags.length - 3}
+                </span>
+              )}
+            </>
+          ) : (
+            <span className="me-tag-more" style={{ color: '#888' }}>
+              #BUILD-AT-NST
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Card Footer: Likes, Views, and Action */}
-      <div className="me-card-footer">
+      <div className="me-card-footer flex-wrap gap-3">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700 }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#FF3B30' }}>
             <Heart size={13} fill="#FF3B30" />
@@ -207,7 +193,7 @@ export function ProjectCard({ project }: { project: ProjectCardItem }) {
           </span>
         </div>
 
-        <span className="me-pass-btn">
+        <span className="me-pass-btn shrink-0 min-h-[36px]">
           VIEW PROJECT <ArrowRight size={12} />
         </span>
       </div>

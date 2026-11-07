@@ -92,6 +92,18 @@ const projectsStyles = `
     padding: 60px 32px 100px 32px;
   }
 
+  @media (max-width: 900px) {
+    .me-inner {
+      padding: 40px 16px 80px 16px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .me-inner {
+      padding: 24px 16px 80px 16px;
+    }
+  }
+
   /* ── Texture & Noise ── */
   .collage-noise-overlay {
     position: fixed;
@@ -117,19 +129,29 @@ const projectsStyles = `
   /* ── Display Typography ── */
   .me-hero-title {
     font-family: var(--font-display);
-    font-size: clamp(52px, 8.5vw, 120px);
+    font-size: clamp(32px, 7.5vw, 110px);
     font-weight: 900;
-    line-height: 0.88;
-    letter-spacing: -2px;
+    line-height: 0.92;
+    letter-spacing: -1.5px;
     text-transform: uppercase;
     color: var(--bg-paper-white);
+    word-break: break-word;
+    overflow-wrap: break-word;
   }
 
   .me-header {
     border-bottom: 3px solid var(--bg-paper-white);
-    padding-bottom: 32px;
-    margin-bottom: 40px;
+    padding-bottom: 28px;
+    margin-bottom: 36px;
     position: relative;
+    overflow: hidden;
+  }
+
+  @media (max-width: 640px) {
+    .me-header {
+      padding-bottom: 20px;
+      margin-bottom: 24px;
+    }
   }
 
   .me-watermark {
@@ -137,13 +159,16 @@ const projectsStyles = `
     top: -20px;
     right: 0;
     font-family: var(--font-display);
-    font-size: clamp(70px, 12vw, 160px);
+    font-size: clamp(60px, 12vw, 160px);
     font-weight: 900;
     color: rgba(245, 245, 242, 0.03);
     text-transform: uppercase;
     pointer-events: none;
     user-select: none;
     line-height: 0.8;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
   }
 
   /* ── Controls & Tabs Row ── */
@@ -155,33 +180,65 @@ const projectsStyles = `
     gap: 16px;
     border-bottom: 1px solid rgba(245,245,242,0.2);
     padding-bottom: 20px;
-    margin-bottom: 40px;
+    margin-bottom: 32px;
+  }
+
+  @media (max-width: 768px) {
+    .me-controls-row {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 16px;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
   }
 
   .me-tabs-group {
     display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
+    gap: 10px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+    max-width: 100%;
+  }
+
+  .me-tabs-group::-webkit-scrollbar {
+    display: none;
   }
 
   .me-tab-btn {
     background: transparent;
     color: #a0a4b8;
     border: 2px solid rgba(245,245,242,0.25);
-    padding: 10px 20px;
+    padding: 10px 18px;
     font-family: var(--font-mono);
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 1.5px;
+    letter-spacing: 1.2px;
     cursor: pointer;
     transition: all 0.15s;
     border-radius: 0 !important;
     text-decoration: none;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-height: 42px;
+    touch-action: manipulation;
   }
+
+  @media (max-width: 480px) {
+    .me-tab-btn {
+      padding: 8px 14px;
+      font-size: 10px;
+      letter-spacing: 1px;
+    }
+  }
+
   .me-tab-btn:hover {
     border-color: var(--bg-paper-white);
     color: var(--bg-paper-white);
@@ -200,6 +257,13 @@ const projectsStyles = `
     gap: 40px;
   }
 
+  @media (max-width: 900px) {
+    .me-poster-grid {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+  }
+
   .me-poster-card {
     background: var(--bg-paper-white);
     color: var(--bg-black);
@@ -214,10 +278,42 @@ const projectsStyles = `
     position: relative;
     text-decoration: none;
     border-radius: 0 !important;
+    min-width: 0;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    contain: content;
+    content-visibility: auto;
+    contain-intrinsic-size: 380px 480px;
   }
+
   .me-poster-card:hover {
-    transform: translate3d(-4px, -4px, 0) rotate(-0.5deg);
+    transform: translate3d(-4px, -4px, 0) rotate(-1deg);
     box-shadow: 14px 14px 0px #000000;
+  }
+
+  .me-poster-card:nth-child(even) {
+    transform: rotate(1.5deg) translateZ(0);
+  }
+
+  .me-poster-card:nth-child(even):hover {
+    transform: translate3d(-4px, -4px, 0) rotate(0.5deg);
+  }
+
+  @media (max-width: 900px) {
+    .me-poster-card:nth-child(even) {
+      transform: none;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .me-poster-card {
+      box-shadow: 6px 6px 0px #000000;
+      padding: 16px;
+    }
+    .me-poster-card:hover {
+      transform: none;
+      box-shadow: 6px 6px 0px #000000;
+    }
   }
 
   .me-card-header {
@@ -308,12 +404,17 @@ const projectsStyles = `
     font-family: var(--font-display);
     font-size: 24px;
     font-weight: 900;
-    line-height: 1.05;
+    line-height: 1.1;
     text-transform: uppercase;
     color: #000;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     letter-spacing: -0.5px;
     word-break: break-word;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 52px;
   }
 
   .me-card-meta {
@@ -326,6 +427,47 @@ const projectsStyles = `
     flex-wrap: wrap;
     gap: 8px;
     margin-bottom: 10px;
+  }
+
+  .me-card-tagline {
+    font-family: var(--font-body, Inter, sans-serif);
+    font-size: 13.5px;
+    color: #333333;
+    line-height: 1.5;
+    margin-bottom: 14px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 40px;
+  }
+
+  .me-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 16px;
+    min-height: 22px;
+    align-items: center;
+  }
+
+  .me-tag-pill {
+    background: #000000;
+    color: #ffffff;
+    font-family: var(--font-mono, "JetBrains Mono", monospace);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .me-tag-more {
+    font-family: var(--font-mono, "JetBrains Mono", monospace);
+    font-size: 10px;
+    font-weight: 700;
+    color: #666666;
+    align-self: center;
   }
 
   .me-card-footer {
@@ -360,11 +502,17 @@ const projectsStyles = `
   .me-empty-poster {
     border: 3px solid var(--bg-paper-white);
     background: var(--bg-dark-card);
-    padding: 60px 40px;
+    padding: clamp(32px, 6vw, 60px) clamp(20px, 4vw, 40px);
     position: relative;
     overflow: hidden;
-    box-shadow: 12px 12px 0px var(--electric-blue);
+    box-shadow: 10px 10px 0px var(--electric-blue);
     border-radius: 0 !important;
+  }
+
+  @media (max-width: 640px) {
+    .me-empty-poster {
+      box-shadow: 6px 6px 0px var(--electric-blue);
+    }
   }
 
   .me-empty-watermark {
@@ -372,43 +520,39 @@ const projectsStyles = `
     bottom: -20px;
     right: -20px;
     font-family: var(--font-display);
-    font-size: 140px;
+    font-size: clamp(80px, 14vw, 140px);
     font-weight: 900;
     color: rgba(245, 245, 242, 0.04);
     pointer-events: none;
     user-select: none;
+    line-height: 0.8;
   }
 
   .me-empty-btn {
     display: inline-flex;
     align-items: center;
-    gap: 12px;
+    justify-content: center;
+    gap: 10px;
     background: var(--electric-blue);
     color: #ffffff;
     font-family: var(--font-mono);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
-    letter-spacing: 2px;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
-    padding: 14px 28px;
+    padding: 12px 24px;
     border: 2px solid var(--bg-paper-white);
     cursor: pointer;
     box-shadow: 4px 4px 0px #ffffff;
     transition: transform 0.15s, box-shadow 0.15s;
     text-decoration: none;
     border-radius: 0 !important;
+    min-height: 44px;
+    touch-action: manipulation;
   }
   .me-empty-btn:hover {
     transform: translate(-2px, -2px);
     box-shadow: 6px 6px 0px #ffffff;
-  }
-
-  @media (max-width: 768px) {
-    .me-inner { padding: 40px 16px 80px 16px; }
-    .me-poster-grid { grid-template-columns: 1fr; }
-    .me-controls-row { flex-direction: column; align-items: stretch; }
-    .me-tabs-group { width: 100%; }
-    .me-tab-btn { flex: 1; text-align: center; }
   }
 
   /* ==========================================================================
@@ -465,7 +609,13 @@ const projectsStyles = `
     border: 3px solid #000000;
     background: #FFFFFF;
     color: #0A0D14;
-    box-shadow: 12px 12px 0px var(--electric-blue);
+    box-shadow: 10px 10px 0px var(--electric-blue);
+  }
+
+  @media (max-width: 640px) {
+    html.light .me-empty-poster {
+      box-shadow: 6px 6px 0px var(--electric-blue);
+    }
   }
 
   html.light .me-empty-poster h2,
@@ -544,11 +694,11 @@ export default async function ProjectsDirectoryPage({ searchParams }: PageProps)
               <p style={{ fontFamily: 'var(--font-body)', fontSize: '16px', color: '#a0a4b8', marginTop: '16px', maxWidth: '640px', lineHeight: 1.6 }}>
                 Discover student software, mobile applications, AI systems, open-source developer tools, and engineering prototypes created by verified students across Newton School of Technology.
               </p>
-              <div style={{ marginTop: '24px', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                <Link href="/projects/submit" className="me-empty-btn">
+              <div className="mt-6 flex flex-wrap gap-3 sm:gap-4 w-full sm:w-auto">
+                <Link href="/projects/submit" className="me-empty-btn w-full sm:w-auto text-center justify-center">
                   SUBMIT A PROJECT ↗
                 </Link>
-                <Link href="/my/projects" className="me-tab-btn">
+                <Link href="/my/projects" className="me-tab-btn w-full sm:w-auto text-center justify-center">
                   MY PROJECTS
                 </Link>
               </div>
@@ -566,15 +716,15 @@ export default async function ProjectsDirectoryPage({ searchParams }: PageProps)
             />
 
             {/* Results Count & Clear Filter Indicator */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid rgba(245,245,242,0.15)', paddingBottom: '16px', marginBottom: '32px' }}>
-              <div className="me-micro">
-                SHOWING <span style={{ color: '#ffffff', fontWeight: 900 }}>{items.length}</span> OF <span style={{ color: '#ffffff', fontWeight: 900 }}>{total}</span> VERIFIED PROJECTS
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-black/15 dark:border-[#F5F5F2]/15 pb-4 mb-8">
+              <div className="me-micro leading-relaxed">
+                SHOWING <span className="text-zinc-950 dark:text-white font-black">{items.length}</span> OF <span className="text-zinc-950 dark:text-white font-black">{total}</span> VERIFIED PROJECTS
                 {category && <span> {'//'} IN <strong style={{ color: '#0057FF' }}>{category.toUpperCase()}</strong></span>}
                 {tag && <span> {'//'} TAGGED <strong style={{ color: '#0057FF' }}>#{tag.toUpperCase()}</strong></span>}
-                {search && <span> {'//'} QUERY &ldquo;<strong style={{ color: '#ffffff' }}>{search.toUpperCase()}</strong>&rdquo;</span>}
+                {search && <span> {'//'} QUERY &ldquo;<strong className="text-zinc-950 dark:text-white font-black">{search.toUpperCase()}</strong>&rdquo;</span>}
               </div>
               {(category || tag || search || status) && (
-                <Link href="/projects" scroll={false} className="me-micro me-micro-blue hover:underline">
+                <Link href="/projects" scroll={false} className="me-micro me-micro-blue hover:underline shrink-0">
                   [ CLEAR ALL FILTERS ↺ ]
                 </Link>
               )}
@@ -593,17 +743,17 @@ export default async function ProjectsDirectoryPage({ searchParams }: PageProps)
                 <div className="me-micro me-micro-blue" style={{ marginBottom: '12px' }}>
                   DIRECTORY STATUS // 0 MATCHES
                 </div>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(36px, 5vw, 60px)', fontWeight: 900, textTransform: 'uppercase', lineHeight: 0.95, marginBottom: '16px' }}>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(28px, 6vw, 60px)', fontWeight: 900, textTransform: 'uppercase', lineHeight: 0.95, marginBottom: '16px' }}>
                   NO PROJECTS<br />FOUND.<br />YET.
                 </h2>
                 <p style={{ fontFamily: 'var(--font-body)', fontSize: '16px', color: '#a0a4b8', marginBottom: '32px', maxWidth: '520px', lineHeight: 1.6 }}>
                   No published projects match your current filter criteria. Try adjusting your search query, selecting another category, or submitting your own project.
                 </p>
-                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                  <Link href="/projects" scroll={false} className="me-empty-btn">
+                <div className="flex flex-wrap gap-3 sm:gap-4 w-full sm:w-auto">
+                  <Link href="/projects" scroll={false} className="me-empty-btn w-full sm:w-auto text-center justify-center">
                     RESET FILTERS ↺
                   </Link>
-                  <Link href="/projects/submit" className="me-empty-btn">
+                  <Link href="/projects/submit" className="me-empty-btn w-full sm:w-auto text-center justify-center">
                     SUBMIT A PROJECT ↗
                   </Link>
                 </div>
@@ -612,7 +762,7 @@ export default async function ProjectsDirectoryPage({ searchParams }: PageProps)
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div style={{ marginTop: '48px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px' }}>
+              <div className="mt-12 flex justify-center items-center gap-3 flex-wrap">
                 {page > 1 && (
                   <Link
                     href={`/projects?page=${page - 1}${view ? `&view=${view}` : ''}${category ? `&category=${encodeURIComponent(category)}` : ''}${search ? `&search=${encodeURIComponent(search)}` : ''}`}
@@ -622,7 +772,7 @@ export default async function ProjectsDirectoryPage({ searchParams }: PageProps)
                     PREVIOUS
                   </Link>
                 )}
-                <span className="me-micro" style={{ padding: '0 12px' }}>
+                <span className="me-micro text-zinc-950 dark:text-[#a0a4b8] px-2">
                   PAGE {page} OF {totalPages}
                 </span>
                 {page < totalPages && (
