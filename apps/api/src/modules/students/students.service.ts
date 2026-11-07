@@ -452,25 +452,57 @@ export class StudentsService {
       // 6. Fetch eligible Clubs (active club, non-deleted membership)
       const clubsList: PublicStudentProfileDto['clubs'] = [];
       if (secVisibility.clubs !== false) {
-        const memberships = await tx.clubMembership.findMany({
-          where: {
-            userId,
-            deletedAt: null,
-          },
-          include: {
-            club: true,
-          },
-        });
+        let memberships: Array<{
+          club_id: string;
+          club_name: string;
+          role: string;
+          banner_url: string | null;
+          joined_at?: Date | string;
+        }> = [];
+
+        try {
+          // Security-definer lookup function bypasses anonymous RLS masking while preserving strict active status invariants
+          memberships = await tx.$queryRaw<Array<{
+            club_id: string;
+            club_name: string;
+            role: string;
+            banner_url: string | null;
+            joined_at?: Date | string;
+          }>>`
+            SELECT club_id, club_name, role, banner_url, joined_at
+            FROM lookup_public_student_clubs(${userId}::uuid)
+          `;
+        } catch {
+          // Fallback to Prisma relation query
+          const rawMemberships = await tx.clubMembership.findMany({
+            where: {
+              userId,
+              deletedAt: null,
+            },
+            include: {
+              club: true,
+            },
+          });
+          memberships = rawMemberships
+            .filter((m) => m.club.status === 'ACTIVE' && m.club.deletedAt === null)
+            .map((m) => ({
+              club_id: m.clubId,
+              club_name: m.club.name,
+              role: m.role,
+              banner_url: m.club.bannerUrl,
+              joined_at: m.createdAt,
+            }));
+        }
+
         for (const mem of memberships) {
-          if (mem.club.status !== 'ACTIVE' || mem.club.deletedAt !== null) continue;
-          const curation = curationMap.get(`CLUB:${mem.clubId}`);
+          const curation = curationMap.get(`CLUB:${mem.club_id}`);
           if (curation && !curation.isVisible) continue;
 
           clubsList.push({
-            club_id: mem.clubId,
-            club_name: mem.club.name,
+            club_id: mem.club_id,
+            club_name: mem.club_name,
             role: mem.role,
-            banner_url: mem.club.bannerUrl,
+            banner_url: mem.banner_url,
             is_featured: curation?.isFeatured || false,
           });
         }

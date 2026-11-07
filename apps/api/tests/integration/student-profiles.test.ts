@@ -1212,4 +1212,58 @@ describe('NST Student Profiles & Directory Integration Suite', { concurrency: fa
     await adminPrisma.$executeRaw`DELETE FROM student_slug_history WHERE user_id = ${victimStudentId}::uuid;`;
     await adminPrisma.$executeRaw`DELETE FROM users WHERE id = ${victimStudentId}::uuid;`;
   });
+
+  it('Scenario S: Student with NO projects and NO awards has verified clubs displayed on public dossier when clubs: true', async () => {
+    const cleanStudentId = randomUUID();
+    const cleanEmail = `clean-${Date.now()}@nst.edu.in`;
+    const cleanToken = signJwt(cleanStudentId);
+
+    // Insert user into test database
+    await adminPrisma.$executeRaw`
+      INSERT INTO users (id, email, google_sub, full_name, global_role)
+      VALUES (${cleanStudentId}::uuid, ${cleanEmail}, ${`sub-${cleanStudentId}`}, 'Clean Club Student', 'STUDENT');
+    `;
+
+    // Provision student profile
+    await adminPrisma.$executeRaw`
+      SELECT provision_student_profile(${cleanStudentId}::uuid);
+    `;
+
+    // Add club membership for test club
+    const membershipId = randomUUID();
+    await adminPrisma.$executeRaw`
+      INSERT INTO club_memberships (id, club_id, user_id, role)
+      VALUES (${membershipId}::uuid, ${clubId}::uuid, ${cleanStudentId}::uuid, 'CLUB_ADMIN');
+    `;
+
+    // Enable clubs visibility via authenticated endpoint
+    const visRes = await request(app)
+      .patch('/v1/students/me/visibility')
+      .set('Authorization', `Bearer ${cleanToken}`)
+      .send({
+        section_visibility: {
+          clubs: true,
+        },
+      });
+    assert.strictEqual(visRes.status, 200);
+
+    const meRes = await request(app)
+      .get('/v1/students/me/profile')
+      .set('Authorization', `Bearer ${cleanToken}`);
+    const cleanSlug = meRes.body.profile.slug;
+
+    // Anonymous public dossier fetch must include clubs without getting blocked by RLS
+    const pubRes = await request(app).get(`/v1/students/${cleanSlug}`);
+    assert.strictEqual(pubRes.status, 200);
+    assert.strictEqual(pubRes.body.clubs.length, 1, 'Clubs must be returned for student with no projects/awards');
+    assert.strictEqual(pubRes.body.clubs[0].club_id, clubId);
+    assert.strictEqual(pubRes.body.clubs[0].club_name, 'Profile Test Club');
+    assert.strictEqual(pubRes.body.clubs[0].role, 'CLUB_ADMIN');
+
+    // Cleanup
+    await adminPrisma.$executeRaw`DELETE FROM club_memberships WHERE id = ${membershipId}::uuid;`;
+    await adminPrisma.$executeRaw`DELETE FROM student_profiles WHERE user_id = ${cleanStudentId}::uuid;`;
+    await adminPrisma.$executeRaw`DELETE FROM student_slug_history WHERE user_id = ${cleanStudentId}::uuid;`;
+    await adminPrisma.$executeRaw`DELETE FROM users WHERE id = ${cleanStudentId}::uuid;`;
+  });
 });

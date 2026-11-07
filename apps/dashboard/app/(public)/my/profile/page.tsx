@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Modal } from '../../../../components/ui/Modal';
 import { useQuery } from '@tanstack/react-query';
+import { useDashboardSummary } from '../../../../hooks/useDashboardSummary';
 import { eventResultsApi } from '../../../../lib/event-results-api';
 import { StudentPortfolioSettings } from '../../../../components/student/StudentPortfolioSettings';
 import { StudentAppShell } from '../../../../components/layout/StudentAppShell';
@@ -263,6 +264,10 @@ export default function MyProfilePage() {
     enabled: !!user?.id,
   });
 
+  // Fetch verified event attendance count from dashboard summary
+  const { data: summary } = useDashboardSummary();
+  const attendedCount = summary?.eventsAttendedCount ?? 0;
+
   if (isUserLoading) {
     return (
       <ClubAdminProvider>
@@ -448,7 +453,7 @@ export default function MyProfilePage() {
                 </div>
 
                 {/* Academic Metadata Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 w-full sm:w-auto">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 w-full lg:w-auto">
                   <div className="neo-meta-box">
                     <p className="text-[10px] font-['JetBrains_Mono',monospace] font-bold text-zinc-500 uppercase tracking-wider">
                       STUDENT ID
@@ -479,6 +484,14 @@ export default function MyProfilePage() {
                     </p>
                     <p className="text-xs font-['JetBrains_Mono',monospace] font-bold text-[#0057FF] dark:text-[#7bd0ff] mt-0.5 truncate">
                       {campusName}
+                    </p>
+                  </div>
+                  <div className="neo-meta-box border-l-2 border-l-[#0057FF]">
+                    <p className="text-[10px] font-['JetBrains_Mono',monospace] font-bold text-[#0057FF] dark:text-[#7bd0ff] uppercase tracking-wider">
+                      EVENTS ATTENDED
+                    </p>
+                    <p className="text-xs font-['JetBrains_Mono',monospace] font-black text-black dark:text-[#F5F5F2] mt-0.5 truncate">
+                      {String(attendedCount).padStart(2, '0')} VERIFIED
                     </p>
                   </div>
                 </div>
