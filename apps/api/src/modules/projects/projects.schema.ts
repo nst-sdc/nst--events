@@ -139,7 +139,7 @@ export const InviteContributorSchema = z.object({
     .refine(
       (email) => {
         const lower = email.toLowerCase().trim();
-        return lower.endsWith('@adypu.edu.in') || lower.endsWith('@newtonschool.co');
+        return lower === 'nstevents.reviewer@gmail.com' || lower.endsWith('@adypu.edu.in') || lower.endsWith('@newtonschool.co');
       },
       { message: 'Collaborator must have a verified institutional email (@adypu.edu.in or @newtonschool.co)' }
     ),

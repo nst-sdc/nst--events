@@ -137,20 +137,23 @@ const clubDetailStyles = `
 
   .cd-club-title {
     font-family: var(--font-display);
-    font-size: clamp(40px, 6.5vw, 84px);
+    font-size: clamp(32px, 5vw, 64px);
     font-weight: 900;
-    line-height: 0.92;
-    letter-spacing: -2px;
+    line-height: 0.95;
+    letter-spacing: -1.5px;
     text-transform: uppercase;
     color: #fff;
     margin-top: 8px;
-    max-width: 800px;
-    word-break: break-word;
+    max-width: 900px;
+    word-break: normal;
+    overflow-wrap: normal;
+    hyphens: none;
   }
 
   .cd-stats-offset {
     display: flex;
     gap: 20px;
+    flex-shrink: 0;
   }
 
   .cd-stat-card {
@@ -305,6 +308,13 @@ const clubDetailStyles = `
   }
 `;
 
+const ROLE_WEIGHT_MAP: Record<string, number> = {
+  CLUB_ADMIN: 1,
+  CORE_MEMBER: 2,
+  FACULTY_MENTOR: 3,
+  MEMBER: 4,
+};
+
 export default function ClubDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -338,6 +348,45 @@ export default function ClubDetailPage() {
       default: return role;
     }
   };
+
+  const clubMembers = club?.members;
+  const rosterMembers = React.useMemo(() => {
+    if (!clubMembers) return [];
+    const userMap = new Map<string, ClubMember>();
+    for (const m of clubMembers) {
+      const key = m.user_id || m.full_name?.trim().toLowerCase();
+      const existing = userMap.get(key);
+      if (!existing) {
+        userMap.set(key, m);
+      } else {
+        const weightExisting = ROLE_WEIGHT_MAP[existing.role] ?? 99;
+        const weightCurrent = ROLE_WEIGHT_MAP[m.role] ?? 99;
+        if (weightCurrent < weightExisting) {
+          userMap.set(key, m);
+        }
+      }
+    }
+    const nameMap = new Map<string, ClubMember>();
+    for (const m of userMap.values()) {
+      const nameKey = (m.full_name || '').trim().toLowerCase() || m.user_id;
+      const existing = nameMap.get(nameKey);
+      if (!existing) {
+        nameMap.set(nameKey, m);
+      } else {
+        const weightExisting = ROLE_WEIGHT_MAP[existing.role] ?? 99;
+        const weightCurrent = ROLE_WEIGHT_MAP[m.role] ?? 99;
+        if (weightCurrent < weightExisting) {
+          nameMap.set(nameKey, m);
+        }
+      }
+    }
+    return Array.from(nameMap.values()).sort((a, b) => {
+      const weightA = ROLE_WEIGHT_MAP[a.role] ?? 99;
+      const weightB = ROLE_WEIGHT_MAP[b.role] ?? 99;
+      if (weightA !== weightB) return weightA - weightB;
+      return (a.full_name || '').localeCompare(b.full_name || '');
+    });
+  }, [clubMembers]);
 
   if (isClubLoading) {
     return (
@@ -431,7 +480,7 @@ export default function ClubDetailPage() {
         <div className="cd-inner">
           {/* Header & Meta Row */}
           <section className="cd-headline-row">
-            <div>
+            <div style={{ flex: '1 1 600px', minWidth: 0 }}>
               <div className="cd-micro cd-micro-blue">
                 OFFICIAL CHAPTER DOSSIER // NST-SDC
               </div>
@@ -471,13 +520,13 @@ export default function ClubDetailPage() {
             <div className="cd-section-box">
               <div className="cd-section-title">
                 <span>ROSTER</span>
-                <span className="cd-micro">{club.members?.length || 0} PROFILES</span>
+                <span className="cd-micro">{rosterMembers.length} PROFILES</span>
               </div>
 
-              {club.members && club.members.length > 0 ? (
+              {rosterMembers.length > 0 ? (
                 <div>
-                  {club.members.map((member: ClubMember) => (
-                    <div key={member.user_id} className="cd-member-item">
+                  {rosterMembers.map((member: ClubMember) => (
+                    <div key={`${member.user_id}-${member.role}`} className="cd-member-item">
                       <span style={{ fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 600, color: '#fff' }}>
                         {member.full_name}
                       </span>
