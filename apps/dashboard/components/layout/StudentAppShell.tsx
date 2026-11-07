@@ -462,7 +462,7 @@ export function StudentAppShell({ children }: { children: React.ReactNode }) {
               )}
 
               {/* Notifications */}
-              <StudentNotificationPopover />
+              {user && <StudentNotificationPopover />}
 
               {/* User Badge or Sign In button */}
               {user ? (
