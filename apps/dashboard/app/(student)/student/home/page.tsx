@@ -68,10 +68,10 @@ const homeStyles = `
   /* Typography Scale */
   .font-display-hero {
     font-family: var(--font-display);
-    font-size: clamp(52px, 8.5vw, 120px);
+    font-size: clamp(34px, 5.8vw, 92px);
     font-weight: 900;
-    line-height: 0.88;
-    letter-spacing: -2px;
+    line-height: 0.95;
+    letter-spacing: -1.5px;
     text-transform: uppercase;
     color: var(--bg-paper-white);
   }
@@ -102,12 +102,12 @@ const homeStyles = `
 
   .hero-bg-text-watermark {
     position: absolute;
-    top: 40px;
-    right: -20px;
+    bottom: 24px;
+    right: -10px;
     font-family: var(--font-display);
-    font-size: clamp(80px, 16vw, 240px);
+    font-size: clamp(60px, 11vw, 160px);
     font-weight: 900;
-    color: rgba(245, 245, 242, 0.03);
+    color: rgba(245, 245, 242, 0.025);
     text-transform: uppercase;
     pointer-events: none;
     user-select: none;
@@ -141,45 +141,31 @@ const homeStyles = `
     position: relative;
     z-index: 10;
     margin-bottom: 20px;
+    max-width: 100%;
   }
 
   .hero-headline-group .name-highlight {
     color: var(--electric-blue);
     background: var(--bg-paper-white);
-    padding: 0 12px;
+    padding: 4px clamp(8px, 1.5vw, 16px);
     display: inline-block;
-    transform: rotate(1deg);
+    max-width: 100%;
+    box-sizing: border-box;
+    transform: rotate(0.8deg);
+    transform-origin: left center;
     box-shadow: 6px 6px 0px var(--electric-blue);
     position: relative;
     z-index: 12;
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
 
-  /* Offset Editorial Stats */
-  .hero-stats-offset-row {
-    display: flex;
-    gap: 32px;
-    margin-top: 52px;
-    position: relative;
-    z-index: 3;
-    flex-wrap: wrap;
+  .hero-headline-group .name-highlight.name-long {
+    font-size: 0.85em;
   }
 
-  .stat-editorial-box {
-    background: var(--bg-dark-card);
-    border: 2px solid var(--bg-paper-white);
-    padding: 24px 32px;
-    box-shadow: 8px 8px 0px var(--electric-blue);
-    display: flex;
-    align-items: center;
-    gap: 20px;
-  }
-
-  .stat-num-giant {
-    font-family: var(--font-display);
-    font-size: 64px;
-    font-weight: 900;
-    line-height: 0.9;
-    color: var(--bg-paper-white);
+  .hero-headline-group .name-highlight.name-very-long {
+    font-size: 0.72em;
   }
 
   /* ==========================================================================
@@ -471,10 +457,17 @@ const homeStyles = `
 
   /* Responsive Scaling */
   @media (max-width: 900px) {
-    .hero-stats-offset-row { flex-direction: column; gap: 16px; }
+    .font-display-hero {
+      font-size: clamp(30px, 7vw, 54px);
+      line-height: 1;
+      letter-spacing: -1px;
+    }
+    .hero-headline-group .name-highlight {
+      box-shadow: 4px 4px 0px var(--electric-blue);
+    }
     .poster-wall-grid { grid-template-columns: 1fr; }
-    .hero-collage-wrapper { padding: 40px 20px 60px 20px; }
-    .poster-wall-section { padding: 60px 20px 80px 20px; }
+    .hero-collage-wrapper { padding: 40px 16px 60px 16px; }
+    .poster-wall-section { padding: 60px 16px 80px 16px; }
   }
 
   /* ==========================================================================
@@ -491,7 +484,7 @@ const homeStyles = `
   }
 
   html.light .hero-bg-text-watermark {
-    color: rgba(0, 0, 0, 0.04);
+    color: rgba(0, 0, 0, 0.025);
   }
 
   html.light .blue-paper-strip {
@@ -508,30 +501,14 @@ const homeStyles = `
     box-shadow: 6px 6px 0px var(--electric-blue);
   }
 
+  @media (max-width: 900px) {
+    html.light .hero-headline-group .name-highlight {
+      box-shadow: 4px 4px 0px var(--electric-blue);
+    }
+  }
+
   html.light .hero-description-text {
     color: #555566 !important;
-  }
-
-  html.light .stat-editorial-box {
-    background: #FFFFFF;
-    border: 2px solid #000000;
-    box-shadow: 8px 8px 0px var(--electric-blue);
-  }
-
-  html.light .stat-editorial-box .stat-num-giant {
-    color: #050505;
-  }
-
-  html.light .stat-editorial-box .micro-annotation {
-    color: #050505 !important;
-  }
-
-  html.light .stat-editorial-box .annotation-blue {
-    color: var(--electric-blue) !important;
-  }
-
-  html.light .stat-editorial-box .annotation-green {
-    color: #00875A !important;
   }
 
   html.light .empty-poster-container {
@@ -625,6 +602,9 @@ export default function StudentHomePage() {
   const greetingTime = hour < 12 ? 'MORNING' : hour < 17 ? 'AFTERNOON' : 'EVENING';
   const rawFirstName = user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'SHRAVANI';
   const firstNameUpper = rawFirstName.toUpperCase();
+  const isLongName = firstNameUpper.length > 8;
+  const isVeryLongName = firstNameUpper.length > 12;
+  const nameModifier = isVeryLongName ? ' name-very-long' : isLongName ? ' name-long' : '';
 
   const now = dayjs();
   
@@ -653,10 +633,6 @@ export default function StudentHomePage() {
     .sort((a, b) => dayjs(a.event?.startTime).valueOf() - dayjs(b.event?.startTime).valueOf());
 
   const nextEventReg = upcomingRegistrations.length > 0 ? upcomingRegistrations[0] : null;
-
-  // Format stats with leading zeroes
-  const attendedCount = String(summary?.eventsAttendedCount ?? 0).padStart(2, '0');
-  const pointsCount = String(summary?.totalPoints ?? 0).padStart(2, '0');
 
   // Build list of upcoming poster wall events: genuine backend events only
   const backendEvents = eventsResponse?.data || [];
@@ -700,7 +676,7 @@ export default function StudentHomePage() {
           <h1 className="hero-headline-group font-display-hero">
             <span className="hero-good-word">GOOD</span><br />
             <span className="hero-greeting-word">{greetingTime},</span><br />
-            <span className="name-highlight">{firstNameUpper}.</span>
+            <span className={`name-highlight${nameModifier}`}>{firstNameUpper}.</span>
           </h1>
 
           <p className="hero-description-text" style={{
@@ -713,33 +689,6 @@ export default function StudentHomePage() {
           }}>
             Welcome back to campus. Access your event credentials, synchronized attendance passes, and student developer ecosystem.
           </p>
-
-          {/* Offset Stats Blocks */}
-          <div className="hero-stats-offset-row">
-            
-            <div className="stat-editorial-box">
-              <div className="stat-num-giant">{attendedCount}</div>
-              <div>
-                <div className="micro-annotation">EVENTS ATTENDED</div>
-                <div className="micro-annotation annotation-blue" style={{ fontSize: '9px', marginTop: '2px' }}>
-                  VERIFIED CAMPUS CHECK-INS
-                </div>
-              </div>
-            </div>
-
-            <div className="stat-editorial-box" style={{ transform: 'rotate(-1deg)' }}>
-              <div className="stat-num-giant" style={{ color: 'var(--electric-blue)' }}>
-                {pointsCount}
-              </div>
-              <div>
-                <div className="micro-annotation">POINTS EARNED</div>
-                <div className="micro-annotation annotation-green" style={{ fontSize: '9px', marginTop: '2px' }}>
-                  NST SDC ACTIVITY METRIC
-                </div>
-              </div>
-            </div>
-
-          </div>
 
         </div>
       </div>
