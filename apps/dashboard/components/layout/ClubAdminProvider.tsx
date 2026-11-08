@@ -1,8 +1,8 @@
 'use client';
 /* eslint-disable react-hooks/set-state-in-effect */
 
-import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
-import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react';
+import { QueryClient, QueryClientProvider, QueryClientContext } from '@tanstack/react-query';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 
 interface ClubAdminContextType {
@@ -17,17 +17,10 @@ interface ClubAdminContextType {
 const ClubAdminContext = createContext<ClubAdminContextType | undefined>(undefined);
 
 function QueryBoundary({ children }: { children: ReactNode }) {
-  let hasClient = true;
-  try {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useQueryClient();
-  } catch {
-    hasClient = false;
-  }
-
+  const existingClient = useContext(QueryClientContext);
   const [fallbackClient] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: false } } }));
 
-  if (!hasClient) {
+  if (!existingClient) {
     return <QueryClientProvider client={fallbackClient}>{children}</QueryClientProvider>;
   }
 
@@ -80,27 +73,27 @@ function ClubAdminInner({ children }: { children: ReactNode }) {
     }
   }, [isHydrated, managedClubs, activeClubId, isClubAdminMode]);
 
-  const handleSetMode = (active: boolean) => {
+  const handleSetMode = useCallback((active: boolean) => {
     setIsClubAdminMode(active);
     localStorage.setItem('nst_club_admin_mode', active ? 'true' : 'false');
-  };
+  }, []);
 
-  const handleSetClub = (clubId: string) => {
+  const handleSetClub = useCallback((clubId: string) => {
     setActiveClubId(clubId);
     localStorage.setItem('nst_active_club_id', clubId);
-  };
+  }, []);
+
+  const contextValue = useMemo(() => ({
+    isClubAdminMode,
+    setClubAdminMode: handleSetMode,
+    activeClubId,
+    setActiveClubId: handleSetClub,
+    managedClubs,
+    isHydrated,
+  }), [isClubAdminMode, handleSetMode, activeClubId, handleSetClub, managedClubs, isHydrated]);
 
   return (
-    <ClubAdminContext.Provider 
-      value={{ 
-        isClubAdminMode, 
-        setClubAdminMode: handleSetMode, 
-        activeClubId, 
-        setActiveClubId: handleSetClub,
-        managedClubs,
-        isHydrated
-      }}
-    >
+    <ClubAdminContext.Provider value={contextValue}>
       {children}
     </ClubAdminContext.Provider>
   );

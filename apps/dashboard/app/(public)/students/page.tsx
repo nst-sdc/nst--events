@@ -5,6 +5,7 @@ import {
   studentsApi,
   StudentDirectoryResponse,
   PublicStudentCard,
+  PublicStudentProfile,
 } from '../../../lib/students-api';
 import { StudentAppShell } from '../../../components/layout/StudentAppShell';
 import { ClubAdminProvider } from '../../../components/layout/ClubAdminProvider';
@@ -182,49 +183,131 @@ const directoryStyles = `
   .dir-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-    gap: 32px;
+    gap: 28px;
   }
 
   .dir-student-card {
-    background: var(--bg-paper-white);
-    color: var(--bg-black);
-    border: 3px solid #000000;
-    padding: 24px;
-    box-shadow: 8px 8px 0px #000000;
+    background: #0d0e12;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 20px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
     text-decoration: none;
+    border-radius: 0 !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    overflow: hidden;
   }
   .dir-student-card:hover {
-    transform: translate3d(-4px, -4px, 0);
-    box-shadow: 12px 12px 0px #000000;
+    border-color: #0057FF;
+    box-shadow: 0 0 24px -4px rgba(0, 87, 255, 0.35);
+    transform: translateY(-2px);
+  }
+  .dir-student-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: transparent;
+    transition: background 0.2s ease;
+  }
+  .dir-student-card:hover::after {
+    background: #0057FF;
   }
 
-  .dir-card-header {
+  /* Top Row: Club & Designation */
+  .dir-card-top {
     display: flex;
-    gap: 16px;
+    justify-content: space-between;
     align-items: center;
-    border-bottom: 2px solid #000000;
-    padding-bottom: 16px;
-    margin-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 10px;
+    margin-bottom: 14px;
+    gap: 8px;
+  }
+
+  .dir-card-club {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: #a0a4b8;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    flex: 1;
+  }
+  .dir-card-club-diamond {
+    color: #0057FF;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+
+  .dir-card-role-badge {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 8px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+    border-radius: 0 !important;
+  }
+  .dir-role-admin {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    color: #f59e0b;
+  }
+  .dir-role-core {
+    background: rgba(56, 189, 248, 0.1);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    color: #38bdf8;
+  }
+  .dir-role-member {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    color: #34d399;
+  }
+  .dir-role-scholar {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #a0a4b8;
+  }
+
+  /* Identity Row */
+  .dir-card-identity {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    margin-bottom: 12px;
   }
 
   .dir-avatar {
-    width: 56px;
-    height: 56px;
-    border: 2px solid #000000;
-    background: var(--electric-blue);
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #0038A8 0%, #0057FF 100%);
+    border: 1px solid rgba(0, 87, 255, 0.6);
     color: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: var(--font-display);
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 900;
-    overflow: hidden;
+    overflow: visible;
     flex-shrink: 0;
+    position: relative;
+    border-radius: 0 !important;
+    box-shadow: 2px 2px 0px #000000;
   }
 
   .dir-avatar img {
@@ -235,10 +318,16 @@ const directoryStyles = `
 
   .dir-student-name {
     font-family: var(--font-display);
-    font-size: 20px;
-    font-weight: 800;
-    line-height: 1.1;
-    color: #000000;
+    font-size: 16px;
+    font-weight: 900;
+    line-height: 1.2;
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: -0.3px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   .dir-student-handle {
@@ -249,84 +338,93 @@ const directoryStyles = `
     margin-top: 2px;
   }
 
-  .dir-academic-badge {
-    background: #000000;
-    color: #ffffff;
-    font-family: var(--font-mono);
-    font-size: 10px;
-    font-weight: 700;
-    padding: 3px 8px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    display: inline-block;
-    margin-top: 6px;
-  }
-
-  .dir-student-bio {
+  /* Intro sentence - clamped strictly to 1 line */
+  .dir-student-intro {
+    font-family: var(--font-body);
     font-size: 13px;
-    line-height: 1.5;
-    color: #4a4a4a;
-    margin-bottom: 16px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+    line-height: 1.45;
+    color: #cbd5e1;
+    margin-bottom: 12px;
     overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
+  /* Skills Chips */
   .dir-skills-container {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    margin-bottom: 20px;
+    margin-bottom: 14px;
+    align-items: center;
   }
 
   .dir-skill-chip {
-    background: rgba(0, 0, 0, 0.06);
-    border: 1px solid rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     font-family: var(--font-mono);
     font-size: 11px;
     font-weight: 600;
     padding: 2px 8px;
-    color: #111111;
+    color: #e2e8f0;
+    border-radius: 0 !important;
   }
 
+  /* Card Footer */
   .dir-card-footer {
-    border-top: 2px solid #000000;
-    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-top: auto;
   }
 
   .dir-stats-group {
     display: flex;
-    gap: 12px;
+    align-items: center;
+    gap: 8px;
     font-family: var(--font-mono);
     font-size: 11px;
     font-weight: 700;
   }
 
-  .dir-stat-item {
-    display: flex;
+  .dir-stat-projects {
+    color: #f59e0b;
+    display: inline-flex;
     align-items: center;
     gap: 4px;
   }
 
+  .dir-stat-awards {
+    color: #38bdf8;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .dir-stat-awards-zero {
+    color: #64748b;
+  }
+
   .dir-dossier-btn {
-    background: #000000;
-    color: #ffffff;
+    color: #0057FF;
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
     text-transform: uppercase;
-    padding: 6px 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.15s, transform 0.15s;
+    background: transparent;
     border: none;
+    padding: 0;
     cursor: pointer;
-    transition: background 0.15s;
   }
   .dir-student-card:hover .dir-dossier-btn {
-    background: var(--electric-blue);
+    color: #ffffff;
+    transform: translateX(2px);
   }
 
   /* Pagination */
@@ -426,6 +524,40 @@ const directoryStyles = `
   }
 `;
 
+const ROLE_PRIORITY: Record<string, number> = {
+  CLUB_ADMIN: 4,
+  CORE_MEMBER: 3,
+  MEMBER: 2,
+  FACULTY_MENTOR: 1,
+};
+
+function getStudentClubMeta(profile: PublicStudentProfile | undefined): { clubName: string; role: string } {
+  if (profile?.clubs && profile.clubs.length > 0) {
+    const sorted = [...profile.clubs].sort((a, b) => {
+      const pA = ROLE_PRIORITY[a.role] || 0;
+      const pB = ROLE_PRIORITY[b.role] || 0;
+      return pB - pA;
+    });
+    const primary = sorted[0];
+    return {
+      clubName: (primary.club_name || primary.clubName || 'CAMPUS CLUB').toUpperCase(),
+      role: primary.role || 'MEMBER',
+    };
+  }
+
+  return {
+    clubName: 'NEWTON SCHOOL OF TECHNOLOGY',
+    role: 'STUDENT',
+  };
+}
+
+function getRoleBadgeClass(role: string): string {
+  if (role === 'CLUB_ADMIN') return 'dir-role-admin';
+  if (role === 'CORE_MEMBER') return 'dir-role-core';
+  if (role === 'MEMBER') return 'dir-role-member';
+  return 'dir-role-scholar';
+}
+
 export default async function StudentDirectoryPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const search = params.search || '';
@@ -457,6 +589,18 @@ export default async function StudentDirectoryPage({ searchParams }: PageProps) 
   const items = directoryData?.items ?? [];
   const pagination = directoryData?.pagination ?? { total: 0, page: 1, limit: 12, totalPages: 1 };
   const facets = directoryData?.facets ?? { programs: [], batches: [], skills: [] };
+
+  // Fetch individual student public profiles in parallel to resolve real club affiliations, projects, and bios dynamically without hardcoding
+  const profileResults = await Promise.allSettled(
+    items.map((item) => studentsApi.getPublicProfile(item.slug))
+  );
+
+  const profileMap = new Map<string, PublicStudentProfile>();
+  profileResults.forEach((res) => {
+    if (res.status === 'fulfilled' && res.value?.slug) {
+      profileMap.set(res.value.slug, res.value);
+    }
+  });
 
   return (
     <ClubAdminProvider>
@@ -573,6 +717,8 @@ export default async function StudentDirectoryPage({ searchParams }: PageProps) 
             ) : (
               <div className="dir-grid">
                 {items.map((student: PublicStudentCard) => {
+                  const profile = profileMap.get(student.slug);
+                  const clubMeta = getStudentClubMeta(profile);
                   const initials = student.fullName
                     ? student.fullName
                         .split(' ')
@@ -582,74 +728,110 @@ export default async function StudentDirectoryPage({ searchParams }: PageProps) 
                         .toUpperCase()
                     : student.slug.slice(0, 2).toUpperCase();
 
+                  const intro =
+                    profile?.headline?.trim() ||
+                    student.headline?.trim() ||
+                    profile?.bio?.trim() ||
+                    student.bio?.trim() ||
+                    null;
+
+                  const skills =
+                    profile?.skills && profile.skills.length > 0
+                      ? profile.skills
+                      : student.skills || [];
+
+                  const projectsCount =
+                    profile?.projects !== undefined
+                      ? profile.projects.length
+                      : student.projectsCount;
+
+                  const achievementsCount =
+                    profile?.achievements !== undefined
+                      ? profile.achievements.length
+                      : student.achievementsCount;
+
                   return (
                     <Link
                       key={student.id}
                       href={`/students/${student.slug}`}
                       className="dir-student-card"
                     >
-                      <div>
-                        <div className="dir-card-header">
-                          <div className="dir-avatar">
-                            {student.avatarUrl ? (
-                              <img src={student.avatarUrl} alt={student.fullName} />
-                            ) : (
-                              initials
-                            )}
-                          </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div className="dir-student-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {student.fullName}
-                            </div>
-                            <div className="dir-student-handle">@{student.slug}</div>
-                            {(student.program || student.batch) && (
-                              <div className="dir-academic-badge">
-                                {[student.program, student.batch ? `Batch ${student.batch}` : null]
-                                  .filter(Boolean)
-                                  .join(' · ')}
-                              </div>
-                            )}
-                          </div>
+                      {/* Top Row: Club Name (Left) & Designation (Right) */}
+                      <div className="dir-card-top">
+                        <div className="dir-card-club" title={clubMeta.clubName}>
+                          <span className="dir-card-club-diamond">◆</span>
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {clubMeta.clubName}
+                          </span>
                         </div>
-
-                        {student.headline && (
-                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', fontWeight: 700, color: '#0057FF', marginBottom: '8px' }}>
-                            {student.headline}
-                          </div>
-                        )}
-
-                        {student.bio && <p className="dir-student-bio">{student.bio}</p>}
-
-                        {student.skills && student.skills.length > 0 && (
-                          <div className="dir-skills-container">
-                            {student.skills.slice(0, 4).map((sk: string) => (
-                              <span key={sk} className="dir-skill-chip">
-                                #{sk}
-                              </span>
-                            ))}
-                            {student.skills.length > 4 && (
-                              <span className="dir-skill-chip" style={{ opacity: 0.6 }}>
-                                +{student.skills.length - 4} more
-                              </span>
-                            )}
-                          </div>
-                        )}
+                        <span className={`dir-card-role-badge ${getRoleBadgeClass(clubMeta.role)}`}>
+                          [{clubMeta.role}]
+                        </span>
                       </div>
 
-                      <div className="dir-card-footer">
-                        <div className="dir-stats-group">
-                          {student.projectsCount > 0 && (
-                            <span className="dir-stat-item" title="Selected Projects">
-                              ⚡ {student.projectsCount} {student.projectsCount === 1 ? 'Project' : 'Projects'}
-                            </span>
+                      {/* Identity Row: Avatar + Name + Slug */}
+                      <div className="dir-card-identity">
+                        <div className="dir-avatar">
+                          {student.avatarUrl ? (
+                            <img src={student.avatarUrl} alt={student.fullName} />
+                          ) : (
+                            initials
                           )}
-                          {student.achievementsCount > 0 && (
-                            <span className="dir-stat-item" title="Official Honors">
-                              🏆 {student.achievementsCount} {student.achievementsCount === 1 ? 'Award' : 'Awards'}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div className="dir-student-name" title={student.fullName}>
+                            {student.fullName}
+                          </div>
+                          <div className="dir-student-handle">@{student.slug}</div>
+                        </div>
+                      </div>
+
+                      {/* One-Sentence Intro (Strictly 1 Line, only when provided) */}
+                      {intro && (
+                        <div className="dir-student-intro" title={intro}>
+                          {intro}
+                        </div>
+                      )}
+
+                      {/* Skills Chips */}
+                      {skills && skills.length > 0 ? (
+                        <div className="dir-skills-container">
+                          {skills.slice(0, 4).map((sk: string) => (
+                            <span key={sk} className="dir-skill-chip">
+                              #{sk}
+                            </span>
+                          ))}
+                          {skills.length > 4 && (
+                            <span className="dir-skill-chip" style={{ opacity: 0.6 }}>
+                              +{skills.length - 4}
                             </span>
                           )}
                         </div>
-                        <span className="dir-dossier-btn">DOSSIER ↗</span>
+                      ) : (
+                        <div className="dir-skills-container">
+                          <span className="dir-skill-chip" style={{ opacity: 0.6 }}>
+                            #Developer
+                          </span>
+                          <span className="dir-skill-chip" style={{ opacity: 0.6 }}>
+                            #Engineering
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Footer: Projects / Awards Metrics & Dossier Link */}
+                      <div className="dir-card-footer">
+                        <div className="dir-stats-group">
+                          <span className="dir-stat-projects">
+                            ⚡ {projectsCount} {projectsCount === 1 ? 'PROJECT' : 'PROJECTS'}
+                          </span>
+                          <span style={{ color: '#475467' }}>·</span>
+                          <span className={achievementsCount > 0 ? 'dir-stat-awards' : 'dir-stat-awards-zero'}>
+                            🏆 {achievementsCount} {achievementsCount === 1 ? 'AWARD' : 'AWARDS'}
+                          </span>
+                        </div>
+                        <span className="dir-dossier-btn">
+                          DOSSIER ↗
+                        </span>
                       </div>
                     </Link>
                   );
