@@ -16,7 +16,7 @@ import {
   UpdateEventFormFieldsInput,
   PublicEventsQuery,
 } from './events.schema';
-import { enqueueNotification } from '@nst/shared';
+import { enqueueNotification, isInstitutionalEmail } from '@nst/shared';
 import { checkAudienceEligibility } from './audience.service';
 import { generateSlug, isValidSlug, isReservedSlug } from '../../utils/slug-utils';
 
@@ -29,19 +29,7 @@ export interface UserForEligibilityCheck {
   clubMemberships?: Array<{ role: string; deletedAt?: Date | null }>;
 }
 
-export function isInstitutionalEmail(email?: string | null): boolean {
-  if (!email || typeof email !== 'string') return false;
-  const normalized = email.trim().toLowerCase();
-  if (normalized === 'nstevents.reviewer@gmail.com') return true;
-  const parts = normalized.split('@');
-  if (parts.length !== 2 || !parts[0] || !parts[1]) return false;
-  const domain = parts[1];
-  if (domain === 'adypu.edu.in' || domain === 'newtonschool.co') return true;
-  if (process.env.NODE_ENV !== 'production' && process.env.ALLOW_TEST_EMAIL_DOMAINS === 'true') {
-    if (['example.com', 'test.local', 'test.com', 'nst.com'].includes(domain)) return true;
-  }
-  return false;
-}
+export { isInstitutionalEmail };
 
 export function validateVerifiedUser(user?: UserForEligibilityCheck | null): void {
   if (!user) {

@@ -1,7 +1,8 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma';
 import { withUserContext } from '@nst/database';
-import { enqueueNotification } from '@nst/shared';
+import { enqueueNotification, isInstitutionalEmail } from '@nst/shared';
+import { logger } from '../../lib/logger';
 import {
   BadRequestError,
   ForbiddenError,
@@ -9,7 +10,7 @@ import {
   ConflictError,
 } from '../../lib/errors';
 import { generateSlug, isValidSlug, isReservedSlug } from '../../utils/slug-utils';
-import { validateVerifiedUser, isInstitutionalEmail } from '../events/events.service';
+import { validateVerifiedUser } from '../events/events.service';
 import {
   CONTROLLED_PROJECT_CATEGORIES,
   QueryProjectsSchema,
@@ -316,7 +317,9 @@ export class ProjectsService {
     }
 
     // 4. Increment view count asynchronously via SECURITY DEFINER function
-    prisma.$executeRaw`SELECT increment_project_view_count(${project.id}::uuid)`.catch(() => {});
+    prisma.$executeRaw`SELECT increment_project_view_count(${project.id}::uuid)`.catch((err) => {
+      logger.warn({ err, projectId: project.id }, 'Non-blocking failure incrementing project view count');
+    });
 
     return {
       id: project.id,

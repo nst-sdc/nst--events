@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isInstitutionalEmail } from '@nst/shared';
 import { isValidSlug, isReservedSlug } from '../../utils/slug-utils';
 
 export const CONTROLLED_PROJECT_CATEGORIES = [
@@ -137,10 +138,7 @@ export const InviteContributorSchema = z.object({
     .string()
     .email('Invalid email address')
     .refine(
-      (email) => {
-        const lower = email.toLowerCase().trim();
-        return lower === 'nstevents.reviewer@gmail.com' || lower.endsWith('@adypu.edu.in') || lower.endsWith('@newtonschool.co');
-      },
+      (email) => isInstitutionalEmail(email),
       { message: 'Collaborator must have a verified institutional email (@adypu.edu.in or @newtonschool.co)' }
     ),
   role: z.string().min(2, 'Role must be at least 2 characters').max(60, 'Role cannot exceed 60 characters'),

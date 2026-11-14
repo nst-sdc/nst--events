@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { isReviewerEmail, isInstitutionalEmail } from '@nst/shared';
 import { Prisma, User, withUserContext } from '@nst/database';
 import { prisma } from '../../lib/prisma';
 import { env } from '../../config/env';
@@ -48,7 +49,7 @@ export async function loginWithIdToken(
   const domain = normalizedEmail.split('@')[1];
 
   const ALLOWED_DOMAINS = env.ALLOWED_EMAIL_DOMAINS.split(',').map((d) => d.trim().toLowerCase());
-  const isReviewerException = normalizedEmail === 'nstevents.reviewer@gmail.com';
+  const isReviewerException = isReviewerEmail(normalizedEmail);
 
   if (!isReviewerException && !ALLOWED_DOMAINS.includes(domain)) {
     throw new ForbiddenError('INSTITUTIONAL_DOMAIN_NOT_ALLOWED');
