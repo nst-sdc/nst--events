@@ -17,7 +17,16 @@ spec:
       labels:
         app: nst-n6-runner
     spec:
-      nodeName: nst-n6
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - nst-n6
       serviceAccountName: github-actions-deployer
       initContainers:
         - name: install-kubectl

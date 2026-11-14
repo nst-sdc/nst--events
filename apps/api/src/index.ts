@@ -20,11 +20,29 @@ const PORT = process.env.PORT || 3001;
 let server: Server | null = null;
 let isShuttingDown = false;
 
+async function connectWithRetry(maxRetries = 10, delayMs = 3000): Promise<void> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await prisma.$connect();
+      logger.info('[nst-api] Database connected successfully');
+      return;
+    } catch (err) {
+      if (attempt === maxRetries) {
+        throw err;
+      }
+      logger.warn(
+        { err, attempt, maxRetries },
+        `[nst-api] Database connection attempt ${attempt}/${maxRetries} failed. Retrying in ${delayMs / 1000}s...`
+      );
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+}
+
 export async function bootstrap(): Promise<Server> {
   assertProductionConfig(env);
 
-  await prisma.$connect();
-  logger.info('[nst-api] Database connected successfully');
+  await connectWithRetry();
 
   pgListener.connect().catch((err) => {
     logger.error({ err }, '[nst-api] Failed to initialize Postgres SSE listener bridge');

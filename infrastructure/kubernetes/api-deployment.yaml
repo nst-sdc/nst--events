@@ -42,6 +42,13 @@ spec:
                     operator: NotIn
                     values:
                       - nst-n7
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - until nc -z -w 2 nst-postgres-service 5432; do echo "Waiting for nst-postgres-service:5432..."; sleep 2; done; echo "Postgres is ready."
       containers:
         - name: api
           image: ghcr.io/nst-sdc/nst-api:latest
@@ -51,6 +58,13 @@ spec:
           envFrom:
             - secretRef:
                 name: nst-api-secrets
+          startupProbe:
+            httpGet:
+              path: /ready
+              port: 3001
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 24
           readinessProbe:
             httpGet:
               path: /ready
