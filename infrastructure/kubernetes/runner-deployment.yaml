@@ -17,6 +17,7 @@ spec:
       labels:
         app: nst-n6-runner
     spec:
+      priorityClassName: nst-events-critical-priority
       affinity:
         nodeAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -31,6 +32,7 @@ spec:
       initContainers:
         - name: install-kubectl
           image: bitnami/kubectl:latest
+          imagePullPolicy: IfNotPresent
           command:
             - /bin/sh
             - -c

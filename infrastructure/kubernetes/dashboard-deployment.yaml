@@ -15,6 +15,7 @@ spec:
       labels:
         app: nst-dashboard
     spec:
+      priorityClassName: nst-events-critical-priority
       imagePullSecrets:
         - name: ghcr-pull-secret
       automountServiceAccountToken: false
@@ -42,6 +43,14 @@ spec:
                     operator: NotIn
                     values:
                       - nst-n7
+      initContainers:
+        - name: wait-for-api
+          image: busybox:1.36
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - until nc -z -w 2 nst-api-service 80; do echo "Waiting for nst-api-service:80..."; sleep 2; done; echo "API is ready."
       containers:
         - name: dashboard
           image: ghcr.io/nst-sdc/nst-dashboard:f7eeb8218ce48c7555b15cc948a799bb9764d22b
@@ -51,12 +60,19 @@ spec:
           env:
             - name: INTERNAL_API_URL
               value: "http://nst-api-service.nst-events.svc.cluster.local"
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 2
+            periodSeconds: 2
+            failureThreshold: 30
           readinessProbe:
             httpGet:
               path: /api/health
               port: 3000
-            initialDelaySeconds: 5
-            periodSeconds: 10
+            initialDelaySeconds: 2
+            periodSeconds: 5
           livenessProbe:
             httpGet:
               path: /api/health

@@ -108,8 +108,8 @@ jobs:
               BUILD_MOBILE=false
 
               # Shared packages, lockfile, or root configs affect all services
-              if echo "$DIFF" | grep -qE '^(packages/|pnpm-lock\.yaml|pnpm-workspace\.yaml|package\.json)'; then
-                echo "Shared package, workspace config, or lockfile changed. Rebuilding API, worker, dashboard, and mobile."
+              if echo "$DIFF" | grep -qE '^(packages/|pnpm-lock\.yaml|pnpm-workspace\.yaml|package\.json|infrastructure/)'; then
+                echo "Shared package, workspace config, lockfile, or infrastructure changed. Rebuilding API, worker, dashboard, and mobile."
                 BUILD_API=true
                 BUILD_WORKER=true
                 BUILD_DASHBOARD=true
@@ -170,9 +170,10 @@ jobs:
 
       - name: Apply PodDisruptionBudgets & Infrastructure Manifests
         run: |
-          echo "Applying PodDisruptionBudgets & Ingress in nst-events..."
+          echo "Applying PodDisruptionBudgets, Ingress & Postgres in nst-events..."
           kubectl apply -f infrastructure/kubernetes/pod-disruption-budgets.yaml
           kubectl apply -f infrastructure/kubernetes/ingress.yaml
+          kubectl apply -f infrastructure/kubernetes/postgres-statefulset.yaml
 
       - name: Run database migrations
         if: steps.filter.outputs.build_api == 'true'
@@ -185,7 +186,8 @@ jobs:
         if: steps.filter.outputs.build_api == 'true'
         run: |
           TAG="ghcr.io/nst-sdc/nst-api:${{ steps.vars.outputs.target_sha }}"
-          echo "Patching nst-api image to ${TAG}..."
+          echo "Applying nst-api manifest and patching image to ${TAG}..."
+          kubectl apply -f infrastructure/kubernetes/api-deployment.yaml
           kubectl set image deployment/nst-api api="${TAG}" -n nst-events
           ./scripts/deploy-rollout.sh nst-api nst-events 300s --migration-applied
 
@@ -193,7 +195,8 @@ jobs:
         if: steps.filter.outputs.build_worker == 'true'
         run: |
           TAG="ghcr.io/nst-sdc/nst-worker:${{ steps.vars.outputs.target_sha }}"
-          echo "Patching nst-worker image to ${TAG}..."
+          echo "Applying nst-worker manifest and patching image to ${TAG}..."
+          kubectl apply -f infrastructure/kubernetes/worker-deployment.yaml
           kubectl set image deployment/nst-worker worker="${TAG}" -n nst-events
           MIGRATION_FLAG=""
           if [ "${{ steps.filter.outputs.build_api }}" = "true" ]; then
@@ -205,7 +208,8 @@ jobs:
         if: steps.filter.outputs.build_dashboard == 'true'
         run: |
           TAG="ghcr.io/nst-sdc/nst-dashboard:${{ steps.vars.outputs.target_sha }}"
-          echo "Patching nst-dashboard image to ${TAG}..."
+          echo "Applying nst-dashboard manifest and patching image to ${TAG}..."
+          kubectl apply -f infrastructure/kubernetes/dashboard-deployment.yaml
           kubectl set image deployment/nst-dashboard dashboard="${TAG}" -n nst-events
           MIGRATION_FLAG=""
           if [ "${{ steps.filter.outputs.build_api }}" = "true" ]; then

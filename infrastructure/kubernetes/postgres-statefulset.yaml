@@ -14,6 +14,7 @@ spec:
       labels:
         app: nst-postgres
     spec:
+      priorityClassName: nst-events-critical-priority
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -57,11 +58,17 @@ spec:
             limits:
               cpu: 500m
               memory: 1Gi
+          startupProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres", "-d", "nst_events"]
+            initialDelaySeconds: 2
+            periodSeconds: 2
+            failureThreshold: 30
           readinessProbe:
             exec:
               command: ["pg_isready", "-U", "postgres", "-d", "nst_events"]
-            initialDelaySeconds: 5
-            periodSeconds: 10
+            initialDelaySeconds: 2
+            periodSeconds: 5
           livenessProbe:
             exec:
               command: ["pg_isready", "-U", "postgres", "-d", "nst_events"]
