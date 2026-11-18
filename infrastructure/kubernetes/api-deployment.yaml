@@ -92,6 +92,13 @@ kind: Service
 metadata:
   name: nst-api-service
   namespace: nst-events
+  annotations:
+    # passhostheader preserves the original Host header forwarded to the backend;
+    # sticky.cookie: "false" disables sticky-session cookie behavior.
+    # Neither annotation enables SSE flushing or disables response buffering
+    # (Traefik handles streaming responses separately).
+    traefik.ingress.kubernetes.io/service.passhostheader: "true"
+    traefik.ingress.kubernetes.io/service.sticky.cookie: "false"
 spec:
   type: ClusterIP
   selector:

@@ -55,6 +55,9 @@ export async function bootstrap(): Promise<Server> {
   const app = createApp();
   return new Promise((resolve) => {
     server = app.listen(PORT, () => {
+      // Align keep-alive timeouts above K3s Traefik idle pool defaults (prevent 502 race conditions)
+      server!.keepAliveTimeout = 65_000;
+      server!.headersTimeout = 66_000;
       logger.info(`[nst-api] Server running on port ${PORT}`);
       resolve(server!);
     });
