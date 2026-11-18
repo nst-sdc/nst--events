@@ -1,96 +1,138 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert';
+import http from 'http';
 import request from 'supertest';
-import { Client } from 'pg';
-
-
-
-import { prisma } from '../../src/lib/prisma';
+import { randomUUID } from 'crypto';
 import { createApp } from '../../src/app';
 import { signJwt } from '../../src/lib/jwt';
-import { randomUUID } from 'crypto';
-
-const app = createApp();
+import { adminPrisma } from '../helpers/adminDb';
+import { sseConnectionManager } from '../../src/modules/sse/sse-connection-manager';
+import { buildEventChannel } from '../../src/modules/sse/sse.utils';
 
 describe('Phase 16A: SSE Authorization Security', () => {
-  let userA: any;
-  let userB: any;
-  let eventA: any;
-  let eventB: any;
-  let tokenA: string;
-  let tokenB: string;
+  const app = createApp();
+  const runTag = randomUUID().slice(0, 8);
+  const userAId = randomUUID();
+  const userBId = randomUUID();
+  const eventAId = randomUUID();
+  const eventBId = randomUUID();
 
-  const pgClient = new Client({ connectionString: process.env.ADMIN_DATABASE_URL || "postgresql://postgres:postgres@127.0.0.1:5440/nst_events_clean_test?schema=public" });
+  let tokenA: string;
+  let server: http.Server;
+  let port: number;
+
+  async function cleanup() {
+    await adminPrisma.event.deleteMany({ where: { id: { in: [eventAId, eventBId] } } });
+    await adminPrisma.studentProfile.deleteMany({ where: { userId: { in: [userAId, userBId] } } });
+    await adminPrisma.user.deleteMany({ where: { id: { in: [userAId, userBId] } } });
+  }
 
   before(async () => {
-    await pgClient.connect();
-    
-    // Clean up
-    await pgClient.query('TRUNCATE TABLE users CASCADE');
+    await cleanup();
 
-    userA = { id: randomUUID() };
-    userB = { id: randomUUID() };
+    await adminPrisma.user.createMany({
+      data: [
+        { id: userAId, email: `user_a_sse_${runTag}@adypu.edu.in`, googleSub: `google_sub_a_sse_${runTag}`, fullName: 'User A SSE', globalRole: 'STUDENT' },
+        { id: userBId, email: `user_b_sse_${runTag}@adypu.edu.in`, googleSub: `google_sub_b_sse_${runTag}`, fullName: 'User B SSE', globalRole: 'STUDENT' },
+      ],
+    });
 
-    await pgClient.query(`
-      INSERT INTO users (id, email, google_sub, full_name, global_role) VALUES 
-      ($1, 'user_a_sse@example.com', 'google_sub_a_sse', 'User A SSE', 'STUDENT'),
-      ($2, 'user_b_sse@example.com', 'google_sub_b_sse', 'User B SSE', 'STUDENT')
-    `, [userA.id, userB.id]);
+    tokenA = signJwt(userAId);
 
-    tokenA = signJwt(userA.id);
-    tokenB = signJwt(userB.id);
+    // Event A is PUBLISHED + PUBLIC -> User A is authorized to read
+    // Event B is DRAFT + RESTRICTED created by User B -> User A is unauthorized to read
+    await adminPrisma.event.createMany({
+      data: [
+        {
+          id: eventAId,
+          title: `Event A Public ${runTag}`,
+          state: 'PUBLISHED',
+          visibility: 'PUBLIC',
+          registrationType: 'INDIVIDUAL',
+          attendanceType: 'SINGLE',
+          audience: 'ALL_STUDENTS',
+          createdBy: userAId,
+          startTime: new Date(),
+          endTime: new Date(Date.now() + 3600_000),
+          eventType: 'WORKSHOP',
+        },
+        {
+          id: eventBId,
+          title: `Event B Draft Restricted ${runTag}`,
+          state: 'DRAFT',
+          visibility: 'RESTRICTED',
+          registrationType: 'INDIVIDUAL',
+          attendanceType: 'SINGLE',
+          audience: 'ALL_STUDENTS',
+          createdBy: userBId,
+          startTime: new Date(),
+          endTime: new Date(Date.now() + 3600_000),
+          eventType: 'WORKSHOP',
+        },
+      ],
+    });
 
-    eventA = { id: randomUUID() };
-    eventB = { id: randomUUID() };
-
-    // Event A is PUBLIC, User A can read it
-    await pgClient.query(`
-      INSERT INTO events (id, title, state, visibility, registration_type, attendance_type, created_by, start_time, end_time, event_type) VALUES 
-      ($1, 'Event A Public', 'PUBLISHED', 'PUBLIC', 'INDIVIDUAL', 'SINGLE', $2, now(), now() + interval '1 hour', 'WORKSHOP')
-    `, [eventA.id, userA.id]);
-
-    // Event B is PRIVATE
-    await pgClient.query(`
-      INSERT INTO events (id, title, state, visibility, registration_type, attendance_type, created_by, start_time, end_time, event_type) VALUES 
-      ($1, 'Event B Private', 'PUBLISHED', 'PRIVATE', 'INDIVIDUAL', 'SINGLE', $2, now(), now() + interval '1 hour', 'WORKSHOP')
-    `, [eventB.id, userB.id]);
+    server = http.createServer(app);
+    await new Promise<void>((r) => server.listen(0, '127.0.0.1', () => r()));
+    port = (server.address() as any).port;
   });
 
   after(async () => {
-    await pgClient.query('TRUNCATE TABLE users CASCADE');
-    await pgClient.end();
-    process.exit(0);
+    if (server) {
+      await new Promise<void>((r) => server.close(() => r()));
+    }
+    await cleanup();
   });
 
-  it('User A connecting to Event A/live -> SUCCESS', async () => {
-    const req = request(app)
-      .get(`/v1/events/${eventA.id}/live`)
-      .set('Authorization', `Bearer ${tokenA}`);
-      
-    // Start request
-    req.end();
+  it('User A connecting to Event A/live -> SUCCESS (200 text/event-stream)', async () => {
+    const req = http.request({
+      hostname: '127.0.0.1',
+      port,
+      path: `/v1/events/${eventAId}/live`,
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${tokenA}`,
+        'X-Client-Platform': 'web',
+        Accept: 'text/event-stream',
+      },
+    });
 
-    // Give it 100ms to process (would fail instantly if unauthorized)
-    await new Promise(resolve => setTimeout(resolve, 100));
+    const res = await new Promise<http.IncomingMessage>((resolve, reject) => {
+      req.on('response', resolve);
+      req.on('error', (err: any) => {
+        if (err.code !== 'ECONNRESET') reject(err);
+      });
+      req.end();
+    });
 
-    // Abort so the connection closes and test runner can exit
-    req.abort();
+    try {
+      assert.strictEqual(res.statusCode, 200);
+      assert.strictEqual(res.headers['content-type'], 'text/event-stream');
+    } finally {
+      req.destroy();
+      const channel = buildEventChannel(eventAId);
+      const deadline = Date.now() + 2000;
+      while (Date.now() < deadline && sseConnectionManager.getActiveSubscriberCount(channel) > 0) {
+        await new Promise((r) => setTimeout(r, 20));
+      }
+      assert.strictEqual(sseConnectionManager.getActiveSubscriberCount(channel), 0);
+    }
   });
 
-  it('User A connecting to Event B/live -> REJECTED (Unauthorized read)', async () => {
+  it('User A connecting to Event B/live -> REJECTED (Unauthorized read, 404)', async () => {
     const res = await request(app)
-      .get(`/v1/events/${eventB.id}/live`)
+      .get(`/v1/events/${eventBId}/live`)
       .set('Authorization', `Bearer ${tokenA}`);
-    
-    // Since getEventById throws NotFoundError for unauthorized events
+
+    // Since checkEventReadAuthorization throws NotFoundError for unauthorized events
     assert.strictEqual(res.status, 404);
   });
 
-  it('Malformed UUID -> Existing validation failure', async () => {
+  it('Malformed UUID -> Existing validation failure (422)', async () => {
     const res = await request(app)
-      .get(`/v1/events/not-a-uuid/live`)
+      .get('/v1/events/not-a-uuid/live')
       .set('Authorization', `Bearer ${tokenA}`);
-    
+
     assert.strictEqual(res.status, 422); // UnprocessableEntityError
   });
 });

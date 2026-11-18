@@ -3,6 +3,13 @@ kind: Ingress
 metadata:
   name: nst-events-ingress
   namespace: nst-events
+# SSE operational guidance (/v1/events/:id/live, /v1/notifications/live):
+# - Endpoints emit Content-Type: text/event-stream and send 30-second application heartbeats.
+# - Traefik flushes recognized streaming responses; do not attach buffering or compression middleware to /v1 routes.
+# - X-Accel-Buffering: no is an NGINX-specific response header and does not configure Traefik.
+# - Node's headersTimeout applies only to incoming request headers and keepAliveTimeout applies only after a response
+#   completes; neither controls the lifetime of an active SSE stream.
+# - Active-stream idle/write timeouts must be verified at the Node socket, Traefik entrypoint, and Cloudflare Tunnel layers.
 spec:
   ingressClassName: traefik
   rules:
