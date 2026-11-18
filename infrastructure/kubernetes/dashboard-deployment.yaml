@@ -15,7 +15,6 @@ spec:
       labels:
         app: nst-dashboard
     spec:
-      priorityClassName: nst-events-critical-priority
       imagePullSecrets:
         - name: ghcr-pull-secret
       automountServiceAccountToken: false

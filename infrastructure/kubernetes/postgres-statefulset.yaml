@@ -14,7 +14,6 @@ spec:
       labels:
         app: nst-postgres
     spec:
-      priorityClassName: nst-events-critical-priority
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

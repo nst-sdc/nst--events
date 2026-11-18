@@ -170,10 +170,9 @@ jobs:
 
       - name: Apply PodDisruptionBudgets & Infrastructure Manifests
         run: |
-          echo "Applying PodDisruptionBudgets, Ingress & Postgres in nst-events..."
+          echo "Applying PodDisruptionBudgets & Ingress in nst-events..."
           kubectl apply -f infrastructure/kubernetes/pod-disruption-budgets.yaml
           kubectl apply -f infrastructure/kubernetes/ingress.yaml
-          kubectl apply -f infrastructure/kubernetes/postgres-statefulset.yaml
 
       - name: Run database migrations
         if: steps.filter.outputs.build_api == 'true'

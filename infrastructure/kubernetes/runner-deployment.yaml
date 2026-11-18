@@ -17,7 +17,6 @@ spec:
       labels:
         app: nst-n6-runner
     spec:
-      priorityClassName: nst-events-critical-priority
       affinity:
         nodeAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
