@@ -13,7 +13,6 @@ import { Button } from '../../../src/ui/Button';
 import { StatusBadge } from '../../../src/ui/core/StatusBadge';
 import { StudentCalendarView } from '../../../src/ui/StudentCalendarView';
 import { useAttendanceHistory } from '../../../src/hooks/use-attendance-history';
-import { usePendingInvitations } from '../../../src/hooks/use-invitations';
 import { FilterChip } from '../../../src/ui/FilterChip';
 import {
   classifyAndSortHomeEvents,
@@ -207,7 +206,6 @@ export default function HomeAttendanceScreen() {
 
   const router = useRouter();
   const { data: profile, refetch: refetchProfile } = useUserProfile();
-  const { data: invitations = [], refetch: refetchInvites } = usePendingInvitations();
   const {
     data: eventsData,
     isLoading: eventsLoading,
@@ -222,7 +220,7 @@ export default function HomeAttendanceScreen() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([refetchProfile(), refetchEvents(), refetchRegs(), refetchInvites()]);
+    await Promise.all([refetchProfile(), refetchEvents(), refetchRegs()]);
     setRefreshing(false);
   };
 
@@ -556,28 +554,6 @@ export default function HomeAttendanceScreen() {
           </TouchableOpacity>
         </View>
       </View>
-
-      {/* Actionable Alerts (Pending Invites) */}
-      {invitations.length > 0 && (
-        <TouchableOpacity
-          style={styles.alertBanner}
-          onPress={() => router.push('/(app)/(tabs)/activity?tab=invites')}
-          activeOpacity={0.8}
-        >
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <View style={styles.alertDot} />
-              <MonoLabel style={{ color: theme.colors.primary, fontSize: 12 }}>
-                PENDING SQUAD INVITATION{invitations.length > 1 ? 'S' : ''} ({invitations.length})
-              </MonoLabel>
-            </View>
-            <MonoLabel style={{ color: theme.colors.primary }}>REVIEW →</MonoLabel>
-          </View>
-          <Body style={{ fontSize: 12, color: theme.colors.onSurfaceVariant, marginTop: 4 }}>
-            You have received squad invitation{invitations.length > 1 ? 's' : ''} for upcoming team competitions.
-          </Body>
-        </TouchableOpacity>
-      )}
 
       {/* Search Bar & Discovery Filters */}
       <View style={styles.filterContainer}>

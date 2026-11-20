@@ -49,7 +49,8 @@ describe('NST Events Mobile UX 2.0 — Navigation & Architecture Verification Su
 
   describe('2. Destination 1 — Home Screen (index.tsx)', () => {
     it('configures MobileShell title to HOME with top notification inbox', () => {
-      expect(homeTabContent).toContain('MobileShell \n      title="HOME"');
+      expect(homeTabContent).toContain('<MobileShell');
+      expect(homeTabContent).toContain('title="HOME"');
     });
 
     it('renders personalized student dashboard header', () => {
@@ -66,9 +67,9 @@ describe('NST Events Mobile UX 2.0 — Navigation & Architecture Verification Su
       expect(homeTabContent).toContain("router.push('/(app)/(tabs)/activity')");
     });
 
-    it('includes context-aware pending squad invitations alert banner', () => {
-      expect(homeTabContent).toContain('PENDING SQUAD INVITATION');
-      expect(homeTabContent).toContain("router.push('/(app)/(tabs)/activity?tab=invites')");
+    it('excludes unsupported team invitations (404) in Phase 1 per design specification', () => {
+      expect(homeTabContent).not.toContain('usePendingInvitations');
+      expect(homeTabContent).not.toContain('PENDING SQUAD INVITATION');
     });
 
     it('supports live attendance auto-elevation with ActiveAttendanceCard', () => {
@@ -116,12 +117,11 @@ describe('NST Events Mobile UX 2.0 — Navigation & Architecture Verification Su
       expect(activityTabContent).toContain('title="ACTIVITY"');
     });
 
-    it('implements segmented navigation: PASSES, INVITES, ATTENDANCE, DISPUTES, HONORS', () => {
-      expect(activityTabContent).toContain('PASSES');
-      expect(activityTabContent).toContain('INVITES');
-      expect(activityTabContent).toContain('ATTENDANCE');
-      expect(activityTabContent).toContain('DISPUTES');
-      expect(activityTabContent).toContain('HONORS');
+    it('implements 2-option segmented navigation: UPCOMING and PAST_HISTORY', () => {
+      expect(activityTabContent).toContain('UPCOMING');
+      expect(activityTabContent).toContain('PAST_HISTORY');
+      expect(activityTabContent).toContain('Upcoming');
+      expect(activityTabContent).toContain('Past history');
     });
 
     it('connects passes to Event Details, Squad Hub, and QR scanning', () => {
@@ -130,10 +130,8 @@ describe('NST Events Mobile UX 2.0 — Navigation & Architecture Verification Su
       expect(activityTabContent).toContain("router.push(`/(app)/events/${registration.eventId}/scan`)");
     });
 
-    it('connects team invitations with accept and decline confirmation modal', () => {
-      expect(activityTabContent).toContain('CONFIRM SQUAD MEMBERSHIP');
-      expect(activityTabContent).toContain('acceptInvitation');
-      expect(activityTabContent).toContain('declineInvitation');
+    it('excludes unsupported team invitations (404) from Tickets tab in Phase 1', () => {
+      expect(activityTabContent).not.toContain('usePendingInvitations');
     });
 
     it('connects attendance logs to session detail route', () => {
@@ -141,15 +139,12 @@ describe('NST Events Mobile UX 2.0 — Navigation & Architecture Verification Su
       expect(activityTabContent).toContain('<AttendanceHistoryRow');
     });
 
-    it('connects attendance disputes with new claim filing and detail views', () => {
-      expect(activityTabContent).toContain("router.push('/(app)/disputes/new')");
-      expect(activityTabContent).toContain("router.push(`/(app)/disputes/${item.id}`)");
-      expect(activityTabContent).toContain('<DisputeRow');
+    it('routes attendance disputes through Profile Disputes Ledger', () => {
+      expect(activityTabContent).toContain("router.push('/(app)/disputes')");
     });
 
-    it('connects official honors to results and showcase project URLs', () => {
-      expect(activityTabContent).toContain("router.push(`/(app)/events/${ach.event.id}/results`)");
-      expect(activityTabContent).toContain('openProjectShowcase(ach.linked_project?.slug)');
+    it('renders Phase 1 Door QR disabled placeholder', () => {
+      expect(activityTabContent).toContain('Door QR coming soon');
     });
   });
 

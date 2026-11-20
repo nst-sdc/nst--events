@@ -136,12 +136,9 @@ describe('Phase 4 Mobile UX & Performance Remediation Suite', () => {
       expect(activitySrc).toContain('accessibilityRole="tablist"');
     });
 
-    it('activity.tsx defines segments PASSES, INVITES, ATTENDANCE, DISPUTES, HONORS with accessibility tabs', () => {
-      expect(activitySrc).toContain("activeSection === 'PASSES'");
-      expect(activitySrc).toContain("activeSection === 'INVITES'");
-      expect(activitySrc).toContain("activeSection === 'ATTENDANCE'");
-      expect(activitySrc).toContain("activeSection === 'DISPUTES'");
-      expect(activitySrc).toContain("activeSection === 'HONORS'");
+    it('activity.tsx defines segments UPCOMING and PAST_HISTORY with accessibility tabs', () => {
+      expect(activitySrc).toContain("activeSection === 'UPCOMING'");
+      expect(activitySrc).toContain("activeSection === 'PAST_HISTORY'");
       expect(activitySrc).toContain('accessibilityRole="tab"');
     });
 

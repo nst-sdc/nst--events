@@ -61,19 +61,8 @@ describe('Phase 2 Mobile Audit Remediation Suite', () => {
   // 1. Invitation Navigation
   // =========================================================================
   describe('1. Invitation Navigation Remediation', () => {
-    it('routes the Home pending squad invitation banner to Activity tab with tab=invites', async () => {
+    it('excludes pending squad invitation banner on Home in Phase 1 per design specification', async () => {
       vi.mocked(apiClient).mockImplementation(async (url: string) => {
-        if (url === '/v1/users/me/team-invitations') {
-          return [
-            {
-              invitation_id: 'inv-1',
-              team: { team_id: 't-1', team_name: 'Hack Squad' },
-              event: { event_id: 'e-1', event_title: 'Hackathon' },
-              inviter: { full_name: 'Jane Doe' },
-              expires_at: new Date(Date.now() + 60000).toISOString(),
-            },
-          ];
-        }
         if (url.includes('/events') && !url.includes('/my-registration')) {
           return { data: [] };
         }
@@ -89,28 +78,14 @@ describe('Phase 2 Mobile Audit Remediation Suite', () => {
       });
 
       render(withProviders(<AppHomeScreen />));
-      const banner = await screen.findByText(/PENDING SQUAD INVITATION/);
-      expect(banner).toBeTruthy();
-
-      fireEvent.press(banner);
-      expect(mockPush).toHaveBeenCalledWith('/(app)/(tabs)/activity?tab=invites');
+      const banner = screen.queryByText(/PENDING SQUAD INVITATION/);
+      expect(banner).toBeNull();
     });
 
-    it('ActivityScreen activates the INVITES segment when tab=invites param is supplied', async () => {
+    it('ActivityScreen handles legacy tab=invites param gracefully adhering to Phase 1 two-segment architecture', async () => {
       mockSearchParams = { tab: 'invites' };
 
       vi.mocked(apiClient).mockImplementation(async (url: string) => {
-        if (url === '/v1/users/me/team-invitations') {
-          return [
-            {
-              invitation_id: 'inv-1',
-              team: { team_id: 't-1', team_name: 'Cyber Squad' },
-              event: { event_id: 'e-1', event_title: 'Capture The Flag' },
-              inviter: { full_name: 'Captain Hook' },
-              expires_at: new Date(Date.now() + 60000).toISOString(),
-            },
-          ];
-        }
         if (url.includes('/my-registrations')) return [];
         if (url.includes('/events')) return { pages: [{ data: [] }] };
         if (url.includes('/attendance')) return { pages: [{ data: [] }] };
@@ -128,10 +103,9 @@ describe('Phase 2 Mobile Audit Remediation Suite', () => {
       });
 
       render(withProviders(<ActivityScreen />));
-      expect(await screen.findByText('PENDING SQUAD INVITATIONS')).toBeTruthy();
-      expect(await screen.findByText('CYBER SQUAD')).toBeTruthy();
-      expect(screen.getByText('[ ACCEPT SQUAD ]')).toBeTruthy();
-      expect(screen.getByText('[ DECLINE ]')).toBeTruthy();
+      expect(screen.queryByText('PENDING SQUAD INVITATIONS')).toBeNull();
+      expect(screen.getByText('Upcoming')).toBeTruthy();
+      expect(screen.getByText('Past history')).toBeTruthy();
     });
   });
 

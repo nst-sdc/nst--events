@@ -127,6 +127,16 @@ describe('Mobile UI Consistency & Design Token Audit Suite', () => {
       );
       expect(screen.getByText(/CAMPUS EVENTS/i)).toBeTruthy();
     });
+
+    it('preserves screen title accurately without altering text or double-prefixing', () => {
+      render(
+        <MobileShell title="Directory Hub">
+          <></>
+        </MobileShell>,
+        { wrapper }
+      );
+      expect(screen.getByText('Directory Hub')).toBeTruthy();
+    });
   });
 
   describe('5. Location & Attendance Views Prism Parity', () => {

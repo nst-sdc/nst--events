@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
+  Text,
   StyleSheet,
   RefreshControl,
   TouchableOpacity,
   ScrollView,
-  Modal,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAppTheme } from '../../../src/store/theme-store';
@@ -14,31 +14,27 @@ import { useUserProfile } from '../../../src/hooks/use-user-profile';
 import { useMyRegistrations, MyRegistrationItem } from '../../../src/hooks/use-registration';
 import { useEvents } from '../../../src/hooks/use-events';
 import { useAttendanceHistory, AttendanceRecordItem } from '../../../src/hooks/use-attendance-history';
-import { usePendingInvitations, PendingInvitation } from '../../../src/hooks/use-invitations';
-import { useMyDisputes, AttendanceDisputeItem } from '../../../src/hooks/use-disputes';
-import { useStudentAchievements, StudentAchievementItem } from '../../../src/hooks/use-event-results';
-import { useTeams } from '../../../src/hooks/use-teams';
+import { useStudentAchievements } from '../../../src/hooks/use-event-results';
+import { openProjectShowcase } from '../../../src/lib/project-showcase';
 import { useNetworkStatus } from '../../../src/infrastructure/network';
 import { MobileShell } from '../../../src/ui/core/MobileShell';
 import { AttendanceHistoryRow } from '../../../src/ui/AttendanceHistoryRow';
-import { DisputeRow } from '../../../src/ui/DisputeRow';
-import { openProjectShowcase } from '../../../src/lib/project-showcase';
-import { Title, Body, MonoLabel, Mono, Display } from '../../../src/ui/core/Typography';
+import { MonoLabel } from '../../../src/ui/core/Typography';
 import { StatusBadge } from '../../../src/ui/core/StatusBadge';
 import { Button } from '../../../src/ui/Button';
+import { haptics } from '../../../src/lib/haptics';
 
-type ActivitySection = 'PASSES' | 'INVITES' | 'ATTENDANCE' | 'DISPUTES' | 'HONORS';
+// Prism v3.6.0 Section 3.4: Exactly 2 Tickets segments
+export type TicketsSection = 'UPCOMING' | 'PAST_HISTORY';
 
-const resolveActivitySection = (param?: string | string[]): ActivitySection | null => {
-  if (!param) return null;
+const resolveSection = (param?: string | string[]): TicketsSection => {
+  if (!param) return 'UPCOMING';
   const raw = Array.isArray(param) ? param[0] : param;
   const upper = raw.toUpperCase();
-  if (upper === 'INVITES' || upper === 'INVITATIONS') return 'INVITES';
-  if (upper === 'PASSES') return 'PASSES';
-  if (upper === 'ATTENDANCE') return 'ATTENDANCE';
-  if (upper === 'DISPUTES') return 'DISPUTES';
-  if (upper === 'HONORS') return 'HONORS';
-  return null;
+  if (upper === 'ATTENDANCE' || upper === 'HISTORY' || upper === 'PAST_HISTORY') {
+    return 'PAST_HISTORY';
+  }
+  return 'UPCOMING';
 };
 
 export default function ActivityScreen() {
@@ -46,18 +42,22 @@ export default function ActivityScreen() {
   const params = useLocalSearchParams<{ tab?: string; section?: string }>();
   const theme = useAppTheme();
   const { isOnline } = useNetworkStatus();
-  const initialSection = resolveActivitySection(params.tab || params.section) || 'PASSES';
-  const [activeSection, setActiveSection] = useState<ActivitySection>(initialSection);
+
+  const [activeSection, setActiveSection] = useState<TicketsSection>(() =>
+    resolveSection(params.tab || params.section)
+  );
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    const matched = resolveActivitySection(params.tab || params.section);
-    if (matched) {
-      setActiveSection(matched);
+    if (params.tab === 'disputes') {
+      router.push('/(app)/disputes');
+      return;
     }
-  }, [params.tab, params.section]);
+    const matched = resolveSection(params.tab || params.section);
+    setActiveSection(matched);
+  }, [params.tab, params.section, router]);
 
-  // Data Hooks
+  // Data Hooks per Phase 1 scope (team invitations 404 endpoint excluded)
   const { data: profile } = useUserProfile();
   const {
     data: registrations = [],
@@ -74,30 +74,13 @@ export default function ActivityScreen() {
     isLoading: isHistoryLoading,
     refetch: refetchHistory,
   } = useAttendanceHistory();
-  const {
-    data: invitations = [],
-    isLoading: isInvitesLoading,
-    refetch: refetchInvites,
-    error: invitesError,
-    isError: isInvitesError,
-  } = usePendingInvitations();
-  const isInvitesUnsupported = isInvitesError && ((invitesError as any)?.status === 404 || (invitesError as any)?.isUnsupported);
-  const {
-    data: disputesData,
-    isLoading: isDisputesLoading,
-    refetch: refetchDisputes,
-  } = useMyDisputes();
+  const isHonors = (params.tab || params.section)?.toLowerCase() === 'honors';
   const {
     data: achievementsData,
     isLoading: isAchievementsLoading,
     refetch: refetchAchievements,
   } = useStudentAchievements(profile?.id, !!profile?.id);
-
-  // Team actions for invitations
-  const { acceptInvitation, isAccepting, declineInvitation, isDeclining } = useTeams('');
-
-  // Selected invitation for modal confirmation
-  const [selectedInvite, setSelectedInvite] = useState<{ invite: PendingInvitation; action: 'ACCEPT' | 'DECLINE' } | null>(null);
+  const achievements = achievementsData?.achievements || [];
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -105,8 +88,6 @@ export default function ActivityScreen() {
       refetchRegs(),
       refetchEvents(),
       refetchHistory(),
-      refetchInvites(),
-      refetchDisputes(),
       refetchAchievements(),
     ]);
     setRefreshing(false);
@@ -114,8 +95,6 @@ export default function ActivityScreen() {
 
   const allEvents = eventsData?.pages.flatMap((page) => page.data) || [];
   const attendanceRecords = historyData?.pages.flatMap((page) => page.data) || [];
-  const disputes = disputesData?.pages.flatMap((page) => page.data) || [];
-  const achievements = achievementsData?.achievements || [];
 
   // Active / registered passes joined with event info
   const passesWithEvent = useMemo(() => {
@@ -130,27 +109,6 @@ export default function ActivityScreen() {
       });
   }, [registrations, allEvents]);
 
-  const handleConfirmInviteAction = async () => {
-    if (!selectedInvite) return;
-    try {
-      if (selectedInvite.action === 'ACCEPT') {
-        await acceptInvitation({
-          teamId: selectedInvite.invite.team.team_id,
-          invitationId: selectedInvite.invite.invitation_id,
-        });
-      } else {
-        await declineInvitation({
-          teamId: selectedInvite.invite.team.team_id,
-          invitationId: selectedInvite.invite.invitation_id,
-        });
-      }
-      setSelectedInvite(null);
-      refetchInvites();
-    } catch {
-      setSelectedInvite(null);
-    }
-  };
-
   const styles = useMemo(
     () =>
       StyleSheet.create({
@@ -159,86 +117,113 @@ export default function ActivityScreen() {
         },
         segmentedNav: {
           flexDirection: 'row',
-          backgroundColor: theme.colors.surfaceContainerLowest,
-          borderWidth: 1,
-          borderColor: theme.colors.outlineVariant,
+          backgroundColor: theme.colors.surfaceSubtle,
+          borderRadius: theme.radii.full,
+          padding: 4,
           minWidth: '100%',
         },
         segmentTab: {
-          paddingVertical: 12,
-          paddingHorizontal: 8,
+          paddingVertical: 10,
+          paddingHorizontal: 16,
           minWidth: 92,
           minHeight: 48,
           alignItems: 'center',
           justifyContent: 'center',
-          borderRightWidth: 1,
-          borderRightColor: theme.colors.borderHairline,
+          borderRadius: theme.radii.full,
+          borderBottomWidth: 2,
+          borderBottomColor: 'transparent',
           flex: 1,
         },
-        segmentTabLast: {
-          borderRightWidth: 0,
-        },
         segmentTabActive: {
-          backgroundColor: theme.colors.surfaceContainerHigh,
-          borderBottomWidth: 2,
-          borderBottomColor: theme.colors.primary,
+          backgroundColor: theme.colors.surfaceElevated,
+          borderBottomColor: theme.colors.brandPrimary,
+          shadowColor: '#000000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.1,
+          shadowRadius: 2,
+          elevation: 2,
         },
         segmentLabel: {
-          fontFamily: theme.typography.monoBold,
-          fontSize: 12,
-          letterSpacing: 0.5,
-          color: theme.colors.onSurfaceVariant,
+          fontFamily: theme.typography.interMedium,
+          fontSize: 13,
+          lineHeight: 18,
+          color: theme.colors.textMuted,
         },
         segmentLabelActive: {
-          color: theme.colors.primary,
-        },
-        badgeBubble: {
-          backgroundColor: theme.colors.primary,
-          paddingHorizontal: 4,
-          paddingVertical: 1,
-          borderRadius: 2,
-          marginLeft: 4,
-        },
-        badgeText: {
-          color: theme.colors.onPrimary,
-          fontSize: 12,
-          fontFamily: theme.typography.monoBold,
+          fontFamily: theme.typography.interSemiBold,
+          color: theme.colors.brandText,
         },
         sectionContainer: {
           gap: theme.spacing.md,
         },
-        passCard: {
-          backgroundColor: theme.colors.surfaceContainerLow,
+        ticketCard: {
+          backgroundColor: theme.colors.surface,
           borderWidth: 1,
-          borderColor: theme.colors.outlineVariant,
+          borderColor: theme.colors.borderSubtle,
+          borderRadius: theme.radii.lg,
           padding: theme.spacing.base,
           gap: theme.spacing.sm,
         },
-        passHeaderRow: {
+        ticketHeaderRow: {
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
           gap: theme.spacing.sm,
         },
-        passTitle: {
+        ticketTitle: {
           flex: 1,
+          fontFamily: theme.typography.interSemiBold,
           fontSize: 16,
-          color: theme.colors.onSurface,
+          lineHeight: 22,
+          color: theme.colors.textPrimary,
         },
-        passDetailsRow: {
+        ticketMetaText: {
+          fontFamily: theme.typography.interRegular,
+          fontSize: 13,
+          lineHeight: 18,
+          color: theme.colors.textSecondary,
+        },
+        doorQrRow: {
           flexDirection: 'row',
-          justifyContent: 'space-between',
           alignItems: 'center',
-          gap: theme.spacing.sm,
-          marginTop: 2,
+          justifyContent: 'space-between',
+          backgroundColor: theme.colors.surfaceSubtle,
+          borderRadius: theme.radii.md,
+          paddingHorizontal: 12,
+          paddingVertical: 10,
+          borderWidth: 1,
+          borderColor: theme.colors.borderSubtle,
+          marginTop: 4,
         },
-        passActionsRow: {
+        doorQrLabel: {
+          fontFamily: theme.typography.interMedium,
+          fontSize: 13,
+          color: theme.colors.textSecondary,
+        },
+        doorQrSubtext: {
+          fontFamily: theme.typography.interRegular,
+          fontSize: 12,
+          color: theme.colors.textMuted,
+        },
+        waitlistBanner: {
+          backgroundColor: theme.colors.badgeTintAmber,
+          borderRadius: theme.radii.md,
+          padding: 10,
+          marginTop: 4,
+        },
+        waitlistText: {
+          fontFamily: theme.typography.interRegular,
+          fontSize: 12,
+          lineHeight: 16,
+          color: theme.colors.badgeTextAmber,
+        },
+        ticketActionsRow: {
           flexDirection: 'row',
           gap: 8,
-          marginTop: 8,
-          paddingTop: 8,
+          marginTop: 6,
+          paddingTop: 10,
           borderTopWidth: 1,
-          borderTopColor: theme.colors.borderHairline,
+          borderTopColor: theme.colors.borderSubtle,
         },
         passActionBtn: {
           flex: 1,
@@ -246,96 +231,60 @@ export default function ActivityScreen() {
           minHeight: 44,
           justifyContent: 'center',
           alignItems: 'center',
+          borderRadius: theme.radii.md,
           borderWidth: 1,
-          borderColor: theme.colors.primary,
-          backgroundColor: theme.colors.surface,
+          borderColor: theme.colors.borderStrong,
+          backgroundColor: theme.colors.surfaceSubtle,
+        },
+        passActionBtnPrimary: {
+          backgroundColor: theme.colors.brandPrimary,
+          borderColor: theme.colors.brandPrimary,
         },
         passActionText: {
-          fontSize: 12,
-          fontFamily: theme.typography.monoBold,
-          color: theme.colors.primary,
+          fontSize: 13,
+          fontFamily: theme.typography.interMedium,
+          color: theme.colors.textPrimary,
         },
-        inviteCard: {
-          backgroundColor: theme.colors.surfaceContainerLow,
-          borderWidth: 1,
-          borderColor: theme.colors.borderHairline,
-          padding: theme.spacing.base,
-          gap: theme.spacing.sm,
-        },
-        inviteHeader: {
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-        },
-        inviteActions: {
-          flexDirection: 'row',
-          gap: 8,
-          marginTop: 8,
-        },
-        inviteBtnAccept: {
-          flex: 1,
-          backgroundColor: theme.colors.primary,
-          paddingVertical: 8,
-          minHeight: 44,
-          justifyContent: 'center',
-          alignItems: 'center',
-        },
-        inviteBtnDecline: {
-          flex: 1,
-          backgroundColor: theme.colors.surfaceContainerLowest,
-          borderWidth: 1,
-          borderColor: theme.colors.outlineVariant,
-          paddingVertical: 8,
-          minHeight: 44,
-          justifyContent: 'center',
-          alignItems: 'center',
-        },
-        summaryBar: {
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          paddingBottom: 8,
-          borderBottomWidth: 1,
-          borderBottomColor: theme.colors.borderHairline,
-          marginBottom: theme.spacing.sm,
+        passActionTextPrimary: {
+          color: '#FFFFFF',
+          fontFamily: theme.typography.interSemiBold,
         },
         emptyBox: {
-          backgroundColor: theme.colors.surfaceContainerLow,
+          backgroundColor: theme.colors.surfaceSubtle,
+          borderRadius: theme.radii.lg,
           borderWidth: 1,
-          borderColor: theme.colors.outlineVariant,
+          borderColor: theme.colors.borderSubtle,
           padding: theme.spacing.xl,
           alignItems: 'center',
           gap: 8,
           marginTop: theme.spacing.md,
         },
         emptyTitle: {
-          color: theme.colors.primary,
+          color: theme.colors.textPrimary,
+          fontFamily: theme.typography.interSemiBold,
           fontSize: 16,
         },
         emptySub: {
-          color: theme.colors.onSurfaceVariant,
-          fontSize: 12,
+          color: theme.colors.textMuted,
+          fontSize: 13,
           textAlign: 'center',
+          lineHeight: 18,
         },
-        loadingBox: {
-          padding: theme.spacing.xl,
+        disputesShortcut: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
           alignItems: 'center',
-          gap: 8,
-        },
-        modalOverlay: {
-          flex: 1,
-          backgroundColor: 'rgba(9, 9, 11, 0.7)',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: 20,
-        },
-        modalCard: {
-          backgroundColor: theme.colors.surface,
+          padding: 12,
+          backgroundColor: theme.colors.surfaceSubtle,
+          borderRadius: theme.radii.md,
           borderWidth: 1,
-          borderColor: theme.colors.primary,
-          padding: 20,
-          width: '100%',
-          gap: 12,
+          borderColor: theme.colors.borderSubtle,
+          marginTop: 8,
+        },
+        disputesShortcutText: {
+          fontFamily: theme.typography.interMedium,
+          fontSize: 13,
+          color: theme.colors.brandText,
         },
       }),
     [theme]
@@ -349,13 +298,13 @@ export default function ActivityScreen() {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={handleRefresh}
-          tintColor={theme.colors.primary}
-          colors={[theme.colors.primary]}
+          tintColor={theme.colors.brandPrimary}
+          colors={[theme.colors.brandPrimary]}
           progressBackgroundColor={theme.colors.surface}
         />
       }
     >
-      {/* Top Segmented Navigation */}
+      {/* Top 2-Option Segmented Switcher: Upcoming | Past history */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -365,458 +314,173 @@ export default function ActivityScreen() {
         accessibilityRole="tablist"
       >
         <TouchableOpacity
-          style={[styles.segmentTab, activeSection === 'PASSES' && styles.segmentTabActive]}
-          onPress={() => setActiveSection('PASSES')}
+          style={[styles.segmentTab, activeSection === 'UPCOMING' && styles.segmentTabActive]}
+          onPress={() => {
+            void haptics.selection();
+            setActiveSection('UPCOMING');
+          }}
           activeOpacity={0.8}
           accessibilityRole="tab"
-          accessibilityState={{ selected: activeSection === 'PASSES' }}
-          accessibilityLabel="Passes and tickets"
+          accessibilityState={{ selected: activeSection === 'UPCOMING' }}
+          accessibilityLabel="Upcoming tickets and passes"
         >
-          <Mono style={[styles.segmentLabel, activeSection === 'PASSES' && styles.segmentLabelActive]}>
-            PASSES
-          </Mono>
+          <Text style={[styles.segmentLabel, activeSection === 'UPCOMING' && styles.segmentLabelActive]}>
+            Upcoming {passesWithEvent.length > 0 ? `(${passesWithEvent.length})` : ''}
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.segmentTab, activeSection === 'ATTENDANCE' && styles.segmentTabActive]}
-          onPress={() => setActiveSection('ATTENDANCE')}
+          style={[styles.segmentTab, activeSection === 'PAST_HISTORY' && styles.segmentTabActive]}
+          onPress={() => {
+            void haptics.selection();
+            setActiveSection('PAST_HISTORY');
+          }}
           activeOpacity={0.8}
           accessibilityRole="tab"
-          accessibilityState={{ selected: activeSection === 'ATTENDANCE' }}
-          accessibilityLabel="Attendance ledger"
+          accessibilityState={{ selected: activeSection === 'PAST_HISTORY' }}
+          accessibilityLabel="Past history attendance records"
         >
-          <Mono style={[styles.segmentLabel, activeSection === 'ATTENDANCE' && styles.segmentLabelActive]}>
-            ATTENDANCE
-          </Mono>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.segmentTab, activeSection === 'DISPUTES' && styles.segmentTabActive]}
-          onPress={() => setActiveSection('DISPUTES')}
-          activeOpacity={0.8}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: activeSection === 'DISPUTES' }}
-          accessibilityLabel="Attendance disputes"
-        >
-          <Mono style={[styles.segmentLabel, activeSection === 'DISPUTES' && styles.segmentLabelActive]}>
-            DISPUTES
-          </Mono>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.segmentTab, styles.segmentTabLast, activeSection === 'HONORS' && styles.segmentTabActive]}
-          onPress={() => setActiveSection('HONORS')}
-          activeOpacity={0.8}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: activeSection === 'HONORS' }}
-          accessibilityLabel="Competition honors"
-        >
-          <Mono style={[styles.segmentLabel, activeSection === 'HONORS' && styles.segmentLabelActive]}>
-            HONORS
-          </Mono>
+          <Text style={[styles.segmentLabel, activeSection === 'PAST_HISTORY' && styles.segmentLabelActive]}>
+            Past history
+          </Text>
         </TouchableOpacity>
       </ScrollView>
 
-      {/* SECTION 1: PASSES & REGISTRATIONS */}
-      {activeSection === 'PASSES' && (
+      {/* Honors Deep Link View */}
+      {isHonors && (
         <View style={styles.sectionContainer}>
-          <View style={styles.summaryBar}>
-            <MonoLabel style={{ color: theme.colors.onSurfaceVariant }}>ACTIVE PASSES & TICKETS</MonoLabel>
-            <MonoLabel style={{ color: theme.colors.primary }}>
-              {passesWithEvent.length} {passesWithEvent.length === 1 ? 'PASS' : 'PASSES'}
+          <View style={{ marginBottom: 12 }}>
+            <MonoLabel style={{ fontSize: 13, color: theme.colors.textMuted }}>
+              HONORS & AWARDS
             </MonoLabel>
           </View>
-
-          {isRegsLoading ? (
-            <View style={styles.loadingBox}>
-              <ActivityIndicator size="small" color={theme.colors.primary} />
-              <MonoLabel>LOADING REGISTERED PASSES...</MonoLabel>
-            </View>
-          ) : passesWithEvent.length === 0 ? (
+          {isAchievementsLoading ? (
+            <ActivityIndicator size="large" color={theme.colors.brandPrimary} style={{ marginVertical: 32 }} />
+          ) : achievements.length === 0 ? (
             <View style={styles.emptyBox}>
-              <Display style={styles.emptyTitle}>NO ACTIVE PASSES</Display>
-              <Body style={styles.emptySub}>
-                You have not registered for any events yet. Explore published events to claim your pass!
-              </Body>
-              <Button
-                title="[ EXPLORE EVENTS ]"
-                variant="primary"
-                onPress={() => router.push('/(app)/(tabs)/explore')}
-                style={{ marginTop: 8 }}
-              />
+              <Text style={styles.emptyTitle}>NO HONORS YET</Text>
+              <Text style={styles.emptySub}>
+                Event results and achievements will be displayed here.
+              </Text>
             </View>
           ) : (
-            passesWithEvent.map(({ registration, event }) => {
-              const isWaitlisted = registration.registrationStatus === 'WAITLISTED';
-              const dateStr = event ? new Date(event.startTime).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'CAMPUS';
-              const timeStr = event ? new Date(event.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-              const title = event?.title || 'CAMPUS EVENT';
-              const location = event?.locationName || 'CAMPUS VENUE';
-              const isTeam = !!registration.teamId || event?.registrationType === 'TEAM';
-
-              return (
-                <View key={registration.id} style={styles.passCard}>
-                  <View style={styles.passHeaderRow}>
-                    <Title style={styles.passTitle} numberOfLines={1}>{title}</Title>
+            achievements.map((ach) => (
+              <View key={ach.id} style={styles.ticketCard}>
+                <View style={styles.ticketHeaderRow}>
+                  <Text numberOfLines={2} style={styles.ticketTitle}>
+                    {ach.award_title || 'Honor'}
+                  </Text>
+                  {ach.placement && (
                     <StatusBadge
-                      status={isWaitlisted ? '[WAITLISTED]' : '[REGISTERED]'}
-                      type={isWaitlisted ? 'warning' : 'success'}
+                      status={`#${ach.placement}`}
+                      type="warning"
                     />
-                  </View>
-
-                  <View style={{ width: '100%', marginTop: 4 }}>
-                    <Body style={{ color: theme.colors.onSurfaceVariant, fontSize: 12, lineHeight: 16 }} numberOfLines={2}>
-                      {location}
-                    </Body>
-                  </View>
-
-                  <View style={styles.passDetailsRow}>
-                    <Mono style={{ fontSize: 12, color: theme.colors.onSurface }}>
-                      {dateStr} · {timeStr}
-                    </Mono>
-                  </View>
-
-                  <View style={styles.passActionsRow}>
-                    <TouchableOpacity
-                      style={styles.passActionBtn}
-                      onPress={() => router.push(`/(app)/events/${registration.eventId}`)}
-                      activeOpacity={0.8}
-                      accessibilityRole="button"
-                      accessibilityLabel="View event details"
-                    >
-                      <Mono style={styles.passActionText}>[ EVENT DETAILS ]</Mono>
-                    </TouchableOpacity>
-
-                    {isTeam && (
-                      <TouchableOpacity
-                        style={styles.passActionBtn}
-                        onPress={() => router.push(`/(app)/events/${registration.eventId}/teams`)}
-                        activeOpacity={0.8}
-                        accessibilityRole="button"
-                        accessibilityLabel="View squad hub"
-                      >
-                        <Mono style={styles.passActionText}>[ SQUAD HUB ]</Mono>
-                      </TouchableOpacity>
-                    )}
-
-                    <TouchableOpacity
-                      style={[styles.passActionBtn, { backgroundColor: theme.colors.primary }]}
-                      onPress={() => router.push(`/(app)/events/${registration.eventId}/scan`)}
-                      activeOpacity={0.8}
-                      accessibilityRole="button"
-                      accessibilityLabel="Scan attendance QR code"
-                    >
-                      <Mono style={[styles.passActionText, { color: theme.colors.onPrimary }]}>
-                        [ SCAN QR ]
-                      </Mono>
-                    </TouchableOpacity>
-                  </View>
+                  )}
                 </View>
-              );
-            })
-          )}
-        </View>
-      )}
-
-      {/* SECTION 2: TEAM INVITATIONS */}
-      {activeSection === 'INVITES' && (
-        <View style={styles.sectionContainer}>
-          <View style={styles.summaryBar}>
-            <MonoLabel style={{ color: theme.colors.onSurfaceVariant }}>PENDING SQUAD INVITATIONS</MonoLabel>
-            <MonoLabel style={{ color: theme.colors.primary }}>
-              {invitations.length} {invitations.length === 1 ? 'INVITE' : 'INVITES'}
-            </MonoLabel>
-          </View>
-
-          {isInvitesLoading ? (
-            <View style={styles.loadingBox}>
-              <ActivityIndicator size="small" color={theme.colors.primary} />
-              <MonoLabel>LOADING PENDING INVITATIONS...</MonoLabel>
-            </View>
-          ) : isInvitesUnsupported ? (
-            <View style={styles.emptyBox}>
-              <Display style={styles.emptyTitle}>FEATURE DEFERRED</Display>
-              <Body style={styles.emptySub}>
-                Direct squad invitations are currently deferred on this server. You can join squads directly from the Event Teams tab.
-              </Body>
-            </View>
-          ) : isInvitesError ? (
-            <View style={styles.emptyBox}>
-              <Display style={styles.emptyTitle}>UNABLE TO LOAD INVITATIONS</Display>
-              <Body style={styles.emptySub}>
-                Could not retrieve squad invitations. Tap refresh to try again.
-              </Body>
-            </View>
-          ) : invitations.length === 0 ? (
-            <View style={styles.emptyBox}>
-              <Display style={styles.emptyTitle}>NO PENDING INVITATIONS</Display>
-              <Body style={styles.emptySub}>
-                When a teammate invites you to their squad, the invite will appear here for you to accept.
-              </Body>
-            </View>
-          ) : (
-            invitations.map((inv) => (
-              <View key={inv.invitation_id} style={styles.inviteCard}>
-                <View style={styles.inviteHeader}>
-                  <View style={{ flex: 1, gap: 2 }}>
-                    <Title style={{ fontSize: 16 }}>{inv.team.team_name}</Title>
-                    <Mono style={{ fontSize: 12, color: theme.colors.primary }}>
-                      EVENT: {inv.event.event_title}
-                    </Mono>
-                    <Body style={{ fontSize: 12, color: theme.colors.onSurfaceVariant, marginTop: 2 }}>
-                      Invited by: {inv.inviter.full_name}
-                    </Body>
-                  </View>
-                  <StatusBadge status="[PENDING]" type="warning" />
-                </View>
-
-                <View style={styles.inviteActions}>
+                <Text style={styles.ticketMetaText}>
+                  {ach.event?.title || 'Campus Event'}
+                </Text>
+                {ach.linked_project && (
                   <TouchableOpacity
-                    style={styles.inviteBtnAccept}
-                    onPress={() => setSelectedInvite({ invite: inv, action: 'ACCEPT' })}
-                    activeOpacity={0.8}
+                    onPress={() => openProjectShowcase(ach.linked_project?.slug)}
+                    style={{ marginTop: 12, paddingVertical: 8 }}
                     accessibilityRole="button"
-                    accessibilityLabel={`Accept squad invitation from ${inv.inviter.full_name}`}
+                    accessibilityLabel="Showcase project"
                   >
-                    <Mono style={{ color: theme.colors.onPrimary, fontFamily: theme.typography.monoBold, fontSize: 12 }}>
-                      [ ACCEPT SQUAD ]
-                    </Mono>
+                    <Text style={{ color: theme.colors.brandPrimary, fontFamily: theme.typography.monoMedium }}>
+                      [ SHOWCASE PROJECT ↗ ]
+                    </Text>
                   </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.inviteBtnDecline}
-                    onPress={() => setSelectedInvite({ invite: inv, action: 'DECLINE' })}
-                    activeOpacity={0.8}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Decline squad invitation from ${inv.inviter.full_name}`}
-                  >
-                    <Mono style={{ color: theme.colors.onSurface, fontFamily: theme.typography.monoBold, fontSize: 12 }}>
-                      [ DECLINE ]
-                    </Mono>
-                  </TouchableOpacity>
-                </View>
+                )}
               </View>
             ))
           )}
         </View>
       )}
 
-      {/* SECTION 3: ATTENDANCE HISTORY */}
-      {activeSection === 'ATTENDANCE' && (
+      {/* Segment 1: UPCOMING (Digital Tickets) */}
+      {!isHonors && activeSection === 'UPCOMING' && (
         <View style={styles.sectionContainer}>
-          <TouchableOpacity
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              backgroundColor: theme.colors.surfaceContainerLow,
-              borderWidth: 1,
-              borderColor: theme.colors.borderHairline,
-              padding: 12,
-              marginBottom: 4,
-            }}
-            onPress={() => router.push('/(app)/disputes')}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel="View attendance disputes and claims"
-          >
-            <MonoLabel style={{ color: theme.colors.primary }}>ATTENDANCE DISPUTES & CLAIMS</MonoLabel>
-            <MonoLabel style={{ color: theme.colors.primary }}>→</MonoLabel>
-          </TouchableOpacity>
-
-          <View style={styles.summaryBar}>
-            <MonoLabel style={{ color: theme.colors.onSurfaceVariant }}>VERIFIED ATTENDANCE SESSIONS</MonoLabel>
-            <MonoLabel style={{ color: theme.colors.primary }}>
-              {attendanceRecords.length < 10 ? `0${attendanceRecords.length}` : attendanceRecords.length} RECORDS
-            </MonoLabel>
-          </View>
-
-          {isHistoryLoading ? (
-            <View style={styles.loadingBox}>
-              <ActivityIndicator size="small" color={theme.colors.primary} />
-              <MonoLabel>FETCHING ATTENDANCE LOGS...</MonoLabel>
-            </View>
-          ) : attendanceRecords.length === 0 ? (
+          {isRegsLoading ? (
+            <ActivityIndicator size="large" color={theme.colors.brandPrimary} style={{ marginVertical: 32 }} />
+          ) : passesWithEvent.length === 0 ? (
             <View style={styles.emptyBox}>
-              <Display style={styles.emptyTitle}>NO ATTENDANCE RECORDS</Display>
-              <Body style={styles.emptySub}>
-                Scan a QR code at an active event to record verified attendance.
-              </Body>
-            </View>
-          ) : (
-            attendanceRecords.map((record: AttendanceRecordItem) => (
-              <AttendanceHistoryRow
-                key={record.id}
-                item={record}
-                onPress={() => {
-                  if (record.session?.eventId) {
-                    router.push({
-                      pathname: '/(app)/history/[id]',
-                      params: { id: record.session.eventId },
-                    });
-                  }
-                }}
-              />
-            ))
-          )}
-        </View>
-      )}
-
-      {/* SECTION 4: DISPUTES & CLAIMS */}
-      {activeSection === 'DISPUTES' && (
-        <View style={styles.sectionContainer}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <MonoLabel style={{ color: theme.colors.onSurfaceVariant }}>ATTENDANCE CLAIMS</MonoLabel>
-            <TouchableOpacity
-              onPress={() => router.push('/(app)/disputes/new')}
-              style={{
-                backgroundColor: theme.colors.primary,
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                minHeight: 44,
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-              activeOpacity={0.8}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              accessibilityRole="button"
-              accessibilityLabel="File attendance dispute claim"
-            >
-              <Mono style={{ fontSize: 12, fontFamily: theme.typography.monoBold, color: theme.colors.onPrimary }}>
-                + FILE CLAIM
-              </Mono>
-            </TouchableOpacity>
-          </View>
-
-          {isDisputesLoading ? (
-            <View style={styles.loadingBox}>
-              <ActivityIndicator size="small" color={theme.colors.primary} />
-              <MonoLabel>LOADING DISPUTES...</MonoLabel>
-            </View>
-          ) : disputes.length === 0 ? (
-            <View style={styles.emptyBox}>
-              <Display style={styles.emptyTitle}>NO ACTIVE CLAIMS</Display>
-              <Body style={styles.emptySub}>
-                Attendance disputes can only be filed for event sessions you were registered for where check-in failed or was marked absent within the last 24 hours.
-              </Body>
+              <Text style={styles.emptyTitle}>No upcoming tickets</Text>
+              <Text style={styles.emptySub}>
+                You haven&apos;t registered for any upcoming events yet. Explore campus events to register.
+              </Text>
               <Button
-                title="[ FILE DISPUTE CLAIM ]"
-                variant="secondary"
-                onPress={() => router.push('/(app)/disputes/new')}
-                style={{ marginTop: 8 }}
-              />
-            </View>
-          ) : (
-            disputes.map((item: AttendanceDisputeItem) => (
-              <DisputeRow
-                key={item.id}
-                item={item}
-                onPress={() => router.push(`/(app)/disputes/${item.id}`)}
-              />
-            ))
-          )}
-        </View>
-      )}
-
-      {/* SECTION 5: HONORS & RESULTS */}
-      {activeSection === 'HONORS' && (
-        <View style={styles.sectionContainer}>
-          <View style={styles.summaryBar}>
-            <MonoLabel style={{ color: theme.colors.onSurfaceVariant }}>OFFICIAL HONORS & PODIUM FINISHES</MonoLabel>
-            <MonoLabel style={{ color: theme.colors.success, fontSize: 12 }}>[VERIFIED RECORD]</MonoLabel>
-          </View>
-
-          {isAchievementsLoading ? (
-            <View style={styles.loadingBox}>
-              <ActivityIndicator size="small" color={theme.colors.primary} />
-              <MonoLabel>LOADING OFFICIAL HONORS...</MonoLabel>
-            </View>
-          ) : achievements.length === 0 ? (
-            <View style={styles.emptyBox}>
-              <Display style={styles.emptyTitle}>NO OFFICIAL HONORS</Display>
-              <Body style={styles.emptySub}>
-                Participate in campus hackathons, competitions, and seminars to earn verified honors and credentials.
-              </Body>
-              <Button
-                title="[ EXPLORE COMPETITIONS ]"
-                variant="primary"
+                title="Explore Events"
                 onPress={() => router.push('/(app)/(tabs)/explore')}
+                variant="primary"
                 style={{ marginTop: 8 }}
               />
             </View>
           ) : (
-            achievements.map((ach: StudentAchievementItem) => {
-              const isPodium = ach.placement && ach.placement <= 3;
-              const rankText = ach.placement
-                ? ach.placement === 1
-                  ? '🥇 1ST PLACE'
-                  : ach.placement === 2
-                  ? '🥈 2ND PLACE'
-                  : ach.placement === 3
-                  ? '🥉 3RD PLACE'
-                  : `RANK #${ach.placement}`
-                : 'AWARD';
+            passesWithEvent.map(({ registration, event }) => {
+              const isWaitlisted = registration.registrationStatus === 'WAITLISTED';
+              const dateStr = event?.startTime
+                ? new Date(event.startTime).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
+                : 'Date TBA';
+              const timeStr = event?.startTime
+                ? new Date(event.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : '';
 
               return (
-                <View
-                  key={ach.id}
-                  style={{
-                    backgroundColor: theme.colors.surfaceContainerLow,
-                    borderWidth: 1,
-                    borderColor: isPodium ? theme.colors.podiumGold : theme.colors.outlineVariant,
-                    padding: 14,
-                    gap: 6,
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <MonoLabel style={{ color: theme.colors.primary, fontSize: 12 }}>{rankText}</MonoLabel>
-                    <Mono style={{ fontSize: 12, color: theme.colors.outline }}>
-                      {new Date(ach.published_at).getFullYear()}
-                    </Mono>
+                <View key={registration.id} style={styles.ticketCard}>
+                  <View style={styles.ticketHeaderRow}>
+                    <Text numberOfLines={2} style={styles.ticketTitle}>
+                      {event?.title || 'Campus Event'}
+                    </Text>
+                    <StatusBadge
+                      status={isWaitlisted ? 'WAITLISTED' : 'CONFIRMED'}
+                      type={isWaitlisted ? 'warning' : 'success'}
+                    />
                   </View>
 
-                  <Title style={{ fontSize: 14, textTransform: 'uppercase' }}>{ach.award_title}</Title>
-                  <Body style={{ fontSize: 12, color: theme.colors.onSurfaceVariant }}>
-                    {ach.event.title}
-                    {ach.is_team_award && ach.team_name ? ` • Team: ${ach.team_name}` : ''}
-                  </Body>
+                  <Text style={styles.ticketMetaText}>
+                    {event?.locationName || 'Campus Venue'} · {dateStr} {timeStr ? `at ${timeStr}` : ''}
+                  </Text>
 
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginTop: 6,
-                      paddingTop: 8,
-                      borderTopWidth: 1,
-                      borderTopColor: theme.colors.borderHairline,
-                    }}
-                  >
+                  {/* Phase 1 Door QR Disabled Placeholder */}
+                  {!isWaitlisted ? (
+                    <View style={styles.doorQrRow}>
+                      <Text style={styles.doorQrLabel}>Door QR Pass</Text>
+                      <Text style={styles.doorQrSubtext}>Door QR coming soon</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.waitlistBanner}>
+                      <Text style={styles.waitlistText}>
+                        Waitlisted — We&apos;ll notify you if a confirmed spot opens up.
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Ticket Action Shortcuts */}
+                  <View style={styles.ticketActionsRow}>
                     <TouchableOpacity
-                      onPress={() => router.push(`/(app)/events/${ach.event.id}/results`)}
-                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                      accessibilityRole="button"
-                      accessibilityLabel="View event results"
+                      style={styles.passActionBtn}
+                      onPress={() => router.push(`/(app)/events/${registration.eventId}`)}
+                      activeOpacity={0.8}
                     >
-                      <Mono style={{ fontSize: 12, color: theme.colors.primary, fontFamily: theme.typography.monoBold }}>
-                        [ VIEW RESULTS ]
-                      </Mono>
+                      <Text style={styles.passActionText}>View Details</Text>
                     </TouchableOpacity>
 
-                    {ach.linked_project && (
-                      <TouchableOpacity
-                        onPress={() =>
-                          openProjectShowcase(ach.linked_project?.slug)
-                        }
-                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                        accessibilityRole="button"
-                        accessibilityLabel="Showcase project"
-                      >
-                        <Mono style={{ fontSize: 12, color: theme.colors.secondary, fontFamily: theme.typography.monoBold }}>
-                          [ SHOWCASE PROJECT ↗ ]
-                        </Mono>
-                      </TouchableOpacity>
-                    )}
+                    <TouchableOpacity
+                      style={styles.passActionBtn}
+                      onPress={() => router.push(`/(app)/events/${registration.eventId}/teams`)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.passActionText}>Squad Hub</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.passActionBtn, styles.passActionBtnPrimary]}
+                      onPress={() => router.push(`/(app)/events/${registration.eventId}/scan`)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.passActionTextPrimary}>Scan</Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
               );
@@ -825,51 +489,49 @@ export default function ActivityScreen() {
         </View>
       )}
 
-      {/* Confirmation Modal for Accepting / Declining Team Invites */}
-      <Modal
-        visible={!!selectedInvite}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setSelectedInvite(null)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <StatusBadge
-              status={selectedInvite?.action === 'ACCEPT' ? '[JOIN SQUAD]' : '[DECLINE SQUAD]'}
-              type={selectedInvite?.action === 'ACCEPT' ? 'success' : 'error'}
-            />
-            <Title style={{ fontSize: 18 }}>
-              {selectedInvite?.action === 'ACCEPT' ? 'CONFIRM SQUAD MEMBERSHIP' : 'DECLINE INVITATION'}
-            </Title>
-            <Body style={{ fontSize: 13, color: theme.colors.onSurfaceVariant }}>
-              {selectedInvite?.action === 'ACCEPT'
-                ? `Join "${selectedInvite.invite.team.team_name}" for ${selectedInvite.invite.event.event_title}? You will register under this squad.`
-                : `Are you sure you want to decline the invitation to join "${selectedInvite?.invite.team.team_name}"?`}
-            </Body>
+      {/* Segment 2: PAST_HISTORY (Verified Attendance Ledger) */}
+      {!isHonors && activeSection === 'PAST_HISTORY' && (
+        <View style={styles.sectionContainer}>
+          {/* Direct Link to Disputes Ledger */}
+          <TouchableOpacity
+            style={styles.disputesShortcut}
+            onPress={() => router.push('/(app)/disputes')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.disputesShortcutText}>Have attendance issues? File or view disputes →</Text>
+          </TouchableOpacity>
 
-            <View style={{ gap: 8, marginTop: 8 }}>
-              <Button
-                title={
-                  isAccepting || isDeclining
-                    ? 'PROCESSING...'
-                    : selectedInvite?.action === 'ACCEPT'
-                    ? 'CONFIRM JOIN'
-                    : 'CONFIRM DECLINE'
-                }
-                variant={selectedInvite?.action === 'ACCEPT' ? 'primary' : 'danger'}
-                onPress={handleConfirmInviteAction}
-                disabled={isAccepting || isDeclining}
-              />
-              <Button
-                title="CANCEL"
-                variant="secondary"
-                onPress={() => setSelectedInvite(null)}
-                disabled={isAccepting || isDeclining}
-              />
-            </View>
+          <View style={{ marginBottom: 12 }}>
+            <MonoLabel style={{ fontSize: 13, color: theme.colors.textMuted }}>
+              VERIFIED ATTENDANCE SESSIONS
+            </MonoLabel>
           </View>
+
+          {isHistoryLoading ? (
+            <ActivityIndicator size="large" color={theme.colors.brandPrimary} style={{ marginVertical: 32 }} />
+          ) : attendanceRecords.length === 0 ? (
+            <View style={styles.emptyBox}>
+              <Text style={styles.emptyTitle}>NO ATTENDANCE RECORDS</Text>
+              <Text style={styles.emptySub}>
+                Verified session check-ins will be logged here chronologically.
+              </Text>
+            </View>
+          ) : (
+            attendanceRecords.map((record) => (
+              <AttendanceHistoryRow
+                key={record.id}
+                item={record}
+                onPress={() => {
+                  router.push({
+                    pathname: '/(app)/history/[id]',
+                    params: { id: record.id },
+                  });
+                }}
+              />
+            ))
+          )}
         </View>
-      </Modal>
+      )}
     </MobileShell>
   );
 }
