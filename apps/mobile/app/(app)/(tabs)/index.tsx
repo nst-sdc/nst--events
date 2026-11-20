@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, StyleSheet, RefreshControl, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { View, StyleSheet, RefreshControl, ScrollView, TouchableOpacity, TextInput, Text } from 'react-native';
 import { useRouter } from 'expo-router';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useAppTheme } from '../../../src/store/theme-store';
 import { ActivityIndicator } from '../../../src/ui/core/ActivityIndicator';
 import { useUserProfile } from '../../../src/hooks/use-user-profile';
@@ -14,6 +15,7 @@ import { StatusBadge } from '../../../src/ui/core/StatusBadge';
 import { StudentCalendarView } from '../../../src/ui/StudentCalendarView';
 import { useAttendanceHistory } from '../../../src/hooks/use-attendance-history';
 import { FilterChip } from '../../../src/ui/FilterChip';
+import { haptics } from '../../../src/lib/haptics';
 import {
   classifyAndSortHomeEvents,
   findActiveAttendanceSession,
@@ -47,9 +49,6 @@ function EventRow({
   const isRegistered = regStatus === 'REGISTERED';
   const isWaitlisted = regStatus === 'WAITLISTED';
 
-  // Only ongoing events require per-event session windows and attendance verification.
-  // Upcoming events render cards based on static event timing and registration status,
-  // preventing unnecessary request fan-out on initial feed render.
   const shouldFetchDetails = mode === 'ongoing' || mode === 'all';
   const { data: sessions, isLoading: sessionsLoading } = useEventSessions(event.id, {
     enabled: shouldFetchDetails,
@@ -249,128 +248,265 @@ export default function HomeAttendanceScreen() {
   }, [publishedEvents, now, liveEventIds]);
 
   const userClubMemberships = profile?.club_memberships || [];
-
   const isFilterActive = debouncedQuery.length > 0 || selectedCategory !== 'ALL' || scopeFilter === 'MY_EVENTS';
+
+  const currentHour = now.getHours();
+  const greetingText =
+    currentHour < 12 ? 'Good morning' : currentHour < 17 ? 'Good afternoon' : 'Good evening';
 
   const styles = useMemo(
     () =>
       StyleSheet.create({
-        dashboardHeader: {
+        // Bento Welcome Header
+        dashboardCard: {
           padding: theme.spacing.base,
-          backgroundColor: theme.colors.surfaceContainerLow,
+          backgroundColor: theme.colors.surface,
+          borderRadius: theme.radii.xl,
           borderWidth: 1,
-          borderColor: theme.colors.borderHairline,
-          gap: 6,
-          marginBottom: theme.spacing.md,
+          borderColor: theme.colors.borderSubtle,
+          borderTopColor: theme.mode === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.12)',
+          gap: 12,
+          marginBottom: theme.spacing.base,
+          shadowColor: '#000000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: theme.mode === 'dark' ? 0.3 : 0.06,
+          shadowRadius: 12,
+          elevation: 2,
         },
-        dashboardTopRow: {
+        dashboardHeaderTop: {
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
         },
-        studentGreeting: {
-          fontSize: 18,
-          lineHeight: 22,
-          color: theme.colors.onSurface,
+        greetingRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
         },
-        roleBadgeContainer: {
+        greetingDot: {
+          width: 7,
+          height: 7,
+          borderRadius: theme.radii.full,
+          backgroundColor: theme.colors.solidEmerald,
+        },
+        greetingLabel: {
+          fontSize: 13,
+          fontFamily: theme.typography.interMedium,
+          color: theme.colors.textSecondary,
+        },
+        rolePill: {
+          backgroundColor: theme.colors.brandSubtle,
           borderWidth: 1,
-          borderColor: theme.colors.primaryFixed,
-          paddingHorizontal: 8,
+          borderColor: theme.colors.brandPrimary,
+          borderRadius: theme.radii.full,
+          paddingHorizontal: 10,
           paddingVertical: 3,
         },
-        roleBadgeText: {
+        rolePillText: {
           fontSize: 12,
           fontFamily: theme.typography.monoBold,
-          color: theme.colors.primaryFixed,
+          color: theme.colors.brandText,
+          letterSpacing: 0.5,
         },
-        quickActionsTray: {
-          gap: 8,
-          marginBottom: theme.spacing.md,
-        },
-        quickActionBtn: {
-          flex: 1,
-          paddingVertical: 10,
+        profileMainRow: {
+          flexDirection: 'row',
           alignItems: 'center',
-          backgroundColor: theme.colors.surfaceContainerLowest,
-          borderWidth: 1,
-          borderColor: theme.colors.borderHairline,
+          gap: 14,
         },
-        quickActionPrimary: {
-          backgroundColor: theme.colors.primary,
-          borderColor: theme.colors.primary,
+        avatarCircle: {
+          width: 48,
+          height: 48,
+          borderRadius: theme.radii.full,
+          backgroundColor: theme.colors.brandPrimary,
+          justifyContent: 'center',
+          alignItems: 'center',
+          borderWidth: 2,
+          borderColor: theme.colors.surfaceElevated,
+          shadowColor: theme.colors.brandPrimary,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.25,
+          shadowRadius: 6,
+          elevation: 3,
         },
-        quickActionPrimaryText: {
+        avatarText: {
+          fontSize: 20,
+          fontFamily: theme.typography.interBold,
+          color: '#FFFFFF',
+        },
+        profileDetails: {
+          flex: 1,
+          gap: 2,
+        },
+        dashboardEyebrow: {
           fontSize: 12,
-          fontFamily: theme.typography.monoBold,
-          color: theme.colors.onPrimary,
+          fontFamily: theme.typography.monoMedium,
+          color: theme.colors.brandText,
+          letterSpacing: 0.8,
         },
-        quickActionText: {
+        studentName: {
+          fontSize: 20,
+          lineHeight: 25,
+          fontFamily: theme.typography.interBold,
+          letterSpacing: -0.3,
+          color: theme.colors.textPrimary,
+        },
+        academicPill: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 5,
+          marginTop: 2,
+        },
+        academicText: {
           fontSize: 12,
-          fontFamily: theme.typography.monoBold,
-          color: theme.colors.onSurface,
+          fontFamily: theme.typography.interRegular,
+          color: theme.colors.textSecondary,
         },
-        alertBanner: {
-          padding: 12,
-          backgroundColor: theme.colors.surfaceContainerLowest,
+
+        // Linear Tactile Quick Actions
+        quickActionsContainer: {
+          gap: theme.spacing.sm,
+          marginBottom: theme.spacing.base,
+        },
+        heroScanCard: {
+          backgroundColor: theme.colors.brandPrimary,
+          borderRadius: theme.radii.lg,
+          padding: theme.spacing.base,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
           borderWidth: 1,
-          borderColor: theme.colors.primary,
-          marginBottom: theme.spacing.md,
+          borderColor: 'rgba(255, 255, 255, 0.2)',
+          shadowColor: theme.colors.brandPrimary,
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.35,
+          shadowRadius: 14,
+          elevation: 4,
         },
-        alertDot: {
-          width: 6,
-          height: 6,
-          borderRadius: 3,
-          backgroundColor: theme.colors.primary,
+        heroScanLeft: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 12,
+          flex: 1,
         },
+        heroIconWell: {
+          width: 44,
+          height: 44,
+          borderRadius: theme.radii.md,
+          backgroundColor: 'rgba(255, 255, 255, 0.18)',
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        heroScanTitles: {
+          flex: 1,
+          gap: 2,
+        },
+        heroScanTitle: {
+          fontSize: 16,
+          fontFamily: theme.typography.interBold,
+          color: '#FFFFFF',
+          letterSpacing: -0.2,
+        },
+        heroScanSubtitle: {
+          fontSize: 12,
+          fontFamily: theme.typography.interRegular,
+          color: 'rgba(255, 255, 255, 0.8)',
+        },
+        heroChevronWell: {
+          width: 32,
+          height: 32,
+          borderRadius: theme.radii.full,
+          backgroundColor: 'rgba(255, 255, 255, 0.15)',
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+
+        // Secondary Twin Bento Tiles
+        twinGrid: {
+          flexDirection: 'row',
+          gap: theme.spacing.sm,
+        },
+        actionTile: {
+          flex: 1,
+          backgroundColor: theme.colors.surface,
+          borderRadius: theme.radii.lg,
+          padding: 14,
+          borderWidth: 1,
+          borderColor: theme.colors.borderSubtle,
+          borderTopColor: theme.mode === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.08)',
+          gap: 10,
+          shadowColor: '#000000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: theme.mode === 'dark' ? 0.2 : 0.04,
+          shadowRadius: 6,
+          elevation: 1,
+        },
+        tileHeader: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        },
+        tileIconWell: {
+          width: 36,
+          height: 36,
+          borderRadius: theme.radii.sm,
+          backgroundColor: theme.colors.surfaceSubtle,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        tileTitle: {
+          fontSize: 14,
+          fontFamily: theme.typography.interBold,
+          color: theme.colors.textPrimary,
+        },
+        tileSubtitle: {
+          fontSize: 12,
+          fontFamily: theme.typography.interRegular,
+          color: theme.colors.textMuted,
+        },
+
+        // Search & Discovery Filters
         filterContainer: {
           gap: theme.spacing.sm,
-          marginBottom: theme.spacing.md,
+          marginBottom: theme.spacing.base,
         },
         searchRow: {
           flexDirection: 'row',
           alignItems: 'center',
-          backgroundColor: theme.colors.surfaceContainerLowest,
+          backgroundColor: theme.colors.surface,
           borderWidth: 1,
-          borderColor: theme.colors.outlineVariant,
-          paddingHorizontal: theme.spacing.md,
-          minHeight: 44,
+          borderColor: theme.colors.borderSubtle,
+          borderRadius: theme.radii.lg,
+          paddingHorizontal: 12,
+          minHeight: 46,
+          gap: 8,
+          shadowColor: '#000000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.05,
+          shadowRadius: 3,
+          elevation: 1,
         },
         searchInput: {
           flex: 1,
-          color: theme.colors.onSurface,
+          color: theme.colors.textPrimary,
           fontSize: 13,
-          fontFamily: theme.typography.monoMedium,
-          paddingVertical: 8,
+          fontFamily: theme.typography.interMedium,
+          paddingVertical: 10,
         },
         clearSearchBtn: {
           paddingHorizontal: 8,
           paddingVertical: 4,
+          borderRadius: theme.radii.full,
+          backgroundColor: theme.colors.surfaceSubtle,
+        },
+        clearText: {
+          fontSize: 12,
+          fontFamily: theme.typography.monoMedium,
+          color: theme.colors.textMuted,
         },
         categoryScroll: {
           flexDirection: 'row',
           gap: 6,
           paddingVertical: 2,
-        },
-        categoryChip: {
-          paddingVertical: 6,
-          paddingHorizontal: 12,
-          borderWidth: 1,
-          borderColor: theme.colors.outlineVariant,
-          backgroundColor: theme.colors.surfaceContainerLow,
-        },
-        categoryChipActive: {
-          borderColor: theme.colors.primary,
-          backgroundColor: theme.colors.primary,
-        },
-        categoryChipText: {
-          fontSize: 12,
-          color: theme.colors.onSurfaceVariant,
-          fontFamily: theme.typography.monoBold,
-          letterSpacing: 0.5,
-        },
-        categoryChipTextActive: {
-          color: theme.colors.onPrimary,
         },
         controlsBar: {
           flexDirection: 'row',
@@ -381,95 +517,125 @@ export default function HomeAttendanceScreen() {
         },
         segmentGroup: {
           flexDirection: 'row',
+          borderRadius: theme.radii.md,
           borderWidth: 1,
-          borderColor: theme.colors.outlineVariant,
-          backgroundColor: theme.colors.surfaceContainerLowest,
-        },
-        segmentBtn: {
-          paddingVertical: 6,
-          paddingHorizontal: 10,
-        },
-        segmentBtnActive: {
-          backgroundColor: theme.colors.surfaceContainerHighest,
-        },
-        segmentText: {
-          fontSize: 12,
-          color: theme.colors.onSurfaceVariant,
-          fontFamily: theme.typography.monoBold,
-        },
-        segmentTextActive: {
-          color: theme.colors.primary,
+          borderColor: theme.colors.borderSubtle,
+          backgroundColor: theme.colors.surfaceSubtle,
+          padding: 2,
         },
         sectionHeader: {
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
-          borderBottomWidth: 1,
-          borderBottomColor: theme.colors.borderHairline,
-          paddingBottom: 8,
-          marginBottom: theme.spacing.md,
+          paddingVertical: 6,
+          marginTop: theme.spacing.xs,
+          marginBottom: theme.spacing.xs,
+        },
+        sectionTitleRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+        },
+        sectionLivePulse: {
+          width: 7,
+          height: 7,
+          borderRadius: theme.radii.full,
+          backgroundColor: theme.colors.solidEmerald,
         },
         sectionTitle: {
-          color: theme.colors.onSurfaceVariant,
+          color: theme.colors.textPrimary,
+          fontFamily: theme.typography.interBold,
+          fontSize: 14,
+          letterSpacing: 0.3,
         },
         sectionSub: {
-          color: theme.colors.outline,
+          color: theme.colors.textMuted,
+          fontFamily: theme.typography.monoMedium,
+          fontSize: 12,
         },
         loadingContainer: {
           padding: theme.spacing.xl,
           alignItems: 'center',
         },
         errorContainer: {
-          backgroundColor: theme.colors.surfaceContainerLow,
+          backgroundColor: theme.colors.surface,
           padding: theme.spacing.xl,
           alignItems: 'center',
+          borderRadius: theme.radii.lg,
           borderWidth: 1,
-          borderColor: theme.colors.error,
+          borderColor: theme.colors.badgeTextRed,
           gap: 12,
         },
         errorTitle: {
-          color: theme.colors.onSurface,
-          fontSize: 20,
+          color: theme.colors.textPrimary,
+          fontSize: 18,
+          fontFamily: theme.typography.interBold,
         },
         errorSub: {
           textAlign: 'center',
-          color: theme.colors.onSurfaceVariant,
+          color: theme.colors.textSecondary,
+          fontSize: 13,
         },
         emptyContainer: {
-          backgroundColor: theme.colors.surfaceContainerLow,
+          backgroundColor: theme.colors.surface,
           padding: theme.spacing.xl,
           alignItems: 'center',
+          borderRadius: theme.radii.xl,
           borderWidth: 1,
-          borderColor: theme.colors.outlineVariant,
-          gap: 8,
+          borderColor: theme.colors.borderSubtle,
+          gap: 10,
+        },
+        emptyRadarRingOuter: {
+          width: 72,
+          height: 72,
+          borderRadius: theme.radii.full,
+          backgroundColor: theme.colors.brandSubtle,
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginBottom: 4,
+        },
+        emptyRadarRingInner: {
+          width: 48,
+          height: 48,
+          borderRadius: theme.radii.full,
+          backgroundColor: theme.colors.surface,
+          justifyContent: 'center',
+          alignItems: 'center',
+          borderWidth: 1,
+          borderColor: theme.colors.brandPrimary,
         },
         emptyTitle: {
-          color: theme.colors.primary,
-          marginBottom: 4,
-          fontSize: 18,
+          color: theme.colors.textPrimary,
+          fontSize: 17,
+          fontFamily: theme.typography.interBold,
+          letterSpacing: -0.2,
         },
         emptySub: {
           textAlign: 'center',
-          color: theme.colors.onSurfaceVariant,
-          fontSize: 12,
+          color: theme.colors.textMuted,
+          fontSize: 13,
+          lineHeight: 18,
         },
         eventsList: {
           gap: theme.spacing.sm,
         },
         footerContainer: {
-          marginTop: theme.spacing.xl,
-          paddingTop: theme.spacing.xl,
+          marginTop: theme.spacing.lg,
+          paddingTop: theme.spacing.base,
           borderTopWidth: 1,
-          borderTopColor: theme.colors.borderHairline,
+          borderTopColor: theme.colors.borderSubtle,
           alignItems: 'center',
-          paddingBottom: 32,
+          paddingBottom: 24,
         },
         footerTitle: {
-          color: theme.colors.onSurfaceVariant,
+          color: theme.colors.textMuted,
+          fontFamily: theme.typography.monoMedium,
+          fontSize: 12,
           marginBottom: 4,
         },
         footerSub: {
-          color: theme.colors.outline,
+          color: theme.colors.textSecondary,
+          fontSize: 12,
           textAlign: 'center',
         },
       }),
@@ -479,6 +645,7 @@ export default function HomeAttendanceScreen() {
   const fullName = profile?.full_name || profile?.email || 'STUDENT';
   const programCode = profile?.academic_profile?.batch?.program?.code;
   const batchYear = profile?.academic_profile?.batch?.graduation_year;
+  const avatarLetter = (fullName || 'S').trim().charAt(0).toUpperCase();
 
   return (
     <MobileShell
@@ -488,40 +655,57 @@ export default function HomeAttendanceScreen() {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={handleRefresh}
-          tintColor={theme.colors.primary}
-          colors={[theme.colors.primary]}
+          tintColor={theme.colors.brandPrimary}
+          colors={[theme.colors.brandPrimary]}
           progressBackgroundColor={theme.colors.surface}
         />
       }
     >
-      {/* Personalized Welcome Header */}
-      <View style={styles.dashboardHeader}>
-        <View style={styles.dashboardTopRow}>
-          <MonoLabel style={{ color: theme.colors.primary, fontSize: 12 }}>STUDENT DASHBOARD</MonoLabel>
-          <View style={styles.roleBadgeContainer}>
-            <Mono style={styles.roleBadgeText}>[STUDENT]</Mono>
+      {/* Personalized Student Dashboard Bento Header */}
+      <View style={styles.dashboardCard}>
+        <View style={styles.dashboardHeaderTop}>
+          <View style={styles.greetingRow}>
+            <View style={styles.greetingDot} />
+            <Text style={styles.greetingLabel}>{greetingText}</Text>
+          </View>
+          <View style={styles.rolePill}>
+            <Text style={styles.rolePillText}>[STUDENT]</Text>
           </View>
         </View>
-        <Display
-          style={styles.studentGreeting}
-          numberOfLines={2}
-          adjustsFontSizeToFit
-          minimumFontScale={0.8}
-        >
-          {fullName.toUpperCase()}
-        </Display>
-        {programCode && (
-          <Mono style={{ fontSize: 12, color: theme.colors.onSurfaceVariant }}>
-            {programCode} · BATCH {batchYear || '2026'}
-          </Mono>
-        )}
+
+        <View style={styles.profileMainRow}>
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarText}>{avatarLetter}</Text>
+          </View>
+          <View style={styles.profileDetails}>
+            <MonoLabel style={styles.dashboardEyebrow}>STUDENT DASHBOARD</MonoLabel>
+            <Display
+              style={styles.studentName}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.85}
+            >
+              {fullName.toUpperCase()}
+            </Display>
+            {programCode ? (
+              <View style={styles.academicPill}>
+                <MaterialIcons name="school" size={13} color={theme.colors.brandText} />
+                <Text style={styles.academicText}>
+                  {programCode} · BATCH {batchYear || '2026'}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        </View>
       </View>
 
-      {/* Quick Actions Tray */}
-      <View style={styles.quickActionsTray}>
+      {/* Linear-Grade Tactile Quick Actions Tray */}
+      <View style={styles.quickActionsContainer}>
+        {/* Primary Hero Action: Scan Attendance */}
         <TouchableOpacity
-          style={[styles.quickActionBtn, styles.quickActionPrimary]}
+          style={styles.heroScanCard}
           onPress={() => {
+            void haptics.selection();
             const liveEvent = ongoingEvents.find((e) => !e.isLocked);
             if (liveEvent) {
               router.push(`/(app)/events/${liveEvent.id}/scan`);
@@ -531,26 +715,70 @@ export default function HomeAttendanceScreen() {
               router.push('/(app)/(tabs)/explore');
             }
           }}
-          activeOpacity={0.8}
+          activeOpacity={0.88}
+          accessibilityRole="button"
+          accessibilityLabel="[ 📸 SCAN ATTENDANCE ]"
         >
-          <Mono style={styles.quickActionPrimaryText}>[ 📸 SCAN ATTENDANCE ]</Mono>
+          <View style={styles.heroScanLeft}>
+            <View style={styles.heroIconWell}>
+              <MaterialIcons name="qr-code-scanner" size={24} color="#FFFFFF" />
+            </View>
+            <View style={styles.heroScanTitles}>
+              <Text style={styles.heroScanTitle}>Scan Attendance</Text>
+              <Text style={styles.heroScanSubtitle}>Verify presence & mark session</Text>
+            </View>
+          </View>
+          <View style={styles.heroChevronWell}>
+            <MaterialIcons name="arrow-forward" size={18} color="#FFFFFF" />
+          </View>
         </TouchableOpacity>
 
-        <View style={{ flexDirection: 'row', gap: 8 }}>
+        {/* Secondary Twin Bento Grid */}
+        <View style={styles.twinGrid}>
+          {/* Explore Campus Action */}
           <TouchableOpacity
-            style={styles.quickActionBtn}
-            onPress={() => router.push('/(app)/(tabs)/explore')}
-            activeOpacity={0.8}
+            style={styles.actionTile}
+            onPress={() => {
+              void haptics.selection();
+              router.push('/(app)/(tabs)/explore');
+            }}
+            activeOpacity={0.82}
+            accessibilityRole="button"
+            accessibilityLabel="[ 🔍 EXPLORE CAMPUS ]"
           >
-            <Mono style={styles.quickActionText}>[ 🔍 EXPLORE CAMPUS ]</Mono>
+            <View style={styles.tileHeader}>
+              <View style={styles.tileIconWell}>
+                <MaterialIcons name="explore" size={20} color={theme.colors.brandText} />
+              </View>
+              <MaterialIcons name="north-east" size={16} color={theme.colors.textMuted} />
+            </View>
+            <View>
+              <Text style={styles.tileTitle}>Explore Campus</Text>
+              <Text style={styles.tileSubtitle}>Clubs & events</Text>
+            </View>
           </TouchableOpacity>
 
+          {/* Activity / Passes Action */}
           <TouchableOpacity
-            style={styles.quickActionBtn}
-            onPress={() => router.push('/(app)/(tabs)/activity')}
-            activeOpacity={0.8}
+            style={styles.actionTile}
+            onPress={() => {
+              void haptics.selection();
+              router.push('/(app)/(tabs)/activity');
+            }}
+            activeOpacity={0.82}
+            accessibilityRole="button"
+            accessibilityLabel="[ 📋 MY ACTIVITY ]"
           >
-            <Mono style={styles.quickActionText}>[ 📋 MY ACTIVITY ]</Mono>
+            <View style={styles.tileHeader}>
+              <View style={styles.tileIconWell}>
+                <MaterialIcons name="confirmation-number" size={20} color={theme.colors.brandText} />
+              </View>
+              <MaterialIcons name="north-east" size={16} color={theme.colors.textMuted} />
+            </View>
+            <View>
+              <Text style={styles.tileTitle}>My Activity</Text>
+              <Text style={styles.tileSubtitle}>Passes & logs</Text>
+            </View>
           </TouchableOpacity>
         </View>
       </View>
@@ -559,10 +787,11 @@ export default function HomeAttendanceScreen() {
       <View style={styles.filterContainer}>
         {/* Search Input */}
         <View style={styles.searchRow}>
+          <MaterialIcons name="search" size={20} color={theme.colors.textMuted} />
           <TextInput
             style={styles.searchInput}
             placeholder="SEARCH EVENTS..."
-            placeholderTextColor={theme.colors.onSurfaceVariant}
+            placeholderTextColor={theme.colors.textMuted}
             value={searchInput}
             onChangeText={setSearchInput}
             autoCapitalize="none"
@@ -579,7 +808,7 @@ export default function HomeAttendanceScreen() {
               accessibilityLabel="Clear search text"
               testID="btn-clear-search"
             >
-              <MonoLabel style={{ color: theme.colors.onSurfaceVariant, fontSize: 12 }}>[CLEAR]</MonoLabel>
+              <Text style={styles.clearText}>[CLEAR]</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -655,8 +884,8 @@ export default function HomeAttendanceScreen() {
       {/* Main Content Area */}
       {eventsLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <MonoLabel style={{ marginTop: 8, color: theme.colors.onSurfaceVariant }}>LOADING EVENTS FEED...</MonoLabel>
+          <ActivityIndicator size="large" color={theme.colors.brandPrimary} />
+          <MonoLabel style={{ marginTop: 8, color: theme.colors.textMuted }}>LOADING EVENTS FEED...</MonoLabel>
         </View>
       ) : isEventsError ? (
         <View style={styles.errorContainer}>
@@ -681,21 +910,26 @@ export default function HomeAttendanceScreen() {
       ) : (ongoingEvents.length === 0 && upcomingEvents.length === 0) ? (
         /* Empty States */
         <View style={styles.emptyContainer}>
+          <View style={styles.emptyRadarRingOuter}>
+            <View style={styles.emptyRadarRingInner}>
+              <MaterialIcons name="radar" size={26} color={theme.colors.brandPrimary} />
+            </View>
+          </View>
           {scopeFilter === 'MY_EVENTS' ? (
             <>
               <StatusBadge status="[NO PASSES]" type="default" />
-              <Display style={styles.emptyTitle}>NO REGISTERED EVENTS</Display>
-              <Body style={styles.emptySub}>
-                You have not registered for any events yet. Explore events above to secure your pass!
-              </Body>
+              <Text style={styles.emptyTitle}>NO REGISTERED EVENTS</Text>
+              <Text style={styles.emptySub}>
+                You have not registered for any events yet. Explore campus events above to secure your pass!
+              </Text>
             </>
           ) : isFilterActive ? (
             <>
               <StatusBadge status="[NO MATCHES]" type="warning" />
-              <Display style={styles.emptyTitle}>NO MATCHING EVENTS</Display>
-              <Body style={styles.emptySub}>
+              <Text style={styles.emptyTitle}>NO MATCHING EVENTS</Text>
+              <Text style={styles.emptySub}>
                 No campus events matched your current search and filter criteria. Try clearing filters.
-              </Body>
+              </Text>
               <Button
                 title="[ RESET FILTERS ]"
                 variant="secondary"
@@ -710,7 +944,7 @@ export default function HomeAttendanceScreen() {
           ) : (
             <>
               <Display style={styles.emptyTitle}>NO SESSIONS</Display>
-              <Body style={styles.emptySub}>Check back later when an event session begins.</Body>
+              <Text style={styles.emptySub}>Check back later when an event session begins.</Text>
             </>
           )}
         </View>
@@ -719,7 +953,10 @@ export default function HomeAttendanceScreen() {
         <View style={styles.eventsList}>
           {ongoingEvents.length > 0 && (
             <View style={styles.sectionHeader}>
-              <MonoLabel style={styles.sectionTitle}>LIVE NOW // ONGOING ATTENDANCE</MonoLabel>
+              <View style={styles.sectionTitleRow}>
+                <View style={styles.sectionLivePulse} />
+                <Text style={styles.sectionTitle}>LIVE NOW // ONGOING ATTENDANCE</Text>
+              </View>
             </View>
           )}
           {ongoingEvents.map((event) => (
@@ -734,8 +971,8 @@ export default function HomeAttendanceScreen() {
           ))}
 
           <View style={styles.sectionHeader}>
-            <MonoLabel style={styles.sectionTitle}>UPCOMING EVENTS</MonoLabel>
-            <MonoLabel style={styles.sectionSub}>{upcomingEvents.length} AVAILABLE</MonoLabel>
+            <Text style={styles.sectionTitle}>UPCOMING EVENTS</Text>
+            <Text style={styles.sectionSub}>{upcomingEvents.length} AVAILABLE</Text>
           </View>
           {upcomingEvents.map((event) => (
             <EventRow
@@ -757,4 +994,3 @@ export default function HomeAttendanceScreen() {
     </MobileShell>
   );
 }
-

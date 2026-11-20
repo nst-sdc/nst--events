@@ -91,10 +91,17 @@ export default function ProfileScreen() {
       lineHeight: 16,
     },
     identitySection: {
-      backgroundColor: theme.colors.surfaceContainerLow,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.borderHairline,
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radii.xl,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSubtle,
+      borderTopColor: theme.mode === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.12)',
       padding: theme.spacing.base,
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: theme.mode === 'dark' ? 0.25 : 0.05,
+      shadowRadius: 10,
+      elevation: 2,
     },
     identityHeader: {
       flexDirection: 'row',
@@ -102,22 +109,25 @@ export default function ProfileScreen() {
       gap: theme.spacing.md,
     },
     avatarBox: {
-      width: 48,
-      height: 48,
-      backgroundColor: theme.colors.primary,
+      width: 52,
+      height: 52,
+      borderRadius: theme.radii.full,
+      backgroundColor: theme.colors.brandPrimary,
       alignItems: 'center',
       justifyContent: 'center',
       overflow: 'hidden',
+      borderWidth: 2,
+      borderColor: theme.colors.surfaceElevated,
     },
     avatarImage: {
       width: '100%',
       height: '100%',
     },
     avatarInitial: {
-      color: theme.colors.onPrimary,
-      fontFamily: theme.typography.syneBold,
-      fontSize: 20,
-      lineHeight: 24,
+      color: '#FFFFFF',
+      fontFamily: theme.typography.interBold,
+      fontSize: 22,
+      lineHeight: 26,
       textAlign: 'center',
       includeFontPadding: false,
     },
@@ -126,12 +136,16 @@ export default function ProfileScreen() {
       gap: 2,
     },
     studentName: {
-      fontSize: 16,
-      lineHeight: 20,
+      fontSize: 18,
+      lineHeight: 23,
+      fontFamily: theme.typography.interBold,
+      color: theme.colors.textPrimary,
       textTransform: 'uppercase',
     },
     emailText: {
       fontSize: 12,
+      fontFamily: theme.typography.interRegular,
+      color: theme.colors.textMuted,
     },
     roleText: {
       textTransform: 'uppercase',
@@ -141,7 +155,9 @@ export default function ProfileScreen() {
       gap: theme.spacing.sm,
     },
     sectionTitle: {
-      color: theme.colors.outline,
+      color: theme.colors.textMuted,
+      fontFamily: theme.typography.monoMedium,
+      fontSize: 12,
     },
     clubBadgesRow: {
       flexDirection: 'row',
@@ -149,15 +165,24 @@ export default function ProfileScreen() {
       gap: 8,
     },
     clubBadge: {
-      paddingVertical: 4,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSubtle,
+      borderRadius: theme.radii.full,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
     },
     clubBadgeText: {
       fontSize: 12,
-      color: theme.colors.onSurface,
+      fontFamily: theme.typography.interSemiBold,
+      color: theme.colors.textPrimary,
     },
     emptyClubsText: {
       fontSize: 12,
-      color: theme.colors.onSurfaceVariant,
+      color: theme.colors.textMuted,
     },
     achievementsSection: {
       gap: theme.spacing.sm,
@@ -166,16 +191,20 @@ export default function ProfileScreen() {
       gap: theme.spacing.sm,
     },
     menuList: {
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.borderHairline,
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radii.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.borderSubtle,
+      overflow: 'hidden',
     },
     menuRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingVertical: 14,
+      paddingVertical: 12,
+      paddingHorizontal: 14,
       borderBottomWidth: 1,
-      borderBottomColor: theme.colors.borderHairline,
+      borderBottomColor: theme.colors.borderSubtle,
     },
     menuRowLeft: {
       flexDirection: 'row',
@@ -268,51 +297,73 @@ export default function ProfileScreen() {
 
             {/* PUBLIC DOSSIER & PORTFOLIO */}
             <View style={{
-              backgroundColor: theme.colors.surfaceContainerLow,
+              backgroundColor: theme.colors.surface,
+              borderRadius: theme.radii.xl,
               borderWidth: 1,
-              borderColor: theme.colors.primary,
+              borderColor: theme.colors.borderSubtle,
+              borderTopColor: theme.mode === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.12)',
               padding: theme.spacing.base,
               gap: theme.spacing.sm,
+              shadowColor: '#000000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.05,
+              shadowRadius: 8,
+              elevation: 1,
             }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
-                <MonoLabel style={{ color: theme.colors.primary, flexShrink: 1 }}>PUBLIC STUDENT PORTFOLIO</MonoLabel>
+                <MonoLabel style={{ color: theme.colors.brandText, flexShrink: 1, fontSize: 12 }}>PUBLIC STUDENT PORTFOLIO</MonoLabel>
                 {mySlug && (
-                  <Mono style={{ fontSize: 12, color: theme.colors.primary, flexShrink: 0 }}>@{mySlug}</Mono>
+                  <View style={{
+                    backgroundColor: theme.colors.brandSubtle,
+                    paddingHorizontal: 8,
+                    paddingVertical: 2,
+                    borderRadius: theme.radii.full,
+                  }}>
+                    <Mono style={{ fontSize: 12, color: theme.colors.brandText, flexShrink: 0 }}>@{mySlug}</Mono>
+                  </View>
                 )}
               </View>
 
-              <Body style={{ fontSize: 12, color: theme.colors.onSurfaceVariant }}>
+              <Body style={{ fontSize: 13, color: theme.colors.textSecondary, lineHeight: 18 }}>
                 Control which projects, honors, and verified credentials appear on your public web portfolio.
               </Body>
 
-              <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
                 {mySlug && (
                   <TouchableOpacity
                     onPress={() => router.push(`/students/${mySlug}` as any)}
                     style={{
                       flex: 1,
-                      backgroundColor: theme.colors.primary,
+                      backgroundColor: theme.colors.brandPrimary,
                       paddingVertical: 10,
+                      borderRadius: theme.radii.md,
                       alignItems: 'center',
+                      justifyContent: 'center',
                     }}
+                    activeOpacity={0.85}
                   >
-                    <Mono style={{ fontSize: 12, fontFamily: theme.typography.monoBold, color: theme.colors.onPrimary }}>
+                    <Text style={{ fontSize: 13, fontFamily: theme.typography.interSemiBold, color: '#FFFFFF' }}>
                       VIEW DOSSIER ↗
-                    </Mono>
+                    </Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
                   onPress={() => setShowVisibilityModal(true)}
                   style={{
                     flex: 1,
-                    backgroundColor: theme.colors.surfaceContainerHighest,
+                    backgroundColor: theme.colors.surfaceSubtle,
+                    borderWidth: 1,
+                    borderColor: theme.colors.borderSubtle,
                     paddingVertical: 10,
+                    borderRadius: theme.radii.md,
                     alignItems: 'center',
+                    justifyContent: 'center',
                   }}
+                  activeOpacity={0.85}
                 >
-                  <Mono style={{ fontSize: 12, fontFamily: theme.typography.monoBold, color: theme.colors.onSurface }}>
+                  <Text style={{ fontSize: 13, fontFamily: theme.typography.interSemiBold, color: theme.colors.textPrimary }}>
                     VISIBILITY ⚙
-                  </Mono>
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -323,7 +374,18 @@ export default function ProfileScreen() {
                 <View style={styles.clubBadgesRow}>
                   {profile.club_memberships.map((m) => (
                     <View key={m.club_id} style={styles.clubBadge}>
-                      <Mono style={styles.clubBadgeText}>[ {m.club_name.toUpperCase()} / {m.role} ]</Mono>
+                      <MaterialIcons name="groups" size={15} color={theme.colors.brandText} />
+                      <Text style={styles.clubBadgeText}>{m.club_name}</Text>
+                      <View style={{
+                        backgroundColor: theme.colors.surfaceSubtle,
+                        borderRadius: theme.radii.full,
+                        paddingHorizontal: 8,
+                        paddingVertical: 2,
+                      }}>
+                        <Text style={{ fontSize: 12, fontFamily: theme.typography.monoMedium, color: theme.colors.brandText }}>
+                          {m.role}
+                        </Text>
+                      </View>
                     </View>
                   ))}
                 </View>

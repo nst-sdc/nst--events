@@ -8,6 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useAppTheme } from '../../../src/store/theme-store';
 import { ActivityIndicator } from '../../../src/ui/core/ActivityIndicator';
 import { useUserProfile } from '../../../src/hooks/use-user-profile';
@@ -113,7 +114,7 @@ export default function ActivityScreen() {
     () =>
       StyleSheet.create({
         segmentedNavScroll: {
-          marginBottom: theme.spacing.md,
+          marginBottom: theme.spacing.base,
         },
         segmentedNav: {
           flexDirection: 'row',
@@ -135,12 +136,12 @@ export default function ActivityScreen() {
           flex: 1,
         },
         segmentTabActive: {
-          backgroundColor: theme.colors.surfaceElevated,
+          backgroundColor: theme.colors.surface,
           borderBottomColor: theme.colors.brandPrimary,
           shadowColor: '#000000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.1,
-          shadowRadius: 2,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: theme.mode === 'dark' ? 0.35 : 0.08,
+          shadowRadius: 4,
           elevation: 2,
         },
         segmentLabel: {
@@ -150,19 +151,30 @@ export default function ActivityScreen() {
           color: theme.colors.textMuted,
         },
         segmentLabelActive: {
-          fontFamily: theme.typography.interSemiBold,
-          color: theme.colors.brandText,
+          fontFamily: theme.typography.interBold,
+          color: theme.colors.textPrimary,
         },
         sectionContainer: {
-          gap: theme.spacing.md,
+          gap: theme.spacing.base,
         },
+
+        // Apple Wallet Style Pass
         ticketCard: {
           backgroundColor: theme.colors.surface,
           borderWidth: 1,
           borderColor: theme.colors.borderSubtle,
-          borderRadius: theme.radii.lg,
+          borderTopColor: theme.mode === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.12)',
+          borderRadius: theme.radii.xl,
+          overflow: 'hidden',
+          shadowColor: '#000000',
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: theme.mode === 'dark' ? 0.35 : 0.08,
+          shadowRadius: 14,
+          elevation: 3,
+        },
+        ticketTopSection: {
           padding: theme.spacing.base,
-          gap: theme.spacing.sm,
+          gap: 10,
         },
         ticketHeaderRow: {
           flexDirection: 'row',
@@ -170,35 +182,118 @@ export default function ActivityScreen() {
           alignItems: 'flex-start',
           gap: theme.spacing.sm,
         },
-        ticketTitle: {
+        ticketTitleContainer: {
           flex: 1,
-          fontFamily: theme.typography.interSemiBold,
-          fontSize: 16,
-          lineHeight: 22,
+          gap: 4,
+        },
+        ticketPassEyebrow: {
+          fontSize: 12,
+          fontFamily: theme.typography.monoMedium,
+          color: theme.colors.brandText,
+          letterSpacing: 0.8,
+        },
+        ticketTitle: {
+          fontFamily: theme.typography.interBold,
+          fontSize: 17,
+          lineHeight: 23,
+          letterSpacing: -0.2,
           color: theme.colors.textPrimary,
         },
-        ticketMetaText: {
-          fontFamily: theme.typography.interRegular,
+        ticketMetaGrid: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          gap: 12,
+          marginTop: 4,
+        },
+        ticketMetaCol: {
+          flex: 1,
+          gap: 2,
+        },
+        ticketMetaLabel: {
+          fontSize: 12,
+          fontFamily: theme.typography.monoMedium,
+          color: theme.colors.textMuted,
+          letterSpacing: 0.5,
+        },
+        ticketMetaValue: {
           fontSize: 13,
-          lineHeight: 18,
+          fontFamily: theme.typography.interSemiBold,
           color: theme.colors.textSecondary,
+        },
+
+        // Perforated Tear-Line with Edge Cutout Notches
+        perforationRow: {
+          position: 'relative',
+          height: 20,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginHorizontal: -1,
+        },
+        notchLeft: {
+          position: 'absolute',
+          left: -10,
+          width: 20,
+          height: 20,
+          borderRadius: theme.radii.full,
+          backgroundColor: theme.colors.canvas,
+          borderWidth: 1,
+          borderColor: theme.colors.borderSubtle,
+        },
+        notchRight: {
+          position: 'absolute',
+          right: -10,
+          width: 20,
+          height: 20,
+          borderRadius: theme.radii.full,
+          backgroundColor: theme.colors.canvas,
+          borderWidth: 1,
+          borderColor: theme.colors.borderSubtle,
+        },
+        dashedTearLine: {
+          flex: 1,
+          height: 1,
+          borderStyle: 'dashed',
+          borderWidth: 1,
+          borderColor: theme.colors.borderSubtle,
+          marginHorizontal: 16,
+        },
+
+        // Ticket Bottom Section / Door Stub
+        ticketBottomSection: {
+          padding: theme.spacing.base,
+          paddingTop: 8,
+          gap: 12,
+          backgroundColor: theme.colors.surfaceSubtle,
         },
         doorQrRow: {
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          backgroundColor: theme.colors.surfaceSubtle,
-          borderRadius: theme.radii.md,
-          paddingHorizontal: 12,
-          paddingVertical: 10,
+          backgroundColor: theme.colors.surface,
+          borderRadius: theme.radii.lg,
+          paddingHorizontal: 14,
+          paddingVertical: 12,
           borderWidth: 1,
           borderColor: theme.colors.borderSubtle,
-          marginTop: 4,
+        },
+        doorQrLeft: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
+        },
+        doorQrIconWell: {
+          width: 36,
+          height: 36,
+          borderRadius: theme.radii.sm,
+          backgroundColor: theme.colors.surfaceSubtle,
+          justifyContent: 'center',
+          alignItems: 'center',
         },
         doorQrLabel: {
-          fontFamily: theme.typography.interMedium,
-          fontSize: 13,
-          color: theme.colors.textSecondary,
+          fontFamily: theme.typography.interBold,
+          fontSize: 14,
+          color: theme.colors.textPrimary,
         },
         doorQrSubtext: {
           fontFamily: theme.typography.interRegular,
@@ -208,33 +303,33 @@ export default function ActivityScreen() {
         waitlistBanner: {
           backgroundColor: theme.colors.badgeTintAmber,
           borderRadius: theme.radii.md,
-          padding: 10,
-          marginTop: 4,
+          padding: 12,
+          borderWidth: 1,
+          borderColor: theme.colors.badgeTextAmber,
         },
         waitlistText: {
           fontFamily: theme.typography.interRegular,
           fontSize: 12,
-          lineHeight: 16,
+          lineHeight: 18,
           color: theme.colors.badgeTextAmber,
         },
+
+        // Pass Action Buttons Row
         ticketActionsRow: {
           flexDirection: 'row',
           gap: 8,
-          marginTop: 6,
-          paddingTop: 10,
-          borderTopWidth: 1,
-          borderTopColor: theme.colors.borderSubtle,
+          marginTop: 2,
         },
         passActionBtn: {
           flex: 1,
-          paddingVertical: 8,
-          minHeight: 44,
+          paddingVertical: 10,
+          minHeight: 46,
           justifyContent: 'center',
           alignItems: 'center',
           borderRadius: theme.radii.md,
           borderWidth: 1,
-          borderColor: theme.colors.borderStrong,
-          backgroundColor: theme.colors.surfaceSubtle,
+          borderColor: theme.colors.borderSubtle,
+          backgroundColor: theme.colors.surface,
         },
         passActionBtnPrimary: {
           backgroundColor: theme.colors.brandPrimary,
@@ -242,27 +337,43 @@ export default function ActivityScreen() {
         },
         passActionText: {
           fontSize: 13,
-          fontFamily: theme.typography.interMedium,
+          fontFamily: theme.typography.interSemiBold,
           color: theme.colors.textPrimary,
         },
         passActionTextPrimary: {
           color: '#FFFFFF',
-          fontFamily: theme.typography.interSemiBold,
+          fontFamily: theme.typography.interBold,
         },
+
+        // Empty Box
         emptyBox: {
-          backgroundColor: theme.colors.surfaceSubtle,
-          borderRadius: theme.radii.lg,
+          backgroundColor: theme.colors.surface,
+          borderRadius: theme.radii.xl,
           borderWidth: 1,
           borderColor: theme.colors.borderSubtle,
           padding: theme.spacing.xl,
           alignItems: 'center',
-          gap: 8,
+          gap: 10,
           marginTop: theme.spacing.md,
+          shadowColor: '#000000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.05,
+          shadowRadius: 8,
+          elevation: 1,
+        },
+        emptyIconWell: {
+          width: 56,
+          height: 56,
+          borderRadius: theme.radii.full,
+          backgroundColor: theme.colors.surfaceSubtle,
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginBottom: 4,
         },
         emptyTitle: {
           color: theme.colors.textPrimary,
-          fontFamily: theme.typography.interSemiBold,
-          fontSize: 16,
+          fontFamily: theme.typography.interBold,
+          fontSize: 17,
         },
         emptySub: {
           color: theme.colors.textMuted,
@@ -270,21 +381,44 @@ export default function ActivityScreen() {
           textAlign: 'center',
           lineHeight: 18,
         },
+
+        // Disputes Shortcut
         disputesShortcut: {
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
-          padding: 12,
-          backgroundColor: theme.colors.surfaceSubtle,
-          borderRadius: theme.radii.md,
+          padding: 14,
+          backgroundColor: theme.colors.surface,
+          borderRadius: theme.radii.lg,
           borderWidth: 1,
           borderColor: theme.colors.borderSubtle,
-          marginTop: 8,
+          borderTopColor: theme.mode === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.12)',
+          marginBottom: 8,
+          shadowColor: '#000000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.05,
+          shadowRadius: 6,
+          elevation: 1,
+        },
+        disputesShortcutLeft: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
+          flex: 1,
+        },
+        disputesIconWell: {
+          width: 32,
+          height: 32,
+          borderRadius: theme.radii.sm,
+          backgroundColor: theme.colors.badgeTintAmber,
+          justifyContent: 'center',
+          alignItems: 'center',
         },
         disputesShortcutText: {
           fontFamily: theme.typography.interMedium,
           fontSize: 13,
-          color: theme.colors.brandText,
+          color: theme.colors.textPrimary,
+          flex: 1,
         },
       }),
     [theme]
@@ -358,6 +492,9 @@ export default function ActivityScreen() {
             <ActivityIndicator size="large" color={theme.colors.brandPrimary} style={{ marginVertical: 32 }} />
           ) : achievements.length === 0 ? (
             <View style={styles.emptyBox}>
+              <View style={styles.emptyIconWell}>
+                <MaterialIcons name="emoji-events" size={28} color={theme.colors.textMuted} />
+              </View>
               <Text style={styles.emptyTitle}>NO HONORS YET</Text>
               <Text style={styles.emptySub}>
                 Event results and achievements will be displayed here.
@@ -366,45 +503,50 @@ export default function ActivityScreen() {
           ) : (
             achievements.map((ach) => (
               <View key={ach.id} style={styles.ticketCard}>
-                <View style={styles.ticketHeaderRow}>
-                  <Text numberOfLines={2} style={styles.ticketTitle}>
-                    {ach.award_title || 'Honor'}
+                <View style={styles.ticketTopSection}>
+                  <View style={styles.ticketHeaderRow}>
+                    <Text numberOfLines={2} style={styles.ticketTitle}>
+                      {ach.award_title || 'Honor'}
+                    </Text>
+                    {ach.placement && (
+                      <StatusBadge
+                        status={`#${ach.placement}`}
+                        type="warning"
+                      />
+                    )}
+                  </View>
+                  <Text style={styles.ticketMetaValue}>
+                    {ach.event?.title || 'Campus Event'}
                   </Text>
-                  {ach.placement && (
-                    <StatusBadge
-                      status={`#${ach.placement}`}
-                      type="warning"
-                    />
+                  {ach.linked_project && (
+                    <TouchableOpacity
+                      onPress={() => openProjectShowcase(ach.linked_project?.slug)}
+                      style={{ marginTop: 12, paddingVertical: 8 }}
+                      accessibilityRole="button"
+                      accessibilityLabel="Showcase project"
+                    >
+                      <Text style={{ color: theme.colors.brandPrimary, fontFamily: theme.typography.monoMedium, fontSize: 13 }}>
+                        [ SHOWCASE PROJECT ↗ ]
+                      </Text>
+                    </TouchableOpacity>
                   )}
                 </View>
-                <Text style={styles.ticketMetaText}>
-                  {ach.event?.title || 'Campus Event'}
-                </Text>
-                {ach.linked_project && (
-                  <TouchableOpacity
-                    onPress={() => openProjectShowcase(ach.linked_project?.slug)}
-                    style={{ marginTop: 12, paddingVertical: 8 }}
-                    accessibilityRole="button"
-                    accessibilityLabel="Showcase project"
-                  >
-                    <Text style={{ color: theme.colors.brandPrimary, fontFamily: theme.typography.monoMedium }}>
-                      [ SHOWCASE PROJECT ↗ ]
-                    </Text>
-                  </TouchableOpacity>
-                )}
               </View>
             ))
           )}
         </View>
       )}
 
-      {/* Segment 1: UPCOMING (Digital Tickets) */}
+      {/* Segment 1: UPCOMING (Apple Wallet Style Digital Passes) */}
       {!isHonors && activeSection === 'UPCOMING' && (
         <View style={styles.sectionContainer}>
           {isRegsLoading ? (
             <ActivityIndicator size="large" color={theme.colors.brandPrimary} style={{ marginVertical: 32 }} />
           ) : passesWithEvent.length === 0 ? (
             <View style={styles.emptyBox}>
+              <View style={styles.emptyIconWell}>
+                <MaterialIcons name="confirmation-number" size={28} color={theme.colors.brandText} />
+              </View>
               <Text style={styles.emptyTitle}>No upcoming tickets</Text>
               <Text style={styles.emptySub}>
                 You haven&apos;t registered for any upcoming events yet. Explore campus events to register.
@@ -428,59 +570,97 @@ export default function ActivityScreen() {
 
               return (
                 <View key={registration.id} style={styles.ticketCard}>
-                  <View style={styles.ticketHeaderRow}>
-                    <Text numberOfLines={2} style={styles.ticketTitle}>
-                      {event?.title || 'Campus Event'}
-                    </Text>
-                    <StatusBadge
-                      status={isWaitlisted ? 'WAITLISTED' : 'CONFIRMED'}
-                      type={isWaitlisted ? 'warning' : 'success'}
-                    />
+                  {/* Top Credentials Section */}
+                  <View style={styles.ticketTopSection}>
+                    <View style={styles.ticketHeaderRow}>
+                      <View style={styles.ticketTitleContainer}>
+                        <MonoLabel style={styles.ticketPassEyebrow}>CAMPUS PASS</MonoLabel>
+                        <Text numberOfLines={2} style={styles.ticketTitle}>
+                          {event?.title || 'Campus Event'}
+                        </Text>
+                      </View>
+                      <StatusBadge
+                        status={isWaitlisted ? 'WAITLISTED' : 'CONFIRMED'}
+                        type={isWaitlisted ? 'warning' : 'success'}
+                      />
+                    </View>
+
+                    {/* Metadata Grid */}
+                    <View style={styles.ticketMetaGrid}>
+                      <View style={styles.ticketMetaCol}>
+                        <Text style={styles.ticketMetaLabel}>DATE</Text>
+                        <Text style={styles.ticketMetaValue}>{dateStr}</Text>
+                      </View>
+                      <View style={styles.ticketMetaCol}>
+                        <Text style={styles.ticketMetaLabel}>TIME</Text>
+                        <Text style={styles.ticketMetaValue}>{timeStr || 'TBA'}</Text>
+                      </View>
+                      <View style={styles.ticketMetaCol}>
+                        <Text style={styles.ticketMetaLabel}>VENUE</Text>
+                        <Text numberOfLines={1} style={styles.ticketMetaValue}>
+                          {event?.locationName || 'Campus Venue'}
+                        </Text>
+                      </View>
+                    </View>
                   </View>
 
-                  <Text style={styles.ticketMetaText}>
-                    {event?.locationName || 'Campus Venue'} · {dateStr} {timeStr ? `at ${timeStr}` : ''}
-                  </Text>
+                  {/* Perforation Tear-Line Divider */}
+                  <View style={styles.perforationRow}>
+                    <View style={styles.notchLeft} />
+                    <View style={styles.dashedTearLine} />
+                    <View style={styles.notchRight} />
+                  </View>
 
-                  {/* Phase 1 Door QR Disabled Placeholder */}
-                  {!isWaitlisted ? (
-                    <View style={styles.doorQrRow}>
-                      <Text style={styles.doorQrLabel}>Door QR Pass</Text>
-                      <Text style={styles.doorQrSubtext}>Door QR coming soon</Text>
+                  {/* Bottom Door Pass Stub */}
+                  <View style={styles.ticketBottomSection}>
+                    {/* Phase 1 Door QR Disabled Placeholder */}
+                    {!isWaitlisted ? (
+                      <View style={styles.doorQrRow}>
+                        <View style={styles.doorQrLeft}>
+                          <View style={styles.doorQrIconWell}>
+                            <MaterialIcons name="qr-code-2" size={20} color={theme.colors.brandText} />
+                          </View>
+                          <View>
+                            <Text style={styles.doorQrLabel}>Door QR Pass</Text>
+                            <Text style={styles.doorQrSubtext}>Door QR coming soon</Text>
+                          </View>
+                        </View>
+                        <MaterialIcons name="lock-outline" size={18} color={theme.colors.textMuted} />
+                      </View>
+                    ) : (
+                      <View style={styles.waitlistBanner}>
+                        <Text style={styles.waitlistText}>
+                          Waitlisted — We&apos;ll notify you if a confirmed spot opens up.
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Ticket Action Shortcuts */}
+                    <View style={styles.ticketActionsRow}>
+                      <TouchableOpacity
+                        style={styles.passActionBtn}
+                        onPress={() => router.push(`/(app)/events/${registration.eventId}`)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.passActionText}>View Details</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.passActionBtn}
+                        onPress={() => router.push(`/(app)/events/${registration.eventId}/teams`)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.passActionText}>Squad Hub</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[styles.passActionBtn, styles.passActionBtnPrimary]}
+                        onPress={() => router.push(`/(app)/events/${registration.eventId}/scan`)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.passActionTextPrimary}>Scan</Text>
+                      </TouchableOpacity>
                     </View>
-                  ) : (
-                    <View style={styles.waitlistBanner}>
-                      <Text style={styles.waitlistText}>
-                        Waitlisted — We&apos;ll notify you if a confirmed spot opens up.
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Ticket Action Shortcuts */}
-                  <View style={styles.ticketActionsRow}>
-                    <TouchableOpacity
-                      style={styles.passActionBtn}
-                      onPress={() => router.push(`/(app)/events/${registration.eventId}`)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.passActionText}>View Details</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={styles.passActionBtn}
-                      onPress={() => router.push(`/(app)/events/${registration.eventId}/teams`)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.passActionText}>Squad Hub</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={[styles.passActionBtn, styles.passActionBtnPrimary]}
-                      onPress={() => router.push(`/(app)/events/${registration.eventId}/scan`)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.passActionTextPrimary}>Scan</Text>
-                    </TouchableOpacity>
                   </View>
                 </View>
               );
@@ -498,7 +678,13 @@ export default function ActivityScreen() {
             onPress={() => router.push('/(app)/disputes')}
             activeOpacity={0.8}
           >
-            <Text style={styles.disputesShortcutText}>Have attendance issues? File or view disputes →</Text>
+            <View style={styles.disputesShortcutLeft}>
+              <View style={styles.disputesIconWell}>
+                <MaterialIcons name="report-problem" size={18} color={theme.colors.badgeTextAmber} />
+              </View>
+              <Text style={styles.disputesShortcutText}>Have attendance issues? File or view disputes →</Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={20} color={theme.colors.textMuted} />
           </TouchableOpacity>
 
           <View style={{ marginBottom: 12 }}>
@@ -511,6 +697,9 @@ export default function ActivityScreen() {
             <ActivityIndicator size="large" color={theme.colors.brandPrimary} style={{ marginVertical: 32 }} />
           ) : attendanceRecords.length === 0 ? (
             <View style={styles.emptyBox}>
+              <View style={styles.emptyIconWell}>
+                <MaterialIcons name="verified-user" size={28} color={theme.colors.textMuted} />
+              </View>
               <Text style={styles.emptyTitle}>NO ATTENDANCE RECORDS</Text>
               <Text style={styles.emptySub}>
                 Verified session check-ins will be logged here chronologically.

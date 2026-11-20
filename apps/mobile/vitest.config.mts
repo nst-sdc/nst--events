@@ -27,6 +27,7 @@ export default defineConfig({
       'expo-router': path.resolve(__dirname, 'tests/mocks/expo-router.ts'),
       '@react-native-google-signin/google-signin': path.resolve(__dirname, 'tests/mocks/google-signin.ts'),
       'react-native-safe-area-context': path.resolve(__dirname, 'tests/mocks/react-native-safe-area-context.ts'),
+      '@expo/vector-icons': path.resolve(__dirname, 'tests/mocks/expo-vector-icons.ts'),
     },
   },
 });
