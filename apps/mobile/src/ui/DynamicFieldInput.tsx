@@ -58,18 +58,18 @@ export function DynamicFieldInput({ field, value, onChange, disabled, error }: D
       backgroundColor: theme.colors.primary,
     },
     markerText: {
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.onPrimary,
       fontFamily: theme.typography.monoBold,
     },
     label: {
-      fontSize: 11,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
       letterSpacing: 1,
       textTransform: 'uppercase',
     },
     error: {
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.error,
     },
   }), [theme]);

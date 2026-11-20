@@ -136,10 +136,13 @@ describe('Phase 5 — Attendance History & Disputes Contract Tests', () => {
     });
 
     it('maps known backend dispute rejection codes to human-readable guidance', () => {
-      expect(disputesNewContent).toContain('ATTENDANCE_ALREADY_RECORDED');
-      expect(disputesNewContent).toContain('DISPUTE_WINDOW_EXPIRED');
-      expect(disputesNewContent).toContain('SESSION_CLOSED');
-      expect(disputesNewContent).toContain('NOT_REGISTERED');
+      const disputeDeadlinePath = path.resolve(__dirname, '../src/lib/dispute-deadline.ts');
+      const combinedSource = disputesNewContent + '\n' + fs.readFileSync(disputeDeadlinePath, 'utf-8');
+      expect(disputesNewContent).toContain('mapDisputeSubmissionError');
+      expect(combinedSource).toContain('ATTENDANCE_ALREADY_RECORDED');
+      expect(combinedSource).toContain('DISPUTE_WINDOW_EXPIRED');
+      expect(combinedSource).toContain('SESSION_CLOSED');
+      expect(combinedSource).toContain('NOT_REGISTERED');
     });
 
     it('eliminates unanchored fake fallback (CLASSROOM SESSION)', () => {

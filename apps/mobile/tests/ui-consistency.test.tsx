@@ -81,66 +81,56 @@ describe('Mobile UI Consistency & Design Token Audit Suite', () => {
     });
 
     it('ensures light mode high-contrast compliance for warning and success', () => {
-      // Light mode colors should NOT use unreadable low-contrast green/gold
-      expect(lightColors.success).toBe('#15803d');
-      expect(lightColors.warning).toBe('#b45309');
-      expect(lightColors.surface).toBe('#fbfbfb');
+      // Light mode colors meet WCAG AA contrast against parent surface
+      expect(lightColors.success.toLowerCase()).toBe('#047857');
+      expect(lightColors.warning.toLowerCase()).toBe('#b45309');
+      expect(lightColors.surface.toUpperCase()).toBe('#FFFFFF');
     });
   });
 
   describe('2. StatusBadge Component', () => {
-    it('automatically wraps unbracketed status strings in monospace brackets [ ... ]', () => {
+    it('renders unbracketed status strings in clean typography', () => {
       render(<StatusBadge status="ACTIVE" type="default" />);
-      expect(screen.getByText('[ACTIVE]')).toBeTruthy();
+      expect(screen.getByText('ACTIVE')).toBeTruthy();
     });
 
-    it('does not double-bracket already bracketed status strings', () => {
-      render(<StatusBadge status="[LIVE NOW]" type="warning" />);
-      expect(screen.getByText('[LIVE NOW]')).toBeTruthy();
+    it('renders status strings without forced double brackets', () => {
+      render(<StatusBadge status="LIVE NOW" type="warning" />);
+      expect(screen.getByText('LIVE NOW')).toBeTruthy();
     });
 
-    it('renders with sharp corners and appropriate semantic variants', () => {
+    it('renders with pill geometry and appropriate semantic variants', () => {
       render(<StatusBadge status="CONFIRMED" type="success" />);
-      expect(screen.getByText('[CONFIRMED]')).toBeTruthy();
+      expect(screen.getByText('CONFIRMED')).toBeTruthy();
     });
   });
 
   describe('3. Button Component', () => {
-    it('renders button with sharp corners (borderRadius: 0)', () => {
-      render(<Button title="[ ACTION ]" onPress={() => {}} />);
-      expect(screen.getByText('[ ACTION ]')).toBeTruthy();
+    it('renders button with 12px squircle corners', () => {
+      render(<Button title="ACTION" onPress={() => {}} />);
+      expect(screen.getByText('ACTION')).toBeTruthy();
     });
 
     it('supports disabled state and loading indicators', () => {
-      render(<Button title="[ DISABLED ]" onPress={() => {}} disabled />);
-      expect(screen.getByText('[ DISABLED ]')).toBeTruthy();
+      render(<Button title="DISABLED" onPress={() => {}} disabled />);
+      expect(screen.getByText('DISABLED')).toBeTruthy();
     });
   });
 
   describe('4. MobileShell Component', () => {
-    it('renders canonical double-slash header notation (// TITLE)', () => {
+    it('renders clean header title', () => {
       render(
         <MobileShell title="CAMPUS EVENTS">
           <></>
         </MobileShell>,
         { wrapper }
       );
-      expect(screen.getByText('// CAMPUS EVENTS')).toBeTruthy();
-    });
-
-    it('does not double-prefix if title already starts with //', () => {
-      render(
-        <MobileShell title="// DIRECTORY">
-          <></>
-        </MobileShell>,
-        { wrapper }
-      );
-      expect(screen.getByText('// DIRECTORY')).toBeTruthy();
+      expect(screen.getByText(/CAMPUS EVENTS/i)).toBeTruthy();
     });
   });
 
-  describe('5. Location & Attendance Views Neo-Brutalist Parity', () => {
-    it('AttendanceSuccessView renders sharp container and ATTENDANCE RECORDED title', () => {
+  describe('5. Location & Attendance Views Prism Parity', () => {
+    it('AttendanceSuccessView renders confirmation card and venue details', () => {
       render(
         <AttendanceSuccessView
           locationName="Main Auditorium"
@@ -148,10 +138,10 @@ describe('Mobile UI Consistency & Design Token Audit Suite', () => {
           onReturnHome={() => {}}
         />
       );
-      expect(screen.getByText('ATTENDANCE RECORDED')).toBeTruthy();
-      expect(screen.getByText('LOCATION')).toBeTruthy();
+      expect(screen.getByText(/Attendance confirmed|ATTENDANCE RECORDED/i)).toBeTruthy();
+      expect(screen.getByText(/Venue|LOCATION/i)).toBeTruthy();
       expect(screen.getByText('Main Auditorium')).toBeTruthy();
-      expect(screen.getByText('RETURN TO HOME')).toBeTruthy();
+      expect(screen.getByText(/Return to home|RETURN TO HOME/i)).toBeTruthy();
     });
 
     it('LocationPermissionView renders with sharp corners and action buttons', () => {

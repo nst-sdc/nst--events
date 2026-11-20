@@ -15,11 +15,11 @@ import { StudentCalendarView } from '../../../src/ui/StudentCalendarView';
 import { useAttendanceHistory } from '../../../src/hooks/use-attendance-history';
 import { usePendingInvitations } from '../../../src/hooks/use-invitations';
 import { FilterChip } from '../../../src/ui/FilterChip';
-import { 
-  classifyAndSortHomeEvents, 
-  findActiveAttendanceSession, 
-  isSessionAttendancePresent, 
-  isEventCurrentlyLive 
+import {
+  classifyAndSortHomeEvents,
+  findActiveAttendanceSession,
+  isSessionAttendancePresent,
+  isEventCurrentlyLive
 } from '../../../src/lib/home-events';
 import { EVENT_TYPES } from '@nst/shared';
 
@@ -28,14 +28,14 @@ const CATEGORIES = [
   ...EVENT_TYPES.map((t) => t.value),
 ] as const;
 
-function EventRow({ 
-  event, 
-  userRegistrations, 
+function EventRow({
+  event,
+  userRegistrations,
   userClubMemberships,
   mode = 'all',
   onLiveStatus
-}: { 
-  event: EventResponse; 
+}: {
+  event: EventResponse;
   userRegistrations: MyRegistrationItem[];
   userClubMemberships: Array<{ club_id: string; role: string }>;
   mode?: 'all' | 'ongoing' | 'upcoming';
@@ -208,12 +208,12 @@ export default function HomeAttendanceScreen() {
   const router = useRouter();
   const { data: profile, refetch: refetchProfile } = useUserProfile();
   const { data: invitations = [], refetch: refetchInvites } = usePendingInvitations();
-  const { 
-    data: eventsData, 
-    isLoading: eventsLoading, 
-    isError: isEventsError, 
-    error: eventsError, 
-    refetch: refetchEvents 
+  const {
+    data: eventsData,
+    isLoading: eventsLoading,
+    isError: isEventsError,
+    error: eventsError,
+    refetch: refetchEvents
   } = useEvents({
     q: debouncedQuery,
     category: selectedCategory,
@@ -282,7 +282,7 @@ export default function HomeAttendanceScreen() {
           paddingVertical: 3,
         },
         roleBadgeText: {
-          fontSize: 9,
+          fontSize: 12,
           fontFamily: theme.typography.monoBold,
           color: theme.colors.primaryFixed,
         },
@@ -303,12 +303,12 @@ export default function HomeAttendanceScreen() {
           borderColor: theme.colors.primary,
         },
         quickActionPrimaryText: {
-          fontSize: 10,
+          fontSize: 12,
           fontFamily: theme.typography.monoBold,
           color: theme.colors.onPrimary,
         },
         quickActionText: {
-          fontSize: 10,
+          fontSize: 12,
           fontFamily: theme.typography.monoBold,
           color: theme.colors.onSurface,
         },
@@ -366,7 +366,7 @@ export default function HomeAttendanceScreen() {
           backgroundColor: theme.colors.primary,
         },
         categoryChipText: {
-          fontSize: 10,
+          fontSize: 12,
           color: theme.colors.onSurfaceVariant,
           fontFamily: theme.typography.monoBold,
           letterSpacing: 0.5,
@@ -395,7 +395,7 @@ export default function HomeAttendanceScreen() {
           backgroundColor: theme.colors.surfaceContainerHighest,
         },
         segmentText: {
-          fontSize: 10,
+          fontSize: 12,
           color: theme.colors.onSurfaceVariant,
           fontFamily: theme.typography.monoBold,
         },
@@ -453,7 +453,7 @@ export default function HomeAttendanceScreen() {
         emptySub: {
           textAlign: 'center',
           color: theme.colors.onSurfaceVariant,
-          fontSize: 11,
+          fontSize: 12,
         },
         eventsList: {
           gap: theme.spacing.sm,
@@ -483,14 +483,14 @@ export default function HomeAttendanceScreen() {
   const batchYear = profile?.academic_profile?.batch?.graduation_year;
 
   return (
-    <MobileShell 
-      title="HOME" 
+    <MobileShell
+      title="HOME"
       scrollable={true}
       refreshControl={
-        <RefreshControl 
-          refreshing={refreshing} 
-          onRefresh={handleRefresh} 
-          tintColor={theme.colors.primary} 
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={theme.colors.primary}
           colors={[theme.colors.primary]}
           progressBackgroundColor={theme.colors.surface}
         />
@@ -499,13 +499,13 @@ export default function HomeAttendanceScreen() {
       {/* Personalized Welcome Header */}
       <View style={styles.dashboardHeader}>
         <View style={styles.dashboardTopRow}>
-          <MonoLabel style={{ color: theme.colors.primary, fontSize: 9 }}>STUDENT DASHBOARD</MonoLabel>
+          <MonoLabel style={{ color: theme.colors.primary, fontSize: 12 }}>STUDENT DASHBOARD</MonoLabel>
           <View style={styles.roleBadgeContainer}>
             <Mono style={styles.roleBadgeText}>[STUDENT]</Mono>
           </View>
         </View>
-        <Display 
-          style={styles.studentGreeting} 
+        <Display
+          style={styles.studentGreeting}
           numberOfLines={2}
           adjustsFontSizeToFit
           minimumFontScale={0.8}
@@ -513,7 +513,7 @@ export default function HomeAttendanceScreen() {
           {fullName.toUpperCase()}
         </Display>
         {programCode && (
-          <Mono style={{ fontSize: 10, color: theme.colors.onSurfaceVariant }}>
+          <Mono style={{ fontSize: 12, color: theme.colors.onSurfaceVariant }}>
             {programCode} · BATCH {batchYear || '2026'}
           </Mono>
         )}
@@ -567,13 +567,13 @@ export default function HomeAttendanceScreen() {
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <View style={styles.alertDot} />
-              <MonoLabel style={{ color: theme.colors.primary, fontSize: 10 }}>
+              <MonoLabel style={{ color: theme.colors.primary, fontSize: 12 }}>
                 PENDING SQUAD INVITATION{invitations.length > 1 ? 'S' : ''} ({invitations.length})
               </MonoLabel>
             </View>
             <MonoLabel style={{ color: theme.colors.primary }}>REVIEW →</MonoLabel>
           </View>
-          <Body style={{ fontSize: 11, color: theme.colors.onSurfaceVariant, marginTop: 4 }}>
+          <Body style={{ fontSize: 12, color: theme.colors.onSurfaceVariant, marginTop: 4 }}>
             You have received squad invitation{invitations.length > 1 ? 's' : ''} for upcoming team competitions.
           </Body>
         </TouchableOpacity>
@@ -603,7 +603,7 @@ export default function HomeAttendanceScreen() {
               accessibilityLabel="Clear search text"
               testID="btn-clear-search"
             >
-              <MonoLabel style={{ color: theme.colors.onSurfaceVariant, fontSize: 11 }}>[CLEAR]</MonoLabel>
+              <MonoLabel style={{ color: theme.colors.onSurfaceVariant, fontSize: 12 }}>[CLEAR]</MonoLabel>
             </TouchableOpacity>
           )}
         </View>

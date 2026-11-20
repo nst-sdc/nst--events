@@ -261,7 +261,7 @@ export function TeamGatewayModal({
         },
         choiceSubtitle: {
           color: theme.colors.onSurfaceVariant,
-          fontSize: 11,
+          fontSize: 12,
         },
         teamItem: {
           padding: theme.spacing.md,
@@ -316,7 +316,7 @@ export function TeamGatewayModal({
                     <MonoLabel style={{ color: theme.colors.error, fontFamily: theme.typography.monoBold }}>
                       PARTICIPANT CAPACITY REACHED
                     </MonoLabel>
-                    <Body style={{ color: theme.colors.onErrorContainer, fontSize: 11 }}>
+                    <Body style={{ color: theme.colors.onErrorContainer, fontSize: 12 }}>
                       This event has reached its maximum participant limit. Squad creation and joining are currently disabled.
                     </Body>
                   </View>
@@ -327,7 +327,7 @@ export function TeamGatewayModal({
                     <MonoLabel style={{ color: theme.colors.primary, fontFamily: theme.typography.monoBold }}>
                       TEAM CAPACITY REACHED
                     </MonoLabel>
-                    <Body style={{ color: theme.colors.onSurface, fontSize: 11 }}>
+                    <Body style={{ color: theme.colors.onSurface, fontSize: 12 }}>
                       Maximum registered teams reached. New squads will enter the waitlist queue, but you can still join existing squads with open spots.
                     </Body>
                   </View>
@@ -386,7 +386,7 @@ export function TeamGatewayModal({
                     <MonoLabel style={{ color: theme.colors.error, fontFamily: theme.typography.monoBold }}>
                       VALIDATION NOTICE
                     </MonoLabel>
-                    <Body style={{ color: theme.colors.onErrorContainer, fontSize: 11 }}>
+                    <Body style={{ color: theme.colors.onErrorContainer, fontSize: 12 }}>
                       {registrationError}
                     </Body>
                   </View>
@@ -473,7 +473,7 @@ export function TeamGatewayModal({
                     <MonoLabel style={{ color: theme.colors.onSurfaceVariant, textAlign: 'center' }}>
                       NO OPEN SQUADS FOUND.
                     </MonoLabel>
-                    <Body style={{ color: theme.colors.onSurfaceVariant, fontSize: 11, textAlign: 'center' }}>
+                    <Body style={{ color: theme.colors.onSurfaceVariant, fontSize: 12, textAlign: 'center' }}>
                       Be the first to create one for this event!
                     </Body>
                   </View>
@@ -498,7 +498,7 @@ export function TeamGatewayModal({
                             <Mono style={{ color: theme.colors.onSurface, fontFamily: theme.typography.monoBold }}>
                               {team.name}
                             </Mono>
-                            <MonoLabel style={{ color: theme.colors.onSurfaceVariant, fontSize: 10, marginTop: 2 }}>
+                            <MonoLabel style={{ color: theme.colors.onSurfaceVariant, fontSize: 12, marginTop: 2 }}>
                               Leader: {team.leader_name} • {team.member_count} members
                             </MonoLabel>
                           </View>
@@ -529,16 +529,16 @@ export function TeamGatewayModal({
                     <MonoLabel style={{ color: theme.colors.error, fontFamily: theme.typography.monoBold }}>
                       VALIDATION NOTICE
                     </MonoLabel>
-                    <Body style={{ color: theme.colors.onErrorContainer, fontSize: 11 }}>
+                    <Body style={{ color: theme.colors.onErrorContainer, fontSize: 12 }}>
                       {registrationError}
                     </Body>
                   </View>
                 )}
 
                 <View style={styles.teamSelectedCard}>
-                  <MonoLabel style={{ color: theme.colors.primary, fontSize: 10 }}>SELECTED SQUAD</MonoLabel>
+                  <MonoLabel style={{ color: theme.colors.primary, fontSize: 12 }}>SELECTED SQUAD</MonoLabel>
                   <Title style={{ fontSize: 18 }}>{selectedTeam.name}</Title>
-                  <MonoLabel style={{ color: theme.colors.onSurfaceVariant, fontSize: 11 }}>
+                  <MonoLabel style={{ color: theme.colors.onSurfaceVariant, fontSize: 12 }}>
                     Leader: {selectedTeam.leader_name} • Current Members: {selectedTeam.member_count}
                   </MonoLabel>
                 </View>

@@ -88,7 +88,7 @@ export default function PublicStudentProfileScreen() {
         },
         badgeText: {
           fontFamily: theme.typography.monoRegular,
-          fontSize: 10,
+          fontSize: 12,
           color: theme.colors.onSurfaceVariant,
           textTransform: 'uppercase',
         },
@@ -126,7 +126,7 @@ export default function PublicStudentProfileScreen() {
         },
         shareBtnText: {
           fontFamily: theme.typography.monoBold,
-          fontSize: 11,
+          fontSize: 12,
           color: theme.colors.onSurface,
         },
         sectionBox: {
@@ -168,7 +168,7 @@ export default function PublicStudentProfileScreen() {
         },
         itemSub: {
           fontFamily: theme.typography.monoRegular,
-          fontSize: 11,
+          fontSize: 12,
           color: theme.colors.onSurfaceVariant,
         },
         rankBadge: {
@@ -180,7 +180,7 @@ export default function PublicStudentProfileScreen() {
         },
         rankText: {
           fontFamily: theme.typography.monoBold,
-          fontSize: 9,
+          fontSize: 12,
           color: theme.colors.onWarning,
           textTransform: 'uppercase',
         },

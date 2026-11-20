@@ -64,7 +64,7 @@ export const AttendancePermissionsView: React.FC<AttendancePermissionsViewProps>
       backgroundColor: theme.colors.surfaceContainerHigh,
       paddingHorizontal: 8,
       paddingVertical: 4,
-      borderRadius: 0,
+      borderRadius: theme.radii.sm,
     },
     pingDot: {
       width: 6,
@@ -111,7 +111,7 @@ export const AttendancePermissionsView: React.FC<AttendancePermissionsViewProps>
     iconBox: {
       width: 48,
       height: 48,
-      borderRadius: 0,
+      borderRadius: theme.radii.sm,
       backgroundColor: theme.colors.surface,
       alignItems: 'center',
       justifyContent: 'center',
@@ -169,7 +169,7 @@ export const AttendancePermissionsView: React.FC<AttendancePermissionsViewProps>
     },
     checkTag: {
       color: theme.colors.onSurfaceVariant,
-      fontSize: 11,
+      fontSize: 12,
     },
     actionSection: {
       gap: theme.spacing.sm,
@@ -177,7 +177,7 @@ export const AttendancePermissionsView: React.FC<AttendancePermissionsViewProps>
     },
     mainBtn: {
       height: 52,
-      borderRadius: 0,
+      borderRadius: theme.radii.sm,
       justifyContent: 'center',
       alignItems: 'center',
     },

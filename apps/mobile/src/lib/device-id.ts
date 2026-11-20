@@ -12,7 +12,7 @@ const DEVICE_ID_KEY = 'nst_persistent_device_id';
 export async function getPersistentDeviceId(): Promise<string> {
   try {
     let deviceId = await safeSecureStore.getItemAsync(DEVICE_ID_KEY);
-    
+
     if (!deviceId) {
       if (Platform.OS === 'web') {
         deviceId =
@@ -24,7 +24,7 @@ export async function getPersistentDeviceId(): Promise<string> {
       }
       await safeSecureStore.setItemAsync(DEVICE_ID_KEY, deviceId);
     }
-    
+
     return deviceId;
   } catch (error) {
     // If SecureStore throws, do NOT silently fall back to a non-unique value.

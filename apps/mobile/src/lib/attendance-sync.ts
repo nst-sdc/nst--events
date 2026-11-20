@@ -29,7 +29,7 @@ export async function batchSyncOfflineAttendance(records: OfflineAttendanceRecor
 
   for (let i = 0; i < records.length; i += CHUNK_SIZE) {
     const chunk = records.slice(i, i + CHUNK_SIZE);
-    
+
     // Map to expected snake_case format for the backend
     const payload = {
       records: chunk.map(r => ({
@@ -61,7 +61,7 @@ export async function batchSyncOfflineAttendance(records: OfflineAttendanceRecor
         result.errors.push(...response.errors);
       }
     } catch (err: any) {
-      result.errors.push({ 
+      result.errors.push({
         error: err.message || 'Chunk failed to sync',
       });
     }

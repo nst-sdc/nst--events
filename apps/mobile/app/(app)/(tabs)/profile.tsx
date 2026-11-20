@@ -152,11 +152,11 @@ export default function ProfileScreen() {
       paddingVertical: 4,
     },
     clubBadgeText: {
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.onSurface,
     },
     emptyClubsText: {
-      fontSize: 11,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
     },
     achievementsSection: {
@@ -277,7 +277,7 @@ export default function ProfileScreen() {
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
                 <MonoLabel style={{ color: theme.colors.primary, flexShrink: 1 }}>PUBLIC STUDENT PORTFOLIO</MonoLabel>
                 {mySlug && (
-                  <Mono style={{ fontSize: 10, color: theme.colors.primary, flexShrink: 0 }}>@{mySlug}</Mono>
+                  <Mono style={{ fontSize: 12, color: theme.colors.primary, flexShrink: 0 }}>@{mySlug}</Mono>
                 )}
               </View>
 
@@ -296,7 +296,7 @@ export default function ProfileScreen() {
                       alignItems: 'center',
                     }}
                   >
-                    <Mono style={{ fontSize: 11, fontFamily: theme.typography.monoBold, color: theme.colors.onPrimary }}>
+                    <Mono style={{ fontSize: 12, fontFamily: theme.typography.monoBold, color: theme.colors.onPrimary }}>
                       VIEW DOSSIER ↗
                     </Mono>
                   </TouchableOpacity>
@@ -310,7 +310,7 @@ export default function ProfileScreen() {
                     alignItems: 'center',
                   }}
                 >
-                  <Mono style={{ fontSize: 11, fontFamily: theme.typography.monoBold, color: theme.colors.onSurface }}>
+                  <Mono style={{ fontSize: 12, fontFamily: theme.typography.monoBold, color: theme.colors.onSurface }}>
                     VISIBILITY ⚙
                   </Mono>
                 </TouchableOpacity>
@@ -336,7 +336,7 @@ export default function ProfileScreen() {
             <View style={styles.achievementsSection} testID="profile-achievements-section">
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6 }}>
                 <MonoLabel style={[styles.sectionTitle, { flexShrink: 1 }]}>OFFICIAL HONORS & ACHIEVEMENTS</MonoLabel>
-                <MonoLabel style={{ color: theme.colors.success, fontSize: 9, flexShrink: 0 }}>[VERIFIED RECORD]</MonoLabel>
+                <MonoLabel style={{ color: theme.colors.success, fontSize: 12, flexShrink: 0 }}>[VERIFIED RECORD]</MonoLabel>
               </View>
 
               {isAchievementsLoading ? (
@@ -370,10 +370,10 @@ export default function ProfileScreen() {
                         testID={`achievement-card-${ach.id}`}
                       >
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <MonoLabel style={{ color: theme.colors.primary, fontSize: 10 }}>
+                          <MonoLabel style={{ color: theme.colors.primary, fontSize: 12 }}>
                             {rankText}
                           </MonoLabel>
-                          <Mono style={{ fontSize: 9, color: theme.colors.outline }}>
+                          <Mono style={{ fontSize: 12, color: theme.colors.outline }}>
                             {new Date(ach.published_at).getFullYear()}
                           </Mono>
                         </View>
@@ -382,7 +382,7 @@ export default function ProfileScreen() {
                           {ach.award_title}
                         </Title>
 
-                        <Body style={{ fontSize: 11, color: theme.colors.onSurfaceVariant }}>
+                        <Body style={{ fontSize: 12, color: theme.colors.onSurfaceVariant }}>
                           {ach.event.title}
                           {ach.is_team_award && ach.team_name ? ` • Team: ${ach.team_name}` : ''}
                         </Body>
@@ -392,7 +392,7 @@ export default function ProfileScreen() {
                             onPress={() => router.push(`/(app)/events/${ach.event.id}/results`)}
                             style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
                           >
-                            <Mono style={{ fontSize: 10, color: theme.colors.primary, fontWeight: 'bold' }}>
+                            <Mono style={{ fontSize: 12, color: theme.colors.primary, fontWeight: 'bold' }}>
                               [ VIEW RESULTS ]
                             </Mono>
                           </TouchableOpacity>
@@ -402,7 +402,7 @@ export default function ProfileScreen() {
                               onPress={() => openProjectShowcase(ach.linked_project?.slug)}
                               style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
                             >
-                              <Mono style={{ fontSize: 10, color: theme.colors.secondary, fontWeight: 'bold' }}>
+                              <Mono style={{ fontSize: 12, color: theme.colors.secondary, fontWeight: 'bold' }}>
                                 [ SHOWCASE PROJECT ↗ ]
                               </Mono>
                             </TouchableOpacity>
@@ -424,10 +424,10 @@ export default function ProfileScreen() {
                     gap: 6,
                   }}
                 >
-                  <Body style={{ fontSize: 11, color: theme.colors.onSurfaceVariant, textAlign: 'center' }}>
+                  <Body style={{ fontSize: 12, color: theme.colors.onSurfaceVariant, textAlign: 'center' }}>
                     No official event honors or podium rankings recorded yet.
                   </Body>
-                  <MonoLabel style={{ fontSize: 9, color: theme.colors.outline }}>
+                  <MonoLabel style={{ fontSize: 12, color: theme.colors.outline }}>
                     PARTICIPATE IN CAMPUS HACKATHONS & JAM COMPETITIONS TO EARN OFFICIAL CREDENTIALS.
                   </MonoLabel>
                 </View>
@@ -526,7 +526,7 @@ export default function ProfileScreen() {
                   style={{ flexShrink: 1 }}
                   onPress={() => setShowCreditsModal(true)}
                 />
-                <MonoLabel style={{ fontSize: 10, color: theme.colors.onSurfaceVariant, flexShrink: 0 }}>v{MOBILE_APP_VERSION}</MonoLabel>
+                <MonoLabel style={{ fontSize: 12, color: theme.colors.onSurfaceVariant, flexShrink: 0 }}>v{MOBILE_APP_VERSION}</MonoLabel>
               </View>
               <TouchableOpacity
                 style={{ borderWidth: 1, borderColor: theme.colors.borderHairline, paddingVertical: 8, alignItems: 'center', backgroundColor: theme.colors.surface }}
@@ -557,9 +557,9 @@ export default function ProfileScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <StatusBadge status="[LOGOUT CONFIRMATION]" type="error" />
-            
+
             <Title style={styles.modalTitle}>END ACTIVE SESSION?</Title>
-            
+
             <Body style={styles.modalBody}>
               Are you sure you want to end your active student session on this device? You will need your institutional Google account to log back in.
             </Body>

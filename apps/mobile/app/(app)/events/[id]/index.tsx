@@ -19,10 +19,10 @@ import { MobileShell } from '../../../../src/ui/core/MobileShell';
 import { Title, Display, Body, MonoLabel, Mono } from '../../../../src/ui/core/Typography';
 import { StatusBadge } from '../../../../src/ui/core/StatusBadge';
 import { TeamGatewayModal } from '../../../../src/ui/TeamGatewayModal';
-import { 
-  findActiveAttendanceSession, 
-  isSessionAttendancePresent, 
-  isEventCurrentlyLive 
+import {
+  findActiveAttendanceSession,
+  isSessionAttendancePresent,
+  isEventCurrentlyLive
 } from '../../../../src/lib/home-events';
 import {
   isAdministratorAccount,
@@ -50,12 +50,12 @@ export default function EventScreen() {
 
   const { data: profile } = useUserProfile();
 
-  const { 
-    data: event, 
-    isLoading: isEventLoading, 
-    isError: isEventError, 
-    error: eventError, 
-    refetch: refetchEvent 
+  const {
+    data: event,
+    isLoading: isEventLoading,
+    isError: isEventError,
+    error: eventError,
+    refetch: refetchEvent
   } = useQuery({
     queryKey: ['events', id],
     queryFn: () => apiClient(`/v1/events/${id}`),
@@ -73,7 +73,7 @@ export default function EventScreen() {
   const { data: attendanceHistory } = useAttendanceHistory(id as string);
 
   const isLoading = isEventLoading || isRegLoading;
-  
+
   const registrationType = event?.registrationType || (event as any)?.registration_type;
   const isTeamEvent = registrationType === 'TEAM';
   const isFull = event?.maxCapacity ? (event.registrationCount || 0) >= event.maxCapacity : false;
@@ -92,7 +92,7 @@ export default function EventScreen() {
   const isWaitlistCancel = (registration?.status || (registration as any)?.registrationStatus) === 'WAITLISTED';
   const isRegistered = (registration?.status || (registration as any)?.registrationStatus) === 'REGISTERED';
   const { data: standaloneForms, isLoading: isFormsLoading } = useEventForms(id as string, isRegistered);
-  
+
   const primaryClub = event?.eventClubs?.find((ec: any) => ec.isPrimary);
   const isPrimaryClubAdmin = !!(profile?.club_memberships?.some(
     (m: any) => m.club_id === primaryClub?.clubId && (m.role === 'CLUB_ADMIN' || m.role === 'CORE_MEMBER')
@@ -302,12 +302,12 @@ export default function EventScreen() {
       borderColor: theme.colors.error,
     },
     modalNoticeText: {
-      fontSize: 11,
+      fontSize: 12,
       lineHeight: 16,
       color: theme.colors.onSurfaceVariant,
     },
     modalWarningText: {
-      fontSize: 11,
+      fontSize: 12,
       lineHeight: 16,
       color: theme.colors.onErrorContainer,
       fontFamily: theme.typography.monoMedium,
@@ -348,7 +348,7 @@ export default function EventScreen() {
       setShowCancelModal(false);
     }
   };
-  
+
   const renderActionTray = () => {
     if (!isOnline) {
       return (
@@ -372,7 +372,7 @@ export default function EventScreen() {
           <MonoLabel style={[styles.restrictedText, { color: theme.colors.error }]}>
             ACCESS RESTRICTED // ADMINISTRATOR ACCOUNT
           </MonoLabel>
-          <MonoLabel style={[styles.restrictedText, { fontSize: 10, marginTop: 4, color: theme.colors.onSurfaceVariant }]}>
+          <MonoLabel style={[styles.restrictedText, { fontSize: 12, marginTop: 4, color: theme.colors.onSurfaceVariant }]}>
             ADMINISTRATOR ACCOUNTS CANNOT REGISTER FOR EVENTS
           </MonoLabel>
         </View>
@@ -387,7 +387,7 @@ export default function EventScreen() {
     const isPastLockDeadline = lockDeadline ? new Date() > lockDeadline : false;
     const isLocked = !!event?.isLocked || !!(event as any)?.is_locked || isPastLockDeadline;
     const registrationType = event?.registrationType || (event as any)?.registration_type;
-    
+
     // Check locked state BEFORE session/registration logic to satisfy audit rule
     if (isLocked || event?.state !== 'PUBLISHED') {
       return (
@@ -532,7 +532,7 @@ export default function EventScreen() {
           />
         );
       }
-      
+
       return (
         <View style={styles.actionTrayStack}>
           <View style={styles.restrictedTray}>
@@ -615,8 +615,8 @@ export default function EventScreen() {
   const is404 = (eventError as any)?.status === 404;
 
   return (
-    <MobileShell 
-      title="EVENT" 
+    <MobileShell
+      title="EVENT"
       showBackButton
       onBackPress={() => {
         if (router.canGoBack()) {
@@ -666,9 +666,9 @@ export default function EventScreen() {
               <Image source={{ uri: bannerUrl }} style={styles.heroBanner} resizeMode="cover" />
             )}
             <View style={styles.statusRow}>
-              <StatusBadge 
-                status={getStatusDisplay()} 
-                type={isSessionActive || isLive ? 'error' : isEventEnded ? 'default' : 'info'} 
+              <StatusBadge
+                status={getStatusDisplay()}
+                type={isSessionActive || isLive ? 'error' : isEventEnded ? 'default' : 'info'}
               />
             </View>
             <Title style={styles.title}>{event?.title?.toUpperCase() || 'UNTITLED EVENT'}</Title>
@@ -773,8 +773,8 @@ export default function EventScreen() {
               testID="event-results-published-banner"
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <MonoLabel style={{ color: theme.colors.podiumGold, fontSize: 11 }}>🏆 OFFICIAL RESULTS & WINNERS</MonoLabel>
-                <Mono style={{ fontSize: 10, color: theme.colors.outline }}>
+                <MonoLabel style={{ color: theme.colors.podiumGold, fontSize: 12 }}>🏆 OFFICIAL RESULTS & WINNERS</MonoLabel>
+                <Mono style={{ fontSize: 12, color: theme.colors.outline }}>
                   REV #{resultsResponse.results.revision_number}
                 </Mono>
               </View>
@@ -804,7 +804,7 @@ export default function EventScreen() {
               }}
               testID="event-results-pending-banner"
             >
-              <MonoLabel style={{ color: theme.colors.outline, fontSize: 10 }}>RESULTS STATUS</MonoLabel>
+              <MonoLabel style={{ color: theme.colors.outline, fontSize: 12 }}>RESULTS STATUS</MonoLabel>
               <Body style={{ fontSize: 12, color: theme.colors.onSurfaceVariant }}>
                 Official results for this event have not been released yet. Evaluations will be certified once judging concludes.
               </Body>
@@ -842,9 +842,9 @@ export default function EventScreen() {
                       >
                         <View style={{ flex: 1, marginRight: 12 }}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                            <MonoLabel style={{ color: theme.colors.primary, fontSize: 10 }}>[{f.purpose}]</MonoLabel>
+                            <MonoLabel style={{ color: theme.colors.primary, fontSize: 12 }}>[{f.purpose}]</MonoLabel>
                             {formClosed && (
-                              <MonoLabel style={{ color: theme.colors.error, fontSize: 10 }}>[CLOSED]</MonoLabel>
+                              <MonoLabel style={{ color: theme.colors.error, fontSize: 12 }}>[CLOSED]</MonoLabel>
                             )}
                           </View>
                           <Body style={{ color: theme.colors.onSurface, fontWeight: 'bold' }} numberOfLines={1}>
@@ -905,14 +905,14 @@ export default function EventScreen() {
       >
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
-            <StatusBadge 
-              status={isFull ? '[WAITLIST QUEUE]' : '[CONFIRM REGISTRATION]'} 
-              type={isFull ? 'warning' : 'info'} 
+            <StatusBadge
+              status={isFull ? '[WAITLIST QUEUE]' : '[CONFIRM REGISTRATION]'}
+              type={isFull ? 'warning' : 'info'}
             />
             <Title style={{ fontSize: 20 }}>
               {isFull ? 'JOIN WAITING LIST' : 'CONFIRM REGISTRATION'}
             </Title>
-            
+
             <View style={styles.modalMetaBox}>
               <View style={styles.modalMetaRow}>
                 <MonoLabel>EVENT</MonoLabel>
@@ -934,7 +934,7 @@ export default function EventScreen() {
 
             <View style={isFull ? styles.modalWarningBox : styles.modalNoticeBox}>
               <Body style={isFull ? styles.modalWarningText : styles.modalNoticeText}>
-                {isFull 
+                {isFull
                   ? 'This event is at full capacity. Confirming will add you to the official waitlist. You will be automatically enrolled if an attendee cancels.'
                   : 'Confirming your entry pass reserves an individual attendance slot. Please verify your schedule before registering.'}
               </Body>
@@ -967,14 +967,14 @@ export default function EventScreen() {
       >
         <View style={styles.modalBackdrop}>
           <View style={isWaitlistCancel ? styles.modalCard : styles.modalCardError}>
-            <StatusBadge 
-              status={isWaitlistCancel ? "[LEAVE WAITLIST]" : "[CONFIRM CANCELLATION]"} 
-              type={isWaitlistCancel ? "warning" : "error"} 
+            <StatusBadge
+              status={isWaitlistCancel ? "[LEAVE WAITLIST]" : "[CONFIRM CANCELLATION]"}
+              type={isWaitlistCancel ? "warning" : "error"}
             />
             <Title style={{ fontSize: 20 }}>
               {isWaitlistCancel ? "LEAVE WAITLIST QUEUE" : "CANCEL ENTRY PASS"}
             </Title>
-            
+
             <View style={isWaitlistCancel ? styles.modalNoticeBox : styles.modalWarningBox}>
               <Body style={isWaitlistCancel ? styles.modalNoticeText : styles.modalWarningText}>
                 {isWaitlistCancel

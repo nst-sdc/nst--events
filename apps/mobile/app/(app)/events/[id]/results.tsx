@@ -115,11 +115,11 @@ export default function MobileEventResultsScreen() {
     },
     correctionTitle: {
       color: theme.colors.warning,
-      fontSize: 10,
+      fontSize: 12,
     },
     correctionText: {
       color: theme.colors.onSurface,
-      fontSize: 11,
+      fontSize: 12,
     },
     actionsRow: {
       flexDirection: 'row',
@@ -130,7 +130,7 @@ export default function MobileEventResultsScreen() {
     },
     sectionHeading: {
       color: theme.colors.primary,
-      fontSize: 11,
+      fontSize: 12,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.borderHairline,
       paddingBottom: 4,
@@ -189,7 +189,7 @@ export default function MobileEventResultsScreen() {
       textTransform: 'uppercase',
     },
     recipientTypeBadge: {
-      fontSize: 9,
+      fontSize: 12,
     },
     membersBox: {
       marginTop: 6,
@@ -204,11 +204,11 @@ export default function MobileEventResultsScreen() {
       alignItems: 'center',
     },
     memberName: {
-      fontSize: 11,
+      fontSize: 12,
       color: theme.colors.onSurface,
     },
     memberRole: {
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.outline,
     },
     projectLinkBox: {
@@ -223,7 +223,7 @@ export default function MobileEventResultsScreen() {
       alignItems: 'center',
     },
     projectLinkText: {
-      fontSize: 11,
+      fontSize: 12,
       color: theme.colors.primary,
       fontFamily: theme.typography.monoBold,
     },
@@ -235,7 +235,7 @@ export default function MobileEventResultsScreen() {
       alignItems: 'center',
     },
     noticeText: {
-      fontSize: 11,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
     },
@@ -266,10 +266,10 @@ export default function MobileEventResultsScreen() {
         style={[styles.podiumCard, isPodium ? podiumStyle : styles.standardPodium]}
       >
         <View style={styles.awardHeader}>
-          <MonoLabel style={{ color: theme.colors.primary, fontSize: 11 }}>
+          <MonoLabel style={{ color: theme.colors.primary, fontSize: 12 }}>
             {rankBadgeText}
           </MonoLabel>
-          <MonoLabel style={{ color: theme.colors.outline, fontSize: 9 }}>
+          <MonoLabel style={{ color: theme.colors.outline, fontSize: 12 }}>
             {award.award_type.replace(/_/g, ' ')}
           </MonoLabel>
         </View>
@@ -305,7 +305,7 @@ export default function MobileEventResultsScreen() {
                 </View>
 
                 {isIndividual && (rec.student?.program || rec.student?.batch) && (
-                  <Mono style={{ fontSize: 10, color: theme.colors.outline }}>
+                  <Mono style={{ fontSize: 12, color: theme.colors.outline }}>
                     {[rec.student?.program, rec.student?.batch ? `Batch ${rec.student?.batch}` : null]
                       .filter(Boolean)
                       .join(' • ')}
@@ -314,7 +314,7 @@ export default function MobileEventResultsScreen() {
 
                 {isTeam && rec.members && rec.members.length > 0 && (
                   <View style={styles.membersBox}>
-                    <MonoLabel style={{ fontSize: 9, color: theme.colors.outline }}>
+                    <MonoLabel style={{ fontSize: 12, color: theme.colors.outline }}>
                       RECOGNIZED TEAM MEMBERS:
                     </MonoLabel>
                     {rec.members.map((m, mIdx) => (
@@ -329,7 +329,7 @@ export default function MobileEventResultsScreen() {
                 )}
 
                 {isExternal && rec.external?.details && (
-                  <Body style={{ fontSize: 11, color: theme.colors.onSurfaceVariant }}>
+                  <Body style={{ fontSize: 12, color: theme.colors.onSurfaceVariant }}>
                     {rec.external.details}
                   </Body>
                 )}
@@ -359,7 +359,7 @@ export default function MobileEventResultsScreen() {
                   }}
                 >
                   <View style={{ flex: 1, marginRight: 8 }}>
-                    <MonoLabel style={{ fontSize: 9, color: theme.colors.outline }}>
+                    <MonoLabel style={{ fontSize: 12, color: theme.colors.outline }}>
                       {hasProject ? 'NST SHOWCASE PROJECT' : 'EXTERNAL SUBMISSION'}
                     </MonoLabel>
                     <Mono style={styles.projectLinkText} numberOfLines={1}>
@@ -459,13 +459,13 @@ export default function MobileEventResultsScreen() {
                 <MonoLabel style={{ color: theme.colors.primary }}>
                   OFFICIAL INSTITUTIONAL RECORD
                 </MonoLabel>
-                <Mono style={{ fontSize: 10, color: theme.colors.outline }}>
+                <Mono style={{ fontSize: 12, color: theme.colors.outline }}>
                   REV #{results.revision_number}
                 </Mono>
               </View>
 
               <Title style={styles.eventTitle}>{event?.title}</Title>
-              <Mono style={{ fontSize: 11, color: theme.colors.outline }}>
+              <Mono style={{ fontSize: 12, color: theme.colors.outline }}>
                 Published: {new Date(results.published_at).toLocaleDateString([], {
                   month: 'short',
                   day: 'numeric',
@@ -530,7 +530,7 @@ export default function MobileEventResultsScreen() {
                 style={{ minHeight: 48, justifyContent: 'center' }}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Mono style={{ fontSize: 11, color: theme.colors.primary, textDecorationLine: 'underline' }}>
+                <Mono style={{ fontSize: 12, color: theme.colors.primary, textDecorationLine: 'underline' }}>
                   Report a discrepancy or missing member attribution
                 </Mono>
               </TouchableOpacity>

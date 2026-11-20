@@ -218,7 +218,7 @@ export default function CampusClubsScreen() {
     },
     clearButtonText: {
       fontFamily: theme.typography.monoBold,
-      fontSize: 11,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
     },
     metaRow: {
@@ -230,11 +230,11 @@ export default function CampusClubsScreen() {
       borderBottomColor: theme.colors.borderHairline,
     },
     metaLabel: {
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
     },
     metaValue: {
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.primary,
     },
     clubCard: {
@@ -304,7 +304,7 @@ export default function CampusClubsScreen() {
       paddingVertical: 4,
     },
     metricText: {
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.primary,
     },
     cardActionRow: {
@@ -382,7 +382,7 @@ export default function CampusClubsScreen() {
     },
     modalSectionTitle: {
       color: theme.colors.primary,
-      fontSize: 10,
+      fontSize: 12,
     },
     statsGrid: {
       flexDirection: 'row',
@@ -401,7 +401,7 @@ export default function CampusClubsScreen() {
       fontSize: 20,
     },
     statDesc: {
-      fontSize: 9,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
     },
     memberRow: {
@@ -457,7 +457,7 @@ export default function CampusClubsScreen() {
       flexShrink: 0,
     },
     memberRoleText: {
-      fontSize: 9,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
     },
     rosterSearchBox: {
@@ -473,7 +473,7 @@ export default function CampusClubsScreen() {
     rosterSearchInput: {
       flex: 1,
       color: theme.colors.onSurface,
-      fontSize: 11,
+      fontSize: 12,
       fontFamily: theme.typography.monoMedium,
       paddingVertical: 4,
     },
@@ -486,7 +486,7 @@ export default function CampusClubsScreen() {
       marginTop: 4,
     },
     rosterExpandText: {
-      fontSize: 10,
+      fontSize: 12,
       fontFamily: theme.typography.monoBold,
       color: theme.colors.primary,
       letterSpacing: 0.5,
@@ -543,7 +543,7 @@ export default function CampusClubsScreen() {
           ) : (
             <View style={styles.bannerPlaceholder}>
               <Display style={styles.bannerMonogram}>{initials}</Display>
-              <MonoLabel style={{ fontSize: 9 }}>[ CAMPUS CHAPTER ]</MonoLabel>
+              <MonoLabel style={{ fontSize: 12 }}>[ CAMPUS CHAPTER ]</MonoLabel>
             </View>
           )}
         </View>
@@ -777,7 +777,7 @@ export default function CampusClubsScreen() {
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                   <MonoLabel style={styles.modalSectionTitle}>LEADERSHIP & CORE TEAM</MonoLabel>
                   {sortedMembers.length > 0 && (
-                    <MonoLabel style={{ color: theme.colors.outline, fontSize: 9 }}>
+                    <MonoLabel style={{ color: theme.colors.outline, fontSize: 12 }}>
                       [{sortedMembers.length} {sortedMembers.length === 1 ? 'MEMBER' : 'MEMBERS'}]
                     </MonoLabel>
                   )}
@@ -799,7 +799,7 @@ export default function CampusClubsScreen() {
                         onPress={() => setRosterSearch('')}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       >
-                        <Text style={{ color: theme.colors.primary, fontSize: 10, fontFamily: theme.typography.monoBold }}>
+                        <Text style={{ color: theme.colors.primary, fontSize: 12, fontFamily: theme.typography.monoBold }}>
                           [✕]
                         </Text>
                       </TouchableOpacity>
@@ -855,12 +855,12 @@ export default function CampusClubsScreen() {
                   </>
                 ) : rosterSearch.trim().length > 0 ? (
                   <View style={{ paddingVertical: 12, alignItems: 'center' }}>
-                    <MonoLabel style={{ color: theme.colors.onSurfaceVariant, fontSize: 10 }}>
+                    <MonoLabel style={{ color: theme.colors.onSurfaceVariant, fontSize: 12 }}>
                       NO MEMBERS MATCHING "{rosterSearch.toUpperCase()}"
                     </MonoLabel>
                   </View>
                 ) : (
-                  <MonoLabel style={{ color: theme.colors.onSurfaceVariant, fontSize: 11 }}>
+                  <MonoLabel style={{ color: theme.colors.onSurfaceVariant, fontSize: 12 }}>
                     NO PUBLIC CORE TEAM MEMBERS LISTED
                   </MonoLabel>
                 )}

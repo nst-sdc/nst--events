@@ -18,7 +18,7 @@ import { Title, Body, MonoLabel, Mono, Display } from '../../../src/ui/core/Typo
 export default function DisputeDetailScreen() {
   const router = useRouter();
   const theme = useAppTheme();
-  
+
   const params = useLocalSearchParams<{
     id?: string;
     sessionId?: string;
@@ -198,8 +198,8 @@ export default function DisputeDetailScreen() {
   }), [theme]);
 
   return (
-    <MobileShell 
-      title="CLAIM DETAIL" 
+    <MobileShell
+      title="CLAIM DETAIL"
       showBackButton
       onBackPress={() => {
         if (router.canGoBack()) {

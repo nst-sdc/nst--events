@@ -35,7 +35,7 @@ export default function InvitationsScreen() {
     },
     offlineText: {
       fontFamily: theme.typography.monoBold,
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.onErrorContainer,
       letterSpacing: 0.8,
     },
@@ -49,7 +49,7 @@ export default function InvitationsScreen() {
     },
     loadingText: {
       fontFamily: theme.typography.monoBold,
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
       letterSpacing: 0.8,
     },
@@ -97,7 +97,7 @@ export default function InvitationsScreen() {
       gap: 4,
     },
     metaLabel: {
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
     },
     metaValue: {
@@ -105,7 +105,7 @@ export default function InvitationsScreen() {
       color: theme.colors.primary,
     },
     expiryText: {
-      fontSize: 11,
+      fontSize: 12,
       color: theme.colors.outline,
       marginTop: 2,
     },
@@ -118,7 +118,7 @@ export default function InvitationsScreen() {
     },
     expiredNoticeText: {
       fontFamily: theme.typography.monoBold,
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.outline,
       letterSpacing: 0.8,
     },

@@ -8,7 +8,7 @@ import { DEV_CLUB_NAME, MOBILE_APP_VERSION } from '../src/infrastructure/brand-c
 export default function SplashScreen() {
   const router = useRouter();
   const theme = useAppTheme();
-  
+
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const isInitialized = useAuthStore((state) => state.isInitialized);
   const initSession = useAuthStore((state) => state.initSession);
@@ -95,7 +95,7 @@ export default function SplashScreen() {
     },
     headerMonoText: {
       fontFamily: theme.typography.monoBold,
-      fontSize: 10,
+      fontSize: 12,
       letterSpacing: 0.8,
       color: theme.colors.primary,
       textTransform: 'uppercase',
@@ -104,11 +104,11 @@ export default function SplashScreen() {
       backgroundColor: theme.colors.surfaceContainerHigh,
       paddingHorizontal: 8,
       paddingVertical: 2,
-      borderRadius: 0,
+      borderRadius: theme.radii.sm,
     },
     statusPillText: {
       fontFamily: theme.typography.monoBold,
-      fontSize: 10,
+      fontSize: 12,
       letterSpacing: 0.8,
       color: theme.colors.primary,
     },
@@ -123,7 +123,7 @@ export default function SplashScreen() {
     },
     coordText: {
       fontFamily: theme.typography.monoMedium,
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
       opacity: 0.7,
     },
@@ -143,13 +143,13 @@ export default function SplashScreen() {
     },
     monumentHeaderTag: {
       fontFamily: theme.typography.monoBold,
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.secondary,
       letterSpacing: 0.8,
     },
     monumentHeaderLoc: {
       fontFamily: theme.typography.monoMedium,
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
     },
     titleText: {
@@ -174,7 +174,7 @@ export default function SplashScreen() {
     },
     subtitleSub: {
       fontFamily: theme.typography.monoMedium,
-      fontSize: 11,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
       marginTop: 2,
     },
@@ -189,12 +189,12 @@ export default function SplashScreen() {
     },
     cryptoTag: {
       fontFamily: theme.typography.monoBold,
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.primary,
     },
     cryptoHash: {
       fontFamily: theme.typography.monoMedium,
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
     },
     subscriptRow: {
@@ -246,7 +246,7 @@ export default function SplashScreen() {
     },
     diagnosticText: {
       fontFamily: theme.typography.monoBold,
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
     },
   }), [theme]);

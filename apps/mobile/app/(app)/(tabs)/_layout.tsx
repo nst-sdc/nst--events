@@ -1,45 +1,81 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { Tabs } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAppTheme } from '../../../src/store/theme-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { haptics } from '../../../src/lib/haptics';
 
 export default function TabsLayout() {
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
 
   const styles = useMemo(() => StyleSheet.create({
-    customTabBar: {
+    tabBarWrapper: {
+      position: 'absolute',
+      left: 16,
+      right: 16,
+      bottom: Math.max(insets.bottom, 12),
+      height: 64,
+      borderRadius: theme.radii['2xl'],
+      backgroundColor: theme.colors.surfaceGlass,
+      borderWidth: 1,
+      borderColor: theme.colors.borderStrong,
       flexDirection: 'row',
-      backgroundColor: theme.colors.surfaceContainerLowest,
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.outlineVariant,
-      paddingTop: 8,
+      alignItems: 'center',
+      justifyContent: 'space-around',
       paddingHorizontal: 8,
+      ...(Platform.OS === 'ios'
+        ? {
+            borderCurve: 'continuous' as const,
+            shadowColor: '#000000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: theme.mode === 'dark' ? 0.35 : 0.08,
+            shadowRadius: 12,
+          }
+        : {
+            elevation: 8,
+          }),
     },
-    customTabItem: {
+    tabItem: {
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: 8,
-      marginHorizontal: 4,
-      borderRadius: 0, // Sharp edge enforcement
+      height: '100%',
+      paddingVertical: 6,
+      borderRadius: theme.radii.lg,
     },
-    customTabItemActive: {
-      backgroundColor: theme.colors.surfaceContainerHigh,
+    iconWrapper: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: 28,
     },
-    customTabLabel: {
-      fontFamily: theme.typography.monoBold,
-      fontSize: 9,
-      letterSpacing: 0.5,
-      marginTop: 4,
-      color: theme.colors.onSurfaceVariant,
+    activeDot: {
+      width: 4,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: theme.colors.brandText,
+      marginTop: 2,
     },
-    customTabLabelActive: {
-      color: theme.colors.primaryFixed,
+    inactiveDot: {
+      width: 4,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: 'transparent',
+      marginTop: 2,
     },
-  }), [theme]);
+    tabLabel: {
+      fontFamily: theme.typography.interMedium,
+      fontSize: 12,
+      lineHeight: 16,
+      marginTop: 2,
+      color: theme.colors.textMuted,
+    },
+    tabLabelActive: {
+      fontFamily: theme.typography.interSemiBold,
+      color: theme.colors.brandText,
+    },
+  }), [theme, insets]);
 
   return (
     <Tabs
@@ -48,7 +84,7 @@ export default function TabsLayout() {
         const visibleRoutes = state.routes.filter((r: any) => allowedRoutes.includes(r.name));
 
         return (
-          <View style={[styles.customTabBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+          <View style={styles.tabBarWrapper}>
             {visibleRoutes.map((route: any) => {
               const isFocused = state.index === state.routes.findIndex((r: any) => r.key === route.key);
 
@@ -60,24 +96,25 @@ export default function TabsLayout() {
                 });
 
                 if (!isFocused && !event.defaultPrevented) {
+                  void haptics.selection();
                   navigation.navigate(route.name as any);
                 }
               };
 
-              let iconName: any = 'help';
+              let iconName: keyof typeof MaterialIcons.glyphMap = 'help';
               let label = route.name;
               if (route.name === 'index') {
                 iconName = 'home';
-                label = 'HOME';
+                label = 'Home';
               } else if (route.name === 'explore') {
                 iconName = 'explore';
-                label = 'EXPLORE';
+                label = 'Explore';
               } else if (route.name === 'activity') {
                 iconName = 'confirmation-number';
-                label = 'ACTIVITY';
+                label = 'Tickets';
               } else if (route.name === 'profile') {
                 iconName = 'person';
-                label = 'PROFILE';
+                label = 'Profile';
               }
 
               return (
@@ -85,20 +122,23 @@ export default function TabsLayout() {
                   key={route.key}
                   onPress={onPress}
                   activeOpacity={0.8}
-                  style={[
-                    styles.customTabItem,
-                    isFocused && styles.customTabItemActive,
-                  ]}
+                  style={styles.tabItem}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: isFocused }}
+                  accessibilityLabel={`${label} tab`}
                 >
-                  <MaterialIcons
-                    name={iconName}
-                    size={20}
-                    color={isFocused ? theme.colors.primaryFixed : theme.colors.onSurfaceVariant}
-                  />
+                  <View style={styles.iconWrapper}>
+                    <MaterialIcons
+                      name={iconName}
+                      size={22}
+                      color={isFocused ? theme.colors.brandText : theme.colors.textMuted}
+                    />
+                    <View style={isFocused ? styles.activeDot : styles.inactiveDot} />
+                  </View>
                   <Text
                     style={[
-                      styles.customTabLabel,
-                      isFocused && styles.customTabLabelActive,
+                      styles.tabLabel,
+                      isFocused && styles.tabLabelActive,
                     ]}
                     numberOfLines={1}
                   >

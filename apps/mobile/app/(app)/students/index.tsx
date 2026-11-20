@@ -87,7 +87,7 @@ export default function StudentDirectoryScreen() {
         },
         filterChipText: {
           fontFamily: theme.typography.monoMedium,
-          fontSize: 10,
+          fontSize: 12,
           color: theme.colors.onSurfaceVariant,
           textTransform: 'uppercase',
         },
@@ -133,7 +133,7 @@ export default function StudentDirectoryScreen() {
         },
         handleText: {
           fontFamily: theme.typography.monoMedium,
-          fontSize: 11,
+          fontSize: 12,
           color: theme.colors.primary,
           marginTop: 2,
         },
@@ -148,7 +148,7 @@ export default function StudentDirectoryScreen() {
         },
         academicText: {
           fontFamily: theme.typography.monoRegular,
-          fontSize: 9,
+          fontSize: 12,
           color: theme.colors.onSurfaceVariant,
           textTransform: 'uppercase',
         },
@@ -177,7 +177,7 @@ export default function StudentDirectoryScreen() {
         },
         skillText: {
           fontFamily: theme.typography.monoRegular,
-          fontSize: 10,
+          fontSize: 12,
           color: theme.colors.primary,
         },
         cardFooter: {
@@ -197,7 +197,7 @@ export default function StudentDirectoryScreen() {
         },
         statText: {
           fontFamily: theme.typography.monoMedium,
-          fontSize: 10,
+          fontSize: 12,
           color: theme.colors.onSurfaceVariant,
         },
         viewBtn: {
@@ -207,7 +207,7 @@ export default function StudentDirectoryScreen() {
         },
         viewBtnText: {
           fontFamily: theme.typography.monoBold,
-          fontSize: 11,
+          fontSize: 12,
           color: theme.colors.primary,
           letterSpacing: 0.5,
         },

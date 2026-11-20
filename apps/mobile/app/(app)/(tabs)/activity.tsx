@@ -185,7 +185,7 @@ export default function ActivityScreen() {
         },
         segmentLabel: {
           fontFamily: theme.typography.monoBold,
-          fontSize: 10,
+          fontSize: 12,
           letterSpacing: 0.5,
           color: theme.colors.onSurfaceVariant,
         },
@@ -201,7 +201,7 @@ export default function ActivityScreen() {
         },
         badgeText: {
           color: theme.colors.onPrimary,
-          fontSize: 8,
+          fontSize: 12,
           fontFamily: theme.typography.monoBold,
         },
         sectionContainer: {
@@ -251,7 +251,7 @@ export default function ActivityScreen() {
           backgroundColor: theme.colors.surface,
         },
         passActionText: {
-          fontSize: 10,
+          fontSize: 12,
           fontFamily: theme.typography.monoBold,
           color: theme.colors.primary,
         },
@@ -471,7 +471,7 @@ export default function ActivityScreen() {
                   </View>
 
                   <View style={styles.passDetailsRow}>
-                    <Mono style={{ fontSize: 11, color: theme.colors.onSurface }}>
+                    <Mono style={{ fontSize: 12, color: theme.colors.onSurface }}>
                       {dateStr} · {timeStr}
                     </Mono>
                   </View>
@@ -560,10 +560,10 @@ export default function ActivityScreen() {
                 <View style={styles.inviteHeader}>
                   <View style={{ flex: 1, gap: 2 }}>
                     <Title style={{ fontSize: 16 }}>{inv.team.team_name}</Title>
-                    <Mono style={{ fontSize: 11, color: theme.colors.primary }}>
+                    <Mono style={{ fontSize: 12, color: theme.colors.primary }}>
                       EVENT: {inv.event.event_title}
                     </Mono>
-                    <Body style={{ fontSize: 11, color: theme.colors.onSurfaceVariant, marginTop: 2 }}>
+                    <Body style={{ fontSize: 12, color: theme.colors.onSurfaceVariant, marginTop: 2 }}>
                       Invited by: {inv.inviter.full_name}
                     </Body>
                   </View>
@@ -578,7 +578,7 @@ export default function ActivityScreen() {
                     accessibilityRole="button"
                     accessibilityLabel={`Accept squad invitation from ${inv.inviter.full_name}`}
                   >
-                    <Mono style={{ color: theme.colors.onPrimary, fontFamily: theme.typography.monoBold, fontSize: 11 }}>
+                    <Mono style={{ color: theme.colors.onPrimary, fontFamily: theme.typography.monoBold, fontSize: 12 }}>
                       [ ACCEPT SQUAD ]
                     </Mono>
                   </TouchableOpacity>
@@ -590,7 +590,7 @@ export default function ActivityScreen() {
                     accessibilityRole="button"
                     accessibilityLabel={`Decline squad invitation from ${inv.inviter.full_name}`}
                   >
-                    <Mono style={{ color: theme.colors.onSurface, fontFamily: theme.typography.monoBold, fontSize: 11 }}>
+                    <Mono style={{ color: theme.colors.onSurface, fontFamily: theme.typography.monoBold, fontSize: 12 }}>
                       [ DECLINE ]
                     </Mono>
                   </TouchableOpacity>
@@ -682,7 +682,7 @@ export default function ActivityScreen() {
               accessibilityRole="button"
               accessibilityLabel="File attendance dispute claim"
             >
-              <Mono style={{ fontSize: 10, fontFamily: theme.typography.monoBold, color: theme.colors.onPrimary }}>
+              <Mono style={{ fontSize: 12, fontFamily: theme.typography.monoBold, color: theme.colors.onPrimary }}>
                 + FILE CLAIM
               </Mono>
             </TouchableOpacity>
@@ -723,7 +723,7 @@ export default function ActivityScreen() {
         <View style={styles.sectionContainer}>
           <View style={styles.summaryBar}>
             <MonoLabel style={{ color: theme.colors.onSurfaceVariant }}>OFFICIAL HONORS & PODIUM FINISHES</MonoLabel>
-            <MonoLabel style={{ color: theme.colors.success, fontSize: 9 }}>[VERIFIED RECORD]</MonoLabel>
+            <MonoLabel style={{ color: theme.colors.success, fontSize: 12 }}>[VERIFIED RECORD]</MonoLabel>
           </View>
 
           {isAchievementsLoading ? (
@@ -769,14 +769,14 @@ export default function ActivityScreen() {
                   }}
                 >
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <MonoLabel style={{ color: theme.colors.primary, fontSize: 10 }}>{rankText}</MonoLabel>
-                    <Mono style={{ fontSize: 9, color: theme.colors.outline }}>
+                    <MonoLabel style={{ color: theme.colors.primary, fontSize: 12 }}>{rankText}</MonoLabel>
+                    <Mono style={{ fontSize: 12, color: theme.colors.outline }}>
                       {new Date(ach.published_at).getFullYear()}
                     </Mono>
                   </View>
 
                   <Title style={{ fontSize: 14, textTransform: 'uppercase' }}>{ach.award_title}</Title>
-                  <Body style={{ fontSize: 11, color: theme.colors.onSurfaceVariant }}>
+                  <Body style={{ fontSize: 12, color: theme.colors.onSurfaceVariant }}>
                     {ach.event.title}
                     {ach.is_team_award && ach.team_name ? ` • Team: ${ach.team_name}` : ''}
                   </Body>
@@ -798,7 +798,7 @@ export default function ActivityScreen() {
                       accessibilityRole="button"
                       accessibilityLabel="View event results"
                     >
-                      <Mono style={{ fontSize: 10, color: theme.colors.primary, fontFamily: theme.typography.monoBold }}>
+                      <Mono style={{ fontSize: 12, color: theme.colors.primary, fontFamily: theme.typography.monoBold }}>
                         [ VIEW RESULTS ]
                       </Mono>
                     </TouchableOpacity>
@@ -812,7 +812,7 @@ export default function ActivityScreen() {
                         accessibilityRole="button"
                         accessibilityLabel="Showcase project"
                       >
-                        <Mono style={{ fontSize: 10, color: theme.colors.secondary, fontFamily: theme.typography.monoBold }}>
+                        <Mono style={{ fontSize: 12, color: theme.colors.secondary, fontFamily: theme.typography.monoBold }}>
                           [ SHOWCASE PROJECT ↗ ]
                         </Mono>
                       </TouchableOpacity>

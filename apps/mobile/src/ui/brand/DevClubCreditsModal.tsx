@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   headerTitle: {
-    fontSize: 10,
+    fontSize: 12,
     letterSpacing: 1,
   },
   closeText: {
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   institution: {
-    fontSize: 10,
+    fontSize: 12,
     letterSpacing: 0.5,
     marginTop: 2,
   },
@@ -465,7 +465,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionLabel: {
-    fontSize: 9,
+    fontSize: 12,
     letterSpacing: 0.8,
     marginBottom: 4,
   },
@@ -480,11 +480,11 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   metaKey: {
-    fontSize: 10,
+    fontSize: 12,
     letterSpacing: 0.5,
   },
   metaVal: {
-    fontSize: 10,
+    fontSize: 12,
     letterSpacing: 0.5,
   },
   linksContainer: {
@@ -497,7 +497,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   linkText: {
-    fontSize: 10,
+    fontSize: 12,
     letterSpacing: 0.8,
   },
   footerBar: {
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   closeBtnText: {
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 1,
   },
 });

@@ -126,7 +126,7 @@ export function ProfileVisibilityModal({ visible, onClose }: ProfileVisibilityMo
         },
         toggleSub: {
           fontFamily: theme.typography.monoRegular,
-          fontSize: 9,
+          fontSize: 12,
           color: theme.colors.onSurfaceVariant,
           marginTop: 2,
         },
@@ -146,7 +146,7 @@ export function ProfileVisibilityModal({ visible, onClose }: ProfileVisibilityMo
         },
         actionBtnText: {
           fontFamily: theme.typography.monoBold,
-          fontSize: 10,
+          fontSize: 12,
           color: theme.colors.onPrimary,
         },
         handleRow: {
@@ -296,7 +296,7 @@ export function ProfileVisibilityModal({ visible, onClose }: ProfileVisibilityMo
                   </TouchableOpacity>
                 </View>
                 {handleMsg && (
-                  <Text style={{ fontFamily: theme.typography.monoRegular, fontSize: 10, color: handleMsg.error ? theme.colors.error : theme.colors.success }}>
+                  <Text style={{ fontFamily: theme.typography.monoRegular, fontSize: 12, color: handleMsg.error ? theme.colors.error : theme.colors.success }}>
                     {handleMsg.text}
                   </Text>
                 )}

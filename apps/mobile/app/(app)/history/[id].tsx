@@ -18,7 +18,7 @@ import { Title, Body, MonoLabel, Mono, Display } from '../../../src/ui/core/Typo
 export default function AttendanceDetailScreen() {
   const router = useRouter();
   const theme = useAppTheme();
-  
+
   const params = useLocalSearchParams<{ id?: string }>();
   const eventId = params.id || '';
 
@@ -31,7 +31,7 @@ export default function AttendanceDetailScreen() {
 
   const eventTitle = event?.title || '';
   const venue = event?.locationName || 'UNSPECIFIED VENUE';
-  const eventDate = event?.startTime 
+  const eventDate = event?.startTime
     ? new Date(event.startTime).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }).toUpperCase()
     : 'N/A';
   const eventTime = event?.startTime
@@ -65,7 +65,7 @@ export default function AttendanceDetailScreen() {
     },
     emptySessionText: {
       color: theme.colors.onSurfaceVariant,
-      fontSize: 11,
+      fontSize: 12,
       fontStyle: 'italic',
       marginTop: 8,
     },
@@ -116,7 +116,7 @@ export default function AttendanceDetailScreen() {
       flex: 1,
     },
     sessionDateTime: {
-      fontSize: 11,
+      fontSize: 12,
       color: theme.colors.outline,
       marginLeft: 26,
       marginBottom: 6,
@@ -137,7 +137,7 @@ export default function AttendanceDetailScreen() {
       marginTop: 2,
     },
     disputeActionText: {
-      fontSize: 11,
+      fontSize: 12,
       color: theme.colors.primary,
     },
   }), [theme]);
@@ -181,7 +181,7 @@ export default function AttendanceDetailScreen() {
           <View style={styles.attendanceSection}>
             <MonoLabel style={styles.sectionTitle}>ATTENDANCE</MonoLabel>
             <View style={styles.divider} />
-            
+
             {(!sessions || sessions.length === 0) && (
               <Mono style={styles.emptySessionText}>NO SESSIONS REGISTERED FOR THIS EVENT</Mono>
             )}
@@ -193,7 +193,7 @@ export default function AttendanceDetailScreen() {
 
               const sessionDate = new Date(session.startTime).toLocaleDateString('en-US', { month: 'short', day: '2-digit' }).toUpperCase();
               const sessionTime = new Date(session.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).toUpperCase();
-              
+
               return (
                 <View key={session.id} style={styles.sessionCard}>
                   <View style={styles.sessionTopRow}>
@@ -201,15 +201,15 @@ export default function AttendanceDetailScreen() {
                     <Body style={styles.sessionTitle} numberOfLines={1}>{session.title}</Body>
                   </View>
                   <Mono style={styles.sessionDateTime}>{sessionDate} / {sessionTime}</Mono>
-                  
+
                   {isPresentOrExcused ? (
                     <MonoLabel style={styles.statusPresent}>{record.status}</MonoLabel>
                   ) : (
                     <>
                       <MonoLabel style={styles.statusNotMarked}>{record ? record.status : 'NOT MARKED'}</MonoLabel>
-                      
+
                       {dispute ? (
-                        <TouchableOpacity 
+                        <TouchableOpacity
                           style={styles.disputeActionBox}
                           onPress={() => router.push({
                             pathname: '/(app)/disputes/[id]',
@@ -229,7 +229,7 @@ export default function AttendanceDetailScreen() {
                           <MonoLabel style={styles.disputeActionText}>DISPUTE {dispute.status}</MonoLabel>
                         </TouchableOpacity>
                       ) : (
-                        <TouchableOpacity 
+                        <TouchableOpacity
                           style={styles.disputeActionBox}
                           onPress={() => router.push({
                             pathname: '/(app)/disputes/new',

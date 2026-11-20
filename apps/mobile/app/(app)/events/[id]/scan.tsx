@@ -17,6 +17,7 @@ import { AttendanceVerificationView } from '../../../../src/ui/AttendanceVerific
 import { AttendanceSuccessView } from '../../../../src/ui/AttendanceSuccessView';
 import { AttendanceFailureView } from '../../../../src/ui/AttendanceFailureView';
 import { logger } from '../../../../src/lib/logger';
+import { haptics } from '../../../../src/lib/haptics';
 
 type ScanFlowState =
   | 'CHECKING'
@@ -95,7 +96,7 @@ export default function ScanAttendanceScreen() {
         setFlowState('PERMISSIONS');
         return;
       }
-      
+
       setFlowState('SCANNING');
       logger.info('Scanner opened', { timestamp: Date.now() });
       prefetchLocation();
@@ -106,7 +107,7 @@ export default function ScanAttendanceScreen() {
     const now = Date.now();
     if (now - lastScanTimeRef.current < 2500) return;
     if (isProcessingRef.current) return;
-    
+
     lastScanTimeRef.current = now;
     isProcessingRef.current = true;
     pendingQrDataRef.current = data;
@@ -156,7 +157,7 @@ export default function ScanAttendanceScreen() {
         const cached = locationCacheRef.current;
         const accuracy = cached.coords.accuracy ?? 9999;
         const age = Date.now() - cached.timestamp;
-        
+
         // Only use cache if it's less than 100m accuracy and relatively fresh (e.g., < 60s)
         if (accuracy <= 100 && age < 60000) {
           logger.debug('Using acceptable pre-fetched location', { accuracy, age });
@@ -171,7 +172,7 @@ export default function ScanAttendanceScreen() {
       if (!location) {
         logger.info('Fetching fresh high-accuracy location with 8s timeout');
         const locPromise = locationPromiseRef.current || Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-        const timeoutPromise = new Promise<never>((_, reject) => 
+        const timeoutPromise = new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('LOCATION_TIMEOUT')), 8000)
         );
         location = await Promise.race([locPromise, timeoutPromise]);
@@ -187,7 +188,7 @@ export default function ScanAttendanceScreen() {
         logger.warn('Client-side rejection: Accuracy is worse than 100m threshold', { finalAccuracy });
         throw new Error('LOCATION_UNRELIABLE');
       }
-      
+
       logger.info('Client-side assessment: Location accepted');
 
       // 3. Fetch Persistent Device ID
@@ -214,7 +215,7 @@ export default function ScanAttendanceScreen() {
         method: 'POST',
         body: JSON.stringify(payload),
       });
-      
+
       logger.info('Attendance marked successfully');
 
       // Resolve venue name from existing React Query event data as primary source
@@ -245,6 +246,7 @@ export default function ScanAttendanceScreen() {
       });
 
       logger.info('Mark attendance completed successfully: SUCCESS');
+      void haptics.notifySuccess();
       setFlowState('SUCCESS');
     } catch (err: any) {
       let rawMsg = err.message || 'ATTENDANCE_FAILED';
@@ -285,7 +287,7 @@ export default function ScanAttendanceScreen() {
         toast.show(rawMsg, 'error', 'Invalid QR');
       } else if (rawMsg.includes('QR_EXPIRED') || parsedCode === 'QR_EXPIRED') {
         parsedCode = 'QR_EXPIRED';
-      } else if (parsedCode === 'LOCATION_VERIFICATION_FAILED') {
+      } else if (rawMsg.includes('LOCATION_VERIFICATION_FAILED') || parsedCode === 'LOCATION_VERIFICATION_FAILED') {
         parsedCode = 'LOCATION_VERIFICATION_FAILED';
       } else if (rawMsg.includes('SESSION_CLOSED') || parsedCode === 'SESSION_CLOSED') {
         parsedCode = 'SESSION_CLOSED';
@@ -307,7 +309,21 @@ export default function ScanAttendanceScreen() {
       }
 
       logger.info('Parsed error details', { code: parsedCode, message: rawMsg });
-      
+
+      const warningCodes = new Set([
+        'LOCATION_UNRELIABLE',
+        'LOCATION_TIMEOUT',
+        'QR_EXPIRED',
+        'SIGNATURE_ALREADY_CONSUMED',
+        'ALREADY_RECORDED',
+        'WAITLISTED',
+      ]);
+      if (warningCodes.has(parsedCode)) {
+        void haptics.notifyWarning();
+      } else {
+        void haptics.notifyError();
+      }
+
       setErrorCode(parsedCode);
       setErrorMessage(rawMsg);
       logger.info('Attendance final UI state: FAILURE');
@@ -410,10 +426,10 @@ export default function ScanAttendanceScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.surface }]}>
-      <StatusBar 
-        barStyle={theme.mode === 'light' ? 'dark-content' : 'light-content'} 
-        backgroundColor="transparent" 
-        translucent 
+      <StatusBar
+        barStyle={theme.mode === 'light' ? 'dark-content' : 'light-content'}
+        backgroundColor="transparent"
+        translucent
       />
       <CameraView
         style={[styles.cameraView, StyleSheet.absoluteFill]}

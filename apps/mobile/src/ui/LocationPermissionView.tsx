@@ -49,7 +49,7 @@ export const LocationPermissionView: React.FC<LocationPermissionViewProps> = ({
       backgroundColor: theme.colors.surfaceContainerHigh,
       paddingHorizontal: 8,
       paddingVertical: 4,
-      borderRadius: 0,
+      borderRadius: theme.radii.sm,
     },
     pingDot: {
       width: 6,
@@ -91,7 +91,7 @@ export const LocationPermissionView: React.FC<LocationPermissionViewProps> = ({
     locationBox: {
       width: 56,
       height: 56,
-      borderRadius: 0,
+      borderRadius: theme.radii.sm,
       backgroundColor: theme.colors.surface,
       alignItems: 'center',
       justifyContent: 'center',
@@ -145,7 +145,7 @@ export const LocationPermissionView: React.FC<LocationPermissionViewProps> = ({
     },
     mainBtn: {
       height: 52,
-      borderRadius: 0,
+      borderRadius: theme.radii.sm,
     },
     settingsBtn: {
       alignItems: 'center',

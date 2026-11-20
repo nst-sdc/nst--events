@@ -4,6 +4,7 @@ import { useAuthStore, type RefreshResult } from '../store/auth';
 import { useAppVersionStore } from '../store/app-version-store';
 import { API_BASE_URL } from './config';
 import { teardownSession } from '../services/session';
+import { serverClock } from '../lib/server-clock';
 
 export { API_BASE_URL };
 
@@ -42,7 +43,7 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
     'X-Client-Platform': 'mobile',
     ...(options.headers as Record<string, string> || {}),
   };
-  
+
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
@@ -53,10 +54,17 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
     console.log('[API FETCH] URL:', sanitizedUrl, '| Method:', options.method || 'GET');
   }
 
+  const requestStartMs = Date.now();
   const response = await executeFetch(fullUrl, {
     ...options,
     headers,
   });
+  const responseReceiveMs = Date.now();
+  serverClock.recordHttpDateSample(
+    response.headers?.get?.('date'),
+    requestStartMs,
+    responseReceiveMs
+  );
   if (typeof __DEV__ !== 'undefined' && __DEV__) {
     const sanitizedUrl = fullUrl.split('?')[0];
     console.log('[API RESP] Status:', response.status, 'for', sanitizedUrl);
@@ -79,10 +87,17 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
       const newToken = refreshResult.token;
       // Retry the original request with the new token
       headers['Authorization'] = `Bearer ${newToken}`;
+      const retryStartMs = Date.now();
       const retryResponse = await executeFetch(`${API_BASE_URL}${endpoint}`, {
         ...options,
         headers,
       });
+      const retryReceiveMs = Date.now();
+      serverClock.recordHttpDateSample(
+        retryResponse.headers?.get?.('date'),
+        retryStartMs,
+        retryReceiveMs
+      );
 
       if (retryResponse.status === 426) {
         const errorBody = await retryResponse.json().catch(() => ({}));
@@ -123,7 +138,7 @@ export const apiClient = async (endpoint: string, options: RequestInit = {}) => 
       await teardownSession({ notifyServer: false });
       throw { status: 401, message: 'Session expired' };
     }
-    
+
     // Otherwise it was RATE_LIMITED or TRANSIENT_ERROR, just throw so react query can retry
     throw { status: response.status, message: 'API Request Failed' };
   }

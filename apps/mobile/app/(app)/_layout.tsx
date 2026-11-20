@@ -43,13 +43,13 @@ export default function AppLayout() {
     },
     loadingTitle: {
       fontFamily: theme.typography.monoBold,
-      fontSize: 11,
+      fontSize: 12,
       color: theme.colors.primary,
       letterSpacing: 0.8,
     },
     loadingSub: {
       fontFamily: theme.typography.monoMedium,
-      fontSize: 9,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
     },
     accessDeniedContainer: {
@@ -79,7 +79,7 @@ export default function AppLayout() {
     },
     headerMonoText: {
       fontFamily: theme.typography.monoBold,
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.primary,
       letterSpacing: 0.8,
     },
@@ -90,7 +90,7 @@ export default function AppLayout() {
     },
     restrictedPillText: {
       fontFamily: theme.typography.monoBold,
-      fontSize: 9,
+      fontSize: 12,
       color: theme.colors.onErrorContainer,
     },
     deniedCard: {
@@ -134,22 +134,22 @@ export default function AppLayout() {
     },
     ledgerLabel: {
       fontFamily: theme.typography.monoBold,
-      fontSize: 9,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
     },
     ledgerValue: {
       fontFamily: theme.typography.monoMedium,
-      fontSize: 11,
+      fontSize: 12,
       color: theme.colors.primary,
     },
     ledgerValueTag: {
       fontFamily: theme.typography.monoBold,
-      fontSize: 11,
+      fontSize: 12,
       color: theme.colors.error,
     },
     ledgerValueTagActive: {
       fontFamily: theme.typography.monoBold,
-      fontSize: 11,
+      fontSize: 12,
       color: theme.colors.secondary,
     },
     noticeBody: {
@@ -186,8 +186,8 @@ export default function AppLayout() {
   if (!isInitialized || isLoading) {
     return (
       <View style={[styles.centerContainer, { paddingTop: topInset, paddingBottom: bottomInset }]}>
-        <StatusBar 
-          barStyle={theme.mode === 'dark' ? 'light-content' : 'dark-content'} 
+        <StatusBar
+          barStyle={theme.mode === 'dark' ? 'light-content' : 'dark-content'}
           backgroundColor="transparent"
           translucent={Platform.OS === 'android'}
         />
@@ -208,8 +208,8 @@ export default function AppLayout() {
 
     return (
       <View style={[styles.safeArea, { paddingTop: topInset, paddingBottom: bottomInset }]}>
-        <StatusBar 
-          barStyle={theme.mode === 'dark' ? 'light-content' : 'dark-content'} 
+        <StatusBar
+          barStyle={theme.mode === 'dark' ? 'light-content' : 'dark-content'}
           backgroundColor="transparent"
           translucent={Platform.OS === 'android'}
         />

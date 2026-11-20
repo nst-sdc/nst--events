@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, TouchableOpacity, StyleSheet, ViewStyle, Image } from 'react-native';
-import { MonoLabel, Title, Body, Mono } from './Typography';
+import { View, TouchableOpacity, StyleSheet, ViewStyle, Image, Text, Platform } from 'react-native';
 import { useAppTheme } from '../../store/theme-store';
 
 interface EventCardProps {
@@ -13,6 +12,8 @@ interface EventCardProps {
   onPress: () => void;
   style?: ViewStyle;
   bannerUrl?: string;
+  registrationCount?: number;
+  maxCapacity?: number | null;
 }
 
 export function EventCard({
@@ -25,17 +26,49 @@ export function EventCard({
   onPress,
   style,
   bannerUrl,
+  registrationCount,
+  maxCapacity,
 }: EventCardProps) {
   const theme = useAppTheme();
-  
+
+  const isAlmostFull =
+    typeof registrationCount === 'number' &&
+    typeof maxCapacity === 'number' &&
+    maxCapacity > 0 &&
+    (registrationCount / maxCapacity) >= 0.8;
+
   const styles = useMemo(() => StyleSheet.create({
     card: {
-      backgroundColor: theme.colors.surfaceContainerLow,
+      backgroundColor: theme.colors.surface,
       borderWidth: 1,
-      borderColor: theme.colors.outlineVariant,
+      borderColor: theme.colors.borderSubtle,
+      borderRadius: theme.radii.lg,
+      ...(Platform.OS === 'ios' ? { borderCurve: 'continuous' as const } : {}),
+      overflow: 'hidden',
+      marginBottom: theme.spacing.base,
+    },
+    bannerContainer: {
+      width: '100%',
+      aspectRatio: 16 / 9,
+      backgroundColor: theme.colors.surfaceSubtle,
+      position: 'relative',
+    },
+    banner: {
+      width: '100%',
+      height: '100%',
+    },
+    bannerScrim: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: '40%',
+      backgroundColor: theme.colors.scrimBottom,
+      opacity: 0.6,
+    },
+    content: {
       padding: theme.spacing.base,
-      marginBottom: theme.spacing.md,
-      gap: theme.spacing.sm,
+      gap: theme.spacing.xs,
     },
     header: {
       flexDirection: 'row',
@@ -45,50 +78,132 @@ export function EventCard({
     },
     title: {
       flex: 1,
+      fontFamily: theme.typography.interSemiBold,
+      fontSize: 18,
+      lineHeight: 24,
+      letterSpacing: -0.2,
+      color: theme.colors.textPrimary,
     },
-    statusLabel: {
-      color: statusColor || theme.colors.primary,
+    almostFullBadge: {
+      backgroundColor: theme.colors.badgeTintAmber,
+      borderRadius: theme.radii.full,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      alignSelf: 'flex-start',
     },
-    locationRow: {
-      width: '100%',
+    almostFullText: {
+      fontFamily: theme.typography.interSemiBold,
+      fontSize: 12,
+      lineHeight: 16,
+      color: theme.colors.badgeTextAmber,
     },
     location: {
-      color: theme.colors.onSurfaceVariant,
-      fontSize: 13,
-      lineHeight: 18,
+      fontFamily: theme.typography.interRegular,
+      fontSize: 14,
+      lineHeight: 20,
+      color: theme.colors.textSecondary,
     },
     metaFooterRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginTop: 2,
+      marginTop: theme.spacing.xs,
+      paddingTop: theme.spacing.xs,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.borderSubtle,
     },
     dateTime: {
-      fontSize: 11,
-      color: theme.colors.onSurface,
+      fontFamily: theme.typography.interRegular,
+      fontSize: 13,
+      lineHeight: 18,
+      color: theme.colors.textMuted,
     },
-    banner: {
-      width: '100%',
-      height: 120,
-      marginBottom: theme.spacing.md,
-      backgroundColor: theme.colors.surfaceContainerHighest,
+    statusBadge: {
+      borderRadius: theme.radii.full,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      backgroundColor: theme.colors.surfaceSubtle,
     },
-  }), [theme, statusColor]);
+    statusLabel: {
+      fontFamily: theme.typography.interSemiBold,
+      fontSize: 12,
+      lineHeight: 16,
+      color: statusColor || theme.colors.brandText,
+    },
+    capacityContainer: {
+      marginTop: 6,
+      gap: 4,
+    },
+    capacityBarBg: {
+      height: 4,
+      backgroundColor: theme.colors.surfaceSubtle,
+      borderRadius: theme.radii.full,
+      overflow: 'hidden',
+    },
+    capacityBarFill: {
+      height: '100%',
+      backgroundColor: isAlmostFull ? theme.colors.solidAmber : theme.colors.brandPrimary,
+      borderRadius: theme.radii.full,
+    },
+    capacityText: {
+      fontFamily: theme.typography.interRegular,
+      fontSize: 12,
+      lineHeight: 16,
+      color: theme.colors.textMuted,
+    },
+  }), [theme, statusColor, isAlmostFull]);
+
+  const capacityRatio =
+    typeof registrationCount === 'number' && typeof maxCapacity === 'number' && maxCapacity > 0
+      ? Math.min(registrationCount / maxCapacity, 1)
+      : 0;
 
   return (
-    <TouchableOpacity style={[styles.card, style]} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity style={[styles.card, style]} onPress={onPress} activeOpacity={0.85}>
       {bannerUrl && (
-        <Image source={{ uri: bannerUrl }} style={styles.banner} resizeMode="cover" />
+        <View style={styles.bannerContainer}>
+          <Image source={{ uri: bannerUrl }} style={styles.banner} resizeMode="cover" />
+          <View style={styles.bannerScrim} />
+        </View>
       )}
-      <View style={styles.header}>
-        <Title style={styles.title}>{title}</Title>
-      </View>
-      <View style={styles.locationRow}>
-        <Body style={styles.location} numberOfLines={2}>{location}</Body>
-      </View>
-      <View style={styles.metaFooterRow}>
-        <Mono style={styles.dateTime}>{date} · {time}</Mono>
-        {statusText && <MonoLabel style={styles.statusLabel}>[{statusText}]</MonoLabel>}
+      <View style={styles.content}>
+        <View style={styles.header}>
+          <Text style={styles.title} numberOfLines={2}>{title}</Text>
+          {isAlmostFull && (
+            <View style={styles.almostFullBadge}>
+              <Text style={styles.almostFullText}>Almost full</Text>
+            </View>
+          )}
+        </View>
+        <Text style={styles.location} numberOfLines={1}>{location}</Text>
+
+        {typeof registrationCount === 'number' && (
+          <View style={styles.capacityContainer}>
+            {typeof maxCapacity === 'number' && maxCapacity > 0 ? (
+              <>
+                <View style={styles.capacityBarBg}>
+                  <View style={[styles.capacityBarFill, { width: `${capacityRatio * 100}%` }]} />
+                </View>
+                <Text style={styles.capacityText}>
+                  {registrationCount} / {maxCapacity} registered
+                </Text>
+              </>
+            ) : (
+              <Text style={styles.capacityText}>
+                {registrationCount} registered
+              </Text>
+            )}
+          </View>
+        )}
+
+        <View style={styles.metaFooterRow}>
+          <Text style={styles.dateTime}>{date} · {time}</Text>
+          {statusText && (
+            <View style={styles.statusBadge}>
+              <Text style={styles.statusLabel}>{statusText}</Text>
+            </View>
+          )}
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -103,6 +218,7 @@ interface ActiveAttendanceCardProps {
   onPressAction: () => void;
   onPressCard: () => void;
   bannerUrl?: string;
+  countdownText?: string;
 }
 
 export function ActiveAttendanceCard({
@@ -114,91 +230,130 @@ export function ActiveAttendanceCard({
   onPressAction,
   onPressCard,
   bannerUrl,
+  countdownText,
 }: ActiveAttendanceCardProps) {
   const theme = useAppTheme();
+  const isMarked = status === 'ATTENDANCE_MARKED';
 
   const styles = useMemo(() => StyleSheet.create({
     container: {
-      backgroundColor: theme.colors.surfaceContainerLowest,
+      backgroundColor: theme.colors.surface,
       borderWidth: 1,
-      borderColor: theme.colors.primary,
+      borderColor: isMarked ? theme.colors.badgeTextEmerald : theme.colors.brandPrimary,
+      borderRadius: theme.radii.xl,
+      ...(Platform.OS === 'ios' ? { borderCurve: 'continuous' as const } : {}),
       padding: theme.spacing.base,
       marginBottom: theme.spacing.xl,
-      gap: theme.spacing.md,
+      gap: theme.spacing.sm,
+      shadowColor: theme.colors.brandGlow,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 12,
+      elevation: 4,
     },
-    headerRow: {
+    topHeaderRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      gap: theme.spacing.sm,
-    },
-    title: {
-      flex: 1,
-    },
-    liveBadge: {
-      color: theme.colors.error,
-      flexShrink: 0,
-      marginTop: 2,
-    },
-    actionBtn: {
-      backgroundColor: status === 'ATTENDANCE_MARKED' ? theme.colors.surfaceContainerLowest : theme.colors.primary,
-      paddingVertical: theme.spacing.md,
       alignItems: 'center',
-      borderWidth: status === 'ATTENDANCE_MARKED' ? 1 : 0,
-      borderColor: theme.colors.outlineVariant,
     },
-    actionText: {
-      color: status === 'ATTENDANCE_MARKED' ? theme.colors.primary : theme.colors.onPrimary,
+    liveBeaconContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: isMarked ? theme.colors.badgeTintEmerald : theme.colors.badgeTintRed,
+      borderRadius: theme.radii.full,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
     },
-    locationRow: {
-      width: '100%',
+    beaconDot: {
+      width: 8,
+      height: 8,
+      borderRadius: theme.radii.full,
+      backgroundColor: isMarked ? theme.colors.solidEmerald : theme.colors.solidRed,
     },
-    location: {
-      color: theme.colors.onSurfaceVariant,
+    liveBadgeText: {
+      fontFamily: theme.typography.interBold,
+      fontSize: 12,
+      lineHeight: 16,
+      letterSpacing: 0.8,
+      textTransform: 'uppercase',
+      color: isMarked ? theme.colors.badgeTextEmerald : theme.colors.badgeTextRed,
+    },
+    countdownText: {
+      fontFamily: theme.typography.monoBold,
       fontSize: 13,
       lineHeight: 18,
+      fontVariant: ['tabular-nums'],
+      color: theme.colors.textPrimary,
     },
-    metaFooterRow: {
+    title: {
+      fontFamily: theme.typography.interBold,
+      fontSize: 18,
+      lineHeight: 24,
+      letterSpacing: -0.2,
+      color: theme.colors.textPrimary,
+      marginTop: 2,
+    },
+    location: {
+      fontFamily: theme.typography.interRegular,
+      fontSize: 14,
+      lineHeight: 20,
+      color: theme.colors.textSecondary,
+    },
+    metaRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
     },
     dateTime: {
-      fontSize: 11,
-      color: theme.colors.onSurface,
+      fontFamily: theme.typography.interRegular,
+      fontSize: 13,
+      lineHeight: 18,
+      color: theme.colors.textMuted,
     },
-    banner: {
-      width: '100%',
-      height: 140,
-      marginBottom: theme.spacing.md,
-      backgroundColor: theme.colors.surfaceContainerHighest,
+    actionBtn: {
+      backgroundColor: isMarked ? theme.colors.surfaceSubtle : theme.colors.brandPrimary,
+      paddingVertical: 12,
+      alignItems: 'center',
+      borderRadius: theme.radii.md,
+      borderWidth: isMarked ? 1 : 0,
+      borderColor: theme.colors.borderSubtle,
+      marginTop: theme.spacing.xs,
     },
-  }), [theme, status]);
+    actionText: {
+      fontFamily: theme.typography.interSemiBold,
+      fontSize: 15,
+      lineHeight: 20,
+      color: isMarked ? theme.colors.badgeTextEmerald : theme.colors.onSolidText,
+    },
+  }), [theme, isMarked]);
 
   return (
-    <TouchableOpacity style={styles.container} onPress={onPressCard} activeOpacity={0.7}>
-      {bannerUrl && (
-        <Image source={{ uri: bannerUrl }} style={styles.banner} resizeMode="cover" />
-      )}
-      <View style={styles.headerRow}>
-        <Title style={styles.title}>{title}</Title>
-        <MonoLabel style={styles.liveBadge}>[ LIVE NOW ]</MonoLabel>
+    <TouchableOpacity style={styles.container} onPress={onPressCard} activeOpacity={0.85}>
+      <View style={styles.topHeaderRow}>
+        <View style={styles.liveBeaconContainer}>
+          <View style={styles.beaconDot} />
+          <Text style={styles.liveBadgeText}>
+            {isMarked ? 'CHECKED IN' : 'LIVE RADAR'}
+          </Text>
+        </View>
+        {countdownText && !isMarked && (
+          <Text style={styles.countdownText}>{countdownText}</Text>
+        )}
       </View>
-      <View style={styles.locationRow}>
-        <Body style={styles.location} numberOfLines={2}>{location}</Body>
-      </View>
-      <View style={styles.metaFooterRow}>
-        <Mono style={styles.dateTime}>{date} · {time}</Mono>
-      </View>
-      <TouchableOpacity 
-        style={styles.actionBtn} 
-        onPress={status === 'SCAN_QR' ? onPressAction : undefined} 
+
+      <Text style={styles.title}>{title}</Text>
+      <Text style={styles.location} numberOfLines={1}>{location}</Text>
+      <Text style={styles.dateTime}>{date} · {time}</Text>
+
+      <TouchableOpacity
+        style={styles.actionBtn}
+        onPress={isMarked ? onPressCard : onPressAction}
         activeOpacity={0.8}
-        disabled={status === 'ATTENDANCE_MARKED'}
       >
-        <MonoLabel style={styles.actionText}>
-          {status === 'SCAN_QR' ? '[ MARK ATTENDANCE ]' : '[ ATTENDANCE MARKED ]'}
-        </MonoLabel>
+        <Text style={styles.actionText}>
+          {isMarked ? 'View check-in receipt' : 'Scan to mark attendance'}
+        </Text>
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -215,9 +370,12 @@ export function MatrixCard({ children, style }: MatrixCardProps) {
     <View
       style={[
         {
-          backgroundColor: theme.colors.surfaceContainerLow,
+          backgroundColor: theme.colors.surface,
           borderWidth: 1,
-          borderColor: theme.colors.outlineVariant,
+          borderColor: theme.colors.borderSubtle,
+          borderRadius: theme.radii.lg,
+          padding: theme.spacing.base,
+          ...(Platform.OS === 'ios' ? { borderCurve: 'continuous' as const } : {}),
         },
         style,
       ]}
@@ -241,9 +399,10 @@ export function LedgerRow({ label, value, isLast = false, valueColor, style }: L
     <View
       style={[
         {
-          padding: theme.spacing.sm,
+          paddingVertical: 10,
+          paddingHorizontal: theme.spacing.sm,
           borderBottomWidth: isLast ? 0 : 1,
-          borderBottomColor: theme.colors.outlineVariant,
+          borderBottomColor: theme.colors.borderSubtle,
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -251,13 +410,13 @@ export function LedgerRow({ label, value, isLast = false, valueColor, style }: L
         style,
       ]}
     >
-      <MonoLabel style={{ fontSize: 9, color: theme.colors.onSurfaceVariant }}>
+      <Text style={{ fontFamily: theme.typography.interRegular, fontSize: 13, lineHeight: 18, color: theme.colors.textSecondary }}>
         {label}
-      </MonoLabel>
+      </Text>
       {typeof value === 'string' ? (
-        <Mono style={{ fontSize: 11, color: valueColor || theme.colors.primary, fontFamily: theme.typography.monoMedium }}>
+        <Text style={{ fontFamily: theme.typography.monoMedium, fontSize: 13, lineHeight: 18, color: valueColor || theme.colors.brandText }}>
           {value}
-        </Mono>
+        </Text>
       ) : (
         value
       )}

@@ -18,7 +18,7 @@ import { Title, Body, MonoLabel, Mono, Display } from '../../../src/ui/core/Typo
 export default function MyDisputesScreen() {
   const router = useRouter();
   const theme = useAppTheme();
-  
+
   const {
     data,
     isLoading,
@@ -76,7 +76,7 @@ export default function MyDisputesScreen() {
       color: theme.colors.onSurface,
     },
     statusLabel: {
-      fontSize: 9,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
       letterSpacing: 0.5,
       marginTop: 2,
@@ -195,9 +195,9 @@ export default function MyDisputesScreen() {
   );
 
   return (
-    <MobileShell 
-      title="MY DISPUTES" 
-      showBackButton 
+    <MobileShell
+      title="MY DISPUTES"
+      showBackButton
       onBackPress={() => {
         if (router.canGoBack()) {
           router.back();

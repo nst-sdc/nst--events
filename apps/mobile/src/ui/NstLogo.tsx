@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: '#717487',
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '600',
     letterSpacing: 1,
     textTransform: 'uppercase',

@@ -127,7 +127,7 @@ export function TransferLeadershipModal({
               <MonoLabel style={{ color: theme.colors.primary, fontFamily: theme.typography.monoBold }}>
                 WARNING: IRREVERSIBLE ACTION
               </MonoLabel>
-              <Body style={{ color: theme.colors.onSurface, fontSize: 11 }}>
+              <Body style={{ color: theme.colors.onSurface, fontSize: 12 }}>
                 If you transfer leadership, you will become a regular member and yield control of the squad roster.
               </Body>
             </View>

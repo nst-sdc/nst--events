@@ -312,7 +312,7 @@ export default function TeamsScreen() {
           <View style={styles.headerCard}>
             <View style={styles.headerRow}>
               <View style={{ flex: 1, marginRight: 8 }}>
-                <MonoLabel style={{ color: theme.colors.primary, fontSize: 10 }}>
+                <MonoLabel style={{ color: theme.colors.primary, fontSize: 12 }}>
                   SQUAD HEADQUARTERS // {team.member_count} OPERATIVES
                 </MonoLabel>
                 <Title style={{ fontSize: 24, marginTop: 4 }}>{team.name.toUpperCase()}</Title>
@@ -333,7 +333,7 @@ export default function TeamsScreen() {
               <MonoLabel style={{ color: theme.colors.primary, fontFamily: theme.typography.monoBold }}>
                 ROSTER LOCKED
               </MonoLabel>
-              <Body style={{ color: theme.colors.onSurface, fontSize: 11 }}>
+              <Body style={{ color: theme.colors.onSurface, fontSize: 12 }}>
                 This event is locked. Squad rosters are in read-only mode and cannot be modified.
               </Body>
             </View>
@@ -345,7 +345,7 @@ export default function TeamsScreen() {
               <MonoLabel style={{ color: theme.colors.warning, fontFamily: theme.typography.monoBold }}>
                 BELOW MINIMUM REQUIRED SIZE
               </MonoLabel>
-              <Body style={{ color: theme.colors.onSurface, fontSize: 11 }}>
+              <Body style={{ color: theme.colors.onSurface, fontSize: 12 }}>
                 Additional operatives must enlist to validate your squad entry before check-in begins. Required: {minTeamSize} minimum.
               </Body>
             </View>
@@ -363,7 +363,7 @@ export default function TeamsScreen() {
               <View style={styles.specRow}>
                 <MonoLabel style={{ color: theme.colors.onSurfaceVariant }}>SQUAD IDENTIFIER</MonoLabel>
                 <TouchableOpacity onPress={handleCopySquadId} style={styles.copyBtn} activeOpacity={0.7}>
-                  <Mono numberOfLines={1} style={{ fontSize: 10, maxWidth: 180 }}>
+                  <Mono numberOfLines={1} style={{ fontSize: 12, maxWidth: 180 }}>
                     {team.id}
                   </Mono>
                 </TouchableOpacity>
@@ -416,12 +416,12 @@ export default function TeamsScreen() {
                         </Mono>
                         <View style={styles.memberBadges}>
                           {isMemberLeader && (
-                            <MonoLabel style={{ color: theme.colors.primary, fontSize: 9 }}>
+                            <MonoLabel style={{ color: theme.colors.primary, fontSize: 12 }}>
                               [LEADER]
                             </MonoLabel>
                           )}
                           {isCurrent && (
-                            <MonoLabel style={{ color: theme.colors.onSurfaceVariant, fontSize: 9 }}>
+                            <MonoLabel style={{ color: theme.colors.onSurfaceVariant, fontSize: 12 }}>
                               [YOU]
                             </MonoLabel>
                           )}
@@ -436,7 +436,7 @@ export default function TeamsScreen() {
                         style={{ padding: 6 }}
                         testID={`btn-remove-member-${member.user_id}`}
                       >
-                        <MonoLabel style={{ color: theme.colors.error, fontSize: 10 }}>[REMOVE]</MonoLabel>
+                        <MonoLabel style={{ color: theme.colors.error, fontSize: 12 }}>[REMOVE]</MonoLabel>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -482,7 +482,7 @@ export default function TeamsScreen() {
               </MonoLabel>
             </View>
 
-            <Body style={{ color: theme.colors.onSurfaceVariant, fontSize: 11 }}>
+            <Body style={{ color: theme.colors.onSurfaceVariant, fontSize: 12 }}>
               Abandoning the squad will vacate your reserved seat and return you to unregistered status.
             </Body>
 
@@ -573,7 +573,7 @@ export default function TeamsScreen() {
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
             <Title style={{ fontSize: 18 }}>INVITE OPERATIVE</Title>
-            <Body style={{ color: theme.colors.onSurfaceVariant, fontSize: 11 }}>
+            <Body style={{ color: theme.colors.onSurfaceVariant, fontSize: 12 }}>
               Enter the student ID or institutional account identifier to dispatch an official squad invitation.
             </Body>
 

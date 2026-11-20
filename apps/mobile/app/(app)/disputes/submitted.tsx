@@ -13,7 +13,7 @@ import { Title, Body, MonoLabel, Mono, Display } from '../../../src/ui/core/Typo
 export default function DisputeSubmittedScreen() {
   const router = useRouter();
   const theme = useAppTheme();
-  
+
   const params = useLocalSearchParams<{
     disputeId?: string;
     eventTitle?: string;

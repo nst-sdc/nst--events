@@ -17,7 +17,7 @@ import { Display, Body, MonoLabel, Mono } from '../../../src/ui/core/Typography'
 export default function AttendanceHistoryScreen() {
   const router = useRouter();
   const theme = useAppTheme();
-  
+
   const {
     data,
     isLoading,
@@ -144,8 +144,8 @@ export default function AttendanceHistoryScreen() {
   );
 
   const recordCount = records.length;
-  const recordCountText = recordCount === 1 
-    ? '01 RECORD' 
+  const recordCountText = recordCount === 1
+    ? '01 RECORD'
     : `${recordCount < 10 ? '0' + recordCount : recordCount} RECORDS`;
 
   const renderHeader = () => (

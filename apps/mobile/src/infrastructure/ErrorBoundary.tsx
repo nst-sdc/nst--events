@@ -52,9 +52,9 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
           <Text style={styles.message}>
             {this.state.error?.message || 'An unexpected error occurred.'}
           </Text>
-          <Button 
-            title="TRY AGAIN" 
-            onPress={() => this.setState({ hasError: false, error: null })} 
+          <Button
+            title="TRY AGAIN"
+            onPress={() => this.setState({ hasError: false, error: null })}
             variant="primary"
             style={styles.retryBtn}
           />

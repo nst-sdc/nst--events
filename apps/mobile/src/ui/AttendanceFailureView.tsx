@@ -184,7 +184,7 @@ export const AttendanceFailureView: React.FC<AttendanceFailureProps> = ({
             <MonoLabel style={styles.codeSubtitle}>ERROR: {errorCode}</MonoLabel>
           )}
           <Title style={styles.title}>{details.title}</Title>
-          
+
           <View style={styles.messageBox}>
             <Body style={styles.reasonText}>{details.reason}</Body>
             <Body style={styles.actionText}>{details.action}</Body>

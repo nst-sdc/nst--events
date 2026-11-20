@@ -49,7 +49,7 @@ export const AppUpdateNotifier: React.FC = () => {
         },
         badgeText: {
           fontFamily: theme.typography.monoBold,
-          fontSize: 10,
+          fontSize: 12,
           color: theme.colors.onPrimary,
           letterSpacing: 0.8,
         },
@@ -91,7 +91,7 @@ export const AppUpdateNotifier: React.FC = () => {
         },
         actionButtonText: {
           fontFamily: theme.typography.monoBold,
-          fontSize: 11,
+          fontSize: 12,
           color: theme.colors.onPrimary,
           letterSpacing: 0.5,
         },
@@ -106,7 +106,7 @@ export const AppUpdateNotifier: React.FC = () => {
         },
         dismissActionText: {
           fontFamily: theme.typography.monoBold,
-          fontSize: 11,
+          fontSize: 12,
           color: theme.colors.onSurface,
         },
       }),

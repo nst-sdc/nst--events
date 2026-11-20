@@ -1,10 +1,12 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, StatusBar, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
+import { View, StyleSheet, StatusBar, TouchableOpacity, ScrollView, Text, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useAppTheme } from '../../store/theme-store';
-import { MonoLabel } from './Typography';
+import { getContentBottomInset } from '../theme';
 import { useNotificationInbox } from '../../hooks/use-notification-inbox';
+import { haptics } from '../../lib/haptics';
 
 interface MobileShellProps {
   children: React.ReactNode;
@@ -18,10 +20,10 @@ interface MobileShellProps {
   contentContainerStyle?: any;
 }
 
-export function MobileShell({ 
-  children, 
-  title, 
-  showBackButton = false, 
+export function MobileShell({
+  children,
+  title,
+  showBackButton = false,
   onBackPress,
   scrollable = true,
   refreshControl,
@@ -35,6 +37,7 @@ export function MobileShell({
   const { unreadCount } = useNotificationInbox();
 
   const handleBack = () => {
+    void haptics.selection();
     if (onBackPress) {
       onBackPress();
     } else if (router.canGoBack()) {
@@ -47,15 +50,15 @@ export function MobileShell({
   const styles = useMemo(() => StyleSheet.create({
     safeArea: {
       flex: 1,
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.canvas,
     },
     header: {
-      paddingVertical: 12,
+      paddingVertical: 10,
       paddingHorizontal: theme.spacing.base,
       flexDirection: 'row',
       alignItems: 'center',
       borderBottomWidth: 1,
-      borderBottomColor: theme.colors.borderHairline,
+      borderBottomColor: theme.colors.borderSubtle,
       backgroundColor: theme.colors.surface,
       zIndex: 10,
     },
@@ -65,38 +68,49 @@ export function MobileShell({
       justifyContent: 'center',
       minHeight: 48,
       minWidth: 48,
-      marginRight: theme.spacing.md,
+      marginRight: theme.spacing.sm,
     },
     backText: {
-      color: theme.colors.primary,
+      color: theme.colors.brandText,
+      fontFamily: theme.typography.monoMedium,
+      fontSize: 13,
+      letterSpacing: 0.5,
     },
     titleContainer: {
       flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
     },
     brandTitle: {
-      color: theme.colors.onSurfaceVariant,
+      color: theme.colors.textPrimary,
+      fontFamily: theme.typography.interBold,
+      fontSize: 17,
+      letterSpacing: -0.2,
     },
     notifBtn: {
       paddingVertical: 6,
-      paddingHorizontal: 10,
+      paddingHorizontal: 12,
       minHeight: 36,
+      borderRadius: theme.radii.full,
       justifyContent: 'center',
       alignItems: 'center',
       borderWidth: 1,
-      borderColor: theme.colors.borderHairline,
-      backgroundColor: theme.colors.surfaceContainerLow,
+      borderColor: theme.colors.borderSubtle,
+      backgroundColor: theme.colors.surfaceSubtle,
     },
     notifBtnActive: {
-      borderColor: theme.colors.primary,
-      backgroundColor: theme.colors.surface,
+      borderColor: theme.colors.brandPrimary,
+      backgroundColor: theme.colors.brandSubtle,
     },
     notifBadge: {
-      color: theme.colors.onSurfaceVariant,
-      fontSize: 10,
+      color: theme.colors.textSecondary,
+      fontFamily: theme.typography.interMedium,
+      fontSize: 12,
     },
     notifBadgeActive: {
-      color: theme.colors.primary,
-      fontSize: 10,
+      color: theme.colors.brandPrimary,
+      fontFamily: theme.typography.interSemiBold,
+      fontSize: 12,
     },
     container: {
       flex: 1,
@@ -115,12 +129,12 @@ export function MobileShell({
 
   return (
     <View style={[styles.safeArea, { paddingTop: Math.max(insets.top, 8) }]}>
-      <StatusBar 
-        barStyle={theme.mode === 'light' ? 'dark-content' : 'light-content'} 
-        backgroundColor="transparent" 
-        translucent 
+      <StatusBar
+        barStyle={theme.mode === 'light' ? 'dark-content' : 'light-content'}
+        backgroundColor="transparent"
+        translucent
       />
-      
+
       <View style={styles.header}>
         {showBackButton ? (
           <TouchableOpacity
@@ -131,36 +145,39 @@ export function MobileShell({
             accessibilityRole="button"
             accessibilityLabel="Go back"
           >
-            <MonoLabel style={styles.backText}>← BACK</MonoLabel>
+            <Text style={styles.backText}>← BACK</Text>
           </TouchableOpacity>
         ) : null}
-        
+
         <View style={styles.titleContainer}>
-          <MonoLabel style={styles.brandTitle}>
-            {showBackButton ? `//   ${title.toUpperCase()}` : `NST EVENTS // ${title.toUpperCase()}`}
-          </MonoLabel>
+          <Text numberOfLines={1} style={styles.brandTitle}>
+            {title}
+          </Text>
         </View>
 
         {rightAction ? (
           rightAction
         ) : showNotificationBell && !isNotificationsScreen ? (
           <TouchableOpacity
-            onPress={() => router.push('/(app)/notifications')}
+            onPress={() => {
+              void haptics.selection();
+              router.push('/(app)/notifications');
+            }}
             style={[styles.notifBtn, unreadCount > 0 && styles.notifBtnActive]}
             activeOpacity={0.8}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             accessibilityRole="button"
             accessibilityLabel="Notifications inbox"
           >
-            <MonoLabel style={unreadCount > 0 ? styles.notifBadgeActive : styles.notifBadge}>
+            <Text style={unreadCount > 0 ? styles.notifBadgeActive : styles.notifBadge}>
               {unreadCount > 0 ? `[INBOX: ${unreadCount}]` : '[INBOX]'}
-            </MonoLabel>
+            </Text>
           </TouchableOpacity>
         ) : null}
       </View>
 
       {scrollable ? (
-        <ScrollView 
+        <ScrollView
           style={styles.container}
           contentContainerStyle={contentStyle}
           showsVerticalScrollIndicator={false}

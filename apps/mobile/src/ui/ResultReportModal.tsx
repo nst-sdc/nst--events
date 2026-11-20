@@ -100,7 +100,7 @@ export function ResultReportModal({
     },
     inputLabel: {
       color: theme.colors.outline,
-      fontSize: 10,
+      fontSize: 12,
       marginBottom: 4,
     },
     textInput: {
@@ -124,7 +124,7 @@ export function ResultReportModal({
     },
     errorText: {
       color: theme.colors.error,
-      fontSize: 11,
+      fontSize: 12,
       fontFamily: theme.typography.monoMedium,
     },
     successBox: {
@@ -158,7 +158,7 @@ export function ResultReportModal({
           <View style={styles.headerRow}>
             <View style={styles.titleRow}>
               <MaterialIcons name="flag" size={18} color={theme.colors.primary} />
-              <MonoLabel style={{ color: theme.colors.primary, fontSize: 11 }}>
+              <MonoLabel style={{ color: theme.colors.primary, fontSize: 12 }}>
                 REPORT INACCURACY // DISPUTE
               </MonoLabel>
             </View>

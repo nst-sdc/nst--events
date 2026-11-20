@@ -12,15 +12,15 @@ interface AttendanceHistoryRowProps {
 
 export const AttendanceHistoryRow: React.FC<AttendanceHistoryRowProps> = ({ item, onPress }) => {
   const theme = useAppTheme();
-  
+
   const eventTitle = item.session?.event?.title || item.session?.title || 'GENERAL ATTENDANCE';
   const sessionTitle = item.session?.title || '';
-  
+
   const formattedDate = new Date(item.markedAt).toLocaleDateString('en-US', {
     month: 'short',
     day: '2-digit',
   }).toUpperCase();
-  
+
   const formattedTime = new Date(item.markedAt).toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
@@ -61,11 +61,11 @@ export const AttendanceHistoryRow: React.FC<AttendanceHistoryRowProps> = ({ item
       marginBottom: 4,
     },
     sessionMeta: {
-      fontSize: 10,
+      fontSize: 12,
       marginBottom: 4,
     },
     dateText: {
-      fontSize: 10,
+      fontSize: 12,
     },
     bottomRow: {
       flexDirection: 'row',

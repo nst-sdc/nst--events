@@ -160,7 +160,7 @@ export function StudentCalendarView({
           alignItems: 'center',
         },
         weekDayLabel: {
-          fontSize: 10,
+          fontSize: 12,
           color: theme.colors.onSurfaceVariant,
         },
         grid: {

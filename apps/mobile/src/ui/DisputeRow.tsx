@@ -12,7 +12,7 @@ interface DisputeRowProps {
 
 export const DisputeRow: React.FC<DisputeRowProps> = ({ item, onPress }) => {
   const theme = useAppTheme();
-  
+
   const eventTitle = item.session?.event?.title || item.session?.title || `DISPUTE #${item.id.slice(0, 8).toUpperCase()}`;
   const formattedDate = new Date(item.createdAt).toLocaleDateString('en-US', {
     month: 'short',

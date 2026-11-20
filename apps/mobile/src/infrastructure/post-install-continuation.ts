@@ -23,7 +23,7 @@ export interface PostInstallResolutionResult {
 
 /**
  * Resolves the event registration target from Google Play Install Referrer.
- * 
+ *
  * Reliability & Fault-Tolerance Guarantees:
  * 1. Replay Prevention: Exits immediately if the referrer was already consumed.
  * 2. Crash Resilience: If a destination was previously validated and persisted, it is immediately

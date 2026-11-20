@@ -22,7 +22,7 @@ export const isSameCalendarDay = (d1: Date, d2: Date): boolean => {
 
 /**
  * Derives whether an event is ONGOING, UPCOMING, or PAST.
- * 
+ *
  * Rules:
  * 1. If an event has an active attendance session, it MUST be surfaced in ongoing/active.
  * 2. If the event's endTime has already passed (and no active session), it is PAST.

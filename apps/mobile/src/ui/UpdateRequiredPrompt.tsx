@@ -84,7 +84,7 @@ export const UpdateRequiredPrompt: React.FC<UpdateRequiredPromptProps> = ({
         },
         badgeText: {
           fontFamily: theme.typography.monoBold,
-          fontSize: 11,
+          fontSize: 12,
           color: theme.colors.onErrorContainer,
           letterSpacing: 1,
         },

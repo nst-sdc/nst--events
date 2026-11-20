@@ -1,7 +1,6 @@
-import React, { useMemo } from 'react';
-import { View, TextInput, StyleSheet, TextInputProps } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, TextInput, StyleSheet, TextInputProps, Text, Platform } from 'react-native';
 import { useAppTheme } from '../../store/theme-store';
-import { MonoLabel, Mono } from './Typography';
 
 interface TextFieldProps extends TextInputProps {
   label: string;
@@ -10,56 +9,104 @@ interface TextFieldProps extends TextInputProps {
   helperText?: string;
 }
 
-export function TextField({ label, required, error, helperText, style, ...props }: TextFieldProps) {
+export function TextField({
+  label,
+  required,
+  error,
+  helperText,
+  style,
+  onFocus,
+  onBlur,
+  ...props
+}: TextFieldProps) {
   const theme = useAppTheme();
+  const [isFocused, setIsFocused] = useState(false);
 
   const styles = useMemo(() => StyleSheet.create({
+    container: {
+      gap: theme.spacing.xs,
+    },
     label: {
-      fontSize: 11,
-      color: theme.colors.onSurfaceVariant,
-      letterSpacing: 1,
-      textTransform: 'uppercase',
+      fontFamily: theme.typography.interMedium,
+      fontSize: 13,
+      lineHeight: 18,
+      color: theme.colors.textSecondary,
     },
     input: {
       borderWidth: 1,
-      borderColor: theme.colors.outlineVariant,
-      backgroundColor: theme.colors.surfaceContainerLowest,
-      color: theme.colors.onSurface,
-      fontFamily: theme.typography.monoRegular,
-      fontSize: 14,
+      borderColor: theme.colors.borderInput,
+      backgroundColor: theme.colors.surfaceSubtle,
+      color: theme.colors.textPrimary,
+      fontFamily: theme.typography.interRegular,
+      fontSize: 15,
+      lineHeight: 22,
       paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.md,
-      minHeight: theme.spacing.touchMin,
+      paddingVertical: 12,
+      minHeight: 48,
+      borderRadius: theme.radii.md,
+      ...(Platform.OS === 'ios' ? { borderCurve: 'continuous' as const } : {}),
+    },
+    inputFocused: {
+      borderColor: theme.colors.focusBorder,
+      borderWidth: 2,
+      paddingHorizontal: theme.spacing.md - 1, // Compensate for 2px border
+      paddingVertical: 11,
     },
     inputError: {
-      borderColor: theme.colors.error,
+      borderColor: theme.colors.errorBorder,
+      borderWidth: 2,
+      paddingHorizontal: theme.spacing.md - 1,
+      paddingVertical: 11,
     },
     error: {
-      fontSize: 10,
-      color: theme.colors.error,
+      fontFamily: theme.typography.interRegular,
+      fontSize: 12,
+      lineHeight: 16,
+      color: theme.colors.errorText,
     },
     helper: {
-      fontSize: 10,
-      color: theme.colors.outline,
+      fontFamily: theme.typography.interRegular,
+      fontSize: 12,
+      lineHeight: 16,
+      color: theme.colors.textMuted,
     },
   }), [theme]);
 
+  const handleFocus = (e: any) => {
+    setIsFocused(true);
+    onFocus?.(e);
+  };
+
+  const handleBlur = (e: any) => {
+    setIsFocused(false);
+    onBlur?.(e);
+  };
+
   return (
-    <View style={{ gap: theme.spacing.xs }}>
-      <MonoLabel style={styles.label}>
+    <View style={styles.container}>
+      <Text style={styles.label}>
         {label}
         {required ? ' *' : ''}
-      </MonoLabel>
+      </Text>
       <TextInput
-        placeholderTextColor={theme.colors.outline}
-        style={[styles.input, !!error && styles.inputError, style]}
+        placeholderTextColor={theme.colors.placeholderText}
+        style={[
+          styles.input,
+          isFocused && styles.inputFocused,
+          !!error && styles.inputError,
+          style,
+        ]}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         {...props}
       />
       {error ? (
-        <Mono style={styles.error}>{error}</Mono>
+        <Text style={styles.error}>{error}</Text>
       ) : helperText ? (
-        <Mono style={styles.helper}>{helperText}</Mono>
+        <Text style={styles.helper}>{helperText}</Text>
       ) : null}
     </View>
   );
 }
+
+export default TextField;

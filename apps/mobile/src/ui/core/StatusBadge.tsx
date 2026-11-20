@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useAppTheme } from '../../store/theme-store';
-import { MonoLabel } from './Typography';
 
 interface StatusBadgeProps {
   status: string;
@@ -13,53 +12,59 @@ export function StatusBadge({ status, type = 'default' }: StatusBadgeProps) {
 
   const styles = useMemo(() => StyleSheet.create({
     badge: {
-      paddingHorizontal: 8,
+      paddingHorizontal: 10,
       paddingVertical: 4,
+      borderRadius: theme.radii.full,
       borderWidth: 1,
       alignSelf: 'flex-start',
+      flexDirection: 'row',
+      alignItems: 'center',
     },
     text: {
-      fontSize: 9, // Slightly smaller than standard MonoLabel
+      fontFamily: theme.typography.interSemiBold,
+      fontSize: 12,
+      lineHeight: 16,
+      letterSpacing: 0.2,
     },
-    
+
     defaultContainer: {
-      backgroundColor: theme.colors.surfaceContainerHighest,
-      borderColor: theme.colors.outlineVariant,
+      backgroundColor: theme.colors.surfaceSubtle,
+      borderColor: theme.colors.borderSubtle,
     },
     defaultText: {
-      color: theme.colors.onSurfaceVariant,
+      color: theme.colors.textSecondary,
     },
 
     successContainer: {
-      backgroundColor: theme.colors.surface,
-      borderColor: theme.colors.success,
+      backgroundColor: theme.colors.badgeTintEmerald,
+      borderColor: theme.colors.badgeTextEmerald,
     },
     successText: {
-      color: theme.colors.success,
+      color: theme.colors.badgeTextEmerald,
     },
 
     warningContainer: {
-      backgroundColor: theme.colors.surface,
-      borderColor: theme.colors.warning,
+      backgroundColor: theme.colors.badgeTintAmber,
+      borderColor: theme.colors.badgeTextAmber,
     },
     warningText: {
-      color: theme.colors.warning,
+      color: theme.colors.badgeTextAmber,
     },
 
     errorContainer: {
-      backgroundColor: theme.colors.errorContainer,
-      borderColor: theme.colors.error,
+      backgroundColor: theme.colors.badgeTintRed,
+      borderColor: theme.colors.badgeTextRed,
     },
     errorText: {
-      color: theme.colors.onErrorContainer,
+      color: theme.colors.badgeTextRed,
     },
 
     infoContainer: {
-      backgroundColor: theme.colors.surface,
-      borderColor: theme.colors.secondary,
+      backgroundColor: theme.colors.badgeTintCobalt,
+      borderColor: theme.colors.badgeTextCobalt,
     },
     infoText: {
-      color: theme.colors.secondary,
+      color: theme.colors.badgeTextCobalt,
     }
   }), [theme]);
 
@@ -85,11 +90,9 @@ export function StatusBadge({ status, type = 'default' }: StatusBadgeProps) {
       break;
   }
 
-  const formattedStatus = status.startsWith('[') && status.endsWith(']') ? status : `[${status}]`;
-
   return (
     <View style={[styles.badge, containerStyle]}>
-      <MonoLabel style={[styles.text, textStyle]}>{formattedStatus}</MonoLabel>
+      <Text style={[styles.text, textStyle]}>{status}</Text>
     </View>
   );
 }

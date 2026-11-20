@@ -454,9 +454,9 @@ export default function SettingsScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <StatusBadge status="[LOGOUT CONFIRMATION]" type="error" />
-            
+
             <Title style={styles.modalTitle}>END ACTIVE SESSION?</Title>
-            
+
             <Body style={styles.modalBody}>
               Are you sure you want to end your active student session on this device? You will need your institutional Google account to log back in.
             </Body>

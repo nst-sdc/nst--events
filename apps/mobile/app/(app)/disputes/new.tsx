@@ -11,6 +11,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
 import { useAppTheme } from '../../../src/store/theme-store';
 import { StatusBadge } from '../../../src/ui/core/StatusBadge';
 import { Button } from '../../../src/ui/Button';
@@ -19,11 +20,15 @@ import { useAttendanceHistory } from '../../../src/hooks/use-attendance-history'
 import { MobileShell } from '../../../src/ui/core/MobileShell';
 import { Title, Body, MonoLabel, Mono, Display } from '../../../src/ui/core/Typography';
 import { ActivityIndicator } from '../../../src/ui/core/ActivityIndicator';
+import { apiClient } from '../../../src/infrastructure/api';
+import { evaluateDisputeDeadline, mapDisputeSubmissionError } from '../../../src/lib/dispute-deadline';
+import { serverClock } from '../../../src/lib/server-clock';
+import { haptics } from '../../../src/lib/haptics';
 
 export default function SubmitDisputeScreen() {
   const router = useRouter();
   const theme = useAppTheme();
-  
+
   const params = useLocalSearchParams<{
     sessionId?: string;
     eventId?: string;
@@ -31,29 +36,40 @@ export default function SubmitDisputeScreen() {
   }>();
 
   const [selectedSessionId, setSelectedSessionId] = useState<string>(params.sessionId || '');
+  const [selectedEventId, setSelectedEventId] = useState<string>(params.eventId || '');
   const [selectedTitle, setSelectedTitle] = useState<string>(params.title || '');
 
   const sessionId = selectedSessionId;
   const eventTitle = selectedTitle || params.title || 'EVENT ATTENDANCE';
 
-  // If no session ID was provided via params, check attendance records for eligible absent sessions
+  // If no session ID was provided via params, check attendance records for disputable sessions
   const { data: attendanceData, isLoading: isLoadingAttendance } = useAttendanceHistory(undefined, {
     enabled: !selectedSessionId,
   });
 
   const allRecords = attendanceData?.pages.flatMap((page) => page.data) || [];
 
-  // Eligible absent sessions: where attendance wasn't marked or is ABSENT, and within 24h
+  // Do NOT filter out sessions client-side using session.endTime: the backend RPC enforces
+  // the authoritative window (event.end_time + 24 hours; SQLSTATE U0048: DISPUTE_WINDOW_EXPIRED).
   const eligibleRecords = useMemo(() => {
-    const now = Date.now();
-    return allRecords.filter((r) => {
-      if (r.status === 'PRESENT' || r.status === 'EXCUSED') return false;
-      const endTime = r.session?.endTime || r.session?.closeAt;
-      if (!endTime) return true;
-      const expireTime = new Date(endTime).getTime() + 24 * 60 * 60 * 1000;
-      return now <= expireTime;
-    });
+    return allRecords.filter((r) => r.status !== 'PRESENT' && r.status !== 'EXCUSED');
   }, [allRecords]);
+
+  // Fetch event detail when eventId is known so we can read verified event.endTime / event.end_time
+  const { data: eventDetail } = useQuery<any>({
+    queryKey: ['events', selectedEventId],
+    queryFn: () => apiClient(`/v1/events/${selectedEventId}`),
+    enabled: !!selectedEventId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const verifiedEventEndTime: string | null =
+    eventDetail?.endTime || eventDetail?.end_time || null;
+
+  const deadlineInfo = useMemo(
+    () => evaluateDisputeDeadline(verifiedEventEndTime, serverClock.getServerNowMs()),
+    [verifiedEventEndTime]
+  );
 
   const [reason, setReason] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -73,6 +89,7 @@ export default function SubmitDisputeScreen() {
       },
       {
         onSuccess: (data) => {
+          void haptics.notifySuccess();
           router.replace({
             pathname: '/(app)/disputes/submitted',
             params: {
@@ -83,21 +100,8 @@ export default function SubmitDisputeScreen() {
           });
         },
         onError: (err: any) => {
-          let userMsg = err.message || 'Failed to submit dispute claim.';
-
-          if (userMsg.includes('ATTENDANCE_ALREADY_RECORDED') || userMsg.includes('U0054')) {
-            userMsg = 'A dispute or attendance record for this session has already been submitted.';
-          } else if (userMsg.includes('DISPUTE_WINDOW_EXPIRED') || userMsg.includes('U0048')) {
-            userMsg = 'The 24-hour dispute window for this session has expired.';
-          } else if (userMsg.includes('SESSION_CLOSED') || userMsg.includes('U0049')) {
-            userMsg = 'This attendance session is closed or no longer accepts claims.';
-          } else if (userMsg.includes('NOT_REGISTERED') || userMsg.includes('U0003')) {
-            userMsg = 'You are not registered for this event.';
-          } else if (userMsg.includes('P2002') || userMsg.includes('23505')) {
-            userMsg = 'A dispute for this session has already been submitted.';
-          }
-
-          setErrorMessage(userMsg);
+          void haptics.notifyError();
+          setErrorMessage(mapDisputeSubmissionError(err));
         },
       }
     );
@@ -135,12 +139,18 @@ export default function SubmitDisputeScreen() {
       color: theme.colors.onSurface,
       lineHeight: 20,
     },
+    deadlineNotice: {
+      fontSize: 12,
+      lineHeight: 16,
+      color: theme.colors.onSurfaceVariant,
+      marginTop: 6,
+    },
     changeSessionBtn: {
       marginTop: 8,
     },
     changeSessionText: {
       color: theme.colors.primary,
-      fontSize: 11,
+      fontSize: 12,
       fontFamily: theme.typography.monoBold,
     },
     formContainer: {
@@ -158,7 +168,7 @@ export default function SubmitDisputeScreen() {
       letterSpacing: 0.5,
     },
     charCount: {
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
     },
     textArea: {
@@ -172,7 +182,7 @@ export default function SubmitDisputeScreen() {
       height: 140,
     },
     validationText: {
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.error,
       marginTop: 6,
     },
@@ -191,7 +201,7 @@ export default function SubmitDisputeScreen() {
       gap: 10,
     },
     disclaimerText: {
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
       textAlign: 'center',
     },
@@ -243,7 +253,7 @@ export default function SubmitDisputeScreen() {
       alignItems: 'center',
     },
     eligibleCardId: {
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
     },
     eligibleCardTitle: {
@@ -251,12 +261,12 @@ export default function SubmitDisputeScreen() {
       color: theme.colors.onSurface,
     },
     eligibleCardDate: {
-      fontSize: 11,
+      fontSize: 12,
       color: theme.colors.outline,
     },
     selectBtnText: {
       color: theme.colors.primary,
-      fontSize: 11,
+      fontSize: 12,
       fontFamily: theme.typography.monoBold,
       marginTop: 4,
     },
@@ -303,6 +313,7 @@ export default function SubmitDisputeScreen() {
                 style={styles.eligibleCard}
                 onPress={() => {
                   setSelectedSessionId(item.sessionId);
+                  setSelectedEventId(item.session?.eventId || '');
                   setSelectedTitle(item.session?.event?.title || item.session?.title || 'EVENT ATTENDANCE');
                 }}
                 activeOpacity={0.8}
@@ -369,9 +380,9 @@ export default function SubmitDisputeScreen() {
   }
 
   return (
-    <MobileShell 
-      title="SUBMIT DISPUTE" 
-      showBackButton 
+    <MobileShell
+      title="SUBMIT DISPUTE"
+      showBackButton
       onBackPress={() => {
         if (router.canGoBack()) {
           router.back();
@@ -394,8 +405,9 @@ export default function SubmitDisputeScreen() {
                 <StatusBadge status={`#${sessionId.slice(0, 8).toUpperCase()}`} type="default" />
               </View>
               <Title style={styles.eventTitle}>{eventTitle}</Title>
+              <Mono style={styles.deadlineNotice}>{deadlineInfo.message}</Mono>
               {!params.sessionId && (
-                <TouchableOpacity onPress={() => setSelectedSessionId('')} style={styles.changeSessionBtn}>
+                <TouchableOpacity onPress={() => { setSelectedSessionId(''); setSelectedEventId(''); }} style={styles.changeSessionBtn}>
                   <MonoLabel style={styles.changeSessionText}>← SELECT DIFFERENT SESSION</MonoLabel>
                 </TouchableOpacity>
               )}

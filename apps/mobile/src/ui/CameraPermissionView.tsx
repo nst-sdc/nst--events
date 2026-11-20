@@ -50,7 +50,7 @@ export const CameraPermissionView: React.FC<CameraPermissionViewProps> = ({
       backgroundColor: theme.colors.surfaceContainerHigh,
       paddingHorizontal: 8,
       paddingVertical: 4,
-      borderRadius: 0,
+      borderRadius: theme.radii.sm,
     },
     pingDot: {
       width: 6,
@@ -133,7 +133,7 @@ export const CameraPermissionView: React.FC<CameraPermissionViewProps> = ({
     },
     mainBtn: {
       height: 52,
-      borderRadius: 0,
+      borderRadius: theme.radii.sm,
     },
     settingsBtn: {
       alignItems: 'center',
@@ -214,7 +214,7 @@ export const CameraPermissionView: React.FC<CameraPermissionViewProps> = ({
           >
             <MonoLabel style={{ color: theme.colors.onPrimary }}>GRANT CAMERA ACCESS</MonoLabel>
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.settingsBtn}
             onPress={() => Linking.openSettings()}
           >

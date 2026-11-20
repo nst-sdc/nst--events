@@ -268,7 +268,7 @@ export default function LoginGatewayScreen() {
     },
     headerMonoText: {
       fontFamily: theme.typography.monoBold,
-      fontSize: 10,
+      fontSize: 12,
       letterSpacing: 0.8,
       color: theme.colors.primary,
       textTransform: 'uppercase',
@@ -277,11 +277,11 @@ export default function LoginGatewayScreen() {
       backgroundColor: theme.colors.surfaceContainerHigh,
       paddingHorizontal: 8,
       paddingVertical: 2,
-      borderRadius: 0,
+      borderRadius: theme.radii.sm,
     },
     statusPillText: {
       fontFamily: theme.typography.monoBold,
-      fontSize: 10,
+      fontSize: 12,
       letterSpacing: 0.8,
       color: theme.colors.primary,
     },
@@ -297,13 +297,13 @@ export default function LoginGatewayScreen() {
     },
     sectionTagText: {
       fontFamily: theme.typography.monoBold,
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.secondary,
       letterSpacing: 0.8,
     },
     sectionTagCode: {
       fontFamily: theme.typography.monoMedium,
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
     },
     headline: {
@@ -341,12 +341,12 @@ export default function LoginGatewayScreen() {
     },
     matrixHeaderTag: {
       fontFamily: theme.typography.monoBold,
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
     },
     matrixHeaderStatus: {
       fontFamily: theme.typography.monoBold,
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.secondary,
     },
     matrixGrid: {
@@ -362,18 +362,18 @@ export default function LoginGatewayScreen() {
     },
     matrixItemLabel: {
       fontFamily: theme.typography.monoBold,
-      fontSize: 9,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
     },
     matrixItemValue: {
       fontFamily: theme.typography.monoBold,
-      fontSize: 11,
+      fontSize: 12,
       color: theme.colors.primary,
       marginTop: 2,
     },
     matrixItemValueActive: {
       fontFamily: theme.typography.monoBold,
-      fontSize: 11,
+      fontSize: 12,
       color: theme.colors.secondary,
       marginTop: 2,
     },
@@ -386,7 +386,7 @@ export default function LoginGatewayScreen() {
     },
     errorTitle: {
       fontFamily: theme.typography.monoBold,
-      fontSize: 11,
+      fontSize: 12,
       color: theme.colors.onErrorContainer,
     },
     errorBody: {
@@ -403,7 +403,7 @@ export default function LoginGatewayScreen() {
     },
     errorBtnText: {
       fontFamily: theme.typography.interSemiBold,
-      fontSize: 11,
+      fontSize: 12,
       color: theme.colors.onError,
     },
     stateBActionContainer: {
@@ -416,7 +416,7 @@ export default function LoginGatewayScreen() {
     },
     contactBtnText: {
       fontFamily: theme.typography.interMedium,
-      fontSize: 11,
+      fontSize: 12,
       color: theme.colors.onErrorContainer,
       textDecorationLine: 'underline',
     },
@@ -432,13 +432,13 @@ export default function LoginGatewayScreen() {
     },
     noticeText: {
       fontFamily: theme.typography.monoBold,
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
       textTransform: 'uppercase',
     },
     noticeSub: {
       fontFamily: theme.typography.monoMedium,
-      fontSize: 9,
+      fontSize: 12,
       color: theme.colors.outline,
       textTransform: 'uppercase',
     },
@@ -446,8 +446,8 @@ export default function LoginGatewayScreen() {
 
   return (
     <View style={[styles.safeArea, { paddingTop: topInset, paddingBottom: bottomInset }]}>
-      <StatusBar 
-        barStyle={theme.mode === 'dark' ? 'light-content' : 'dark-content'} 
+      <StatusBar
+        barStyle={theme.mode === 'dark' ? 'light-content' : 'dark-content'}
         backgroundColor="transparent"
         translucent={Platform.OS === 'android'}
       />
@@ -577,7 +577,7 @@ export default function LoginGatewayScreen() {
               accessibilityRole="link"
               accessibilityLabel="Privacy Policy"
             >
-              <Text style={{ fontFamily: theme.typography.monoMedium, fontSize: 10, color: theme.colors.primary, textDecorationLine: 'underline', letterSpacing: 0.5 }}>
+              <Text style={{ fontFamily: theme.typography.monoMedium, fontSize: 12, color: theme.colors.primary, textDecorationLine: 'underline', letterSpacing: 0.5 }}>
                 [ PRIVACY POLICY ]
               </Text>
             </TouchableOpacity>

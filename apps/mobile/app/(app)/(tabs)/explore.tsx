@@ -286,7 +286,7 @@ export default function ExploreScreen() {
           backgroundColor: theme.colors.primary,
         },
         categoryChipText: {
-          fontSize: 10,
+          fontSize: 12,
           color: theme.colors.onSurfaceVariant,
           fontFamily: theme.typography.monoBold,
           letterSpacing: 0.5,
@@ -315,7 +315,7 @@ export default function ExploreScreen() {
           backgroundColor: theme.colors.surfaceContainerHighest,
         },
         segmentText: {
-          fontSize: 10,
+          fontSize: 12,
           color: theme.colors.onSurfaceVariant,
           fontFamily: theme.typography.monoBold,
         },
@@ -336,7 +336,7 @@ export default function ExploreScreen() {
           backgroundColor: theme.colors.surfaceContainerLow,
         },
         shortcutText: {
-          fontSize: 10,
+          fontSize: 12,
           fontFamily: theme.typography.monoBold,
           color: theme.colors.primary,
         },
@@ -391,7 +391,7 @@ export default function ExploreScreen() {
         emptySub: {
           textAlign: 'center',
           color: theme.colors.onSurfaceVariant,
-          fontSize: 11,
+          fontSize: 12,
         },
         eventsList: {
           gap: theme.spacing.sm,
@@ -438,7 +438,7 @@ export default function ExploreScreen() {
               accessibilityLabel="Clear search text"
               testID="btn-clear-search"
             >
-              <MonoLabel style={{ color: theme.colors.onSurfaceVariant, fontSize: 11 }}>[CLEAR]</MonoLabel>
+              <MonoLabel style={{ color: theme.colors.onSurfaceVariant, fontSize: 12 }}>[CLEAR]</MonoLabel>
             </TouchableOpacity>
           )}
         </View>

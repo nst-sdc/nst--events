@@ -19,7 +19,7 @@ import { Title, Body, MonoLabel, Display, Mono } from '../../src/ui/core/Typogra
 export default function NotificationsScreen() {
   const router = useRouter();
   const theme = useAppTheme();
-  
+
   const {
     data,
     isLoading,
@@ -126,11 +126,11 @@ export default function NotificationsScreen() {
       marginTop: 2,
     },
     timestampText: {
-      fontSize: 10,
+      fontSize: 12,
       color: theme.colors.onSurfaceVariant,
     },
     tapReadText: {
-      fontSize: 9,
+      fontSize: 12,
       color: theme.colors.primary,
     },
     loadingContainer: {

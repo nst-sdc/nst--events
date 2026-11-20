@@ -9,7 +9,7 @@ import { resolvePostInstallTarget } from '../src/infrastructure/post-install-con
 
 export default function RootIndexScreen() {
   const theme = useAppTheme();
-  
+
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const isInitialized = useAuthStore((state) => state.isInitialized);
   const initSession = useAuthStore((state) => state.initSession);
