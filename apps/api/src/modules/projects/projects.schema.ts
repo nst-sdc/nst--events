@@ -86,7 +86,7 @@ export const CreateProjectSchema = z.object({
   tagline: z.string().min(5, 'Tagline must be at least 5 characters').max(160, 'Tagline cannot exceed 160 characters'),
   description: z.string().min(10, 'Description must be at least 10 characters'),
   category: z.enum(CONTROLLED_PROJECT_CATEGORIES, {
-    errorMap: () => ({ message: 'Invalid project category' }),
+    error: () => 'Invalid project category',
   }),
   tags: z.array(z.string().min(1).max(35)).max(12).default([]),
   projectType: z.enum(PROJECT_TYPES).default('PERSONAL'),
@@ -110,7 +110,13 @@ export const CreateProjectSchema = z.object({
 });
 
 export const UpdateProjectSchema = CreateProjectSchema.partial().extend({
+  tags: z.array(z.string().min(1).max(35)).max(12).optional(),
+  projectType: z.enum(PROJECT_TYPES).optional(),
+  developmentStatus: z.enum(PROJECT_STATUSES).optional(),
+  galleryImageUrls: z.array(SafeUrlSchema).max(6).optional(),
+  links: z.array(ProjectLinkInputSchema).optional(),
   publishNow: z.boolean().optional(),
+  rightsConfirmed: z.boolean().optional(),
 });
 
 export const ChangeSlugSchema = z.object({
@@ -156,7 +162,7 @@ export const SubmitReportSchema = z.object({
 export const ModerateProjectSchema = z.object({
   action: z.enum(MODERATION_ACTION_TYPES),
   reason: z.string().min(5, 'Moderation reason must be at least 5 characters').max(1000),
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
 });
 
 export const ResolveReportSchema = z.object({

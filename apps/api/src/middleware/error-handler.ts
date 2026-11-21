@@ -49,11 +49,16 @@ export function errorHandler(
       detail = 'LOCATION_VERIFICATION_FAILED';
     }
 
+    if (detail.includes('EVENT_CANCELLED')) {
+      detail = 'EVENT_CANCELLED';
+    }
+
     res.status(err.statusCode).json({
       type: err.type,
       title: err.title,
       status: err.statusCode,
       detail: detail,
+      ...(detail === 'EVENT_CANCELLED' ? { error: 'EVENT_CANCELLED' } : {}),
       instance,
       request_id: requestId,
     });

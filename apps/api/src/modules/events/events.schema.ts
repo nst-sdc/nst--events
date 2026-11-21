@@ -28,7 +28,7 @@ const EventBodySchema = z.object({
   attendance_type: z.nativeEnum(AttendanceType).default('SINGLE'),
   audience: z.nativeEnum(EventAudience).default('ALL_STUDENTS'),
   audience_batch_ids: z.array(z.string().uuid()).optional(),
-  metadata: z.record(z.unknown()).default({}),
+  metadata: z.record(z.string(), z.unknown()).default({}),
   /** Maximum capacity limit. For INDIVIDUAL events: registered students. For TEAM events: registered teams. NULL/omitted: unlimited. */
   max_capacity: z.number().int().positive().nullable().optional(),
   /** Maximum participants limit for TEAM events: total registered participants across all teams. NULL/omitted: unlimited. */

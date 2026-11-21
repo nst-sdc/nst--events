@@ -10,11 +10,11 @@ export type UpdateRateLimitSettingInput = z.infer<typeof UpdateRateLimitSettingS
 
 export const CreateRateLimitOverrideSchema = z.object({
   subject_type: z.enum(['user', 'ip'], {
-    errorMap: () => ({ message: "subject_type must be 'user' or 'ip'" }),
+    error: () => "subject_type must be 'user' or 'ip'",
   }),
   subject: z.string().trim().min(1, 'subject is required'),
   mode: z.enum(['block', 'allow', 'custom_max'], {
-    errorMap: () => ({ message: "mode must be 'block', 'allow', or 'custom_max'" }),
+    error: () => "mode must be 'block', 'allow', or 'custom_max'",
   }),
   custom_max: z.number().int().positive().optional(),
   expires_at: z.string().refine((val) => !isNaN(Date.parse(val)) && new Date(val).getTime() > Date.now(), {
