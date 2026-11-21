@@ -132,28 +132,28 @@ export default function AuditLogsPage() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <strong>Action:</strong> <Tag>{selectedLog.action}</Tag>
+                <strong className="text-gray-900 dark:text-gray-100">Action:</strong> <Tag>{selectedLog.action}</Tag>
               </div>
-              <div>
-                <strong>Entity:</strong> {selectedLog.entityType} ({selectedLog.entityId || 'N/A'})
+              <div className="text-gray-900 dark:text-gray-100">
+                <strong>Entity:</strong> <span className="font-mono text-gray-700 dark:text-gray-300">{selectedLog.entityType} ({selectedLog.entityId || 'N/A'})</span>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4 mt-4">
               <div>
-                <h4 className="font-semibold mb-2 text-gray-700">Previous State</h4>
-                <pre className="bg-gray-100 p-3 rounded text-xs overflow-auto max-h-60 border border-gray-200">
+                <h4 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Previous State</h4>
+                <pre className="bg-gray-100 dark:bg-[#0d1117] text-gray-900 dark:text-[#e6edf3] p-3 rounded text-xs font-mono overflow-auto max-h-60 border border-gray-300 dark:border-[#30363d]">
                   {selectedLog.previousState 
                     ? JSON.stringify(selectedLog.previousState, null, 2) 
-                    : <span className="text-gray-400 italic">No previous state recorded</span>}
+                    : <span className="text-gray-400 dark:text-gray-500 italic">No previous state recorded</span>}
                 </pre>
               </div>
               <div>
-                <h4 className="font-semibold mb-2 text-gray-700">New State</h4>
-                <pre className="bg-blue-50 p-3 rounded text-xs overflow-auto max-h-60 border border-blue-200">
+                <h4 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">New State</h4>
+                <pre className="bg-blue-50 dark:bg-[#0c1e3d] text-blue-900 dark:text-[#93c5fd] p-3 rounded text-xs font-mono overflow-auto max-h-60 border border-blue-200 dark:border-[#1e3a8a]">
                   {selectedLog.newState 
                     ? JSON.stringify(selectedLog.newState, null, 2) 
-                    : <span className="text-gray-400 italic">No new state recorded</span>}
+                    : <span className="text-gray-400 dark:text-gray-500 italic">No new state recorded</span>}
                 </pre>
               </div>
             </div>
