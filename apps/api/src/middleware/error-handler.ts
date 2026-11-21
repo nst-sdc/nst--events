@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { env } from '../config/env';
 import { AppError } from '../lib/errors';
 import { logger } from '../lib/logger';
+import { getSafeRequestPath } from './request-logger';
 import { captureException } from '@nst/shared';
 
 export function errorHandler(
@@ -12,8 +13,25 @@ export function errorHandler(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _next: NextFunction
 ): void {
-  const instance = req.originalUrl || req.url;
+  const instance = getSafeRequestPath(req);
   const requestId = req.id;
+
+  if (res.headersSent) {
+    logger.error(
+      {
+        err: err instanceof Error ? { name: err.name, message: err.message } : 'unknown_error',
+        request_id: requestId,
+        method: req.method,
+        route: instance,
+        instance,
+      },
+      'Error occurred after response headers were sent'
+    );
+    if (!res.writableEnded && !res.destroyed) {
+      res.end();
+    }
+    return;
+  }
 
   if (err instanceof AppError) {
     if (err.statusCode >= 500) {
@@ -31,11 +49,16 @@ export function errorHandler(
       detail = 'LOCATION_VERIFICATION_FAILED';
     }
 
+    if (detail.includes('EVENT_CANCELLED')) {
+      detail = 'EVENT_CANCELLED';
+    }
+
     res.status(err.statusCode).json({
       type: err.type,
       title: err.title,
       status: err.statusCode,
       detail: detail,
+      ...(detail === 'EVENT_CANCELLED' ? { error: 'EVENT_CANCELLED' } : {}),
       instance,
       request_id: requestId,
     });

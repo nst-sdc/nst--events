@@ -12,7 +12,7 @@ import { rateLimitExceededTotal } from '../lib/metrics';
  *
  * Stack Evaluation:
  * 1. Redis is not part of the active or planned deployment stack (the architecture
- *    relies strictly on PostgreSQL + pgmq without Redis containers).
+ *    relies strictly on PostgreSQL, including notification_jobs via FOR UPDATE SKIP LOCKED, without Redis containers).
  * 2. A PostgreSQL-backed rate limit store (executing SELECT/INSERT/UPDATE on every
  *    incoming HTTP request) would introduce 5-20ms latency per request, cause row lock
  *    contention, generate extreme table bloat, and exhaust connection pool quotas during
